@@ -5,6 +5,7 @@ import { createProductMutation, updateProductMutation } from '../api/mutations';
 import type { Product } from '../api/types';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
+import { PRODUCT_LIST_PATH } from '@/lib/scroll-restoration';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
@@ -24,7 +25,7 @@ export default function ProductForm({
     ...createProductMutation,
     onSuccess: () => {
       toast.success('Product created successfully');
-      router.navigate({ to: '/dashboard/product' });
+      router.navigate({ to: PRODUCT_LIST_PATH });
     },
     onError: () => {
       toast.error('Failed to create product');
@@ -35,7 +36,7 @@ export default function ProductForm({
     ...updateProductMutation,
     onSuccess: () => {
       toast.success('Product updated successfully');
-      router.navigate({ to: '/dashboard/product' });
+      router.navigate({ to: PRODUCT_LIST_PATH });
     },
     onError: () => {
       toast.error('Failed to update product');
@@ -137,7 +138,11 @@ export default function ProductForm({
             />
 
             <div className='flex justify-end gap-2'>
-              <Button type='button' variant='outline' onClick={() => router.history.back()}>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => router.navigate({ to: PRODUCT_LIST_PATH })}
+              >
                 Back
               </Button>
               <form.SubmitButton>{isEdit ? 'Update Product' : 'Add Product'}</form.SubmitButton>

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "vercel-composition-patterns": {
+      "source": "supabase/supabase",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/vercel-composition-patterns/SKILL.md",
+      "computedHash": "ef613d4c6067c6c1ce278bd2fc7d8ee0f11aa69d7fbbe871a6f2965d26b99602"
+    },
+    "vitest": {
+      "source": "supabase/supabase",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/vitest/SKILL.md",
+      "computedHash": "669c7275f7e1379b06b2bcfa593603aead4c983b951c7e8edbc09640aa38d0a1"
+    }
+  }
+}

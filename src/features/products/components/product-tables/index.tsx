@@ -1,9 +1,11 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSearch } from '@tanstack/react-router';
+
 import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { useSearch } from '@tanstack/react-router';
 import { parseSortingState } from '@/lib/parsers';
+import { PRODUCT_LIST_SCROLL_RESTORATION_ID } from '@/lib/scroll-restoration';
 import { productsQueryOptions } from '../../api/queries';
 import { columns } from './columns';
 
@@ -28,7 +30,6 @@ export function ProductTable() {
   };
 
   const { data } = useSuspenseQuery(productsQueryOptions(filters));
-
   const pageCount = Math.ceil(data.total_products / perPage);
 
   const { table } = useDataTable({
@@ -43,7 +44,7 @@ export function ProductTable() {
   });
 
   return (
-    <DataTable table={table}>
+    <DataTable table={table} scrollRestorationId={PRODUCT_LIST_SCROLL_RESTORATION_ID}>
       <DataTableToolbar table={table} />
     </DataTable>
   );

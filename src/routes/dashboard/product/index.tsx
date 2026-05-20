@@ -1,9 +1,11 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, redirect, useLocation } from '@tanstack/react-router';
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { zodValidator } from '@tanstack/zod-adapter';
 import PageContainer from '@/components/layout/page-container';
 import { buttonVariants } from '@/components/ui/button';
 import ProductListingPage from '@/features/products/components/product-listing';
+import { getProductListRestorationRedirectHref, rememberPageState } from '@/lib/scroll-restoration';
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
 import { productInfoContent } from '@/config/infoconfig';
@@ -18,11 +20,24 @@ const productSearchSchema = z.object({
 
 export const Route = createFileRoute('/dashboard/product/')({
   head: () => ({ meta: [{ title: 'Dashboard: Products' }] }),
+  beforeLoad: ({ location }) => {
+    const restoredHref = getProductListRestorationRedirectHref(location);
+
+    if (restoredHref) {
+      throw redirect({ href: restoredHref, replace: true });
+    }
+  },
   validateSearch: zodValidator(productSearchSchema),
   component: ProductPage
 });
 
 function ProductPage() {
+  const location = useLocation();
+
+  useEffect(() => {
+    rememberPageState(location);
+  }, [location]);
+
   return (
     <PageContainer
       pageTitle='Products'

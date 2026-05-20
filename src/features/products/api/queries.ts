@@ -13,7 +13,9 @@ export const productKeys = {
 export const productsQueryOptions = (filters: ProductFilters) =>
   queryOptions({
     queryKey: productKeys.list(filters),
-    queryFn: () => getProducts(filters)
+    queryFn: () => getProducts(filters),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000
   });
 
 export const productByIdOptions = (id: number) =>

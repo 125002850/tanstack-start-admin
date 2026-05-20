@@ -58,3 +58,4 @@ temp
 
 # clerk configuration (can include secrets)
 /.clerk/
+.playwright-mcp

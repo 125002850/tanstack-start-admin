@@ -1,28 +1,8 @@
-<h1 align="center">基于 TanStack Start 与 Shadcn UI 的后台管理模板</h1>
-
-<div align="center">一个基于 TanStack Start、shadcn/ui、Tailwind CSS 与 TypeScript 构建的开源后台管理起步模板</div>
-
-<br />
-
-<div align="center">
-  <a href="https://dub.sh/tanstack-start-dashboard"><strong>查看演示</strong></a>
-</div>
-<br />
-<div align="center">
-  <img src="/public/tanstack-dashboard.png" alt="TanStack Start Dashboard 封面图" style="max-width: 100%; border-radius: 8px;" />
-</div>
-
-<p align="center">
-  <a href="https://github.com/Kiranism/tanstack-start-dashboard/stargazers"><img src="https://img.shields.io/github/stars/Kiranism/tanstack-start-dashboard?style=social" alt="GitHub Star" /></a>
-  <a href="https://github.com/Kiranism/tanstack-start-dashboard/network/members"><img src="https://img.shields.io/github/forks/Kiranism/tanstack-start-dashboard?style=social" alt="Forks" /></a>
-  <a href="https://github.com/Kiranism/tanstack-start-dashboard/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT 许可证" /></a>
-  <img src="https://img.shields.io/badge/TanStack_Start-1.x-FF4154" alt="TanStack Start" />
-  <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" alt="Vite" />
-</p>
+# tanstack-admin
 
 ## 项目概览
 
-这是一个基于 **TanStack Start、Shadcn UI、TypeScript 与 Tailwind CSS** 构建的 **开源后台管理模板**。
+这是一个基于 **TanStack Start、Shadcn UI、TypeScript 与 Tailwind CSS** 构建的 **后台管理系统**。
 
 它提供了一套可直接用于生产环境的 **后台界面基础设施**，包含图表、表格、表单，以及按业务拆分的目录结构，适合用于 **SaaS 产品、内部工具和管理后台**。
 
@@ -45,8 +25,6 @@
 | 命令面板 | [kbar](https://kbar.vercel.app/) |
 | 主题系统 | [tweakcn](https://tweakcn.com/) |
 | Lint / 格式化 | [OxLint](https://oxc.rs/docs/guide/usage/linter) / [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) |
-
-_如果你在找 Next.js 版本的后台模板，可以看这个 [仓库](https://git.new/shadcn-dashboard)。_
 
 ## 功能特性
 
@@ -215,25 +193,3 @@ nitro({ preset: 'netlify' });
 | 构建工具 | Webpack/Turbopack | Vite |
 | 部署 | `next start` | Nitro（可部署到多种平台） |
 | URL 状态 | nuqs | TanStack Router `useSearch()` + `validateSearch` |
-
-### 支持
-
-如果这个模板对你有帮助，可以考虑给仓库点个 Star。
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/kir4n)
-
-感谢支持。
-
-<!--
-
-SEO keywords:
-
-tanstack start dashboard, tanstack start admin template, vite dashboard template,
-
-shadcn ui dashboard, admin dashboard starter, tanstack router, typescript dashboard,
-
-dashboard ui template, react admin dashboard, tailwind css admin dashboard,
-
-tanstack start shadcn admin panel
-
--->
