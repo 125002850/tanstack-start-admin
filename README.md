@@ -1,157 +1,157 @@
-<h1 align="center">Admin Dashboard with TanStack Start & Shadcn UI</h1>
+<h1 align="center">基于 TanStack Start 与 Shadcn UI 的后台管理模板</h1>
 
-<div align="center">Open source admin dashboard starter built with TanStack Start, shadcn/ui, Tailwind CSS, TypeScript</div>
+<div align="center">一个基于 TanStack Start、shadcn/ui、Tailwind CSS 与 TypeScript 构建的开源后台管理起步模板</div>
 
 <br />
 
 <div align="center">
-  <a href="https://dub.sh/tanstack-start-dashboard"><strong>View Demo</strong></a>
+  <a href="https://dub.sh/tanstack-start-dashboard"><strong>查看演示</strong></a>
 </div>
 <br />
 <div align="center">
-  <img src="/public/tanstack-dashboard.png" alt="TanStack Start Dashboard Cover" style="max-width: 100%; border-radius: 8px;" />
+  <img src="/public/tanstack-dashboard.png" alt="TanStack Start Dashboard 封面图" style="max-width: 100%; border-radius: 8px;" />
 </div>
 
 <p align="center">
-  <a href="https://github.com/Kiranism/tanstack-start-dashboard/stargazers"><img src="https://img.shields.io/github/stars/Kiranism/tanstack-start-dashboard?style=social" alt="GitHub stars" /></a>
+  <a href="https://github.com/Kiranism/tanstack-start-dashboard/stargazers"><img src="https://img.shields.io/github/stars/Kiranism/tanstack-start-dashboard?style=social" alt="GitHub Star" /></a>
   <a href="https://github.com/Kiranism/tanstack-start-dashboard/network/members"><img src="https://img.shields.io/github/forks/Kiranism/tanstack-start-dashboard?style=social" alt="Forks" /></a>
-  <a href="https://github.com/Kiranism/tanstack-start-dashboard/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
+  <a href="https://github.com/Kiranism/tanstack-start-dashboard/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT 许可证" /></a>
   <img src="https://img.shields.io/badge/TanStack_Start-1.x-FF4154" alt="TanStack Start" />
   <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" alt="Vite" />
 </p>
 
-## Overview
+## 项目概览
 
-This is an **open source admin dashboard starter** built with **TanStack Start, Shadcn UI, TypeScript, and Tailwind CSS**.
+这是一个基于 **TanStack Start、Shadcn UI、TypeScript 与 Tailwind CSS** 构建的 **开源后台管理模板**。
 
-It gives you a production-ready **dashboard UI** with charts, tables, forms, and a feature-based folder structure, perfect for **SaaS apps, internal tools, and admin panels**.
+它提供了一套可直接用于生产环境的 **后台界面基础设施**，包含图表、表格、表单，以及按业务拆分的目录结构，适合用于 **SaaS 产品、内部工具和管理后台**。
 
-### Tech Stack
+### 技术栈
 
-| Category           | Technology                                                                                            |
-| ------------------ | ----------------------------------------------------------------------------------------------------- |
-| Framework          | [TanStack Start](https://tanstack.com/start)                                                          |
-| Language           | [TypeScript](https://www.typescriptlang.org)                                                          |
-| Build Tool         | [Vite 7](https://vite.dev)                                                                            |
-| Deployment         | [Nitro](https://nitro.build) (Vercel, Cloudflare, Node.js)                                            |
-| Styling            | [Tailwind CSS v4](https://tailwindcss.com)                                                            |
-| Components         | [Shadcn-ui](https://ui.shadcn.com)                                                                    |
-| Routing            | [TanStack Router](https://tanstack.com/router) (file-based, type-safe)                                |
-| Data Fetching      | [TanStack React Query](https://tanstack.com/query)                                                    |
-| Tables             | [TanStack Table](https://tanstack.com/table)                                                          |
-| Forms              | [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev)                                   |
-| Charts             | [Recharts](https://recharts.org)                                                                      |
-| State Management   | [Zustand](https://zustand-demo.pmnd.rs)                                                               |
-| Command+K          | [kbar](https://kbar.vercel.app/)                                                                      |
-| Themes             | [tweakcn](https://tweakcn.com/)                                                                       |
-| Linter / Formatter | [OxLint](https://oxc.rs/docs/guide/usage/linter) / [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) |
+| 类别 | 技术 |
+| ---- | ---- |
+| 框架 | [TanStack Start](https://tanstack.com/start) |
+| 语言 | [TypeScript](https://www.typescriptlang.org) |
+| 构建工具 | [Vite 7](https://vite.dev) |
+| 部署层 | [Nitro](https://nitro.build)（Vercel、Cloudflare、Node.js） |
+| 样式方案 | [Tailwind CSS v4](https://tailwindcss.com) |
+| 组件体系 | [Shadcn-ui](https://ui.shadcn.com) |
+| 路由 | [TanStack Router](https://tanstack.com/router)（基于文件、类型安全） |
+| 数据获取 | [TanStack React Query](https://tanstack.com/query) |
+| 表格 | [TanStack Table](https://tanstack.com/table) |
+| 表单 | [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev) |
+| 图表 | [Recharts](https://recharts.org) |
+| 状态管理 | [Zustand](https://zustand-demo.pmnd.rs) |
+| 命令面板 | [kbar](https://kbar.vercel.app/) |
+| 主题系统 | [tweakcn](https://tweakcn.com/) |
+| Lint / 格式化 | [OxLint](https://oxc.rs/docs/guide/usage/linter) / [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) |
 
-_If you are looking for a Next.js dashboard template, here is the [repo](https://git.new/shadcn-dashboard)._
+_如果你在找 Next.js 版本的后台模板，可以看这个 [仓库](https://git.new/shadcn-dashboard)。_
 
-## Features
+## 功能特性
 
-- **Admin dashboard layout** (sidebar, header, content area)
+- **后台布局骨架**（侧边栏、顶部栏、内容区域）
 
-- **Analytics overview** page with cards and Suspense-based independent loading
+- **数据概览页**，包含卡片和基于 Suspense 的独立加载区块
 
-- **Data tables** with React Query route loaders, client-side cache, search, filter & pagination
+- **数据表格**，支持 React Query 路由加载、客户端缓存、搜索、筛选与分页
 
-- **Type-safe file-based routing** with TanStack Router (auto-generated route tree)
+- **类型安全的文件路由**，基于 TanStack Router 自动生成路由树
 
-- **Server functions** via `createServerFn()` for server-side logic
+- **服务端函数**，通过 `createServerFn()` 编写服务端逻辑
 
-- **Infobar component** to show helpful tips, status messages, or contextual info on any page
+- **Infobar 组件**，用于在页面中展示提示、状态信息和上下文说明
 
-- **Shadcn UI components** with Tailwind CSS styling
+- **Shadcn UI 组件体系**，配合 Tailwind CSS 使用
 
-- **Multi-theme support** with 10+ beautiful themes and easy theme switching
+- **多主题支持**，内置 10+ 主题并支持快速切换
 
-- **Feature-based folder structure** for scalable projects
+- **按业务功能划分的目录结构**，更适合扩展型项目
 
-- **Kanban board** with drag-n-drop (dnd-kit + Zustand)
+- **Kanban 看板**，支持拖拽交互（dnd-kit + Zustand）
 
-- **Chat interface** with conversation list, message bubbles, and auto-reply demo
+- **聊天界面**，包含会话列表、消息气泡和自动回复演示
 
-- **Notification center** with bell icon badge, popover preview, and full page view
+- **通知中心**，包含铃铛徽标、弹层预览和完整页面视图
 
-- **Command palette** (Cmd+K) for quick navigation
+- **命令面板**（Cmd+K），用于快速导航
 
-- **Deploy anywhere** — Vercel, Cloudflare, Node.js via Nitro presets
+- **多平台部署能力**，可通过 Nitro preset 部署到 Vercel、Cloudflare、Node.js 等环境
 
-## Pages
+## 页面说明
 
-| Page                                          | Description                                                                                                                |
-| :-------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------- |
-| [Dashboard Overview](/dashboard/overview)     | Cards with Recharts graphs. Suspense boundaries for independent loading/error per section.                                 |
-| [Product List (Table)](/dashboard/product)    | TanStack Table + React Query (route loader prefetch + client cache) with URL search params for search, filter, pagination. |
-| [Create Product Form](/dashboard/product/new) | TanStack Form + Zod with `useMutation` for create/update. Cache invalidation on success.                                   |
-| [Users (Table)](/dashboard/users)             | Users table with React Query + URL state pattern. Same architecture as Products.                                           |
-| [React Query Demo](/dashboard/react-query)    | Pokemon API showcase demonstrating route loader + `useSuspenseQuery` pattern with client-side cache.                       |
-| [Kanban Board](/dashboard/kanban)             | Drag n Drop task management board with dnd-kit and Zustand. Column sorting, task cards with priority badges.               |
-| [Chat](/dashboard/chat)                       | Messaging UI with conversation list, message bubbles, quick replies, file attachments.                                     |
-| [Notifications](/dashboard/notifications)     | Notification center with bell icon badge, popover preview, and dedicated full page with tabs.                              |
-| [Forms](/dashboard/forms/basic)               | Basic, Multi-step, Sheet/Dialog, and Advanced form patterns with TanStack Form + Zod.                                      |
-| [Not Found](/notfound)                        | Custom 404 page via TanStack Router's `defaultNotFoundComponent`.                                                          |
+| 页面 | 说明 |
+| :--- | :--- |
+| [数据概览](/dashboard/overview) | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离 |
+| [产品列表（表格）](/dashboard/product) | 基于 TanStack Table + React Query，结合路由预取、客户端缓存和 URL 搜索参数实现搜索、筛选与分页 |
+| [新建产品表单](/dashboard/product/new) | 使用 TanStack Form + Zod，并通过 `useMutation` 完成新增与编辑，成功后做缓存失效处理 |
+| [用户列表（表格）](/dashboard/users) | 用户表格页，使用 React Query + URL 状态模式，整体架构与产品模块保持一致 |
+| [React Query 示例](/dashboard/react-query) | 以 Pokemon API 为例，演示 route loader + `useSuspenseQuery` + 客户端缓存模式 |
+| [Kanban 看板](/dashboard/kanban) | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示 |
+| [聊天](/dashboard/chat) | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力 |
+| [通知中心](/dashboard/notifications) | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面 |
+| [表单示例](/dashboard/forms/basic) | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式 |
+| [未找到页面](/notfound) | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面 |
 
-## Feature-based Organization
+## 按功能划分的目录结构
 
 ```plaintext
 src/
-├── routes/                        # TanStack Router file-based routes
-│   ├── __root.tsx                 # Root layout (providers, theme, HTML shell)
-│   ├── index.tsx                  # Home (auth redirect)
-│   ├── auth/                      # Auth pages (sign-in, sign-up)
-│   ├── dashboard.tsx              # Dashboard layout (sidebar, header, KBar)
-│   └── dashboard/                 # Dashboard pages
-│       ├── overview.tsx           # Analytics with Suspense boundaries
-│       ├── product/               # Product CRUD (route loaders + React Query)
-│       ├── users.tsx              # Users table (route loaders + React Query)
-│       ├── react-query.tsx        # React Query demo page
-│       ├── kanban.tsx             # Task board page
-│       ├── chat.tsx               # Messaging page
-│       ├── notifications.tsx      # Notifications page
-│       ├── forms/                 # Form examples
-│       └── elements/              # UI showcase
+├── routes/                        # TanStack Router 的文件路由
+│   ├── __root.tsx                 # 根布局（providers、theme、HTML 文档壳）
+│   ├── index.tsx                  # 首页（认证跳转）
+│   ├── auth/                      # 认证页面（登录、注册）
+│   ├── dashboard.tsx              # 控制台布局（侧边栏、头部、KBar）
+│   └── dashboard/                 # 控制台业务页面
+│       ├── overview.tsx           # 概览页，使用 Suspense 做分区加载
+│       ├── product/               # 产品 CRUD（route loader + React Query）
+│       ├── users.tsx              # 用户表格页（route loader + React Query）
+│       ├── react-query.tsx        # React Query 示例页
+│       ├── kanban.tsx             # 任务看板页
+│       ├── chat.tsx               # 聊天页面
+│       ├── notifications.tsx      # 通知页面
+│       ├── forms/                 # 表单示例
+│       └── elements/              # UI 展示页
 │
-├── components/                    # Shared components
-│   ├── ui/                        # UI primitives (buttons, inputs, kanban, etc.)
-│   ├── layout/                    # Layout components (header, sidebar, etc.)
-│   ├── themes/                    # Theme system (selector, mode toggle, config)
-│   └── kbar/                      # Command+K interface
+├── components/                    # 共享组件
+│   ├── ui/                        # UI 基础组件（button、input、kanban 等）
+│   ├── layout/                    # 布局组件（header、sidebar 等）
+│   ├── themes/                    # 主题系统（selector、mode toggle、config）
+│   └── kbar/                      # Command+K 命令面板
 │
-├── features/                      # Feature-based modules
-│   ├── overview/                  # Dashboard analytics (charts, cards)
-│   ├── products/                  # Product listing, form, tables (React Query)
-│   ├── users/                     # User management table (React Query)
-│   ├── react-query-demo/          # React Query demo (Pokemon API)
-│   ├── kanban/                    # Drag-drop task board
-│   ├── chat/                      # Messaging (conversations, bubbles, composer)
-│   ├── notifications/             # Notification center & store
-│   ├── auth/                      # Auth components
-│   └── forms/                     # Form showcases
+├── features/                      # 按业务功能组织的模块
+│   ├── overview/                  # 控制台数据概览（图表、卡片）
+│   ├── products/                  # 产品列表、表单、表格（React Query）
+│   ├── users/                     # 用户管理表格（React Query）
+│   ├── react-query-demo/          # React Query 示例（Pokemon API）
+│   ├── kanban/                    # 拖拽任务看板
+│   ├── chat/                      # 聊天模块（会话、气泡、输入框）
+│   ├── notifications/             # 通知中心与状态存储
+│   ├── auth/                      # 认证相关组件
+│   └── forms/                     # 表单展示模块
 │
-├── lib/                           # Core utilities (query-client, parsers, etc.)
-├── hooks/                         # Custom hooks (use-data-table, use-media-query, etc.)
-├── config/                        # Navigation, infobar, data table config
-├── constants/                     # Mock data
-├── styles/                        # Global CSS & theme files
-│   └── themes/                    # Individual theme CSS files (OKLCH)
-└── types/                         # TypeScript types
+├── lib/                           # 核心工具（query-client、parsers 等）
+├── hooks/                         # 自定义 hooks（use-data-table、use-media-query 等）
+├── config/                        # 导航、infobar、data table 配置
+├── constants/                     # Mock 数据
+├── styles/                        # 全局样式与主题文件
+│   └── themes/                    # 各主题独立 CSS（OKLCH）
+└── types/                         # TypeScript 类型定义
 ```
 
-## Getting Started
+## 快速开始
 
 > [!NOTE]
-> This admin dashboard starter uses **TanStack Start** with **React 19**, **Vite 7**, and **Shadcn UI**. Follow these steps to run it locally:
+> 这个后台管理模板基于 **TanStack Start**、**React 19**、**Vite 7** 和 **Shadcn UI** 构建。可按以下步骤在本地运行：
 
-Clone the repo:
+克隆仓库：
 
 ```bash
 git clone https://github.com/Kiranism/tanstack-start-dashboard.git
 cd tanstack-start-dashboard
 ```
 
-Install dependencies and run:
+安装依赖并启动：
 
 ```bash
 bun install
@@ -159,59 +159,70 @@ cp env.example.txt .env
 bun run dev
 ```
 
-You should now be able to access the application at http://localhost:3000.
+完成后可以通过 <http://localhost:3000> 访问应用。
 
-## Deploy
+## 部署
 
-### Vercel (Recommended)
+当前仓库默认使用 **Nitro `node-server`** 作为部署目标，适合以 **Docker + Nginx** 的方式自建 SSR 服务。
 
-The project uses **Nitro** with the `vercel` preset. Just connect your GitHub repo to Vercel:
+### 当前推荐方式：自建 SSR
 
-- **Build Command:** `bun run build`
-- **Output Directory:** leave blank (auto-detected)
-- **Framework Preset:** Other
+当前部署链路为：
 
-### Other Platforms
+- Docker 构建镜像
+- 容器内运行 `node .output/server/index.mjs`
+- Nginx 反向代理到容器端口
 
-Change the Nitro preset in `vite.config.ts`:
+详细部署步骤见：
+
+- [docs/ssr-docker-nginx-deployment.md](docs/ssr-docker-nginx-deployment.md)
+
+本地或服务器可使用以下命令验证构建与启动：
+
+```bash
+npm run build
+npm run start
+```
+
+### 如果要部署到其他平台
+
+可根据目标平台修改 `vite.config.ts` 中的 Nitro preset：
 
 ```ts
-// Cloudflare Pages
-nitro({ preset: 'cloudflare-pages' });
-
 // Node.js server
 nitro({ preset: 'node-server' });
+
+// Vercel
+nitro({ preset: 'vercel' });
+
+// Cloudflare Pages
+nitro({ preset: 'cloudflare-pages' });
 
 // Netlify
 nitro({ preset: 'netlify' });
 ```
 
-Then run locally with:
+如果要重新切回 Vercel，需要先把 preset 改回 `vercel`，再按对应平台方式部署。
 
-```bash
-bun run build
-bun run start
-```
+## 与 Next.js 版本的主要区别
 
-## Key Differences from Next.js Version
+| 概念 | Next.js | TanStack Start |
+| ---- | ------- | -------------- |
+| 路由 | App Router (`app/`) | 基于文件的路由（`routes/`），并带有类型安全参数 |
+| 数据获取 | Server Components + `HydrationBoundary` | Route `loader` + `useSuspenseQuery` |
+| 布局 | `layout.tsx` 嵌套 | 基于 `<Outlet />` 的布局路由 |
+| 服务端代码 | `'use server'` actions | `createServerFn()` |
+| 构建工具 | Webpack/Turbopack | Vite |
+| 部署 | `next start` | Nitro（可部署到多种平台） |
+| URL 状态 | nuqs | TanStack Router `useSearch()` + `validateSearch` |
 
-| Concept       | Next.js                                 | TanStack Start                                   |
-| ------------- | --------------------------------------- | ------------------------------------------------ |
-| Routing       | App Router (`app/`)                     | File-based (`routes/`) with type-safe params     |
-| Data Fetching | Server Components + `HydrationBoundary` | Route `loader` + `useSuspenseQuery`              |
-| Layouts       | `layout.tsx` nesting                    | Layout routes with `<Outlet />`                  |
-| Server Code   | `'use server'` actions                  | `createServerFn()`                               |
-| Build Tool    | Webpack/Turbopack                       | Vite                                             |
-| Deployment    | `next start`                            | Nitro (any platform)                             |
-| URL State     | nuqs                                    | TanStack Router `useSearch()` + `validateSearch` |
+### 支持
 
-### Support
-
-If you find this template helpful, please consider giving it a star!
+如果这个模板对你有帮助，可以考虑给仓库点个 Star。
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buymeacoffee)](https://buymeacoffee.com/kir4n)
 
-Cheers!
+感谢支持。
 
 <!--
 

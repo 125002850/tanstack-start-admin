@@ -11,7 +11,7 @@ export default defineConfig({
     tsconfigPaths(),
     tailwindcss(),
     tanstackStart(),
-    nitro({ preset: 'vercel' }),
+    nitro({ preset: 'node-server' }),
     viteReact()
   ]
 });

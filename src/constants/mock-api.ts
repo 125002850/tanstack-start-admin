@@ -51,7 +51,7 @@ export const fakeProducts = {
     }
 
     // Generate remaining records
-    for (let i = 1; i <= 20; i++) {
+    for (let i = 1; i <= 2000; i++) {
       sampleProducts.push(generateRandomProductData(i));
     }
 

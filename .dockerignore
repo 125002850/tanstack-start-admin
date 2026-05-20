@@ -1,0 +1,10 @@
+node_modules
+.git
+.vercel
+.output
+dist
+.env
+.env.*
+.DS_Store
+npm-debug.log*
+pnpm-debug.log*

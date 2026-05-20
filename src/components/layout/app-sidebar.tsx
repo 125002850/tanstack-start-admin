@@ -4,12 +4,14 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { navGroups } from '@/config/nav-config';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import { cn } from '@/lib/utils';
+import type { NavItem } from '@/types';
 import { Link } from '@tanstack/react-router';
 import { useLocation, useRouter } from '@tanstack/react-router';
 import * as React from 'react';
@@ -27,18 +29,230 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
+
+function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string }) {
+  const { isMobile, state } = useSidebar();
+  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+  const hasChildren = Boolean(item.items?.length);
+  const hasActiveChild = item.items?.some((subItem) => pathname === subItem.url) ?? false;
+  const isActive = pathname === item.url || hasActiveChild;
+  const isCollapsedDesktop = state === 'collapsed' && !isMobile;
+  const [open, setOpen] = React.useState(() => item.isActive || hasActiveChild);
+  const [flyoutOpen, setFlyoutOpen] = React.useState(false);
+  const menuItemRef = React.useRef<HTMLLIElement | null>(null);
+  const lastInteractionRef = React.useRef<'pointer' | 'keyboard' | null>(null);
+  const openTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const closeTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
+
+  const clearOpenTimer = React.useCallback(() => {
+    if (openTimerRef.current) {
+      window.clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+  }, []);
+
+  const clearCloseTimer = React.useCallback(() => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const blurTriggerIfFocused = React.useCallback(() => {
+    const trigger = menuItemRef.current?.querySelector<HTMLElement>('[data-sidebar="menu-button"]');
+    if (trigger && document.activeElement === trigger) {
+      trigger.blur();
+    }
+  }, []);
+
+  const scheduleFlyoutOpen = React.useCallback(() => {
+    lastInteractionRef.current = 'pointer';
+    clearCloseTimer();
+    clearOpenTimer();
+    openTimerRef.current = window.setTimeout(() => {
+      setFlyoutOpen(true);
+    }, 140);
+  }, [clearCloseTimer, clearOpenTimer]);
+
+  const scheduleFlyoutClose = React.useCallback(() => {
+    clearOpenTimer();
+    clearCloseTimer();
+    closeTimerRef.current = window.setTimeout(() => {
+      setFlyoutOpen(false);
+    }, 220);
+  }, [clearCloseTimer, clearOpenTimer]);
+
+  const handleFlyoutOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      setFlyoutOpen(nextOpen);
+
+      if (lastInteractionRef.current === 'pointer') {
+        requestAnimationFrame(() => {
+          blurTriggerIfFocused();
+        });
+      }
+    },
+    [blurTriggerIfFocused]
+  );
+
+  React.useEffect(() => {
+    return () => {
+      clearOpenTimer();
+      clearCloseTimer();
+    };
+  }, [clearCloseTimer, clearOpenTimer]);
+
+  React.useEffect(() => {
+    if (hasActiveChild) {
+      setOpen(true);
+    }
+  }, [hasActiveChild]);
+
+  if (!hasChildren) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild tooltip={item.title} isActive={isActive}>
+          <Link to={item.url}>
+            {item.icon && <Icon />}
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  if (isCollapsedDesktop) {
+    return (
+      <li
+        ref={menuItemRef}
+        data-slot='sidebar-menu-item'
+        data-sidebar='menu-item'
+        className='group/menu-item relative'
+        onMouseEnter={scheduleFlyoutOpen}
+        onMouseLeave={scheduleFlyoutClose}
+      >
+        <DropdownMenu modal={false} open={flyoutOpen} onOpenChange={handleFlyoutOpenChange}>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              aria-label={item.title}
+              isActive={isActive}
+              className='group-data-[collapsible=icon]:justify-center'
+              onPointerDown={() => {
+                lastInteractionRef.current = 'pointer';
+              }}
+              onKeyDown={() => {
+                lastInteractionRef.current = 'keyboard';
+              }}
+            >
+              {item.icon && <Icon />}
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side='right'
+            align='start'
+            sideOffset={6}
+            className='w-64 rounded-xl p-2'
+            onCloseAutoFocus={(event) => {
+              if (lastInteractionRef.current === 'pointer') {
+                event.preventDefault();
+                blurTriggerIfFocused();
+              }
+            }}
+            onOpenAutoFocus={(event) => {
+              if (lastInteractionRef.current === 'pointer') {
+                event.preventDefault();
+              }
+            }}
+            onMouseEnter={clearCloseTimer}
+            onMouseLeave={scheduleFlyoutClose}
+          >
+            <DropdownMenuLabel className='text-muted-foreground px-2 py-1 text-xs font-semibold tracking-[0.12em] uppercase'>
+              {item.title}
+            </DropdownMenuLabel>
+            {item.url !== '#' && (
+              <>
+                <DropdownMenuItem asChild className='rounded-md px-2 py-2'>
+                  <Link to={item.url} className='flex items-center gap-2'>
+                    <Icons.arrowRight className='size-4' />
+                    <span>{item.title}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            <DropdownMenuGroup>
+              {item.items?.map((subItem) => {
+                const isSubItemActive = pathname === subItem.url;
+
+                return (
+                  <DropdownMenuItem
+                    key={subItem.title}
+                    asChild
+                    className={cn(
+                      'rounded-md px-2 py-2',
+                      isSubItemActive && 'bg-accent text-accent-foreground'
+                    )}
+                  >
+                    <Link to={subItem.url} className='flex items-center gap-3'>
+                      <Icons.circle
+                        className={cn(
+                          'size-2 fill-current stroke-none',
+                          isSubItemActive ? 'text-primary' : 'text-muted-foreground/50'
+                        )}
+                      />
+                      <span className='flex-1 truncate'>{subItem.title}</span>
+                      {isSubItemActive && <Icons.check className='size-4 text-primary' />}
+                    </Link>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </li>
+    );
+  }
+
+  return (
+    <Collapsible
+      asChild
+      open={hasActiveChild || open}
+      onOpenChange={setOpen}
+      className='group/collapsible'
+    >
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton tooltip={item.title} isActive={isActive}>
+            {item.icon && <Icon />}
+            <span>{item.title}</span>
+            <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.items?.map((subItem) => (
+              <SidebarMenuSubItem key={subItem.title}>
+                <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
+                  <Link to={subItem.url}>
+                    <span>{subItem.title}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
 
 export default function AppSidebar() {
   const { pathname } = useLocation();
-  const { isOpen } = useMediaQuery();
   const router = useRouter();
   const filteredGroups = useFilteredNavGroups(navGroups);
-
-  React.useEffect(() => {
-    // Side effects based on sidebar state changes
-  }, [isOpen]);
 
   return (
     <Sidebar variant='inset' collapsible='icon'>
@@ -64,53 +278,9 @@ export default function AppSidebar() {
           <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
             {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
             <SidebarMenu>
-              {group.items.map((item) => {
-                const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-                return item?.items && item?.items?.length > 0 ? (
-                  <Collapsible
-                    key={item.title}
-                    asChild
-                    defaultOpen={item.isActive}
-                    className='group/collapsible'
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton tooltip={item.title} isActive={pathname === item.url}>
-                          {item.icon && <Icon />}
-                          <span>{item.title}</span>
-                          <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {item.items?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
-                                <Link to={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                ) : (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={pathname === item.url}
-                    >
-                      <Link to={item.url}>
-                        <Icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {group.items.map((item) => (
+                <SidebarNavItem key={item.title} item={item} pathname={pathname} />
+              ))}
             </SidebarMenu>
           </SidebarGroup>
         ))}
