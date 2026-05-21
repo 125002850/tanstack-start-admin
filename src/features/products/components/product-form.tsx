@@ -5,7 +5,7 @@ import { createProductMutation, updateProductMutation } from '../api/mutations';
 import type { Product } from '../api/types';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
-import { PRODUCT_LIST_PATH } from '@/lib/scroll-restoration';
+import { PRODUCT_LIST_PATH } from '@/features/products/constants/product-routes';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
