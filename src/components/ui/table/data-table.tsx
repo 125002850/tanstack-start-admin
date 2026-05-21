@@ -16,14 +16,14 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
-  scrollRestorationId?: string;
+  scrollTargetId?: string;
 }
 
 export function DataTable<TData>({
   table,
   actionBar,
   children,
-  scrollRestorationId
+  scrollTargetId
 }: DataTableProps<TData>) {
   return (
     <div className='flex flex-1 flex-col space-y-4'>
@@ -33,9 +33,9 @@ export function DataTable<TData>({
           <ScrollArea
             className='h-full w-full'
             viewportProps={
-              scrollRestorationId
+              scrollTargetId
                 ? {
-                    'data-scroll-restoration-id': scrollRestorationId
+                    'data-scroll-target-id': scrollTargetId
                   }
                 : undefined
             }

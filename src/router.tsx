@@ -1,10 +1,6 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { getQueryClient } from '@/lib/query-client';
-import {
-  getAppScrollRestorationKey,
-  PRODUCT_LIST_SCROLL_RESTORATION_SELECTOR
-} from '@/lib/scroll-restoration';
 import { routeTree } from './routeTree.gen';
 
 export const getRouter = createRouter;
@@ -15,8 +11,6 @@ export function createRouter() {
   const router = createTanStackRouter({
     routeTree,
     scrollRestoration: true,
-    getScrollRestorationKey: getAppScrollRestorationKey,
-    scrollToTopSelectors: [PRODUCT_LIST_SCROLL_RESTORATION_SELECTOR],
     defaultPreloadStaleTime: 0,
     context: { queryClient },
     defaultPendingComponent: () => (

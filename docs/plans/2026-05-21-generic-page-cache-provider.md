@@ -40,17 +40,17 @@ function ProductPage() {
     <PageCacheProvider scope='dashboard.product.list'>
       <ProductPageCacheGate />
     </PageCacheProvider>
-  )
+  );
 }
 
 function ProductPageCacheGate() {
-  const { isReady } = useProductPageCacheBindings()
+  const { isReady } = useProductPageCacheBindings();
 
   if (!isReady) {
-    return <PageCacheRestoringFallback />
+    return <PageCacheRestoringFallback />;
   }
 
-  return <ProductPageContent />
+  return <ProductPageContent />;
 }
 ```
 
@@ -58,24 +58,24 @@ function ProductPageCacheGate() {
 
 ```tsx
 function useProductPageCacheBindings() {
-  const location = useLocation()
-  const router = useRouter()
+  const location = useLocation();
+  const router = useRouter();
   const searchRestore = usePageCacheSearch({
     slot: 'search',
     location,
     shouldRestore: (current) => isDefaultProductListSearch(current.search),
-    restore: (href) => router.navigate({ href, replace: true }),
-  })
+    restore: (href) => router.navigate({ href, replace: true })
+  });
 
   usePageCacheScroll({
     slot: 'table-scroll',
     selector: PRODUCT_LIST_SCROLL_RESTORATION_SELECTOR,
-    ready: searchRestore.isReady,
-  })
+    ready: searchRestore.isReady
+  });
 
   return {
-    isReady: searchRestore.isReady,
-  }
+    isReady: searchRestore.isReady
+  };
 }
 ```
 
@@ -85,8 +85,8 @@ function useProductPageCacheBindings() {
 usePageCacheFormDraft({
   slot: 'draft',
   values,
-  restore: (draft) => form.setFieldValues(draft),
-})
+  restore: (draft) => form.setFieldValues(draft)
+});
 ```
 
 ## 核心设计
@@ -103,10 +103,10 @@ usePageCacheFormDraft({
 
 ```ts
 type PageCacheSnapshot = {
-  version: 1
-  updatedAt: number
-  slots: Record<string, unknown>
-}
+  version: 1;
+  updatedAt: number;
+  slots: Record<string, unknown>;
+};
 ```
 
 说明：
@@ -167,6 +167,7 @@ page cache 不负责：
 ## 任务 1：创建通用 Page Cache 运行时
 
 **涉及文件：**
+
 - 新建：`src/lib/page-cache/types.ts`
 - 新建：`src/lib/page-cache/storage.ts`
 - 新建：`src/lib/page-cache/provider.tsx`
@@ -186,11 +187,11 @@ Provider 的 props 至少应包含：
 
 ```ts
 type PageCacheProviderProps = {
-  scope: string
-  children: React.ReactNode
-  storage?: 'session'
-  maxAgeMs?: number
-}
+  scope: string;
+  children: React.ReactNode;
+  storage?: 'session';
+  maxAgeMs?: number;
+};
 ```
 
 **步骤 2：实现存储适配器**
@@ -243,6 +244,7 @@ v1 明确存储策略：
 ## 任务 2：实现通用插槽原语
 
 **涉及文件：**
+
 - 新建：`src/lib/page-cache/use-page-cache-slot.ts`
 
 **步骤 1：创建插槽契约**
@@ -258,12 +260,12 @@ v1 明确存储策略：
 
 ```ts
 type UsePageCacheSlotOptions<T> = {
-  slot: string
-  readCurrent: () => T
-  restore: (snapshot: T) => void
-  enabled?: boolean
-  debounceMs?: number
-}
+  slot: string;
+  readCurrent: () => T;
+  restore: (snapshot: T) => void;
+  enabled?: boolean;
+  debounceMs?: number;
+};
 ```
 
 **步骤 2：保持通用性**
@@ -285,6 +287,7 @@ type UsePageCacheSlotOptions<T> = {
 ## 任务 3：实现搜索状态缓存与恢复
 
 **涉及文件：**
+
 - 新建：`src/lib/page-cache/use-page-cache-search.ts`
 - 修改：`src/routes/dashboard/product/index.tsx`
 - 可选新建：`src/features/products/components/product-page-cache-bindings.tsx`
@@ -306,13 +309,13 @@ type UsePageCacheSlotOptions<T> = {
 
 ```ts
 type UsePageCacheSearchOptions = {
-  slot?: string
-  location: Pick<ParsedLocation, 'href' | 'pathname' | 'search' | 'searchStr'>
+  slot?: string;
+  location: Pick<ParsedLocation, 'href' | 'pathname' | 'search' | 'searchStr'>;
   shouldRestore: (
     current: Pick<ParsedLocation, 'href' | 'pathname' | 'search' | 'searchStr'>
-  ) => boolean
-  restore: (href: string) => void
-}
+  ) => boolean;
+  restore: (href: string) => void;
+};
 ```
 
 `shouldRestore` 必须由页面提供，因为只有页面自身才知道当前搜索状态是否为"默认值且可安全覆盖"。
@@ -333,7 +336,10 @@ type UsePageCacheSearchOptions = {
 返回如下轻量状态：
 
 ```ts
-{ isReady: boolean; isRestoring: boolean }
+{
+  isReady: boolean;
+  isRestoring: boolean;
+}
 ```
 
 这使得页面可以在搜索恢复完成前临时抑制其数据获取内容的渲染，同时避免可见的"先渲染再跳转"以及浪费的首次查询。
@@ -365,6 +371,7 @@ type UsePageCacheSearchOptions = {
 ## 任务 4：实现滚动缓存与恢复
 
 **涉及文件：**
+
 - 新建：`src/lib/page-cache/use-page-cache-scroll.ts`
 - 修改：`src/components/ui/table/data-table.tsx`
 - 修改：`src/features/products/components/product-tables/index.tsx`
@@ -375,12 +382,12 @@ type UsePageCacheSearchOptions = {
 
 ```ts
 type UsePageCacheScrollOptions = {
-  slot: string
-  selector?: string
-  getTarget?: () => HTMLElement | null
-  axis?: 'x' | 'y' | 'both'
-  ready?: boolean
-}
+  slot: string;
+  selector?: string;
+  getTarget?: () => HTMLElement | null;
+  axis?: 'x' | 'y' | 'both';
+  ready?: boolean;
+};
 ```
 
 首个接入方可使用 `selector`；后续页面可使用 `getTarget`。
@@ -427,6 +434,7 @@ type UsePageCacheScrollOptions = {
 ## 任务 5：将表单草稿 Hook 推迟到未来阶段
 
 **涉及文件：**
+
 - 预计无代码变更
 
 **步骤 1：显式保留扩展缝，但不在 v1 中实现 hook**
@@ -440,6 +448,7 @@ type UsePageCacheScrollOptions = {
 ## 任务 6：从全局 Router 中移除产品特定的恢复逻辑
 
 **涉及文件：**
+
 - 修改：`src/router.tsx`
 - 修改或删除：`src/lib/scroll-restoration.ts`
 
@@ -483,6 +492,7 @@ v1 目标：
 ## 任务 7：验证产品列表作为首个接入方
 
 **涉及文件：**
+
 - 预计无新代码
 
 **步骤 1：运行静态验证**
