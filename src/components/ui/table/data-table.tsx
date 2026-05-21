@@ -35,8 +35,8 @@ export function DataTable<TData>({
             viewportProps={
               scrollTargetId
                 ? {
-                    'data-scroll-target-id': scrollTargetId
-                  }
+                  'data-scroll-target-id': scrollTargetId
+                }
                 : undefined
             }
           >

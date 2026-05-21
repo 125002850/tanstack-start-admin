@@ -11,45 +11,72 @@ export function PageCacheProvider({
   storage = 'session',
   maxAgeMs
 }: PageCacheProviderProps & { children: ReactNode }) {
-  const adapterRef = useRef(
-    storage === 'session'
-      ? createSessionStorageAdapter(maxAgeMs)
-      : createSessionStorageAdapter(maxAgeMs)
-  );
+  const adapter = useMemo(() => createSessionStorageAdapter(maxAgeMs), [maxAgeMs]);
+  const cachedScopeRef = useRef<string | null>(null);
+  const cachedSnapshotRef = useRef<PageCacheSnapshot | null>(null);
 
   const value: PageCacheContextValue = useMemo(
-    () => ({
-      scope,
+    () => {
+      const readSnapshot = () => {
+        if (cachedScopeRef.current !== scope) {
+          cachedSnapshotRef.current = adapter.loadSnapshot(scope);
+          cachedScopeRef.current = scope;
+        }
 
-      readSlot<T>(slot: string): T | undefined {
-        const snapshot = adapterRef.current.loadSnapshot(scope);
-        return snapshot?.slots[slot] as T | undefined;
-      },
+        return cachedSnapshotRef.current;
+      };
 
-      writeSlot<T>(slot: string, value: T): void {
-        const existing = adapterRef.current.loadSnapshot(scope);
-        const snapshot: PageCacheSnapshot = existing
-          ? { ...existing, slots: { ...existing.slots, [slot]: value }, updatedAt: Date.now() }
-          : { version: 1, updatedAt: Date.now(), slots: { [slot]: value } };
-        adapterRef.current.saveSnapshot(scope, snapshot);
-      },
+      const writeSnapshot = (snapshot: PageCacheSnapshot | null) => {
+        cachedScopeRef.current = scope;
+        cachedSnapshotRef.current = snapshot;
 
-      deleteSlot(slot: string): void {
-        const existing = adapterRef.current.loadSnapshot(scope);
-        if (!existing) return;
-        const next = { ...existing.slots };
-        delete next[slot];
-
-        if (Object.keys(next).length === 0) {
-          adapterRef.current.deleteSnapshot(scope);
+        if (!snapshot) {
+          adapter.deleteSnapshot(scope);
           return;
         }
 
-        adapterRef.current.saveSnapshot(scope, { ...existing, slots: next, updatedAt: Date.now() });
-      }
-    }),
-    [scope]
+        adapter.saveSnapshot(scope, snapshot);
+      };
+
+      return {
+        scope,
+
+        readSlot<T>(slot: string): T | undefined {
+          const snapshot = readSnapshot();
+          return snapshot?.slots[slot] as T | undefined;
+        },
+
+        writeSlot<T>(slot: string, value: T): void {
+          const existing = readSnapshot();
+          const snapshot: PageCacheSnapshot = existing
+            ? { ...existing, slots: { ...existing.slots, [slot]: value }, updatedAt: Date.now() }
+            : { version: 1, updatedAt: Date.now(), slots: { [slot]: value } };
+
+          writeSnapshot(snapshot);
+        },
+
+        deleteSlot(slot: string): void {
+          const existing = readSnapshot();
+          if (!existing) return;
+
+          const next = { ...existing.slots };
+          delete next[slot];
+
+          if (Object.keys(next).length === 0) {
+            writeSnapshot(null);
+            return;
+          }
+
+          writeSnapshot({ ...existing, slots: next, updatedAt: Date.now() });
+        }
+      };
+    },
+    [adapter, scope]
   );
+
+  if (storage !== 'session') {
+    throw new Error(`Unsupported page cache storage: ${storage}`);
+  }
 
   return <PageCacheContext.Provider value={value}>{children}</PageCacheContext.Provider>;
 }

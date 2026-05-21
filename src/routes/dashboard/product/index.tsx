@@ -6,7 +6,6 @@ import { buttonVariants } from '@/components/ui/button';
 import { ProductPageCacheBindings } from '@/features/products/components/product-page-cache-bindings';
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
-import { productInfoContent } from '@/config/infoconfig';
 import { PageCacheProvider } from '@/lib/page-cache';
 
 const productSearchSchema = z.object({
@@ -27,9 +26,6 @@ function ProductPage() {
   return (
     <PageCacheProvider scope='dashboard.product.list'>
       <PageContainer
-        pageTitle='Products'
-        pageDescription='Manage products (React Query + search params table pattern.)'
-        infoContent={productInfoContent}
         pageHeaderAction={
           <Link
             to='/dashboard/product/$productId'

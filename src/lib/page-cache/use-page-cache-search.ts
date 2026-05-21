@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParsedLocation } from '@tanstack/react-router';
 import { useCallbackRef } from '@/hooks/use-callback-ref';
 import { type PageCacheSlotValue, usePageCacheSlot } from './use-page-cache-slot';
@@ -38,6 +38,7 @@ export function usePageCacheSearch<TSearch extends PageCacheSlotValue = PageCach
   const [pendingRestoreHref, setPendingRestoreHref] = useState<string | null>(null);
   const shouldRestoreRef = useCallbackRef(shouldRestore);
   const restoreRef = useCallbackRef(restore);
+  const ownerPathnameRef = useRef<string | null>(null);
   const currentLocation = useMemo(
     () => ({
       href: location.href,
@@ -45,7 +46,7 @@ export function usePageCacheSearch<TSearch extends PageCacheSlotValue = PageCach
       search: location.search,
       searchStr: location.searchStr
     }),
-    [location.href, location.pathname, location.search, location.searchStr]
+    [location.href, location.pathname, location.searchStr]
   );
 
   const {
@@ -65,12 +66,14 @@ export function usePageCacheSearch<TSearch extends PageCacheSlotValue = PageCach
     if (hasResolvedRestore || pendingRestoreHref) return;
 
     if (!cachedValue) {
+      ownerPathnameRef.current = currentLocation.pathname;
       setHasResolvedRestore(true);
       setIsRestoring(false);
       return;
     }
 
     if (cachedValue.href === currentLocation.href || !shouldRestoreRef(currentLocation)) {
+      ownerPathnameRef.current = currentLocation.pathname;
       setHasResolvedRestore(true);
       setIsRestoring(false);
       return;
@@ -93,18 +96,22 @@ export function usePageCacheSearch<TSearch extends PageCacheSlotValue = PageCach
     if (!pendingRestoreHref) return;
     if (currentLocation.href !== pendingRestoreHref) return;
 
+    ownerPathnameRef.current = currentLocation.pathname;
     setPendingRestoreHref(null);
     setHasResolvedRestore(true);
     setIsRestoring(false);
-  }, [currentLocation.href, pendingRestoreHref]);
+  }, [currentLocation.href, currentLocation.pathname, pendingRestoreHref]);
 
   useEffect(() => {
     if (!isSlotReady || !hasResolvedRestore || pendingRestoreHref) return;
+    if (ownerPathnameRef.current !== null && currentLocation.pathname !== ownerPathnameRef.current) {
+      return;
+    }
+
     save();
   }, [
     currentLocation.href,
     currentLocation.pathname,
-    currentLocation.search,
     currentLocation.searchStr,
     hasResolvedRestore,
     isSlotReady,

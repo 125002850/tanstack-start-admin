@@ -45,9 +45,11 @@ export function ProductTable() {
     }
   });
 
+  // This subtree only mounts after the table query resolves.
   usePageCacheScroll({
     slot: 'table-scroll',
-    selector: PRODUCT_TABLE_SCROLL_TARGET_SELECTOR
+    selector: PRODUCT_TABLE_SCROLL_TARGET_SELECTOR,
+    ready: true
   });
 
   return (
