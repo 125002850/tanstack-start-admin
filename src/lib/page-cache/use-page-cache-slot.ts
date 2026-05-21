@@ -66,7 +66,7 @@ export function usePageCacheSlot<T extends PageCacheSlotValue>({
   const [isReady, setIsReady] = useState(!enabled);
   const readCurrentRef = useCallbackRef(readCurrent);
   const restoreRef = useCallbackRef(restore);
-  const debounceTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
 
   const cancelPendingSave = useCallback(() => {
     if (typeof window === 'undefined' || debounceTimerRef.current === null) return;

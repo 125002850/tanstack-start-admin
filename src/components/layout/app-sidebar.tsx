@@ -44,8 +44,8 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
   const [flyoutOpen, setFlyoutOpen] = React.useState(false);
   const menuItemRef = React.useRef<HTMLLIElement | null>(null);
   const lastInteractionRef = React.useRef<'pointer' | 'keyboard' | null>(null);
-  const openTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
-  const closeTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const openTimerRef = React.useRef<number | null>(null);
+  const closeTimerRef = React.useRef<number | null>(null);
 
   const clearOpenTimer = React.useCallback(() => {
     if (openTimerRef.current) {
