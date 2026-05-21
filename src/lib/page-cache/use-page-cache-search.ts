@@ -46,7 +46,7 @@ export function usePageCacheSearch<TSearch extends PageCacheSlotValue = PageCach
       search: location.search,
       searchStr: location.searchStr
     }),
-    [location.href, location.pathname, location.searchStr]
+    [location.href, location.pathname, location.searchStr, location.search]
   );
 
   const {
@@ -104,7 +104,10 @@ export function usePageCacheSearch<TSearch extends PageCacheSlotValue = PageCach
 
   useEffect(() => {
     if (!isSlotReady || !hasResolvedRestore || pendingRestoreHref) return;
-    if (ownerPathnameRef.current !== null && currentLocation.pathname !== ownerPathnameRef.current) {
+    if (
+      ownerPathnameRef.current !== null &&
+      currentLocation.pathname !== ownerPathnameRef.current
+    ) {
       return;
     }
 

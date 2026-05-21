@@ -47,7 +47,7 @@ function pruneScopeMap(map: ScopeMap): ScopeMap {
   const entries = Object.entries(map);
   if (entries.length <= MAX_SCOPES) return map;
 
-  const sorted = entries.sort((a, b) => a[1].updatedAt - b[1].updatedAt);
+  const sorted = entries.toSorted((a, b) => a[1].updatedAt - b[1].updatedAt);
   const keep = sorted.slice(entries.length - MAX_SCOPES);
   return Object.fromEntries(keep);
 }
