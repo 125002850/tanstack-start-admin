@@ -9,15 +9,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Cross2Icon } from '@radix-ui/react-icons';
+import type { DataTableFacetedFilterLabels } from '@/components/ui/table/data-table-faceted-filter';
+import type { DataTableViewOptionsLabels } from '@/components/ui/table/data-table-view-options';
+
+export interface DataTableToolbarLabels {
+  resetFiltersAriaLabel?: string;
+  resetFiltersText?: string;
+  viewOptions?: DataTableViewOptionsLabels;
+  facetedFilter?: DataTableFacetedFilterLabels;
+}
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
+  labels?: DataTableToolbarLabels;
 }
 
 export function DataTableToolbar<TData>({
   table,
   children,
   className,
+  labels,
   ...props
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -40,33 +51,34 @@ export function DataTableToolbar<TData>({
     >
       <div className='flex flex-1 flex-wrap items-center gap-2'>
         {columns.map((column) => (
-          <DataTableToolbarFilter key={column.id} column={column} />
+          <DataTableToolbarFilter key={column.id} column={column} labels={labels} />
         ))}
         {isFiltered && (
           <Button
-            aria-label='Reset filters'
+            aria-label={labels?.resetFiltersAriaLabel ?? '重置筛选条件'}
             variant='outline'
             size='sm'
             className='border-dashed'
             onClick={onReset}
           >
             <Cross2Icon />
-            Reset
+            {labels?.resetFiltersText ?? '重置筛选'}
           </Button>
         )}
       </div>
       <div className='flex items-center gap-2'>
         {children}
-        <DataTableViewOptions table={table} />
+        <DataTableViewOptions table={table} labels={labels?.viewOptions} />
       </div>
     </div>
   );
 }
 interface DataTableToolbarFilterProps<TData> {
   column: Column<TData>;
+  labels?: DataTableToolbarLabels;
 }
 
-function DataTableToolbarFilter<TData>({ column }: DataTableToolbarFilterProps<TData>) {
+function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilterProps<TData>) {
   {
     const columnMeta = column.columnDef.meta;
 
@@ -124,13 +136,14 @@ function DataTableToolbarFilter<TData>({ column }: DataTableToolbarFilterProps<T
               title={columnMeta.label ?? column.id}
               options={columnMeta.options ?? []}
               multiple={columnMeta.variant === 'multiSelect'}
+              labels={labels?.facetedFilter}
             />
           );
 
         default:
           return null;
       }
-    }, [column, columnMeta]);
+    }, [column, columnMeta, labels?.facetedFilter]);
 
     return onFilterRender();
   }

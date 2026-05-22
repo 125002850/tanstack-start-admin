@@ -12,17 +12,38 @@ import {
 import { cn } from '@/lib/utils';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
+export interface DataTablePaginationLabels {
+  selectedRowsText?: (selectedCount: number, totalCount: number) => string;
+  totalRowsText?: (totalCount: number) => string;
+  rowsPerPage?: string;
+  pageText?: (page: number, totalPages: number) => string;
+  goToFirstPage?: string;
+  goToPreviousPage?: string;
+  goToNextPage?: string;
+  goToLastPage?: string;
+}
+
 interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
   pageSizeOptions?: number[];
+  labels?: DataTablePaginationLabels;
 }
 
 export function DataTablePagination<TData>({
   table,
   pageSizeOptions = [10, 20, 30, 40, 50],
+  labels,
   className,
   ...props
 }: DataTablePaginationProps<TData>) {
+  const selectedRowsText =
+    labels?.selectedRowsText ??
+    ((selectedCount: number, totalCount: number) => `已选择 ${selectedCount} / ${totalCount} 行`);
+  const totalRowsText =
+    labels?.totalRowsText ?? ((totalCount: number) => `共 ${totalCount} 条数据`);
+  const pageText =
+    labels?.pageText ?? ((page: number, totalPages: number) => `第 ${page} / ${totalPages} 页`);
+
   return (
     <div
       className={cn(
@@ -34,16 +55,20 @@ export function DataTablePagination<TData>({
       <div className='text-muted-foreground flex-1 text-sm whitespace-nowrap'>
         {table.getFilteredSelectedRowModel().rows.length > 0 ? (
           <>
-            {table.getFilteredSelectedRowModel().rows.length} of{' '}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+            {selectedRowsText(
+              table.getFilteredSelectedRowModel().rows.length,
+              table.getFilteredRowModel().rows.length
+            )}
           </>
         ) : (
-          <>{table.getFilteredRowModel().rows.length} row(s) total.</>
+          <>{totalRowsText(table.getFilteredRowModel().rows.length)}</>
         )}
       </div>
       <div className='flex flex-col-reverse items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8'>
         <div className='flex items-center space-x-2'>
-          <p className='text-sm font-medium whitespace-nowrap'>Rows per page</p>
+          <p className='text-sm font-medium whitespace-nowrap'>
+            {labels?.rowsPerPage ?? '每页条数'}
+          </p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
@@ -63,11 +88,11 @@ export function DataTablePagination<TData>({
           </Select>
         </div>
         <div className='flex items-center justify-center text-sm font-medium'>
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          {pageText(table.getState().pagination.pageIndex + 1, table.getPageCount())}
         </div>
         <div className='flex items-center space-x-2'>
           <Button
-            aria-label='Go to first page'
+            aria-label={labels?.goToFirstPage ?? '前往第一页'}
             variant='outline'
             size='icon'
             className='hidden size-8 lg:flex'
@@ -77,7 +102,7 @@ export function DataTablePagination<TData>({
             <Icons.chevronsLeft />
           </Button>
           <Button
-            aria-label='Go to previous page'
+            aria-label={labels?.goToPreviousPage ?? '前往上一页'}
             variant='outline'
             size='icon'
             className='size-8'
@@ -87,7 +112,7 @@ export function DataTablePagination<TData>({
             <ChevronLeftIcon />
           </Button>
           <Button
-            aria-label='Go to next page'
+            aria-label={labels?.goToNextPage ?? '前往下一页'}
             variant='outline'
             size='icon'
             className='size-8'
@@ -97,7 +122,7 @@ export function DataTablePagination<TData>({
             <ChevronRightIcon />
           </Button>
           <Button
-            aria-label='Go to last page'
+            aria-label={labels?.goToLastPage ?? '前往最后一页'}
             variant='outline'
             size='icon'
             className='hidden size-8 lg:flex'

@@ -1,7 +1,10 @@
 import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
 import type * as React from 'react';
 
-import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
+import {
+  DataTablePagination,
+  type DataTablePaginationLabels
+} from '@/components/ui/table/data-table-pagination';
 import {
   Table,
   TableBody,
@@ -17,13 +20,17 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   actionBar?: React.ReactNode;
   scrollTargetId?: string;
+  emptyMessage?: string;
+  paginationLabels?: DataTablePaginationLabels;
 }
 
 export function DataTable<TData>({
   table,
   actionBar,
   children,
-  scrollTargetId
+  scrollTargetId,
+  emptyMessage = '暂无数据',
+  paginationLabels
 }: DataTableProps<TData>) {
   return (
     <div className='flex flex-1 flex-col space-y-4'>
@@ -35,8 +42,8 @@ export function DataTable<TData>({
             viewportProps={
               scrollTargetId
                 ? {
-                  'data-scroll-target-id': scrollTargetId
-                }
+                    'data-scroll-target-id': scrollTargetId
+                  }
                 : undefined
             }
           >
@@ -79,7 +86,7 @@ export function DataTable<TData>({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={table.getAllColumns().length} className='h-24 text-center'>
-                      No results.
+                      {emptyMessage}
                     </TableCell>
                   </TableRow>
                 )}
@@ -90,7 +97,7 @@ export function DataTable<TData>({
         </div>
       </div>
       <div className='flex flex-col gap-2.5'>
-        <DataTablePagination table={table} />
+        <DataTablePagination table={table} labels={paginationLabels} />
         {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
       </div>
     </div>

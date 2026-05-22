@@ -24,22 +24,22 @@ export default function ProductForm({
   const createMutation = useMutation({
     ...createProductMutation,
     onSuccess: () => {
-      toast.success('Product created successfully');
+      toast.success('产品创建成功');
       router.navigate({ to: PRODUCT_LIST_PATH });
     },
     onError: () => {
-      toast.error('Failed to create product');
+      toast.error('产品创建失败');
     }
   });
 
   const updateMutation = useMutation({
     ...updateProductMutation,
     onSuccess: () => {
-      toast.success('Product updated successfully');
+      toast.success('产品更新成功');
       router.navigate({ to: PRODUCT_LIST_PATH });
     },
     onError: () => {
-      toast.error('Failed to update product');
+      toast.error('产品更新失败');
     }
   });
 
@@ -83,8 +83,8 @@ export default function ProductForm({
           <form.Form className='space-y-8'>
             <FormFileUploadField
               name='image'
-              label='Product Image'
-              description='Upload a product image'
+              label='产品图片'
+              description='上传产品主图'
               maxSize={5 * 1024 * 1024}
               maxFiles={4}
             />
@@ -92,48 +92,48 @@ export default function ProductForm({
             <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
               <FormTextField
                 name='name'
-                label='Product Name'
+                label='产品名称'
                 required
-                placeholder='Enter product name'
+                placeholder='请输入产品名称'
                 validators={{
-                  onBlur: z.string().min(2, 'Product name must be at least 2 characters.')
+                  onBlur: z.string().min(2, '产品名称至少需要 2 个字符。')
                 }}
               />
 
               <FormSelectField
                 name='category'
-                label='Category'
+                label='产品分类'
                 required
                 options={categoryOptions}
-                placeholder='Select category'
+                placeholder='请选择产品分类'
                 validators={{
-                  onBlur: z.string().min(1, 'Please select a category')
+                  onBlur: z.string().min(1, '请选择产品分类。')
                 }}
               />
 
               <FormTextField
                 name='price'
-                label='Price'
+                label='价格'
                 required
                 type='number'
                 min={0}
                 step={0.01}
-                placeholder='Enter price'
+                placeholder='请输入价格'
                 validators={{
-                  onBlur: z.number({ message: 'Price is required' })
+                  onBlur: z.number({ message: '请输入产品价格。' })
                 }}
               />
             </div>
 
             <FormTextareaField
               name='description'
-              label='Description'
+              label='产品描述'
               required
-              placeholder='Enter product description'
+              placeholder='请输入产品描述'
               maxLength={500}
               rows={4}
               validators={{
-                onBlur: z.string().min(10, 'Description must be at least 10 characters.')
+                onBlur: z.string().min(10, '产品描述至少需要 10 个字符。')
               }}
             />
 
@@ -143,9 +143,9 @@ export default function ProductForm({
                 variant='outline'
                 onClick={() => router.navigate({ to: PRODUCT_LIST_PATH })}
               >
-                Back
+                返回列表
               </Button>
-              <form.SubmitButton>{isEdit ? 'Update Product' : 'Add Product'}</form.SubmitButton>
+              <form.SubmitButton>{isEdit ? '更新产品' : '新增产品'}</form.SubmitButton>
             </div>
           </form.Form>
         </form.AppForm>

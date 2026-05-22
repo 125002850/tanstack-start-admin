@@ -11,17 +11,26 @@ import {
 import { cn } from '@/lib/utils';
 import { ChevronDownIcon, ChevronUpIcon, CaretSortIcon, Cross2Icon } from '@radix-ui/react-icons';
 
+export interface DataTableColumnHeaderLabels {
+  ascText?: string;
+  descText?: string;
+  resetText?: string;
+  hideText?: string;
+}
+
 interface DataTableColumnHeaderProps<TData, TValue> extends React.ComponentProps<
   typeof DropdownMenuTrigger
 > {
   column: Column<TData, TValue>;
   title: string;
+  labels?: DataTableColumnHeaderLabels;
 }
 
 export function DataTableColumnHeader<TData, TValue>({
   column,
   title,
   className,
+  labels,
   ...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column.getCanSort() && !column.getCanHide()) {
@@ -56,7 +65,7 @@ export function DataTableColumnHeader<TData, TValue>({
               onClick={() => column.toggleSorting(false)}
             >
               <ChevronUpIcon />
-              Asc
+              {labels?.ascText ?? '升序'}
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               className='[&_svg]:text-muted-foreground relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto'
@@ -64,7 +73,7 @@ export function DataTableColumnHeader<TData, TValue>({
               onClick={() => column.toggleSorting(true)}
             >
               <ChevronDownIcon />
-              Desc
+              {labels?.descText ?? '降序'}
             </DropdownMenuCheckboxItem>
             {column.getIsSorted() && (
               <DropdownMenuItem
@@ -72,7 +81,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 onClick={() => column.clearSorting()}
               >
                 <Cross2Icon />
-                Reset
+                {labels?.resetText ?? '重置排序'}
               </DropdownMenuItem>
             )}
           </>
@@ -84,7 +93,7 @@ export function DataTableColumnHeader<TData, TValue>({
             onClick={() => column.toggleVisibility(false)}
           >
             <Icons.eyeOff />
-            Hide
+            {labels?.hideText ?? '隐藏列'}
           </DropdownMenuCheckboxItem>
         )}
       </DropdownMenuContent>

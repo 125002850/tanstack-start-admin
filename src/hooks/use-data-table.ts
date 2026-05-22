@@ -27,6 +27,10 @@ import type { ExtendedColumnSort } from '@/types/data-table';
 const ARRAY_SEPARATOR = ',';
 const DEBOUNCE_MS = 300;
 
+function asSearchReducer(reducer: (prev: Record<string, unknown>) => Record<string, unknown>) {
+  return reducer as never;
+}
+
 interface UseDataTableProps<TData>
   extends
     Omit<
@@ -94,11 +98,11 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       const newPagination =
         typeof updaterOrValue === 'function' ? updaterOrValue(pagination) : updaterOrValue;
       void navigate({
-        search: (prev: Record<string, unknown>) => ({
+        search: asSearchReducer((prev: Record<string, unknown>) => ({
           ...prev,
           page: newPagination.pageIndex + 1,
           perPage: newPagination.pageSize
-        }),
+        })),
         replace: history === 'replace'
       });
     },
@@ -123,13 +127,13 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       const newSorting =
         typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue;
       void navigate({
-        search: (prev: Record<string, unknown>) => ({
+        search: asSearchReducer((prev: Record<string, unknown>) => ({
           ...prev,
           sort:
             newSorting.length > 0
               ? serializeSortingState(newSorting as ExtendedColumnSort<TData>[])
               : undefined
-        }),
+        })),
         replace: history === 'replace'
       });
     },
@@ -166,8 +170,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const debouncedSetFilterValues = useDebouncedCallback(
     (values: Record<string, string | string[] | null>) => {
       void navigate({
-        search: (prev: Record<string, unknown>) => {
-          const next = { ...prev, page: 1 };
+        search: asSearchReducer((prev: Record<string, unknown>) => {
+          const next: Record<string, unknown> = { ...prev, page: 1 };
           for (const [key, value] of Object.entries(values)) {
             if (value === null || value === undefined) {
               delete next[key];
@@ -178,7 +182,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
             }
           }
           return next;
-        },
+        }),
         replace: history === 'replace'
       });
     },
@@ -190,15 +194,9 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
     return Object.entries(filterValues).reduce<ColumnFiltersState>((filters, [key, value]) => {
       if (value !== null) {
-        const processedValue = Array.isArray(value)
-          ? value
-          : typeof value === 'string' && /[^a-zA-Z0-9]/.test(value)
-            ? value.split(/[^a-zA-Z0-9]+/).filter(Boolean)
-            : [value];
-
         filters.push({
           id: key,
-          value: processedValue
+          value
         });
       }
       return filters;

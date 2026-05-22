@@ -15,11 +15,19 @@ import { cn } from '@/lib/utils';
 import * as React from 'react';
 import { CheckIcon, CaretSortIcon } from '@radix-ui/react-icons';
 
-interface DataTableViewOptionsProps<TData> {
-  table: Table<TData>;
+export interface DataTableViewOptionsLabels {
+  toggleColumnsAriaLabel?: string;
+  buttonText?: string;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
 }
 
-export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
+interface DataTableViewOptionsProps<TData> {
+  table: Table<TData>;
+  labels?: DataTableViewOptionsLabels;
+}
+
+export function DataTableViewOptions<TData>({ table, labels }: DataTableViewOptionsProps<TData>) {
   const columns = React.useMemo(
     () =>
       table
@@ -32,21 +40,21 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          aria-label='Toggle columns'
+          aria-label={labels?.toggleColumnsAriaLabel ?? '切换表格列显示'}
           variant='outline'
           size='sm'
           className='ml-auto hidden h-8 lg:flex'
         >
           <Icons.adjustments />
-          View
+          {labels?.buttonText ?? '显示列'}
           <CaretSortIcon className='ml-auto opacity-50' />
         </Button>
       </PopoverTrigger>
       <PopoverContent align='end' className='w-44 p-0'>
         <Command>
-          <CommandInput placeholder='Search columns...' />
+          <CommandInput placeholder={labels?.searchPlaceholder ?? '搜索列...'} />
           <CommandList>
-            <CommandEmpty>No columns found.</CommandEmpty>
+            <CommandEmpty>{labels?.emptyMessage ?? '未找到可显示的列'}</CommandEmpty>
             <CommandGroup>
               {columns.map((column) => (
                 <CommandItem

@@ -19,18 +19,28 @@ import { cn } from '@/lib/utils';
 import * as React from 'react';
 import { CheckIcon } from '@radix-ui/react-icons';
 
+export interface DataTableFacetedFilterLabels {
+  clearFilterAriaLabel?: (title?: string) => string;
+  selectedSummaryText?: (count: number) => string;
+  inputPlaceholder?: (title?: string) => string;
+  emptyMessage?: string;
+  clearFiltersText?: string;
+}
+
 interface DataTableFacetedFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
   title?: string;
   options: Option[];
   multiple?: boolean;
+  labels?: DataTableFacetedFilterLabels;
 }
 
 export function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
   options,
-  multiple
+  multiple,
+  labels
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const [open, setOpen] = React.useState(false);
 
@@ -76,7 +86,7 @@ export function DataTableFacetedFilter<TData, TValue>({
           {selectedValues?.size > 0 ? (
             <button
               type='button'
-              aria-label={`Clear ${title} filter`}
+              aria-label={labels?.clearFilterAriaLabel?.(title) ?? `清除${title ?? ''}筛选`}
               onClick={onReset}
               className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
             >
@@ -98,7 +108,8 @@ export function DataTableFacetedFilter<TData, TValue>({
               <div className='hidden items-center gap-1 lg:flex'>
                 {selectedValues.size > 2 ? (
                   <Badge variant='secondary' className='rounded-sm px-1 font-normal'>
-                    {selectedValues.size} selected
+                    {labels?.selectedSummaryText?.(selectedValues.size) ??
+                      `已选 ${selectedValues.size} 项`}
                   </Badge>
                 ) : (
                   options
@@ -120,9 +131,9 @@ export function DataTableFacetedFilter<TData, TValue>({
       </PopoverTrigger>
       <PopoverContent className='w-[12.5rem] p-0' align='start'>
         <Command>
-          <CommandInput placeholder={title} />
+          <CommandInput placeholder={labels?.inputPlaceholder?.(title) ?? `筛选${title ?? ''}`} />
           <CommandList className='max-h-full'>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>{labels?.emptyMessage ?? '未找到匹配项'}</CommandEmpty>
             <CommandGroup className='max-h-[18.75rem] overflow-x-hidden overflow-y-auto'>
               {options.map((option) => {
                 const isSelected = selectedValues.has(option.value);
@@ -151,7 +162,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem onSelect={() => onReset()} className='justify-center text-center'>
-                    Clear filters
+                    {labels?.clearFiltersText ?? '清除筛选'}
                   </CommandItem>
                 </CommandGroup>
               </>

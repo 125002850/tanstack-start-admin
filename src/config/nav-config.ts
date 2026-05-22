@@ -8,10 +8,10 @@ import { NavGroup } from '@/types';
  */
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
+    label: '概览',
     items: [
       {
-        title: 'Dashboard',
+        title: '仪表盘',
         url: '/dashboard/overview',
         icon: 'dashboard',
         isActive: false,
@@ -19,7 +19,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Product',
+        title: '产品',
         url: '/dashboard/product',
         icon: 'product',
         shortcut: ['p', 'p'],
@@ -27,7 +27,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Users',
+        title: '用户',
         url: '/dashboard/users',
         icon: 'teams',
         shortcut: ['u', 'u'],
@@ -35,7 +35,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Kanban',
+        title: '看板',
         url: '/dashboard/kanban',
         icon: 'kanban',
         shortcut: ['k', 'k'],
@@ -43,7 +43,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Chat',
+        title: '聊天',
         url: '/dashboard/chat',
         icon: 'chat',
         shortcut: ['c', 'c'],
@@ -53,32 +53,32 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
-    label: 'Elements',
+    label: '组件',
     items: [
       {
-        title: 'Forms',
+        title: '表单',
         url: '#',
         icon: 'forms',
         isActive: true,
         items: [
           {
-            title: 'Basic Form',
+            title: '基础表单',
             url: '/dashboard/forms/basic',
             icon: 'forms',
             shortcut: ['f', 'f']
           },
           {
-            title: 'Multi-Step Form',
+            title: '多步骤表单',
             url: '/dashboard/forms/multi-step',
             icon: 'forms'
           },
           {
-            title: 'Sheet & Dialog',
+            title: '抽屉与弹窗',
             url: '/dashboard/forms/sheet-form',
             icon: 'forms'
           },
           {
-            title: 'Advanced Patterns',
+            title: '高级模式',
             url: '/dashboard/forms/advanced',
             icon: 'forms'
           }
@@ -92,7 +92,7 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Icons',
+        title: '图标',
         url: '/dashboard/elements/icons',
         icon: 'palette',
         isActive: false,
@@ -104,13 +104,13 @@ export const navGroups: NavGroup[] = [
     label: '',
     items: [
       {
-        title: 'Account',
+        title: '账户',
         url: '#',
         icon: 'account',
         isActive: true,
         items: [
           {
-            title: 'Notifications',
+            title: '通知',
             url: '/dashboard/notifications',
             icon: 'notification',
             shortcut: ['n', 'n']

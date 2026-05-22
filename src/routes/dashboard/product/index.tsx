@@ -17,7 +17,7 @@ const productSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/dashboard/product/')({
-  head: () => ({ meta: [{ title: 'Dashboard: Products' }] }),
+  head: () => ({ meta: [{ title: '控制台：产品管理' }] }),
   validateSearch: zodValidator(productSearchSchema),
   component: ProductPage
 });
@@ -32,7 +32,7 @@ function ProductPage() {
             params={{ productId: 'new' }}
             className={cn(buttonVariants(), 'text-xs md:text-sm')}
           >
-            <Icons.add className='mr-2 h-4 w-4' /> Add New
+            <Icons.add className='mr-2 h-4 w-4' /> 新增产品
           </Link>
         }
       >

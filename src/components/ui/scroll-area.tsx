@@ -4,7 +4,9 @@ import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { cn } from '@/lib/utils';
 
 type ScrollAreaProps = React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
-  viewportProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport>;
+  viewportProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport> & {
+    [key: `data-${string}`]: string | number | undefined;
+  };
 };
 
 function ScrollArea({ className, children, viewportProps, ...props }: ScrollAreaProps) {

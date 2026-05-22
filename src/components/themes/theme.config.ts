@@ -10,7 +10,7 @@ export const THEMES = [
     value: 'claude'
   },
   {
-    name: 'Neobrutualism',
+    name: '野性主义',
     value: 'neobrutualism'
   },
   {
@@ -22,23 +22,23 @@ export const THEMES = [
     value: 'vercel'
   },
   {
-    name: 'Mono',
+    name: '单色',
     value: 'mono'
   },
   {
-    name: 'Notebook',
+    name: '笔记本',
     value: 'notebook'
   },
   {
-    name: 'Light Green',
+    name: '浅绿',
     value: 'light-green'
   },
   {
-    name: 'Zen',
+    name: '禅意',
     value: 'zen'
   },
   {
-    name: 'Astro Vista',
+    name: '星景',
     value: 'astro-vista'
   },
   {

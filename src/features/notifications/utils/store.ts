@@ -23,14 +23,14 @@ type NotificationState = {
 const mockNotifications: Notification[] = [
   {
     id: '1',
-    title: 'New team member joined',
-    body: 'Sarah Connor has joined the Engineering workspace.',
+    title: '有新团队成员加入',
+    body: 'Sarah Connor 已加入工程团队工作区。',
     status: 'unread',
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     actions: [
       {
         id: 'view',
-        label: 'View workspace',
+        label: '查看工作区',
         type: 'redirect',
         style: 'primary'
       }
@@ -38,14 +38,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '2',
-    title: 'New product added',
-    body: 'A new product "Dashboard Pro" has been added to the catalog.',
+    title: '新增了一个产品',
+    body: '新产品“Dashboard Pro”已添加到产品目录中。',
     status: 'unread',
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     actions: [
       {
         id: 'view-product',
-        label: 'View products',
+        label: '查看产品',
         type: 'redirect',
         style: 'primary'
       }
@@ -53,14 +53,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '3',
-    title: 'Billing cycle updated',
-    body: 'Your Pro plan has been renewed. Next invoice on April 24, 2026.',
+    title: '账单周期已更新',
+    body: '你的 Pro 计划已续费，下一张账单日期为 2026 年 4 月 24 日。',
     status: 'unread',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
     actions: [
       {
         id: 'billing',
-        label: 'View billing',
+        label: '查看账单',
         type: 'redirect',
         style: 'primary'
       }
@@ -68,14 +68,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '4',
-    title: 'Task assigned to you',
-    body: 'You have been assigned "Update dashboard analytics" on the Kanban board.',
+    title: '有任务分配给你',
+    body: '你已在看板中被分配“更新仪表盘分析数据”任务。',
     status: 'read',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     actions: [
       {
         id: 'open',
-        label: 'Open kanban',
+        label: '打开看板',
         type: 'redirect',
         style: 'primary'
       }
@@ -83,14 +83,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '5',
-    title: 'New message from Alex',
-    body: 'Alex sent you a message: "Hey, can we sync on the overview dashboard?"',
+    title: '收到 Alex 的新消息',
+    body: 'Alex 发来消息：“嘿，我们可以同步一下概览仪表盘吗？”',
     status: 'read',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
     actions: [
       {
         id: 'open-chat',
-        label: 'Open chat',
+        label: '打开聊天',
         type: 'redirect',
         style: 'primary'
       }

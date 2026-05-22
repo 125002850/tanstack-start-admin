@@ -20,7 +20,7 @@ export function ThemeSelector() {
   return (
     <div className='flex items-center gap-2'>
       <Label htmlFor='theme-selector' className='sr-only'>
-        Theme
+        主题
       </Label>
       <Select value={activeTheme} onValueChange={setActiveTheme}>
         <SelectTrigger
@@ -30,15 +30,15 @@ export function ThemeSelector() {
           <span className='text-muted-foreground hidden sm:block'>
             <Icons.palette />
           </span>
-          <span className='text-muted-foreground block sm:hidden'>Theme</span>
-          <SelectValue placeholder='Select a theme' />
+          <span className='text-muted-foreground block sm:hidden'>主题</span>
+          <SelectValue placeholder='选择主题' />
           <Kbd>T T</Kbd>
         </SelectTrigger>
         <SelectContent align='end'>
           {THEMES.length > 0 && (
             <>
               <SelectGroup>
-                <SelectLabel>themes</SelectLabel>
+                <SelectLabel>主题列表</SelectLabel>
                 {THEMES.map((theme) => (
                   <SelectItem key={theme.name} value={theme.value}>
                     {theme.name}

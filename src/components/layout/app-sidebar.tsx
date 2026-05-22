@@ -265,8 +265,8 @@ export default function AppSidebar() {
                   <Icons.logo className='size-4' />
                 </div>
                 <div className='grid flex-1 text-left text-sm leading-tight'>
-                  <span className='truncate font-semibold'>TanStack Start</span>
-                  <span className='text-muted-foreground truncate text-xs'>Dashboard</span>
+                  <span className='truncate font-semibold'>管理系统</span>
+                  <span className='text-muted-foreground truncate text-xs'>控制台</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -298,7 +298,7 @@ export default function AppSidebar() {
                     <Icons.account className='size-4' />
                   </div>
                   <div className='grid flex-1 text-left text-sm leading-tight'>
-                    <span className='truncate font-medium'>User</span>
+                    <span className='truncate font-medium'>用户</span>
                     <span className='text-muted-foreground truncate text-xs'>user@example.com</span>
                   </div>
                   <Icons.chevronsDown className='ml-auto size-4' />
@@ -315,13 +315,13 @@ export default function AppSidebar() {
                     onClick={() => router.navigate({ to: '/dashboard/notifications' })}
                   >
                     <Icons.notification className='mr-2 h-4 w-4' />
-                    Notifications
+                    通知
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Icons.logout className='mr-2 h-4 w-4' />
-                  Sign out
+                  退出登录
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

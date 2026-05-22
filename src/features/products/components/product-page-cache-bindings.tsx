@@ -38,7 +38,7 @@ function ProductPageCacheFallback({ isRestoring }: { isRestoring: boolean }) {
   return (
     <div className='flex flex-1 flex-col gap-4'>
       <p className='text-muted-foreground text-sm'>
-        {isRestoring ? 'Restoring cached product filters...' : 'Preparing product filters...'}
+        {isRestoring ? '正在恢复已缓存的产品筛选条件...' : '正在准备产品筛选条件...'}
       </p>
       <div className='flex animate-pulse flex-col gap-4'>
         <div className='bg-muted h-10 w-full rounded' />

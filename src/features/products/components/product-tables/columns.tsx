@@ -9,7 +9,7 @@ import { CATEGORY_OPTIONS } from './options';
 export const columns: ColumnDef<Product>[] = [
   {
     accessorKey: 'photo_url',
-    header: 'IMAGE',
+    header: '图片',
     cell: ({ row }) => {
       return (
         <div className='relative aspect-square'>
@@ -20,18 +20,21 @@ export const columns: ColumnDef<Product>[] = [
           />
         </div>
       );
+    },
+    meta: {
+      label: '图片'
     }
   },
   {
     id: 'name',
     accessorKey: 'name',
     header: ({ column }: { column: Column<Product, unknown> }) => (
-      <DataTableColumnHeader column={column} title='Name' />
+      <DataTableColumnHeader column={column} title='产品名称' />
     ),
     cell: ({ cell }) => <div>{cell.getValue<Product['name']>()}</div>,
     meta: {
-      label: 'Name',
-      placeholder: 'Search products...',
+      label: '产品名称',
+      placeholder: '搜索产品名称...',
       variant: 'text',
       icon: Icons.text
     },
@@ -42,33 +45,33 @@ export const columns: ColumnDef<Product>[] = [
     accessorKey: 'category',
     enableSorting: false,
     header: ({ column }: { column: Column<Product, unknown> }) => (
-      <DataTableColumnHeader column={column} title='Category' />
+      <DataTableColumnHeader column={column} title='产品分类' />
     ),
     cell: ({ cell }) => {
-      const status = cell.getValue<Product['category']>();
-      const Icon = status === 'active' ? Icons.circleCheck : Icons.xCircle;
+      const category = cell.getValue<Product['category']>();
 
-      return (
-        <Badge variant='outline' className='capitalize'>
-          <Icon />
-          {status}
-        </Badge>
-      );
+      return <Badge variant='outline'>{category}</Badge>;
     },
     enableColumnFilter: true,
     meta: {
-      label: 'categories',
+      label: '分类',
       variant: 'multiSelect',
       options: CATEGORY_OPTIONS
     }
   },
   {
     accessorKey: 'price',
-    header: 'PRICE'
+    header: '价格',
+    meta: {
+      label: '价格'
+    }
   },
   {
     accessorKey: 'description',
-    header: 'DESCRIPTION'
+    header: '产品描述',
+    meta: {
+      label: '产品描述'
+    }
   },
 
   {
