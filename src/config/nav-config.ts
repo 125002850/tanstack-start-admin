@@ -11,43 +11,43 @@ export const navGroups: NavGroup[] = [
     label: '概览',
     items: [
       {
+        id: 'dashboard-overview',
         title: '仪表盘',
         url: '/dashboard/overview',
         icon: 'dashboard',
-        isActive: false,
         shortcut: ['d', 'd'],
         items: []
       },
       {
+        id: 'dashboard-product',
         title: '产品',
         url: '/dashboard/product',
         icon: 'product',
         shortcut: ['p', 'p'],
-        isActive: false,
         items: []
       },
       {
+        id: 'dashboard-users',
         title: '用户',
         url: '/dashboard/users',
         icon: 'teams',
         shortcut: ['u', 'u'],
-        isActive: false,
         items: []
       },
       {
+        id: 'dashboard-kanban',
         title: '看板',
         url: '/dashboard/kanban',
         icon: 'kanban',
         shortcut: ['k', 'k'],
-        isActive: false,
         items: []
       },
       {
+        id: 'dashboard-chat',
         title: '聊天',
         url: '/dashboard/chat',
         icon: 'chat',
         shortcut: ['c', 'c'],
-        isActive: false,
         items: []
       }
     ]
@@ -56,28 +56,33 @@ export const navGroups: NavGroup[] = [
     label: '组件',
     items: [
       {
+        id: 'dashboard-forms',
         title: '表单',
-        url: '#',
+        url: '/dashboard/forms',
         icon: 'forms',
-        isActive: true,
+        linkable: false,
         items: [
           {
+            id: 'dashboard-forms-basic',
             title: '基础表单',
             url: '/dashboard/forms/basic',
             icon: 'forms',
             shortcut: ['f', 'f']
           },
           {
+            id: 'dashboard-forms-multi-step',
             title: '多步骤表单',
             url: '/dashboard/forms/multi-step',
             icon: 'forms'
           },
           {
+            id: 'dashboard-forms-sheet-form',
             title: '抽屉与弹窗',
             url: '/dashboard/forms/sheet-form',
             icon: 'forms'
           },
           {
+            id: 'dashboard-forms-advanced',
             title: '高级模式',
             url: '/dashboard/forms/advanced',
             icon: 'forms'
@@ -85,17 +90,17 @@ export const navGroups: NavGroup[] = [
         ]
       },
       {
+        id: 'dashboard-react-query',
         title: 'React Query',
         url: '/dashboard/react-query',
         icon: 'code',
-        isActive: false,
         items: []
       },
       {
+        id: 'dashboard-elements-icons',
         title: '图标',
         url: '/dashboard/elements/icons',
         icon: 'palette',
-        isActive: false,
         items: []
       }
     ]
@@ -104,12 +109,14 @@ export const navGroups: NavGroup[] = [
     label: '',
     items: [
       {
+        id: 'account',
         title: '账户',
-        url: '#',
+        url: '/dashboard/notifications',
         icon: 'account',
-        isActive: true,
+        linkable: false,
         items: [
           {
+            id: 'dashboard-notifications',
             title: '通知',
             url: '/dashboard/notifications',
             icon: 'notification',

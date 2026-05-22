@@ -40,9 +40,10 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
   const hasActiveChild = item.items?.some((subItem) => pathname === subItem.url) ?? false;
   const isActive = pathname === item.url || hasActiveChild;
   const isCollapsedDesktop = state === 'collapsed' && !isMobile;
-  const [open, setOpen] = React.useState(() => item.isActive || hasActiveChild);
+  const [open, setOpen] = React.useState(() => hasActiveChild);
   const [flyoutOpen, setFlyoutOpen] = React.useState(false);
   const menuItemRef = React.useRef<HTMLLIElement | null>(null);
+  const flyoutContentRef = React.useRef<HTMLDivElement | null>(null);
   const lastInteractionRef = React.useRef<'pointer' | 'keyboard' | null>(null);
   const openTimerRef = React.useRef<number | null>(null);
   const closeTimerRef = React.useRef<number | null>(null);
@@ -68,6 +69,17 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
     }
   }, []);
 
+  const releaseFlyoutFocus = React.useCallback(() => {
+    const activeElement = document.activeElement;
+    const content = flyoutContentRef.current;
+
+    if (content && activeElement instanceof HTMLElement && content.contains(activeElement)) {
+      activeElement.blur();
+    }
+
+    blurTriggerIfFocused();
+  }, [blurTriggerIfFocused]);
+
   const scheduleFlyoutOpen = React.useCallback(() => {
     lastInteractionRef.current = 'pointer';
     clearCloseTimer();
@@ -85,18 +97,9 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
     }, 220);
   }, [clearCloseTimer, clearOpenTimer]);
 
-  const handleFlyoutOpenChange = React.useCallback(
-    (nextOpen: boolean) => {
-      setFlyoutOpen(nextOpen);
-
-      if (lastInteractionRef.current === 'pointer') {
-        requestAnimationFrame(() => {
-          blurTriggerIfFocused();
-        });
-      }
-    },
-    [blurTriggerIfFocused]
-  );
+  const handleFlyoutOpenChange = React.useCallback((nextOpen: boolean) => {
+    setFlyoutOpen(nextOpen);
+  }, []);
 
   React.useEffect(() => {
     return () => {
@@ -110,6 +113,20 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
       setOpen(true);
     }
   }, [hasActiveChild]);
+
+  React.useEffect(() => {
+    if (!flyoutOpen || lastInteractionRef.current !== 'pointer') {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      releaseFlyoutFocus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [flyoutOpen, releaseFlyoutFocus]);
 
   if (!hasChildren) {
     return (
@@ -151,6 +168,7 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
+            ref={flyoutContentRef}
             side='right'
             align='start'
             sideOffset={6}
@@ -161,18 +179,13 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
                 blurTriggerIfFocused();
               }
             }}
-            onOpenAutoFocus={(event) => {
-              if (lastInteractionRef.current === 'pointer') {
-                event.preventDefault();
-              }
-            }}
             onMouseEnter={clearCloseTimer}
             onMouseLeave={scheduleFlyoutClose}
           >
             <DropdownMenuLabel className='text-muted-foreground px-2 py-1 text-xs font-semibold tracking-[0.12em] uppercase'>
               {item.title}
             </DropdownMenuLabel>
-            {item.url !== '#' && (
+            {item.linkable !== false && (
               <>
                 <DropdownMenuItem asChild className='rounded-md px-2 py-2'>
                   <Link to={item.url} className='flex items-center gap-2'>

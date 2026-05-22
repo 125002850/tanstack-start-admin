@@ -9,17 +9,13 @@ export interface PermissionCheck {
 }
 
 export interface NavItem {
-  title: string;
-  url: string;
-  disabled?: boolean;
-  external?: boolean;
-  shortcut?: [string, string];
-  icon?: keyof typeof Icons;
-  label?: string;
-  description?: string;
-  isActive?: boolean;
-  items?: NavItem[];
-  access?: PermissionCheck;
+  id: string
+  title: string
+  url: string
+  linkable?: boolean
+  shortcut?: [string, string]
+  icon?: keyof typeof Icons
+  items?: NavItem[]
 }
 
 export interface NavGroup {

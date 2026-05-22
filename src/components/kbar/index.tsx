@@ -20,11 +20,11 @@ export default function KBar({ children }: { children: React.ReactNode }) {
     const allItems = filteredGroups.flatMap((group) => group.items);
 
     return allItems.flatMap((navItem) => {
-      // Only include base action if the navItem has a real URL and is not just a container
+      // Only include base action if the navItem is linkable (not a non-navigable container)
       const baseAction =
-        navItem.url !== '#'
+        navItem.linkable !== false
           ? {
-              id: `${navItem.title.toLowerCase()}Action`,
+              id: navItem.id,
               name: navItem.title,
               shortcut: navItem.shortcut,
               keywords: navItem.title.toLowerCase(),
@@ -37,7 +37,7 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       // Map child items into actions
       const childActions =
         navItem.items?.map((childItem) => ({
-          id: `${childItem.title.toLowerCase()}Action`,
+          id: childItem.id,
           name: childItem.title,
           shortcut: childItem.shortcut,
           keywords: childItem.title.toLowerCase(),
