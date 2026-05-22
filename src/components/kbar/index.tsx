@@ -1,13 +1,17 @@
-import { navGroups } from '@/config/nav-config';
 import { KBarAnimator, KBarPortal, KBarPositioner, KBarProvider, KBarSearch } from 'kbar';
 import { useRouter } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import { buildNavGroupsFromRoutes } from '@/lib/router/route-nav';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const navGroups = useMemo(
+    () => buildNavGroupsFromRoutes(router.routesById),
+    [router.routesById],
+  );
   const filteredGroups = useFilteredNavGroups(navGroups);
 
   // These action are for the navigation
@@ -34,17 +38,19 @@ export default function KBar({ children }: { children: React.ReactNode }) {
             }
           : null;
 
-      // Map child items into actions
+      // Map child items into actions, only for linkable children
       const childActions =
-        navItem.items?.map((childItem) => ({
-          id: childItem.id,
-          name: childItem.title,
-          shortcut: childItem.shortcut,
-          keywords: childItem.title.toLowerCase(),
-          section: navItem.title,
-          subtitle: `前往 ${childItem.title}`,
-          perform: () => navigateTo(childItem.url)
-        })) ?? [];
+        navItem.items
+          ?.filter((childItem) => childItem.linkable !== false)
+          .map((childItem) => ({
+            id: childItem.id,
+            name: childItem.title,
+            shortcut: childItem.shortcut,
+            keywords: childItem.title.toLowerCase(),
+            section: navItem.title,
+            subtitle: `前往 ${childItem.title}`,
+            perform: () => navigateTo(childItem.url)
+          })) ?? [];
 
       // Return only valid actions (ignoring null base actions for containers)
       return baseAction ? [baseAction, ...childActions] : childActions;

@@ -8,8 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { navGroups } from '@/config/nav-config';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import { buildNavGroupsFromRoutes } from '@/lib/router/route-nav';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
 import { Link } from '@tanstack/react-router';
@@ -129,13 +129,21 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
   }, [flyoutOpen, releaseFlyoutFocus]);
 
   if (!hasChildren) {
+    const isLinkable = item.linkable !== false
     return (
       <SidebarMenuItem>
-        <SidebarMenuButton asChild tooltip={item.title} isActive={isActive}>
-          <Link to={item.url}>
-            {item.icon && <Icon />}
-            <span>{item.title}</span>
-          </Link>
+        <SidebarMenuButton asChild={isLinkable} tooltip={item.title} isActive={isActive}>
+          {isLinkable ? (
+            <Link to={item.url}>
+              {item.icon && <Icon />}
+              <span>{item.title}</span>
+            </Link>
+          ) : (
+            <span className='flex items-center gap-2'>
+              {item.icon && <Icon />}
+              <span>{item.title}</span>
+            </span>
+          )}
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -199,26 +207,39 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
             <DropdownMenuGroup>
               {item.items?.map((subItem) => {
                 const isSubItemActive = pathname === subItem.url;
+                const isSubLinkable = subItem.linkable !== false;
 
                 return (
                   <DropdownMenuItem
-                    key={subItem.title}
-                    asChild
+                    key={subItem.id}
+                    asChild={isSubLinkable}
                     className={cn(
                       'rounded-md px-2 py-2',
                       isSubItemActive && 'bg-accent text-accent-foreground'
                     )}
                   >
-                    <Link to={subItem.url} className='flex items-center gap-3'>
-                      <Icons.circle
-                        className={cn(
-                          'size-2 fill-current stroke-none',
-                          isSubItemActive ? 'text-primary' : 'text-muted-foreground/50'
-                        )}
-                      />
-                      <span className='flex-1 truncate'>{subItem.title}</span>
-                      {isSubItemActive && <Icons.check className='size-4 text-primary' />}
-                    </Link>
+                    {isSubLinkable ? (
+                      <Link to={subItem.url} className='flex items-center gap-3'>
+                        <Icons.circle
+                          className={cn(
+                            'size-2 fill-current stroke-none',
+                            isSubItemActive ? 'text-primary' : 'text-muted-foreground/50'
+                          )}
+                        />
+                        <span className='flex-1 truncate'>{subItem.title}</span>
+                        {isSubItemActive && <Icons.check className='size-4 text-primary' />}
+                      </Link>
+                    ) : (
+                      <span className='flex items-center gap-3'>
+                        <Icons.circle
+                          className={cn(
+                            'size-2 fill-current stroke-none',
+                            isSubItemActive ? 'text-primary' : 'text-muted-foreground/50'
+                          )}
+                        />
+                        <span className='flex-1 truncate'>{subItem.title}</span>
+                      </span>
+                    )}
                   </DropdownMenuItem>
                 );
               })}
@@ -246,15 +267,22 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
         </CollapsibleTrigger>
         <CollapsibleContent>
           <SidebarMenuSub>
-            {item.items?.map((subItem) => (
-              <SidebarMenuSubItem key={subItem.title}>
-                <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
-                  <Link to={subItem.url}>
-                    <span>{subItem.title}</span>
-                  </Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            ))}
+            {item.items?.map((subItem) => {
+              const isSubLinkable = subItem.linkable !== false;
+              return (
+                <SidebarMenuSubItem key={subItem.id}>
+                  <SidebarMenuSubButton asChild={isSubLinkable} isActive={pathname === subItem.url}>
+                    {isSubLinkable ? (
+                      <Link to={subItem.url}>
+                        <span>{subItem.title}</span>
+                      </Link>
+                    ) : (
+                      <span>{subItem.title}</span>
+                    )}
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
           </SidebarMenuSub>
         </CollapsibleContent>
       </SidebarMenuItem>
@@ -265,6 +293,10 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
 export default function AppSidebar() {
   const { pathname } = useLocation();
   const router = useRouter();
+  const navGroups = React.useMemo(
+    () => buildNavGroupsFromRoutes(router.routesById),
+    [router.routesById],
+  );
   const filteredGroups = useFilteredNavGroups(navGroups);
 
   return (
