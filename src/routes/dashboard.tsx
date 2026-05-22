@@ -5,8 +5,15 @@ import Header from '@/components/layout/header';
 import { InfoSidebar } from '@/components/layout/info-sidebar';
 import { InfobarProvider } from '@/components/ui/infobar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+
+const staticData = defineAppRouteStaticData({
+  label: '控制台',
+  breadcrumb: { label: '控制台' },
+});
 
 export const Route = createFileRoute('/dashboard')({
+  staticData,
   head: () => ({
     meta: [
       { title: 'TanStack Dashboard Starter' },

@@ -7,6 +7,19 @@ import { ProductPageCacheBindings } from '@/features/products/components/product
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
 import { PageCacheProvider } from '@/lib/page-cache';
+import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+
+const staticData = defineAppRouteStaticData({
+  label: '产品',
+  documentTitle: '控制台：产品管理',
+  nav: {
+    visible: true,
+    group: 'overview',
+    order: 20,
+    icon: 'product',
+    shortcut: ['p', 'p'],
+  },
+});
 
 const productSearchSchema = z.object({
   page: z.number().optional().default(1),
@@ -17,7 +30,8 @@ const productSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/dashboard/product/')({
-  head: () => ({ meta: [{ title: '控制台：产品管理' }] }),
+  staticData,
+  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
   validateSearch: zodValidator(productSearchSchema),
   component: ProductPage
 });

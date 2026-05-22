@@ -1,9 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router';
 import PageContainer from '@/components/layout/page-container';
 import DemoForm from '@/components/forms/demo-form';
+import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+
+const staticData = defineAppRouteStaticData({
+  label: '基础表单',
+  documentTitle: 'Dashboard: Basic Form',
+  nav: {
+    visible: true,
+    group: 'components',
+    order: 11,
+    parentId: '/dashboard/forms',
+    icon: 'forms',
+    shortcut: ['f', 'f'],
+  },
+});
 
 export const Route = createFileRoute('/dashboard/forms/basic')({
-  head: () => ({ meta: [{ title: 'Dashboard: Basic Form' }] }),
+  staticData,
+  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
   component: () => (
     <PageContainer
       pageTitle='Basic Form'

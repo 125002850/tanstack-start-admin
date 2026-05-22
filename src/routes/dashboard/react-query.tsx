@@ -5,9 +5,22 @@ import PageContainer from '@/components/layout/page-container';
 import { Suspense } from 'react';
 import { PokemonSkeleton } from '@/features/react-query-demo/components/pokemon-skeleton';
 import { reactQueryInfoContent } from '@/features/react-query-demo/info-content';
+import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+
+const staticData = defineAppRouteStaticData({
+  label: 'React Query',
+  documentTitle: 'Dashboard: React Query',
+  nav: {
+    visible: true,
+    group: 'components',
+    order: 20,
+    icon: 'code',
+  },
+});
 
 export const Route = createFileRoute('/dashboard/react-query')({
-  head: () => ({ meta: [{ title: 'Dashboard: React Query' }] }),
+  staticData,
+  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
   loader: async ({ context: { queryClient } }) => {
     await queryClient.ensureQueryData(pokemonOptions(25));
   },

@@ -14,8 +14,21 @@ import { BarGraph } from '@/features/overview/components/bar-graph';
 import { RecentSales } from '@/features/overview/components/recent-sales';
 import { AreaGraph } from '@/features/overview/components/area-graph';
 import { PieGraph } from '@/features/overview/components/pie-graph';
+import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+
+const staticData = defineAppRouteStaticData({
+  label: '仪表盘',
+  nav: {
+    visible: true,
+    group: 'overview',
+    order: 10,
+    icon: 'dashboard',
+    shortcut: ['d', 'd'],
+  },
+});
 
 export const Route = createFileRoute('/dashboard/overview')({
+  staticData,
   component: OverviewPage
 });
 
