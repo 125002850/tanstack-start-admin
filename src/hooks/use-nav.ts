@@ -24,12 +24,12 @@ export function useFilteredNavGroups(groups: NavGroup[]) {
   const filteredItems = useFilteredNavItems(allItems);
 
   return useMemo(() => {
-    const filteredSet = new Set(filteredItems.map((item) => item.title));
+    const filteredSet = new Set(filteredItems.map((item) => item.id));
     return groups
       .map((group) => ({
         ...group,
         items: filteredItems.filter((item) =>
-          group.items.some((gi) => gi.title === item.title && filteredSet.has(gi.title))
+          group.items.some((gi) => gi.id === item.id && filteredSet.has(gi.id))
         )
       }))
       .filter((group) => group.items.length > 0);
