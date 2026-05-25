@@ -1,4 +1,3 @@
-import type { AnyRoute } from '@tanstack/react-router'
 import type { NavGroup, NavItem } from '@/types'
 import {
   getAppRouteStaticData,
@@ -22,14 +21,21 @@ interface RouteEntry {
   meta: ReturnType<typeof getAppRouteStaticData> & {}
 }
 
-export function buildNavGroupsFromRoutes(
-  routesById: Record<string, AnyRoute>,
+interface RouteNavSource {
+  id: string
+  fullPath?: string
+  options?: { staticData?: unknown }
+  staticData?: unknown
+}
+
+export function buildNavGroupsFromRoutes<TRoutes extends object>(
+  routesById: TRoutes,
 ): NavGroup[] {
   const entries: RouteEntry[] = []
   const entriesByFullPath = new Map<string, RouteEntry>()
 
-  for (const route of Object.values(routesById)) {
-    const fullPath = (route as Record<string, unknown>).fullPath as string | undefined
+  for (const route of Object.values(routesById) as RouteNavSource[]) {
+    const { fullPath, id } = route
     if (!fullPath || !fullPath.startsWith('/dashboard')) continue
 
     const meta = getAppRouteStaticData(route)
@@ -39,7 +45,7 @@ export function buildNavGroupsFromRoutes(
     const entry: RouteEntry = {
       fullPath,
       normalizedPath,
-      id: (route as Record<string, unknown>).id as string,
+      id,
       meta,
     }
     entries.push(entry)
