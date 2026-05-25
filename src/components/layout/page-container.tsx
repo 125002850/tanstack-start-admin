@@ -65,6 +65,7 @@ export default function PageContainer({
 
   const content = isLoading ? <PageSkeleton /> : children;
 
+  // Explicit props still win. Route metadata only provides defaults for route-owned page chrome.
   const resolvedTitle = pageTitle ?? deepestStaticData?.page?.title ?? deepestStaticData?.label ?? '';
   const resolvedDescription = pageDescription ?? deepestStaticData?.page?.description ?? '';
   const resolvedInfoContent = infoContent ?? deepestStaticData?.page?.infoContent;

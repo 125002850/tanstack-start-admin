@@ -26,13 +26,16 @@ export interface AppBreadcrumbData {
 }
 
 export interface AppPageData {
+  // Rendered by PageContainer as the in-page heading, distinct from the document title.
   title?: string
   description?: string
   infoContent?: InfobarContent
 }
 
 export interface AppRouteStaticData {
+  // Human-readable route label used by navigation and as the PageContainer title fallback.
   label: string
+  // Browser document title generated through defineRouteMeta(). Falls back to label when omitted.
   title?: string
   breadcrumb?: AppBreadcrumbData
   nav?: AppNavStaticData
@@ -42,6 +45,7 @@ export interface AppRouteStaticData {
 export function defineRouteMeta<T extends AppRouteStaticData>(data: T) {
   return {
     staticData: data,
+    // Keep the common case declarative: route-local metadata plus a default document title.
     head: (): { meta: [{ title: string }] } => ({
       meta: [{ title: data.title ?? data.label }],
     }),
@@ -65,6 +69,7 @@ export function isAppRouteStaticData(data: unknown): data is AppRouteStaticData 
 export function getAppRouteStaticData(
   route: { options?: { staticData?: unknown }; staticData?: unknown }
 ): AppRouteStaticData | undefined {
+  // TanStack Router keeps runtime static data on route.options.staticData.
   const data = route.options?.staticData ?? route.staticData
   if (isAppRouteStaticData(data)) {
     return data
