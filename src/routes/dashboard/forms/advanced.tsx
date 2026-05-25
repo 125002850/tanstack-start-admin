@@ -13,16 +13,17 @@ const staticData = defineAppRouteStaticData({
     parentId: '/dashboard/forms',
     icon: 'forms',
   },
+  page: {
+    title: 'Advanced Form Patterns',
+    description: 'Linked fields, async validation, dynamic rows, nested objects, cross-field validation, and form-level errors.',
+  },
 });
 
 export const Route = createFileRoute('/dashboard/forms/advanced')({
   staticData,
   head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
   component: () => (
-    <PageContainer
-      pageTitle='Advanced Form Patterns'
-      pageDescription='Linked fields, async validation, dynamic rows, nested objects, cross-field validation, and form-level errors.'
-    >
+    <PageContainer>
       <AdvancedFormPatterns />
     </PageContainer>
   )

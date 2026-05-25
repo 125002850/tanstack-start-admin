@@ -16,6 +16,11 @@ const staticData = defineAppRouteStaticData({
     order: 20,
     icon: 'code',
   },
+  page: {
+    title: 'React Query',
+    description: 'Server prefetch + client hydration + suspense query pattern.',
+    infoContent: reactQueryInfoContent,
+  },
 });
 
 export const Route = createFileRoute('/dashboard/react-query')({
@@ -29,11 +34,7 @@ export const Route = createFileRoute('/dashboard/react-query')({
 
 function ReactQueryPage() {
   return (
-    <PageContainer
-      pageTitle='React Query'
-      pageDescription='Server prefetch + client hydration + suspense query pattern.'
-      infoContent={reactQueryInfoContent}
-    >
+    <PageContainer>
       <Suspense fallback={<PokemonSkeleton />}>
         <PokemonInfo />
       </Suspense>

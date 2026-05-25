@@ -1,4 +1,5 @@
 import type { Icons } from '@/components/icons'
+import type { InfobarContent } from '@/components/ui/infobar'
 
 export const NAV_GROUP_META = {
   overview: { label: '概览', order: 10 },
@@ -25,7 +26,9 @@ export interface AppBreadcrumbData {
 }
 
 export interface AppPageData {
+  title?: string
   description?: string
+  infoContent?: InfobarContent
 }
 
 export interface AppRouteStaticData {
@@ -55,10 +58,11 @@ export function isAppRouteStaticData(data: unknown): data is AppRouteStaticData 
 }
 
 export function getAppRouteStaticData(
-  route: { staticData?: unknown }
+  route: { options?: { staticData?: unknown }; staticData?: unknown }
 ): AppRouteStaticData | undefined {
-  if (isAppRouteStaticData(route.staticData)) {
-    return route.staticData
+  const data = route.options?.staticData ?? route.staticData
+  if (isAppRouteStaticData(data)) {
+    return data
   }
   return undefined
 }

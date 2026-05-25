@@ -12,6 +12,10 @@ const staticData = defineAppRouteStaticData({
     icon: 'kanban',
     shortcut: ['k', 'k'],
   },
+  page: {
+    title: 'Kanban',
+    description: 'Manage tasks with drag and drop',
+  },
 });
 
 export const Route = createFileRoute('/dashboard/kanban')({

@@ -8,22 +8,22 @@
 
 ### 技术栈
 
-| 类别 | 技术 |
-| ---- | ---- |
-| 框架 | [TanStack Start](https://tanstack.com/start) |
-| 语言 | [TypeScript](https://www.typescriptlang.org) |
-| 构建工具 | [Vite 7](https://vite.dev) |
-| 部署层 | [Nitro](https://nitro.build)（Vercel、Cloudflare、Node.js） |
-| 样式方案 | [Tailwind CSS v4](https://tailwindcss.com) |
-| 组件体系 | [Shadcn-ui](https://ui.shadcn.com) |
-| 路由 | [TanStack Router](https://tanstack.com/router)（基于文件、类型安全） |
-| 数据获取 | [TanStack React Query](https://tanstack.com/query) |
-| 表格 | [TanStack Table](https://tanstack.com/table) |
-| 表单 | [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev) |
-| 图表 | [Recharts](https://recharts.org) |
-| 状态管理 | [Zustand](https://zustand-demo.pmnd.rs) |
-| 命令面板 | [kbar](https://kbar.vercel.app/) |
-| 主题系统 | [tweakcn](https://tweakcn.com/) |
+| 类别          | 技术                                                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| 框架          | [TanStack Start](https://tanstack.com/start)                                                          |
+| 语言          | [TypeScript](https://www.typescriptlang.org)                                                          |
+| 构建工具      | [Vite 7](https://vite.dev)                                                                            |
+| 部署层        | [Nitro](https://nitro.build)（Vercel、Cloudflare、Node.js）                                           |
+| 样式方案      | [Tailwind CSS v4](https://tailwindcss.com)                                                            |
+| 组件体系      | [Shadcn-ui](https://ui.shadcn.com)                                                                    |
+| 路由          | [TanStack Router](https://tanstack.com/router)（基于文件、类型安全）                                  |
+| 数据获取      | [TanStack React Query](https://tanstack.com/query)                                                    |
+| 表格          | [TanStack Table](https://tanstack.com/table)                                                          |
+| 表单          | [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev)                                   |
+| 图表          | [Recharts](https://recharts.org)                                                                      |
+| 状态管理      | [Zustand](https://zustand-demo.pmnd.rs)                                                               |
+| 命令面板      | [kbar](https://kbar.vercel.app/)                                                                      |
+| 主题系统      | [tweakcn](https://tweakcn.com/)                                                                       |
 | Lint / 格式化 | [OxLint](https://oxc.rs/docs/guide/usage/linter) / [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) |
 
 ## 功能特性
@@ -58,18 +58,18 @@
 
 ## 页面说明
 
-| 页面 | 说明 |
-| :--- | :--- |
-| [数据概览](/dashboard/overview) | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离 |
-| [产品列表（表格）](/dashboard/product) | 基于 TanStack Table + React Query，结合路由预取、客户端缓存和 URL 搜索参数实现搜索、筛选与分页 |
-| [新建产品表单](/dashboard/product/new) | 使用 TanStack Form + Zod，并通过 `useMutation` 完成新增与编辑，成功后做缓存失效处理 |
-| [用户列表（表格）](/dashboard/users) | 用户表格页，使用 React Query + URL 状态模式，整体架构与产品模块保持一致 |
-| [React Query 示例](/dashboard/react-query) | 以 Pokemon API 为例，演示 route loader + `useSuspenseQuery` + 客户端缓存模式 |
-| [Kanban 看板](/dashboard/kanban) | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示 |
-| [聊天](/dashboard/chat) | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力 |
-| [通知中心](/dashboard/notifications) | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面 |
-| [表单示例](/dashboard/forms/basic) | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式 |
-| [未找到页面](/notfound) | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面 |
+| 页面                                       | 说明                                                                                           |
+| :----------------------------------------- | :--------------------------------------------------------------------------------------------- |
+| [数据概览](/dashboard/overview)            | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离               |
+| [产品列表（表格）](/dashboard/product)     | 基于 TanStack Table + React Query，结合路由预取、客户端缓存和 URL 搜索参数实现搜索、筛选与分页 |
+| [新建产品表单](/dashboard/product/new)     | 使用 TanStack Form + Zod，并通过 `useMutation` 完成新增与编辑，成功后做缓存失效处理            |
+| [用户列表（表格）](/dashboard/users)       | 用户表格页，使用 React Query + URL 状态模式，整体架构与产品模块保持一致                        |
+| [React Query 示例](/dashboard/react-query) | 以 Pokemon API 为例，演示 route loader + `useSuspenseQuery` + 客户端缓存模式                   |
+| [Kanban 看板](/dashboard/kanban)           | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                                 |
+| [聊天](/dashboard/chat)                    | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                                       |
+| [通知中心](/dashboard/notifications)       | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                                     |
+| [表单示例](/dashboard/forms/basic)         | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                                      |
+| [未找到页面](/notfound)                    | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面                         |
 
 ## 按功能划分的目录结构
 
@@ -110,7 +110,7 @@ src/
 │
 ├── lib/                           # 核心工具（query-client、parsers 等）
 ├── hooks/                         # 自定义 hooks（use-data-table、use-media-query 等）
-├── config/                        # 导航、infobar、data table 配置
+├── config/                        # infobar、data table 等配置
 ├── constants/                     # Mock 数据
 ├── styles/                        # 全局样式与主题文件
 │   └── themes/                    # 各主题独立 CSS（OKLCH）
@@ -184,12 +184,12 @@ nitro({ preset: 'netlify' });
 
 ## 与 Next.js 版本的主要区别
 
-| 概念 | Next.js | TanStack Start |
-| ---- | ------- | -------------- |
-| 路由 | App Router (`app/`) | 基于文件的路由（`routes/`），并带有类型安全参数 |
-| 数据获取 | Server Components + `HydrationBoundary` | Route `loader` + `useSuspenseQuery` |
-| 布局 | `layout.tsx` 嵌套 | 基于 `<Outlet />` 的布局路由 |
-| 服务端代码 | `'use server'` actions | `createServerFn()` |
-| 构建工具 | Webpack/Turbopack | Vite |
-| 部署 | `next start` | Nitro（可部署到多种平台） |
-| URL 状态 | nuqs | TanStack Router `useSearch()` + `validateSearch` |
+| 概念       | Next.js                                 | TanStack Start                                   |
+| ---------- | --------------------------------------- | ------------------------------------------------ |
+| 路由       | App Router (`app/`)                     | 基于文件的路由（`routes/`），并带有类型安全参数  |
+| 数据获取   | Server Components + `HydrationBoundary` | Route `loader` + `useSuspenseQuery`              |
+| 布局       | `layout.tsx` 嵌套                       | 基于 `<Outlet />` 的布局路由                     |
+| 服务端代码 | `'use server'` actions                  | `createServerFn()`                               |
+| 构建工具   | Webpack/Turbopack                       | Vite                                             |
+| 部署       | `next start`                            | Nitro（可部署到多种平台）                        |
+| URL 状态   | nuqs                                    | TanStack Router `useSearch()` + `validateSearch` |

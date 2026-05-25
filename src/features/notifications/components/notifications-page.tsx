@@ -59,8 +59,6 @@ export default function NotificationsPage() {
 
   return (
     <PageContainer
-      pageTitle='Notifications'
-      pageDescription='View and manage all your notifications.'
       pageHeaderAction={
         count > 0 ? (
           <Button variant='outline' size='sm' onClick={markAllAsRead}>

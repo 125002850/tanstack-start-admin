@@ -11,6 +11,9 @@ const staticData = defineAppRouteStaticData({
     order: 30,
     icon: 'palette',
   },
+  page: {
+    title: 'Icons',
+  },
 });
 
 export const Route = createFileRoute('/dashboard/elements/icons')({

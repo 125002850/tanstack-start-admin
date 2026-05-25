@@ -17,6 +17,11 @@ const staticData = defineAppRouteStaticData({
     icon: 'teams',
     shortcut: ['u', 'u'],
   },
+  page: {
+    title: 'Users',
+    description: 'Manage users (React Query + search params table pattern.)',
+    infoContent: usersInfoContent,
+  },
 });
 
 const usersSearchSchema = z.object({
@@ -37,12 +42,7 @@ export const Route = createFileRoute('/dashboard/users')({
 
 function UsersPage() {
   return (
-    <PageContainer
-      pageTitle='Users'
-      pageDescription='Manage users (React Query + search params table pattern.)'
-      infoContent={usersInfoContent}
-      pageHeaderAction={<UserFormSheetTrigger />}
-    >
+    <PageContainer pageHeaderAction={<UserFormSheetTrigger />}>
       <UserListingPage />
     </PageContainer>
   );

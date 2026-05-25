@@ -84,13 +84,13 @@ export function buildNavGroupsFromRoutes(
       shortcut: nav.shortcut,
       icon: nav.icon,
       items: (childrenByParentPath.get(entry.normalizedPath) ?? [])
-        .sort((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
+        .toSorted((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
         .map(entryToNavItem),
     }
   }
 
   const navItems = topLevelEntries
-    .sort((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
+    .toSorted((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
     .map(entryToNavItem)
 
   const grouped = new Map<AppNavGroupKey, NavItem[]>()
@@ -105,7 +105,7 @@ export function buildNavGroupsFromRoutes(
   }
 
   const result: NavGroup[] = []
-  const sortedGroupKeys = [...grouped.keys()].sort(
+  const sortedGroupKeys = [...grouped.keys()].toSorted(
     (a, b) => (NAV_GROUP_META[a]?.order ?? 0) - (NAV_GROUP_META[b]?.order ?? 0),
   )
 

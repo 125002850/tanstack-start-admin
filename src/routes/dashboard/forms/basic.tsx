@@ -14,16 +14,17 @@ const staticData = defineAppRouteStaticData({
     icon: 'forms',
     shortcut: ['f', 'f'],
   },
+  page: {
+    title: 'Basic Form',
+    description: 'A comprehensive form demo with all field types.',
+  },
 });
 
 export const Route = createFileRoute('/dashboard/forms/basic')({
   staticData,
   head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
   component: () => (
-    <PageContainer
-      pageTitle='Basic Form'
-      pageDescription='A comprehensive form demo with all field types.'
-    >
+    <PageContainer>
       <DemoForm />
     </PageContainer>
   )

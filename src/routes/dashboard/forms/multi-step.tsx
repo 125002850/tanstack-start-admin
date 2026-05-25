@@ -13,13 +13,17 @@ const staticData = defineAppRouteStaticData({
     parentId: '/dashboard/forms',
     icon: 'forms',
   },
+  page: {
+    title: 'Multi-Step Form',
+    description: 'Multi-step wizard form pattern.',
+  },
 });
 
 export const Route = createFileRoute('/dashboard/forms/multi-step')({
   staticData,
   head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
   component: () => (
-    <PageContainer pageTitle='Multi-Step Form' pageDescription='Multi-step wizard form pattern.'>
+    <PageContainer>
       <FormsShowcasePage />
     </PageContainer>
   )

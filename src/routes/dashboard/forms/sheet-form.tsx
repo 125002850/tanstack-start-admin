@@ -13,16 +13,17 @@ const staticData = defineAppRouteStaticData({
     parentId: '/dashboard/forms',
     icon: 'forms',
   },
+  page: {
+    title: 'Sheet & Dialog Forms',
+    description: 'Form patterns inside sheets and dialogs with external submit buttons.',
+  },
 });
 
 export const Route = createFileRoute('/dashboard/forms/sheet-form')({
   staticData,
   head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
   component: () => (
-    <PageContainer
-      pageTitle='Sheet & Dialog Forms'
-      pageDescription='Form patterns inside sheets and dialogs with external submit buttons.'
-    >
+    <PageContainer>
       <SheetFormDemo />
     </PageContainer>
   )

@@ -12,6 +12,10 @@ const staticData = defineAppRouteStaticData({
     icon: 'notification',
     shortcut: ['n', 'n'],
   },
+  page: {
+    title: 'Notifications',
+    description: 'View and manage all your notifications.',
+  },
 });
 
 export const Route = createFileRoute('/dashboard/notifications')({
