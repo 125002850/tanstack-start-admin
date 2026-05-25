@@ -1,13 +1,16 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { z } from 'zod';
 import { zodValidator } from '@tanstack/zod-adapter';
 import PageContainer from '@/components/layout/page-container';
 import { buttonVariants } from '@/components/ui/button';
 import { ProductPageCacheBindings } from '@/features/products/components/product-page-cache-bindings';
+import { columns as productColumns } from '@/features/products/components/product-tables/columns';
+import { parseSortingState } from '@/lib/parsers';
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
 import { PageCacheProvider } from '@/lib/page-cache';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
+import { PRODUCT_CATEGORIES } from '@/constants/product-categories';
 
 const meta = defineRouteMeta({
   label: '产品',
@@ -21,17 +24,43 @@ const meta = defineRouteMeta({
   },
 });
 
+const productColumnIds = productColumns.map((column) => column.id).filter(Boolean) as string[];
+
 const productSearchSchema = z.object({
-  page: z.number().optional().default(1),
-  perPage: z.number().optional().default(10),
-  name: z.string().optional(),
-  category: z.string().optional(),
-  sort: z.string().optional()
+  page: z.coerce.number().int().min(1).optional().catch(1),
+  perPage: z.coerce.number().int().min(1).optional().catch(10),
+  name: z.string().trim().max(120).optional().catch(undefined),
+  category: z.enum(PRODUCT_CATEGORIES).optional().catch(undefined),
+  sort: z
+    .string()
+    .trim()
+    .max(512)
+    .optional()
+    .catch(undefined)
+    .transform((value) => {
+      if (!value) return undefined;
+
+      return parseSortingState(value, productColumnIds).length > 0 ? value : undefined;
+    })
 });
 
 export const Route = createFileRoute('/dashboard/product/')({
   ...meta,
   validateSearch: zodValidator(productSearchSchema),
+  beforeLoad: ({ buildLocation, location, search }) => {
+    const normalizedLocation = buildLocation({
+      to: location.pathname,
+      search
+    });
+
+    if (normalizedLocation.href !== location.href) {
+      throw redirect({
+        to: location.pathname,
+        search,
+        replace: true
+      });
+    }
+  },
   component: ProductPage,
 });
 

@@ -33,12 +33,24 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 
+function normalizePath(path: string): string {
+  if (path === '/') return path;
+  return path.replace(/\/$/, '');
+}
+
+function isRouteActive(pathname: string, targetPath: string): boolean {
+  const current = normalizePath(pathname);
+  const target = normalizePath(targetPath);
+
+  return current === target || current.startsWith(`${target}/`);
+}
+
 function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string }) {
   const { isMobile, state } = useSidebar();
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
   const hasChildren = Boolean(item.items?.length);
-  const hasActiveChild = item.items?.some((subItem) => pathname === subItem.url) ?? false;
-  const isActive = pathname === item.url || hasActiveChild;
+  const hasActiveChild = item.items?.some((subItem) => isRouteActive(pathname, subItem.url)) ?? false;
+  const isActive = isRouteActive(pathname, item.url) || hasActiveChild;
   const isCollapsedDesktop = state === 'collapsed' && !isMobile;
   const [open, setOpen] = React.useState(() => hasActiveChild);
   const [flyoutOpen, setFlyoutOpen] = React.useState(false);
@@ -206,7 +218,7 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
             )}
             <DropdownMenuGroup>
               {item.items?.map((subItem) => {
-                const isSubItemActive = pathname === subItem.url;
+                const isSubItemActive = isRouteActive(pathname, subItem.url);
                 const isSubLinkable = subItem.linkable !== false;
 
                 return (
@@ -271,7 +283,7 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
               const isSubLinkable = subItem.linkable !== false;
               return (
                 <SidebarMenuSubItem key={subItem.id}>
-                  <SidebarMenuSubButton asChild={isSubLinkable} isActive={pathname === subItem.url}>
+                  <SidebarMenuSubButton asChild={isSubLinkable} isActive={isRouteActive(pathname, subItem.url)}>
                     {isSubLinkable ? (
                       <Link to={subItem.url}>
                         <span>{subItem.title}</span>

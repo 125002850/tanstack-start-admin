@@ -95,19 +95,12 @@ export function buildNavGroupsFromRoutes<TRoutes extends object>(
     }
   }
 
-  const navItems = topLevelEntries
-    .toSorted((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
-    .map(entryToNavItem)
-
-  const grouped = new Map<AppNavGroupKey, NavItem[]>()
+  const grouped = new Map<AppNavGroupKey, RouteEntry[]>()
   for (const entry of topLevelEntries) {
     const group = entry.meta.nav!.group
     const items = grouped.get(group) ?? []
-    const navItem = navItems.find((ni) => ni.id === entry.id)
-    if (navItem) {
-      items.push(navItem)
-      grouped.set(group, items)
-    }
+    items.push(entry)
+    grouped.set(group, items)
   }
 
   const result: NavGroup[] = []
@@ -116,7 +109,10 @@ export function buildNavGroupsFromRoutes<TRoutes extends object>(
   )
 
   for (const key of sortedGroupKeys) {
-    const items = grouped.get(key)!
+    const items = grouped
+      .get(key)!
+      .toSorted((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
+      .map(entryToNavItem)
     result.push({
       label: NAV_GROUP_META[key]?.label ?? '',
       items,
