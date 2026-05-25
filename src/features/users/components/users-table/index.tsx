@@ -1,6 +1,7 @@
 import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
+import { useDataTablePageSize } from '@/lib/data-table-page-size';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useSearch } from '@tanstack/react-router';
 import { parseSortingState } from '@/lib/parsers';
@@ -11,12 +12,54 @@ const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 
 export function UsersTable() {
   const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const hasExplicitPerPage = Object.prototype.hasOwnProperty.call(search, 'perPage');
 
   const page = (search.page as number) ?? 1;
-  const perPage = (search.perPage as number) ?? 10;
+  const {
+    isReady,
+    pageSize: perPage,
+    setPageSize
+  } = useDataTablePageSize({
+    searchPerPage: typeof search.perPage === 'number' ? search.perPage : undefined,
+    hasExplicitSearchPerPage: hasExplicitPerPage
+  });
   const name = search.name as string | undefined;
   const role = search.role as string | undefined;
   const sortStr = search.sort as string | undefined;
+
+  if (!isReady) {
+    return <UsersTableSkeleton />;
+  }
+
+  return (
+    <UsersTableContent
+      page={page}
+      perPage={perPage}
+      name={name}
+      role={role}
+      sortStr={sortStr}
+      onPageSizeChange={setPageSize}
+    />
+  );
+}
+
+type UsersTableContentProps = {
+  page: number;
+  perPage: number;
+  name?: string;
+  role?: string;
+  sortStr?: string;
+  onPageSizeChange: (pageSize: number) => void;
+};
+
+function UsersTableContent({
+  page,
+  perPage,
+  name,
+  role,
+  sortStr,
+  onPageSizeChange
+}: UsersTableContentProps) {
   const sort = parseSortingState(sortStr, columnIds);
 
   const filters = {
@@ -37,6 +80,8 @@ export function UsersTable() {
     pageCount,
     shallow: true,
     debounceMs: 500,
+    pageSize: perPage,
+    onPageSizeChange,
     initialState: {
       columnPinning: { right: ['actions'] }
     }

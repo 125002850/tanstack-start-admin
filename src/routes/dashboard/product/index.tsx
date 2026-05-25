@@ -5,6 +5,7 @@ import PageContainer from '@/components/layout/page-container';
 import { buttonVariants } from '@/components/ui/button';
 import { ProductPageCacheBindings } from '@/features/products/components/product-page-cache-bindings';
 import { columns as productColumns } from '@/features/products/components/product-tables/columns';
+import { DEFAULT_DATA_TABLE_PAGE_SIZE, isValidDataTablePageSize } from '@/lib/data-table-page-size';
 import { parseSortingState } from '@/lib/parsers';
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
@@ -20,15 +21,20 @@ const meta = defineRouteMeta({
     group: 'overview',
     order: 20,
     icon: 'product',
-    shortcut: ['p', 'p'],
-  },
+    shortcut: ['p', 'p']
+  }
 });
 
 const productColumnIds = productColumns.map((column) => column.id).filter(Boolean) as string[];
 
 const productSearchSchema = z.object({
   page: z.coerce.number().int().min(1).optional().catch(1),
-  perPage: z.coerce.number().int().min(1).optional().catch(10),
+  perPage: z.coerce
+    .number()
+    .int()
+    .refine(isValidDataTablePageSize)
+    .optional()
+    .catch(DEFAULT_DATA_TABLE_PAGE_SIZE),
   name: z.string().trim().max(120).optional().catch(undefined),
   category: z.enum(PRODUCT_CATEGORIES).optional().catch(undefined),
   sort: z
@@ -61,12 +67,12 @@ export const Route = createFileRoute('/dashboard/product/')({
       });
     }
   },
-  component: ProductPage,
+  component: ProductPage
 });
 
 function ProductPage() {
   return (
-    <PageCacheProvider scope='dashboard.product.list'>
+    <PageCacheProvider scope='dashboard.product.list' persist={false}>
       <PageContainer
         pageHeaderAction={
           <Link

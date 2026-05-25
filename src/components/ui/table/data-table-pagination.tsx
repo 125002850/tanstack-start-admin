@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table-page-size';
 import { cn } from '@/lib/utils';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
@@ -25,13 +26,13 @@ export interface DataTablePaginationLabels {
 
 interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
-  pageSizeOptions?: number[];
+  pageSizeOptions?: readonly number[];
   labels?: DataTablePaginationLabels;
 }
 
 export function DataTablePagination<TData>({
   table,
-  pageSizeOptions = [10, 20, 30, 40, 50],
+  pageSizeOptions = DATA_TABLE_PAGE_SIZE_OPTIONS,
   labels,
   className,
   ...props
@@ -75,7 +76,7 @@ export function DataTablePagination<TData>({
               table.setPageSize(Number(value));
             }}
           >
-            <SelectTrigger className='h-8 w-[4.5rem] [&[data-size]]:h-8'>
+            <SelectTrigger className='h-8 min-w-[4.5rem] [&[data-size]]:h-8'>
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side='top'>

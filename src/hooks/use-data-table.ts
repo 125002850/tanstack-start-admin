@@ -21,6 +21,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 import * as React from 'react';
 
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
+import { DEFAULT_DATA_TABLE_PAGE_SIZE } from '@/lib/data-table-page-size';
 import { parseSortingState, serializeSortingState } from '@/lib/parsers';
 import type { ExtendedColumnSort } from '@/types/data-table';
 
@@ -51,6 +52,8 @@ interface UseDataTableProps<TData>
   throttleMs?: number;
   clearOnDefault?: boolean;
   enableAdvancedFilter?: boolean;
+  pageSize?: number;
+  onPageSizeChange?: (pageSize: number) => void;
   scroll?: boolean;
   shallow?: boolean;
   startTransition?: React.TransitionStartFunction;
@@ -64,6 +67,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     history = 'replace',
     debounceMs = DEBOUNCE_MS,
     enableAdvancedFilter = false,
+    pageSize: controlledPageSize,
+    onPageSizeChange,
     shallow = true,
     ...tableProps
   } = props;
@@ -83,7 +88,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
   // Read pagination from search params
   const page = (search.page as number) ?? 1;
-  const perPage = (search.perPage as number) ?? initialState?.pagination?.pageSize ?? 10;
+  const perPage = controlledPageSize ?? (search.perPage as number) ?? DEFAULT_DATA_TABLE_PAGE_SIZE;
 
   const pagination: PaginationState = React.useMemo(
     () => ({
@@ -97,16 +102,22 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     (updaterOrValue: Updater<PaginationState>) => {
       const newPagination =
         typeof updaterOrValue === 'function' ? updaterOrValue(pagination) : updaterOrValue;
+      const hasPageSizeChanged = newPagination.pageSize !== pagination.pageSize;
+
+      if (hasPageSizeChanged) {
+        onPageSizeChange?.(newPagination.pageSize);
+      }
+
       void navigate({
         search: asSearchReducer((prev: Record<string, unknown>) => ({
           ...prev,
           page: newPagination.pageIndex + 1,
-          perPage: newPagination.pageSize
+          ...(hasPageSizeChanged ? { perPage: newPagination.pageSize } : {})
         })),
         replace: history === 'replace'
       });
     },
-    [pagination, navigate, history]
+    [history, navigate, onPageSizeChange, pagination]
   );
 
   // Read sorting from search params

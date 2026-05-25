@@ -126,3 +126,49 @@ export function createSessionStorageAdapter(maxAgeMs?: number): PageCacheStorage
     }
   };
 }
+
+let memoryScopeMap: ScopeMap = {};
+
+function loadMemoryScopeMap({ maxAgeMs }: StorageOptions = {}): ScopeMap {
+  if (!maxAgeMs) {
+    return memoryScopeMap;
+  }
+
+  const pruned = createMaxAgePruner(maxAgeMs)(memoryScopeMap);
+  if (Object.keys(pruned).length !== Object.keys(memoryScopeMap).length) {
+    memoryScopeMap = pruned;
+  }
+
+  return memoryScopeMap;
+}
+
+function saveMemoryScopeMap(map: ScopeMap, { maxAgeMs }: StorageOptions = {}): void {
+  let pruned = pruneScopeMap(map);
+
+  if (maxAgeMs) {
+    pruned = createMaxAgePruner(maxAgeMs)(pruned);
+  }
+
+  memoryScopeMap = pruned;
+}
+
+export function createMemoryStorageAdapter(maxAgeMs?: number): PageCacheStorageAdapter {
+  return {
+    loadSnapshot(scope) {
+      const map = loadMemoryScopeMap({ maxAgeMs });
+      return map[scope] ?? null;
+    },
+
+    saveSnapshot(scope, snapshot) {
+      const map = loadMemoryScopeMap({ maxAgeMs });
+      map[scope] = snapshot;
+      saveMemoryScopeMap(map, { maxAgeMs });
+    },
+
+    deleteSnapshot(scope) {
+      const map = loadMemoryScopeMap({ maxAgeMs });
+      delete map[scope];
+      saveMemoryScopeMap(map, { maxAgeMs });
+    }
+  };
+}

@@ -6,6 +6,7 @@ import UserListingPage from '@/features/users/components/user-listing';
 import { usersInfoContent } from '@/features/users/info-content';
 import { UserFormSheetTrigger } from '@/features/users/components/user-form-sheet';
 import { columns as userColumns } from '@/features/users/components/users-table/columns';
+import { DEFAULT_DATA_TABLE_PAGE_SIZE, isValidDataTablePageSize } from '@/lib/data-table-page-size';
 import { parseSortingState } from '@/lib/parsers';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { ROLE_VALUES } from '@/features/users/components/users-table/options';
@@ -18,20 +19,25 @@ const meta = defineRouteMeta({
     group: 'overview',
     order: 30,
     icon: 'teams',
-    shortcut: ['u', 'u'],
+    shortcut: ['u', 'u']
   },
   page: {
     title: 'Users',
     description: 'Manage users (React Query + search params table pattern.)',
-    infoContent: usersInfoContent,
-  },
+    infoContent: usersInfoContent
+  }
 });
 
 const userColumnIds = userColumns.map((column) => column.id).filter(Boolean) as string[];
 
 const usersSearchSchema = z.object({
   page: z.coerce.number().int().min(1).optional().catch(1),
-  perPage: z.coerce.number().int().min(1).optional().catch(10),
+  perPage: z.coerce
+    .number()
+    .int()
+    .refine(isValidDataTablePageSize)
+    .optional()
+    .catch(DEFAULT_DATA_TABLE_PAGE_SIZE),
   name: z.string().trim().max(120).optional().catch(undefined),
   gender: z.string().trim().max(40).optional().catch(undefined),
   role: z.enum(ROLE_VALUES).optional().catch(undefined),

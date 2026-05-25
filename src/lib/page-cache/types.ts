@@ -15,6 +15,7 @@ export interface PageCacheStorageAdapter {
 export interface PageCacheProviderProps {
   scope: string;
   children: React.ReactNode;
+  persist?: boolean;
   storage?: 'session';
   maxAgeMs?: number;
 }
