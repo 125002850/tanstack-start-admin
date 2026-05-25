@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '表单',
   nav: {
     visible: true,
@@ -14,7 +14,7 @@ const staticData = defineAppRouteStaticData({
 });
 
 export const Route = createFileRoute('/dashboard/forms/')({
-  staticData,
+  ...meta,
   beforeLoad: () => {
     throw redirect({ to: '/dashboard/forms/basic' });
   }

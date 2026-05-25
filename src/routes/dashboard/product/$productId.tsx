@@ -2,17 +2,16 @@ import { createFileRoute } from '@tanstack/react-router';
 import PageContainer from '@/components/layout/page-container';
 import ProductViewPage from '@/features/products/components/product-view-page';
 import { productByIdOptions } from '@/features/products/api/queries';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '产品详情',
-  documentTitle: '控制台：产品详情',
+  title: '控制台：产品详情',
   breadcrumb: { label: '产品详情' },
 });
 
 export const Route = createFileRoute('/dashboard/product/$productId')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   loader: async ({ context: { queryClient }, params }) => {
     if (params.productId !== 'new') {
       await queryClient.ensureQueryData(productByIdOptions(Number(params.productId)));

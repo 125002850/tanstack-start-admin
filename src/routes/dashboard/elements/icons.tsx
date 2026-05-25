@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import IconsViewPage from '@/features/elements/components/icons-view-page';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '图标',
-  documentTitle: 'Dashboard : Icons',
+  title: 'Dashboard : Icons',
   nav: {
     visible: true,
     group: 'components',
@@ -17,7 +17,6 @@ const staticData = defineAppRouteStaticData({
 });
 
 export const Route = createFileRoute('/dashboard/elements/icons')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   component: () => <IconsViewPage />
 });

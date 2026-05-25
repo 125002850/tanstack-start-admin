@@ -5,11 +5,11 @@ import PageContainer from '@/components/layout/page-container';
 import UserListingPage from '@/features/users/components/user-listing';
 import { usersInfoContent } from '@/features/users/info-content';
 import { UserFormSheetTrigger } from '@/features/users/components/user-form-sheet';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '用户',
-  documentTitle: 'Dashboard: Users',
+  title: '概览: 用户管理',
   nav: {
     visible: true,
     group: 'overview',
@@ -34,8 +34,7 @@ const usersSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/dashboard/users')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   validateSearch: zodValidator(usersSearchSchema),
   component: UsersPage
 });

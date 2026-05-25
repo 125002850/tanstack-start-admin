@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import PageContainer from '@/components/layout/page-container';
 import SheetFormDemo from '@/features/forms/components/sheet-form-demo';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '抽屉与弹窗',
-  documentTitle: 'Dashboard: Sheet Form',
+  title: 'Dashboard: Sheet Form',
   nav: {
     visible: true,
     group: 'components',
@@ -20,8 +20,7 @@ const staticData = defineAppRouteStaticData({
 });
 
 export const Route = createFileRoute('/dashboard/forms/sheet-form')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   component: () => (
     <PageContainer>
       <SheetFormDemo />

@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import NotificationsPage from '@/features/notifications/components/notifications-page';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '通知',
-  documentTitle: 'Dashboard: Notifications',
+  title: 'Dashboard: Notifications',
   nav: {
     visible: true,
     group: 'account',
@@ -19,7 +19,6 @@ const staticData = defineAppRouteStaticData({
 });
 
 export const Route = createFileRoute('/dashboard/notifications')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   component: () => <NotificationsPage />
 });

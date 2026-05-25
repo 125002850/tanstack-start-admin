@@ -17,8 +17,13 @@
  * circular dependencies.
  */
 
-import { createFormHookContexts, revalidateLogic, useStore } from '@tanstack/react-form';
-import type { AnyFieldApi, DeepKeys } from '@tanstack/form-core';
+import {
+  createFormHookContexts,
+  revalidateLogic,
+  useStore,
+  type AnyFieldApi,
+  type DeepKeys
+} from '@tanstack/react-form';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 import {
@@ -338,10 +343,10 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
  */
 type WithTypedName<C, TValues> =
   C extends React.ComponentType<infer P>
-    ? P extends { name: string }
-      ? React.ComponentType<Omit<P, 'name'> & { name: DeepKeys<TValues> & string }>
-      : C
-    : C;
+  ? P extends { name: string }
+  ? React.ComponentType<Omit<P, 'name'> & { name: DeepKeys<TValues> & string }>
+  : C
+  : C;
 
 /**
  * Narrows any single composed field component's `name` prop to type-safe field paths.

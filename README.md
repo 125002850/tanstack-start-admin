@@ -117,6 +117,108 @@ src/
 └── types/                         # TypeScript 类型定义
 ```
 
+## 路由元数据规范
+
+当前项目采用“**route 文件本地定义元数据，运行时统一派生导航与页面头部**”的模式。每个 dashboard 路由应通过 `defineRouteMeta()` 同时声明：
+
+- 文档标题（浏览器标签页）
+- 页面头部标题、描述、`infoContent`
+- 侧边栏 / KBar 导航信息
+- breadcrumb 标签
+
+### 标准写法
+
+```tsx
+import { createFileRoute } from '@tanstack/react-router';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
+
+const meta = defineRouteMeta({
+  label: '用户',
+  title: '概览: 用户管理',
+  nav: {
+    visible: true,
+    group: 'overview',
+    order: 30,
+    icon: 'teams',
+    shortcut: ['u', 'u']
+  },
+  page: {
+    title: 'Users',
+    description: 'Manage users (React Query + search params table pattern.)',
+    infoContent: usersInfoContent
+  }
+});
+
+export const Route = createFileRoute('/dashboard/users')({
+  ...meta,
+  component: UsersPage
+});
+```
+
+### 字段职责
+
+#### 顶层字段
+
+- `label`
+  路由的人类可读名称。默认用于侧边栏标题、KBar 名称，以及 `PageContainer` 在未声明 `page.title` 时的回退标题。
+- `title`
+  文档标题。`defineRouteMeta()` 会自动生成 `head()`，将它写入浏览器标签页；未提供时回退到 `label`。
+- `breadcrumb`
+  面包屑元数据。当前支持：
+  - `label`: 面包屑文案
+  - `to`: 可选，自定义 breadcrumb 链接目标
+
+#### `nav`
+
+- `visible`
+  是否进入主导航派生。
+- `group`
+  顶部分组键，当前固定为 `overview | components | account`。
+- `order`
+  当前分组内的排序权重，数值越小越靠前。
+- `icon`
+  对应 `Icons` 表中的图标键。
+- `shortcut`
+  KBar 快捷键声明。
+- `kind: 'container'`
+  声明该项是容器菜单，不是普通页面链接。
+- `parentId`
+  子菜单归属的父级路由路径。当前用于“表单”这种容器菜单。
+- `linkable: false`
+  显式声明该项不可直接跳转，只作为容器或展示项存在。
+
+#### `page`
+
+- `page.title`
+  页面内容区头部标题，对应 `PageContainer > Heading.title`。
+- `page.description`
+  页面内容区头部描述。
+- `page.infoContent`
+  页面头部信息浮层内容（Infobar）。
+
+### 运行时消费规则
+
+#### `PageContainer` 回退顺序
+
+- `pageTitle`: 显式 prop > `staticData.page.title` > `staticData.label`
+- `pageDescription`: 显式 prop > `staticData.page.description`
+- `infoContent`: 显式 prop > `staticData.page.infoContent`
+
+因此，只要页面头部文案属于 route 级静态信息，应优先写进 `defineRouteMeta()`，而不是在 feature 组件里重复传 `PageContainer` props。
+
+#### 导航派生规则
+
+- 侧边栏和 KBar 都从 Router 的 `routesById` + `staticData.nav` 派生，不再维护中心化导航配置。
+- 容器菜单依赖 `nav.kind === 'container'` 和子项的 `nav.parentId` 建树，不通过 URL 前缀做隐式推断。
+- `linkable: false` 的节点不会生成可执行 KBar action，也不会在侧边栏中渲染成跳转链接。
+
+### 约束
+
+- dashboard 路由新增菜单页时，必须补 `nav.visible/group/order`。
+- 如果页面需要浏览器标题和页面头部标题不同，使用顶层 `title` 与 `page.title` 分离声明。
+- 外部链接按钮不要使用 TanStack Router `Link`；应使用普通 `<a href>`。
+- `defineRouteMeta()` 适用于“静态 route metadata + 默认 head”场景。若页面需要特殊 `head()` 逻辑，应在 route 文件中显式扩展，而不是反向修改消费端。
+
 ## 快速开始
 
 > [!NOTE]

@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import ChatViewPage from '@/features/chat/components/chat-view-page';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '聊天',
-  documentTitle: 'Dashboard: Chat',
+  title: 'Dashboard: Chat',
   nav: {
     visible: true,
     group: 'overview',
@@ -15,7 +15,6 @@ const staticData = defineAppRouteStaticData({
 });
 
 export const Route = createFileRoute('/dashboard/chat')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   component: () => <ChatViewPage />
 });

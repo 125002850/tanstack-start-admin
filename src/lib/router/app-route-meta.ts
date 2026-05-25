@@ -33,14 +33,19 @@ export interface AppPageData {
 
 export interface AppRouteStaticData {
   label: string
-  documentTitle?: string
+  title?: string
   breadcrumb?: AppBreadcrumbData
   nav?: AppNavStaticData
   page?: AppPageData
 }
 
-export function defineAppRouteStaticData<T extends AppRouteStaticData>(data: T): T {
-  return data
+export function defineRouteMeta<T extends AppRouteStaticData>(data: T) {
+  return {
+    staticData: data,
+    head: (): { meta: [{ title: string }] } => ({
+      meta: [{ title: data.title ?? data.label }],
+    }),
+  }
 }
 
 export function isAppRouteStaticData(data: unknown): data is AppRouteStaticData {

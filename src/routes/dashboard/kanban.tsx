@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import KanbanViewPage from '@/features/kanban/components/kanban-view-page';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: '看板',
-  documentTitle: 'Dashboard : Kanban view',
+  title: 'Dashboard : Kanban view',
   nav: {
     visible: true,
     group: 'overview',
@@ -19,7 +19,6 @@ const staticData = defineAppRouteStaticData({
 });
 
 export const Route = createFileRoute('/dashboard/kanban')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   component: () => <KanbanViewPage />
 });

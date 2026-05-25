@@ -5,11 +5,11 @@ import PageContainer from '@/components/layout/page-container';
 import { Suspense } from 'react';
 import { PokemonSkeleton } from '@/features/react-query-demo/components/pokemon-skeleton';
 import { reactQueryInfoContent } from '@/features/react-query-demo/info-content';
-import { defineAppRouteStaticData } from '@/lib/router/app-route-meta';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
-const staticData = defineAppRouteStaticData({
+const meta = defineRouteMeta({
   label: 'React Query',
-  documentTitle: 'Dashboard: React Query',
+  title: 'Dashboard: React Query',
   nav: {
     visible: true,
     group: 'components',
@@ -24,8 +24,7 @@ const staticData = defineAppRouteStaticData({
 });
 
 export const Route = createFileRoute('/dashboard/react-query')({
-  staticData,
-  head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] }),
+  ...meta,
   loader: async ({ context: { queryClient } }) => {
     await queryClient.ensureQueryData(pokemonOptions(25));
   },
