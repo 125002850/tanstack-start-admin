@@ -32,6 +32,13 @@ export interface AppPageData {
   infoContent?: InfobarContent
 }
 
+export interface AppRouteWorkspaceData {
+  tagEnabled?: boolean
+  keepAlive?: boolean
+  instanceStrategy?: 'global' | 'by-params'
+  refreshPolicy?: 'query-invalidate'
+}
+
 export interface AppRouteStaticData {
   // Human-readable route label used by navigation and as the PageContainer title fallback.
   label: string
@@ -40,6 +47,7 @@ export interface AppRouteStaticData {
   breadcrumb?: AppBreadcrumbData
   nav?: AppNavStaticData
   page?: AppPageData
+  workspace?: AppRouteWorkspaceData
 }
 
 export function defineRouteMeta<T extends AppRouteStaticData>(data: T) {

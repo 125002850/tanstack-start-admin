@@ -4,6 +4,9 @@ import { zodValidator } from '@tanstack/zod-adapter';
 import PageContainer from '@/components/layout/page-container';
 import { buttonVariants } from '@/components/ui/button';
 import { ProductPageCacheBindings } from '@/features/products/components/product-page-cache-bindings';
+import ProductWorkspaceScreen from '@/features/products/components/product-workspace-screen';
+import { productWorkspaceDefinition } from '@/features/products/workspace/product-workspace-definition';
+import { WorkspaceRoutePage } from '@/features/workspace-tabs/components/workspace-route-page';
 import { columns as productColumns } from '@/features/products/components/product-tables/columns';
 import { DEFAULT_DATA_TABLE_PAGE_SIZE, isValidDataTablePageSize } from '@/lib/data-table-page-size';
 import { parseSortingState } from '@/lib/parsers';
@@ -22,7 +25,10 @@ const meta = defineRouteMeta({
     order: 20,
     icon: 'product',
     shortcut: ['p', 'p']
-  }
+  },
+  workspace: {
+    refreshPolicy: 'query-invalidate',
+  },
 });
 
 const productColumnIds = productColumns.map((column) => column.id).filter(Boolean) as string[];
@@ -71,6 +77,20 @@ export const Route = createFileRoute('/dashboard/product/')({
 });
 
 function ProductPage() {
+  return (
+    <WorkspaceRoutePage
+      definition={productWorkspaceDefinition}
+      screen={ProductWorkspaceScreen}
+      fallback={<ProductPageLegacy />}
+    />
+  );
+}
+
+/**
+ * Legacy page-cache fallback preserved for Task 08 feature-flag rollback.
+ * The workspace main path no longer depends on PageCacheProvider / usePageCacheSearch / usePageCacheScroll.
+ */
+function ProductPageLegacy() {
   return (
     <PageCacheProvider scope='dashboard.product.list' persist={false}>
       <PageContainer

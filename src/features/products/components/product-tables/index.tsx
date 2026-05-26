@@ -5,27 +5,32 @@ import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useDataTablePageSize } from '@/lib/data-table-page-size';
-import { usePageCacheScroll } from '@/lib/page-cache';
 import { parseSortingState } from '@/lib/parsers';
+import type { DataTableSearchAdapter } from '@/features/workspace-tabs/types';
 import { productsQueryOptions } from '../../api/queries';
 import { columns } from './columns';
 
 const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
 const PRODUCT_TABLE_SCROLL_TARGET_ID = 'products-table';
-const PRODUCT_TABLE_SCROLL_TARGET_SELECTOR = `[data-scroll-target-id="${PRODUCT_TABLE_SCROLL_TARGET_ID}"]`;
 
-export function ProductTable() {
-  const search = useSearch({ strict: false }) as Record<string, unknown>;
+export function ProductTable({
+  searchAdapter,
+}: {
+  searchAdapter?: DataTableSearchAdapter;
+}) {
+  const routerSearch = useSearch({ strict: false }) as Record<string, unknown>;
+  const search = searchAdapter ? searchAdapter.getSearch() : routerSearch;
+
   const hasExplicitPerPage = Object.prototype.hasOwnProperty.call(search, 'perPage');
 
   const page = (search.page as number) ?? 1;
   const {
     isReady,
     pageSize: perPage,
-    setPageSize
+    setPageSize,
   } = useDataTablePageSize({
     searchPerPage: typeof search.perPage === 'number' ? search.perPage : undefined,
-    hasExplicitSearchPerPage: hasExplicitPerPage
+    hasExplicitSearchPerPage: hasExplicitPerPage,
   });
   const name = search.name as string | undefined;
   const category = search.category as string | undefined;
@@ -35,7 +40,6 @@ export function ProductTable() {
     return <ProductTableSkeleton />;
   }
 
-
   return (
     <ProductTableContent
       page={page}
@@ -44,6 +48,7 @@ export function ProductTable() {
       category={category}
       sortStr={sortStr}
       onPageSizeChange={setPageSize}
+      searchAdapter={searchAdapter}
     />
   );
 }
@@ -55,6 +60,7 @@ type ProductTableContentProps = {
   category?: string;
   sortStr?: string;
   onPageSizeChange: (pageSize: number) => void;
+  searchAdapter?: DataTableSearchAdapter;
 };
 
 function ProductTableContent({
@@ -63,7 +69,8 @@ function ProductTableContent({
   name,
   category,
   sortStr,
-  onPageSizeChange
+  onPageSizeChange,
+  searchAdapter,
 }: ProductTableContentProps) {
   const sort = parseSortingState(sortStr, columnIds);
 
@@ -72,7 +79,7 @@ function ProductTableContent({
     limit: perPage,
     ...(name && { search: name }),
     ...(category && { categories: category }),
-    ...(sort.length > 0 && { sort: JSON.stringify(sort) })
+    ...(sort.length > 0 && { sort: JSON.stringify(sort) }),
   };
 
   const { data } = useSuspenseQuery(productsQueryOptions(filters));
@@ -86,16 +93,10 @@ function ProductTableContent({
     debounceMs: 500,
     pageSize: perPage,
     onPageSizeChange,
+    searchAdapter,
     initialState: {
-      columnPinning: { right: ['actions'] }
-    }
-  });
-
-  // This subtree only mounts after the table query resolves.
-  usePageCacheScroll({
-    slot: 'table-scroll',
-    selector: PRODUCT_TABLE_SCROLL_TARGET_SELECTOR,
-    ready: true
+      columnPinning: { right: ['actions'] },
+    },
   });
 
   return (
