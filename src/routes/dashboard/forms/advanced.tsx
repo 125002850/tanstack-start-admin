@@ -2,10 +2,13 @@ import { createFileRoute } from '@tanstack/react-router';
 import PageContainer from '@/components/layout/page-container';
 import AdvancedFormPatterns from '@/features/forms/components/advanced-form-patterns';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
+import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '高级模式',
   title: 'Dashboard: Advanced Form Patterns',
+  workspace: {},
   nav: {
     visible: true,
     group: 'components',
@@ -21,9 +24,27 @@ const meta = defineRouteMeta({
 
 export const Route = createFileRoute('/dashboard/forms/advanced')({
   ...meta,
-  component: () => (
+  component: AdvancedFormPage
+});
+
+function AdvancedFormPage() {
+  if (!isWorkspaceTabsEnabled()) {
+    return <AdvancedFormContent />
+  }
+
+  return (
+    <WorkspacePageBoundary
+      tabId='/dashboard/forms/advanced'
+      initialTitle='高级模式'
+      render={() => <AdvancedFormContent />}
+    />
+  )
+}
+
+function AdvancedFormContent() {
+  return (
     <PageContainer>
       <AdvancedFormPatterns />
     </PageContainer>
   )
-});
+}

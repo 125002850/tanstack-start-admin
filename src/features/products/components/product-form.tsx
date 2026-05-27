@@ -1,4 +1,5 @@
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
+import { useStore } from '@tanstack/react-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createProductMutation, updateProductMutation } from '../api/mutations';
@@ -6,7 +7,9 @@ import type { Product } from '../api/types';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { PRODUCT_LIST_PATH } from '@/features/products/constants/product-routes';
+import { useWorkspacePage } from '@/features/workspace-tabs/hooks/use-workspace-page';
 import { toast } from 'sonner';
+import * as React from 'react';
 import * as z from 'zod';
 import { productSchema, type ProductFormValues } from '@/features/products/schemas/product';
 import { categoryOptions } from '@/features/products/constants/product-options';
@@ -20,6 +23,7 @@ export default function ProductForm({
 }) {
   const router = useRouter();
   const isEdit = !!initialData;
+  const { updateLifecycle } = useWorkspacePage();
 
   const createMutation = useMutation({
     ...createProductMutation,
@@ -72,6 +76,19 @@ export default function ProductForm({
 
   const { FormTextField, FormSelectField, FormTextareaField, FormFileUploadField } =
     useFormFields<ProductFormValues>();
+  const isDefaultValue = useStore(form.store, (state) => state.isDefaultValue);
+
+  React.useEffect(() => {
+    updateLifecycle({
+      title: pageTitle,
+      dirty: !isDefaultValue,
+      closeGuard: () => {
+        if (isDefaultValue) return true;
+        toast.warning('当前产品表单有未保存更改，请先保存后再关闭标签页。');
+        return false;
+      },
+    });
+  }, [isDefaultValue, pageTitle, updateLifecycle]);
 
   return (
     <Card className='mx-auto w-full'>

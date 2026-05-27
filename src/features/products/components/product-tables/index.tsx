@@ -1,89 +1,72 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { useSearch } from '@tanstack/react-router';
+import { useSuspenseQuery } from '@tanstack/react-query'
+import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table'
 
-import { DataTable } from '@/components/ui/table/data-table';
-import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
-import { useDataTable } from '@/hooks/use-data-table';
-import { useDataTablePageSize } from '@/lib/data-table-page-size';
-import { parseSortingState } from '@/lib/parsers';
-import type { DataTableSearchAdapter } from '@/features/workspace-tabs/types';
-import { productsQueryOptions } from '../../api/queries';
-import { columns } from './columns';
+import { DataTable } from '@/components/ui/table/data-table'
+import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar'
+import { useDataTable } from '@/hooks/use-data-table'
+import { useDataTablePageSize } from '@/lib/data-table-page-size'
+import { productsQueryOptions } from '../../api/queries'
+import { columns } from './columns'
+import * as React from 'react'
 
-const columnIds = columns.map((c) => c.id).filter(Boolean) as string[];
-const PRODUCT_TABLE_SCROLL_TARGET_ID = 'products-table';
+const PRODUCT_TABLE_SCROLL_TARGET_ID = 'products-table'
 
-export function ProductTable({
-  searchAdapter,
-}: {
-  searchAdapter?: DataTableSearchAdapter;
-}) {
-  const routerSearch = useSearch({ strict: false }) as Record<string, unknown>;
-  const search = searchAdapter ? searchAdapter.getSearch() : routerSearch;
-
-  const hasExplicitPerPage = Object.prototype.hasOwnProperty.call(search, 'perPage');
-
-  const page = (search.page as number) ?? 1;
-  const {
-    isReady,
-    pageSize: perPage,
-    setPageSize,
-  } = useDataTablePageSize({
-    searchPerPage: typeof search.perPage === 'number' ? search.perPage : undefined,
-    hasExplicitSearchPerPage: hasExplicitPerPage,
-  });
-  const name = search.name as string | undefined;
-  const category = search.category as string | undefined;
-  const sortStr = search.sort as string | undefined;
+export function ProductTable() {
+  const { isReady, pageSize, setPageSize } = useDataTablePageSize({})
 
   if (!isReady) {
-    return <ProductTableSkeleton />;
+    return <ProductTableSkeleton />
   }
 
   return (
     <ProductTableContent
-      page={page}
-      perPage={perPage}
-      name={name}
-      category={category}
-      sortStr={sortStr}
-      onPageSizeChange={setPageSize}
-      searchAdapter={searchAdapter}
+      seedPageSize={pageSize}
+      onPageSizePrefChange={setPageSize}
     />
-  );
+  )
 }
 
 type ProductTableContentProps = {
-  page: number;
-  perPage: number;
-  name?: string;
-  category?: string;
-  sortStr?: string;
-  onPageSizeChange: (pageSize: number) => void;
-  searchAdapter?: DataTableSearchAdapter;
-};
+  seedPageSize: number
+  onPageSizePrefChange: (pageSize: number) => void
+}
+
+function buildApiFilters(
+  pagination: PaginationState,
+  sorting: SortingState,
+  columnFilters: ColumnFiltersState,
+) {
+  const nameFilter = columnFilters.find((f) => f.id === 'name')
+  const categoryFilter = columnFilters.find((f) => f.id === 'category')
+
+  return {
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    ...(nameFilter && nameFilter.value && { search: String(nameFilter.value) }),
+    ...(categoryFilter && Array.isArray(categoryFilter.value) && categoryFilter.value.length > 0 && {
+      categories: categoryFilter.value.join(','),
+    }),
+    ...(sorting.length > 0 && { sort: JSON.stringify(sorting) }),
+  }
+}
+
+const EMPTY_SORTING: SortingState = []
+const EMPTY_FILTERS: ColumnFiltersState = []
 
 function ProductTableContent({
-  page,
-  perPage,
-  name,
-  category,
-  sortStr,
-  onPageSizeChange,
-  searchAdapter,
+  seedPageSize,
+  onPageSizePrefChange,
 }: ProductTableContentProps) {
-  const sort = parseSortingState(sortStr, columnIds);
+  const [apiFilters, setApiFilters] = React.useState(() =>
+    buildApiFilters(
+      { pageIndex: 0, pageSize: seedPageSize },
+      EMPTY_SORTING,
+      EMPTY_FILTERS,
+    ),
+  )
 
-  const filters = {
-    page,
-    limit: perPage,
-    ...(name && { search: name }),
-    ...(category && { categories: category }),
-    ...(sort.length > 0 && { sort: JSON.stringify(sort) }),
-  };
-
-  const { data } = useSuspenseQuery(productsQueryOptions(filters));
-  const pageCount = Math.ceil(data.total_products / perPage);
+  const { data } = useSuspenseQuery(productsQueryOptions(apiFilters))
+  const pageCount = Math.ceil(data.total_products / apiFilters.limit)
 
   const { table } = useDataTable({
     data: data.products,
@@ -91,19 +74,47 @@ function ProductTableContent({
     pageCount,
     shallow: true,
     debounceMs: 500,
-    pageSize: perPage,
-    onPageSizeChange,
-    searchAdapter,
+    pageSize: seedPageSize,
+    onPageSizeChange: (newSize) => {
+      onPageSizePrefChange(newSize)
+    },
     initialState: {
+      pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit },
       columnPinning: { right: ['actions'] },
     },
-  });
+  })
+
+  // Sync table state → apiFilters on user interaction.
+  // useRef guards against re-syncing the same values, preventing infinite loops
+  // when useSuspenseQuery re-renders with new data.
+  const prevRef = React.useRef({ pageIndex: 0, pageSize: seedPageSize, sorting: '', filters: '' })
+
+  React.useEffect(() => {
+    const { pagination, sorting, columnFilters } = table.getState()
+    const sortingKey = JSON.stringify(sorting)
+    const filtersKey = JSON.stringify(columnFilters)
+
+    if (
+      pagination.pageIndex !== prevRef.current.pageIndex ||
+      pagination.pageSize !== prevRef.current.pageSize ||
+      sortingKey !== prevRef.current.sorting ||
+      filtersKey !== prevRef.current.filters
+    ) {
+      prevRef.current = {
+        pageIndex: pagination.pageIndex,
+        pageSize: pagination.pageSize,
+        sorting: sortingKey,
+        filters: filtersKey,
+      }
+      setApiFilters(buildApiFilters(pagination, sorting, columnFilters))
+    }
+  })
 
   return (
     <DataTable table={table} scrollTargetId={PRODUCT_TABLE_SCROLL_TARGET_ID}>
       <DataTableToolbar table={table} />
     </DataTable>
-  );
+  )
 }
 
 export function ProductTableSkeleton() {
@@ -113,5 +124,5 @@ export function ProductTableSkeleton() {
       <div className='bg-muted h-96 w-full rounded-lg' />
       <div className='bg-muted h-10 w-full rounded' />
     </div>
-  );
+  )
 }

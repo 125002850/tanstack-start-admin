@@ -1,3 +1,7 @@
+/**
+ * @deprecated Superseded by V2 feature-local state (Task V2-02B).
+ * Kept as inventory only. Not used by the v2 products main path.
+ */
 import type { WorkspaceRouteDefinition } from '@/features/workspace-tabs/types'
 import type { ProductFilters } from '../api/types'
 import { productKeys } from '../api/queries'

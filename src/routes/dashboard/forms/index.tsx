@@ -3,6 +3,7 @@ import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
 const meta = defineRouteMeta({
   label: '表单',
+  workspace: { keepAlive: false },
   nav: {
     visible: true,
     group: 'components',

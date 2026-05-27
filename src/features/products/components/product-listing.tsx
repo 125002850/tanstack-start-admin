@@ -1,15 +1,10 @@
-import { Suspense } from 'react';
-import { ProductTable, ProductTableSkeleton } from './product-tables';
-import type { DataTableSearchAdapter } from '@/features/workspace-tabs/types';
+import { Suspense } from 'react'
+import { ProductTable, ProductTableSkeleton } from './product-tables'
 
-export default function ProductListingPage({
-  searchAdapter,
-}: {
-  searchAdapter?: DataTableSearchAdapter;
-}) {
+export default function ProductListingPage() {
   return (
     <Suspense fallback={<ProductTableSkeleton />}>
-      <ProductTable searchAdapter={searchAdapter} />
+      <ProductTable />
     </Suspense>
-  );
+  )
 }

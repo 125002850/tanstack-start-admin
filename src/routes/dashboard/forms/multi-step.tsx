@@ -2,10 +2,13 @@ import { createFileRoute } from '@tanstack/react-router';
 import PageContainer from '@/components/layout/page-container';
 import FormsShowcasePage from '@/features/forms/components/forms-showcase-page';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
+import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '多步骤表单',
   title: 'Dashboard: Multi-Step Form',
+  workspace: {},
   nav: {
     visible: true,
     group: 'components',
@@ -21,9 +24,27 @@ const meta = defineRouteMeta({
 
 export const Route = createFileRoute('/dashboard/forms/multi-step')({
   ...meta,
-  component: () => (
+  component: MultiStepFormPage
+});
+
+function MultiStepFormPage() {
+  if (!isWorkspaceTabsEnabled()) {
+    return <MultiStepFormContent />
+  }
+
+  return (
+    <WorkspacePageBoundary
+      tabId='/dashboard/forms/multi-step'
+      initialTitle='多步骤表单'
+      render={() => <MultiStepFormContent />}
+    />
+  )
+}
+
+function MultiStepFormContent() {
+  return (
     <PageContainer>
       <FormsShowcasePage />
     </PageContainer>
   )
-});
+}

@@ -1,3 +1,8 @@
+/**
+ * @deprecated inventory-only — tests legacy v1 workspace definition.
+ * Superseded by V2 internal-state DataTable (Task V2-02B).
+ * DO NOT import in new test or feature code.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   parseProductListSearch,

@@ -1,10 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
 import ChatViewPage from '@/features/chat/components/chat-view-page';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
+import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '聊天',
   title: 'Dashboard: Chat',
+  workspace: {},
   nav: {
     visible: true,
     group: 'overview',
@@ -16,5 +19,19 @@ const meta = defineRouteMeta({
 
 export const Route = createFileRoute('/dashboard/chat')({
   ...meta,
-  component: () => <ChatViewPage />
+  component: ChatPage
 });
+
+function ChatPage() {
+  if (!isWorkspaceTabsEnabled()) {
+    return <ChatViewPage />
+  }
+
+  return (
+    <WorkspacePageBoundary
+      tabId='/dashboard/chat'
+      initialTitle='聊天'
+      render={() => <ChatViewPage />}
+    />
+  )
+}

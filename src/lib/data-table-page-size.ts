@@ -6,16 +6,39 @@ export const DEFAULT_DATA_TABLE_PAGE_SIZE = DATA_TABLE_PAGE_SIZE_OPTIONS[0];
 const STORAGE_KEY = 'app-data-table-per-page';
 const DATA_TABLE_PAGE_SIZE_OPTION_SET = new Set<number>(DATA_TABLE_PAGE_SIZE_OPTIONS);
 
-function getSafeLocalStorage(): Storage | undefined {
+/**
+ * Reads the user's preferred page size from localStorage.
+ * Returns null when no preference has been saved or localStorage is unavailable.
+ *
+ * Contract: this function ONLY reads from localStorage. It does NOT read from
+ * URL search params, router state, or any other source.
+ */
+export function readDataTablePageSize(): number | null {
   try {
-    if (typeof window !== 'undefined' && typeof window.localStorage === 'object') {
-      return window.localStorage;
-    }
+    if (typeof window === 'undefined') return null
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = Number.parseInt(raw, 10)
+    return isValidDataTablePageSize(parsed) ? parsed : null
   } catch {
-    // localStorage unavailable
+    return null
   }
+}
 
-  return undefined;
+/**
+ * Persists the user's preferred page size to localStorage.
+ *
+ * Contract: this function ONLY writes to localStorage. It does NOT write to
+ * URL search params, router state, or any other destination.
+ */
+export function writeDataTablePageSize(pageSize: number): void {
+  try {
+    if (typeof window === 'undefined') return
+    const normalized = normalizeDataTablePageSize(pageSize)
+    window.localStorage.setItem(STORAGE_KEY, String(normalized))
+  } catch {
+    // write blocked — degrade silently
+  }
 }
 
 export function isValidDataTablePageSize(value: unknown): value is number {
@@ -33,37 +56,34 @@ function normalizeDataTablePageSize(
   return isValidDataTablePageSize(value) ? value : fallback;
 }
 
-export function readDataTablePageSize(): number | null {
-  const storage = getSafeLocalStorage();
-  if (!storage) return null;
-
-  try {
-    const raw = storage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-
-    const parsed = Number.parseInt(raw, 10);
-    return isValidDataTablePageSize(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-export function writeDataTablePageSize(pageSize: number): void {
-  const storage = getSafeLocalStorage();
-  if (!storage) return;
-
-  try {
-    storage.setItem(STORAGE_KEY, String(normalizeDataTablePageSize(pageSize)));
-  } catch {
-    // write blocked — degrade silently
-  }
-}
-
 type UseDataTablePageSizeOptions = {
+  /**
+   * Optional seed value from a caller-managed source (e.g. search params).
+   * When provided with hasExplicitSearchPerPage=true, the seed takes priority
+   * over localStorage preference for initialization only.
+   *
+   * @deprecated The search-per-page pathway is preserved for backward compat.
+   * New code should omit this and rely on localStorage preference exclusively.
+   */
   searchPerPage?: number;
+  /** @deprecated See searchPerPage. */
   hasExplicitSearchPerPage?: boolean;
 };
 
+/**
+ * Hook that resolves the current page size from the user's localStorage
+ * preference, falling back to DEFAULT_DATA_TABLE_PAGE_SIZE.
+ *
+ * Contract:
+ * - On mount: reads localStorage preference → seeds pageSize
+ * - On pageSize change via setPageSize: writes back to localStorage
+ * - Does NOT sync with URL search params (that's the caller's choice)
+ * - Does NOT read router state
+ *
+ * The `searchPerPage` / `hasExplicitSearchPerPage` options are deprecated
+ * and preserved only for backward compatibility during the V1→V2 migration.
+ * New code should call `useDataTablePageSize({})`.
+ */
 export function useDataTablePageSize({
   searchPerPage,
   hasExplicitSearchPerPage = typeof searchPerPage === 'number'

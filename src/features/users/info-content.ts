@@ -1,12 +1,12 @@
 import type { InfobarContent } from '@/components/ui/infobar';
 
 export const usersInfoContent: InfobarContent = {
-  title: 'Users — React Query + Search Params Pattern',
+  title: 'Users — Feature-Local Internal State Pattern',
   sections: [
     {
       title: 'Overview',
       description:
-        'This page demonstrates data fetching with React Query combined with TanStack Router search params for URL state. The route loader prefetches data on the server, and the client uses useSuspenseQuery for cache-first rendering.',
+        'This page demonstrates data fetching with React Query using V2 feature-local internal state. Table pagination, sorting, and filtering are managed entirely within the component via useDataTable internal mode — no URL sync, no external state adapter, no workspace definition bridging.',
       links: [
         {
           title: 'TanStack Query SSR Docs',
@@ -21,20 +21,20 @@ export const usersInfoContent: InfobarContent = {
       links: []
     },
     {
-      title: 'URL State with TanStack Router',
+      title: 'Internal State with useDataTable',
       description:
-        "Pagination, search, and role filters are synced to the URL via TanStack Router's search params (validateSearch + useSearch). The useDataTable hook manages TanStack Table state and debounces filter changes before updating the URL. When the URL changes, React Query automatically refetches because the query key includes the filters.",
+        'Pagination, search, and role filters are managed as React state internal to the table component. The useDataTable hook (V2 internal mode) owns pagination/sorting/column-filter state via useState. API query filters are derived from table.getState() and synced via useEffect. Page size preference is seeded from localStorage via useDataTablePageSize. Table state is never written back to the URL.',
       links: [
         {
-          title: 'TanStack Router Search Params',
-          url: 'https://tanstack.com/router/latest/docs/framework/react/guide/search-params'
+          title: 'TanStack Table Docs',
+          url: 'https://tanstack.com/table/latest'
         }
       ]
     },
     {
       title: 'Products vs Users Pattern',
       description:
-        'Both pages use the same architecture: route loader prefetch → client useSuspenseQuery → useDataTable for table state. The pattern enables background refetching, cache sharing across components, and optimistic mutations.',
+        'Both pages use the same V2 architecture: feature-local internal state → useSuspenseQuery with filters derived from table state → useDataTable in internal mode. The WorkspacePageBoundary handles tab registration; table state lives entirely within the page component and is preserved across tab switches by Activity keep-alive.',
       links: []
     }
   ]

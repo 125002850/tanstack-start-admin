@@ -16,21 +16,24 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable
-} from '@tanstack/react-table';
-import { useNavigate, useSearch } from '@tanstack/react-router';
-import * as React from 'react';
+} from '@tanstack/react-table'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import * as React from 'react'
 
-import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import { DEFAULT_DATA_TABLE_PAGE_SIZE } from '@/lib/data-table-page-size';
-import { parseSortingState, serializeSortingState } from '@/lib/parsers';
-import type { ExtendedColumnSort } from '@/types/data-table';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
+import { DEFAULT_DATA_TABLE_PAGE_SIZE } from '@/lib/data-table-page-size'
+import { parseSortingState, serializeSortingState } from '@/lib/parsers'
+import type { ExtendedColumnSort } from '@/types/data-table'
+import type { DataTableSearchAdapter } from '@/features/workspace-tabs/types'
+import {
+  buildPaginationSearch,
+  buildSortSearch,
+  buildFilterSearch,
+} from '@/features/workspace-tabs/lib/workspace-route-state'
 
-const ARRAY_SEPARATOR = ',';
-const DEBOUNCE_MS = 300;
-
-function asSearchReducer(reducer: (prev: Record<string, unknown>) => Record<string, unknown>) {
-  return reducer as never;
-}
+const ARRAY_SEPARATOR = ','
+const DEBOUNCE_MS = 300
+const EMPTY_SEARCH = Object.freeze({}) as Record<string, unknown>
 
 interface UseDataTableProps<TData>
   extends
@@ -45,20 +48,37 @@ interface UseDataTableProps<TData>
     >,
     Required<Pick<TableOptions<TData>, 'pageCount'>> {
   initialState?: Omit<Partial<TableState>, 'sorting'> & {
-    sorting?: ExtendedColumnSort<TData>[];
-  };
-  history?: 'push' | 'replace';
-  debounceMs?: number;
-  throttleMs?: number;
-  clearOnDefault?: boolean;
-  enableAdvancedFilter?: boolean;
-  pageSize?: number;
-  onPageSizeChange?: (pageSize: number) => void;
-  scroll?: boolean;
-  shallow?: boolean;
-  startTransition?: React.TransitionStartFunction;
+    sorting?: ExtendedColumnSort<TData>[]
+  }
+  history?: 'push' | 'replace'
+  debounceMs?: number
+  throttleMs?: number
+  clearOnDefault?: boolean
+  enableAdvancedFilter?: boolean
+  pageSize?: number
+  onPageSizeChange?: (pageSize: number) => void
+  scroll?: boolean
+  shallow?: boolean
+  startTransition?: React.TransitionStartFunction
+  /** @deprecated Use internal-state mode (default) instead. The searchAdapter path
+   *  is preserved for backward compatibility during V2 migration. */
+  searchAdapter?: DataTableSearchAdapter
 }
 
+/**
+ * Unified data-table hook with two modes sharing a stable hook order.
+ *
+ * All React hooks are called unconditionally at the top level so that
+ * `searchAdapter` can safely change across renders without violating the
+ * Rules of Hooks. The mode only selects which state/handler values are
+ * passed to useReactTable — it never gates hook calls.
+ *
+ * 1. **Internal-state mode (default)** — pagination, sorting, and column filters
+ *    are managed entirely within the hook via React state.
+ *
+ * 2. **searchAdapter mode (deprecated)** — state is bridged through a
+ *    DataTableSearchAdapter for URL-synced workflows.
+ */
 export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const {
     columns,
@@ -70,184 +90,269 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     pageSize: controlledPageSize,
     onPageSizeChange,
     shallow = true,
+    searchAdapter,
     ...tableProps
-  } = props;
+  } = props
 
-  const search = useSearch({ strict: false }) as Record<string, unknown>;
-  const navigate = useNavigate();
+  // ── Router hooks (always called for hook-order stability) ──────────
+  const routerSearch = useSearch({ strict: false }) as Record<string, unknown>
+  const navigate = useNavigate()
 
+  // ── Row selection / column visibility / column pinning (shared) ─────
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
     initialState?.rowSelection ?? {}
-  );
+  )
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(
     initialState?.columnVisibility ?? {}
-  );
+  )
   const [columnPinning, setColumnPinning] = React.useState<ColumnPinningState>(
     initialState?.columnPinning ?? {}
-  );
+  )
 
-  // Read pagination from search params
-  const page = (search.page as number) ?? 1;
-  const perPage = controlledPageSize ?? (search.perPage as number) ?? DEFAULT_DATA_TABLE_PAGE_SIZE;
+  // ── Adapter search snapshot (always called for hook-order stability) ─
+  // useSyncExternalStore calls getSnapshot during render — the returned
+  // value always reflects the CURRENT adapter, even on identity switch.
+  // No useEffect lag, no stale frame, no render-phase setState.
+  const adapterSearch = React.useSyncExternalStore(
+    React.useCallback(
+      (onStoreChange: () => void) => {
+        if (!searchAdapter?.subscribe) return () => {}
+        return searchAdapter.subscribe(onStoreChange)
+      },
+      [searchAdapter],
+    ),
+    React.useCallback(
+      () => searchAdapter?.getSearch() ?? EMPTY_SEARCH,
+      [searchAdapter],
+    ),
+    // getServerSnapshot: SSR-safe fallback. On the server there is no
+    // real adapter to subscribe to, so we return the same frozen empty
+    // object. This prevents "Missing getServerSnapshot" errors during
+    // server-side rendering while keeping a stable reference.
+    React.useCallback(
+      () => searchAdapter?.getSearch() ?? EMPTY_SEARCH,
+      [searchAdapter],
+    ),
+  )
 
-  const pagination: PaginationState = React.useMemo(
-    () => ({
-      pageIndex: page - 1,
-      pageSize: perPage
-    }),
-    [page, perPage]
-  );
+  // Stable ref for the latest adapter snapshot — used by setSearch to
+  // avoid stale closures without putting adapter writes inside updaters.
+  const adapterSearchRef = React.useRef(adapterSearch)
+  adapterSearchRef.current = adapterSearch
 
-  const onPaginationChange = React.useCallback(
+  // Pure setSearch: read current snapshot via ref (no stale closure),
+  // write to adapter OUTSIDE any React state updater. The subscribe
+  // callback above feeds the new value back through useSyncExternalStore.
+  const setSearch = React.useCallback(
+    (reducer: (prev: Record<string, unknown>) => Record<string, unknown>) => {
+      if (!searchAdapter) return
+      const next = reducer(adapterSearchRef.current)
+      searchAdapter.setSearch(() => next)
+    },
+    [searchAdapter],
+  )
+
+  const adapterMode = !!searchAdapter
+  const search = adapterMode ? adapterSearch : ({} as Record<string, unknown>)
+
+  // ── Pagination ──────────────────────────────────────────────────────
+  const perPage = controlledPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE
+
+  const [internalPagination, setInternalPagination] = React.useState<PaginationState>(() => ({
+    pageIndex: initialState?.pagination?.pageIndex ?? 0,
+    pageSize: perPage,
+  }))
+
+  const adapterPage = (search.page as number) ?? 1
+  const adapterPerPage = controlledPageSize ?? (search.perPage as number) ?? DEFAULT_DATA_TABLE_PAGE_SIZE
+  const adapterPagination: PaginationState = React.useMemo(
+    () => ({ pageIndex: adapterPage - 1, pageSize: adapterPerPage }),
+    [adapterPage, adapterPerPage],
+  )
+
+  const pagination = adapterMode ? adapterPagination : internalPagination
+
+  // Keep pageSize in sync with controlled prop changes (internal mode only)
+  React.useEffect(() => {
+    if (adapterMode) return
+    setInternalPagination((prev) => {
+      if (prev.pageSize === perPage) return prev
+      return { ...prev, pageSize: perPage }
+    })
+  }, [perPage, adapterMode])
+
+  const internalOnPaginationChange = React.useCallback(
+    (updaterOrValue: Updater<PaginationState>) => {
+      setInternalPagination((prev) => {
+        const next = typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+        if (next.pageSize !== prev.pageSize) {
+          onPageSizeChange?.(next.pageSize)
+        }
+        return next
+      })
+    },
+    [onPageSizeChange],
+  )
+
+  const adapterOnPaginationChange = React.useCallback(
     (updaterOrValue: Updater<PaginationState>) => {
       const newPagination =
-        typeof updaterOrValue === 'function' ? updaterOrValue(pagination) : updaterOrValue;
-      const hasPageSizeChanged = newPagination.pageSize !== pagination.pageSize;
-
-      if (hasPageSizeChanged) {
-        onPageSizeChange?.(newPagination.pageSize);
+        typeof updaterOrValue === 'function' ? updaterOrValue(pagination) : updaterOrValue
+      if (newPagination.pageSize !== pagination.pageSize) {
+        onPageSizeChange?.(newPagination.pageSize)
       }
-
-      void navigate({
-        search: asSearchReducer((prev: Record<string, unknown>) => ({
-          ...prev,
-          page: newPagination.pageIndex + 1,
-          ...(hasPageSizeChanged ? { perPage: newPagination.pageSize } : {})
-        })),
-        replace: history === 'replace'
-      });
+      setSearch((prev: Record<string, unknown>) =>
+        buildPaginationSearch(prev, newPagination.pageIndex, newPagination.pageSize, pagination.pageSize),
+      )
     },
-    [history, navigate, onPageSizeChange, pagination]
-  );
+    [onPageSizeChange, pagination, setSearch],
+  )
 
-  // Read sorting from search params
+  const onPaginationChange = adapterMode ? adapterOnPaginationChange : internalOnPaginationChange
+
+  // ── Sorting ──────────────────────────────────────────────────────────
+  const [internalSorting, setInternalSorting] = React.useState<SortingState>(
+    initialState?.sorting ?? []
+  )
+
   const columnIds = React.useMemo(() => {
-    return new Set(columns.map((column) => column.id).filter(Boolean) as string[]);
-  }, [columns]);
+    return new Set(columns.map((column) => column.id).filter(Boolean) as string[])
+  }, [columns])
 
-  const sorting = React.useMemo(
+  const adapterSorting = React.useMemo(
     () =>
       parseSortingState<TData>(search.sort as string | undefined, columnIds) ??
       initialState?.sorting ??
       [],
-    [search.sort, columnIds, initialState?.sorting]
-  );
+    [search.sort, columnIds, initialState?.sorting],
+  )
 
-  const onSortingChange = React.useCallback(
+  const sorting = adapterMode ? adapterSorting : internalSorting
+
+  const internalOnSortingChange = React.useCallback(
+    (updaterOrValue: Updater<SortingState>) => {
+      setInternalSorting((prev) =>
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue,
+      )
+    },
+    [],
+  )
+
+  const adapterOnSortingChange = React.useCallback(
     (updaterOrValue: Updater<SortingState>) => {
       const newSorting =
-        typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue;
-      void navigate({
-        search: asSearchReducer((prev: Record<string, unknown>) => ({
-          ...prev,
-          sort:
-            newSorting.length > 0
-              ? serializeSortingState(newSorting as ExtendedColumnSort<TData>[])
-              : undefined
-        })),
-        replace: history === 'replace'
-      });
+        typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue
+      setSearch((prev: Record<string, unknown>) =>
+        buildSortSearch(
+          prev,
+          newSorting.length > 0
+            ? serializeSortingState(newSorting as ExtendedColumnSort<TData>[])
+            : undefined,
+        ),
+      )
     },
-    [sorting, navigate, history]
-  );
+    [sorting, setSearch],
+  )
 
-  // Filter handling
+  const onSortingChange = adapterMode ? adapterOnSortingChange : internalOnSortingChange
+
+  // ── Column filters ───────────────────────────────────────────────────
   const filterableColumns = React.useMemo(() => {
-    if (enableAdvancedFilter) return [];
-    return columns.filter((column) => column.enableColumnFilter);
-  }, [columns, enableAdvancedFilter]);
+    if (enableAdvancedFilter) return []
+    return columns.filter((column) => column.enableColumnFilter)
+  }, [columns, enableAdvancedFilter])
 
-  // Read filter values from search params
   const filterValues = React.useMemo(() => {
-    if (enableAdvancedFilter) return {};
-    const values: Record<string, string | string[] | null> = {};
+    if (enableAdvancedFilter || !adapterMode) return {}
+    const values: Record<string, string | string[] | null> = {}
     for (const column of filterableColumns) {
-      const key = column.id ?? '';
-      const val = search[key];
+      const key = column.id ?? ''
+      const val = search[key]
       if (val !== undefined && val !== null) {
         if (column.meta?.options) {
-          // Array filter - stored as comma-separated string
-          values[key] = typeof val === 'string' ? val.split(ARRAY_SEPARATOR) : null;
+          values[key] = typeof val === 'string' ? val.split(ARRAY_SEPARATOR) : null
         } else {
-          values[key] = typeof val === 'string' ? val : null;
+          values[key] = typeof val === 'string' ? val : null
         }
       } else {
-        values[key] = null;
+        values[key] = null
       }
     }
-    return values;
-  }, [search, filterableColumns, enableAdvancedFilter]);
+    return values
+  }, [search, filterableColumns, enableAdvancedFilter, adapterMode])
 
   const debouncedSetFilterValues = useDebouncedCallback(
     (values: Record<string, string | string[] | null>) => {
-      void navigate({
-        search: asSearchReducer((prev: Record<string, unknown>) => {
-          const next: Record<string, unknown> = { ...prev, page: 1 };
-          for (const [key, value] of Object.entries(values)) {
-            if (value === null || value === undefined) {
-              delete next[key];
-            } else if (Array.isArray(value)) {
-              next[key] = value.join(ARRAY_SEPARATOR);
-            } else {
-              next[key] = value;
-            }
-          }
-          return next;
-        }),
-        replace: history === 'replace'
-      });
+      if (!adapterMode) return
+      setSearch((prev: Record<string, unknown>) =>
+        buildFilterSearch(prev, values, ARRAY_SEPARATOR),
+      )
     },
-    debounceMs
-  );
+    debounceMs,
+  )
 
   const initialColumnFilters: ColumnFiltersState = React.useMemo(() => {
-    if (enableAdvancedFilter) return [];
-
+    if (enableAdvancedFilter || !adapterMode) return []
     return Object.entries(filterValues).reduce<ColumnFiltersState>((filters, [key, value]) => {
       if (value !== null) {
-        filters.push({
-          id: key,
-          value
-        });
+        filters.push({ id: key, value })
       }
-      return filters;
-    }, []);
-  }, [filterValues, enableAdvancedFilter]);
+      return filters
+    }, [])
+  }, [filterValues, enableAdvancedFilter, adapterMode])
 
-  const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>(initialColumnFilters);
+  const [internalColumnFilters, setInternalColumnFilters] = React.useState<ColumnFiltersState>(
+    initialState?.columnFilters ?? []
+  )
+
+  const [adapterColumnFilters, setAdapterColumnFilters] =
+    React.useState<ColumnFiltersState>(initialColumnFilters)
 
   React.useEffect(() => {
-    setColumnFilters(initialColumnFilters);
-  }, [initialColumnFilters]);
+    if (!adapterMode) return
+    setAdapterColumnFilters(initialColumnFilters)
+  }, [initialColumnFilters, adapterMode])
 
-  const onColumnFiltersChange = React.useCallback(
+  const columnFilters = adapterMode ? adapterColumnFilters : internalColumnFilters
+
+  const internalOnColumnFiltersChange = React.useCallback(
     (updaterOrValue: Updater<ColumnFiltersState>) => {
-      if (enableAdvancedFilter) return;
+      if (enableAdvancedFilter) return
+      setInternalColumnFilters((prev) =>
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue,
+      )
+    },
+    [enableAdvancedFilter],
+  )
 
-      setColumnFilters((prev) => {
-        const next = typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue;
-
-        const filterUpdates: Record<string, string | string[] | null> = {};
+  const adapterOnColumnFiltersChange = React.useCallback(
+    (updaterOrValue: Updater<ColumnFiltersState>) => {
+      if (enableAdvancedFilter) return
+      setAdapterColumnFilters((prev) => {
+        const next = typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+        const filterUpdates: Record<string, string | string[] | null> = {}
         for (const filter of next) {
           if (filterableColumns.find((column) => column.id === filter.id)) {
-            filterUpdates[filter.id] = filter.value as string | string[];
+            filterUpdates[filter.id] = filter.value as string | string[]
           }
         }
-
         for (const prevFilter of prev) {
           if (!next.some((filter) => filter.id === prevFilter.id)) {
-            filterUpdates[prevFilter.id] = null;
+            filterUpdates[prevFilter.id] = null
           }
         }
-
-        debouncedSetFilterValues(filterUpdates);
-        return next;
-      });
+        debouncedSetFilterValues(filterUpdates)
+        return next
+      })
     },
-    [debouncedSetFilterValues, filterableColumns, enableAdvancedFilter]
-  );
+    [debouncedSetFilterValues, filterableColumns, enableAdvancedFilter],
+  )
 
+  const onColumnFiltersChange = adapterMode
+    ? adapterOnColumnFiltersChange
+    : internalOnColumnFiltersChange
+
+  // ── React Table (exactly one call, always in the same position) ──────
   const table = useReactTable({
     ...tableProps,
     columns,
@@ -259,11 +364,11 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       columnVisibility,
       columnPinning,
       rowSelection,
-      columnFilters
+      columnFilters,
     },
     defaultColumn: {
       ...tableProps.defaultColumn,
-      enableColumnFilter: false
+      enableColumnFilter: false,
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -281,8 +386,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
     manualPagination: true,
     manualSorting: true,
-    manualFiltering: true
-  });
+    manualFiltering: true,
+  })
 
-  return { table, shallow, debounceMs, throttleMs: props.throttleMs };
+  return { table, shallow, debounceMs, throttleMs: tableProps.throttleMs }
 }
