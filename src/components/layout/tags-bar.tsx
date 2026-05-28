@@ -1,7 +1,7 @@
-import { useCallback, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useCallback, useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Icons } from '@/components/icons'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { useWorkspaceTags } from '@/features/workspace-tabs/hooks/use-workspace-tags'
 import type { WorkspaceTagId } from '@/features/workspace-tabs/types'
@@ -12,20 +12,27 @@ export default function TagsBar() {
     useWorkspaceTags()
   const tabsRef = useRef<Map<string, HTMLButtonElement>>(new Map())
 
+  const scrollToTab = useCallback((id: WorkspaceTagId) => {
+    const tabEl = tabsRef.current.get(id)
+    if (!tabEl) return
+    requestAnimationFrame(() => {
+      tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    })
+  }, [])
+
+  useEffect(() => {
+    if (activeId) scrollToTab(activeId)
+  }, [activeId, scrollToTab])
+
   const activate = useCallback(
     (id: WorkspaceTagId) => {
       const tab = tabs[id]
       if (tab && id !== activeId) {
-        openOrActivate({
-          id: tab.id,
-          href: tab.href,
-          title: tab.title,
-          closable: tab.closable,
-          keepAlive: tab.keepAlive,
-        })
+        openOrActivate(tab)
       }
+      scrollToTab(id)
     },
-    [tabs, activeId, openOrActivate],
+    [tabs, activeId, openOrActivate, scrollToTab],
   )
 
   const handleKeyDown = useCallback(
@@ -58,9 +65,10 @@ export default function TagsBar() {
       if (next && next !== id) {
         const btn = tabsRef.current.get(next)
         btn?.focus()
+        scrollToTab(next)
       }
     },
-    [openedOrder, activate, close],
+    [openedOrder, activate, close, scrollToTab],
   )
 
   const handleClose = useCallback(
@@ -74,7 +82,7 @@ export default function TagsBar() {
   if (!isWorkspaceTabsEnabled()) return null
 
   return (
-    <ScrollArea className='flex-1' viewportProps={{ className: '[&>div]:flex' }}>
+    <ScrollArea className='flex-1 overflow-x-auto min-w-0' viewportProps={{ className: '[&>div]:flex' }}>
       <div className='flex items-center gap-0.5 pr-2' role='tablist' aria-label='Workspace tabs'>
         {openedOrder.map((id) => {
           const tab = tabs[id]
@@ -154,7 +162,6 @@ export default function TagsBar() {
           )
         })}
       </div>
-      <ScrollBar orientation='horizontal' className='h-1.5' />
     </ScrollArea>
   )
 }

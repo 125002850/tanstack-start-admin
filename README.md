@@ -234,12 +234,16 @@ cd tanstack-start-dashboard
 安装依赖并启动：
 
 ```bash
-bun install
+corepack enable
+pnpm install
 cp env.example.txt .env
-bun run dev
+pnpm dev
 ```
 
 完成后可以通过 <http://localhost:3000> 访问应用。
+
+> [!IMPORTANT]
+> 当前仓库统一使用 `pnpm`，锁文件以 `pnpm-lock.yaml` 为准，不再维护 `bun.lock`。
 
 ## 部署
 
@@ -260,8 +264,8 @@ bun run dev
 本地或服务器可使用以下命令验证构建与启动：
 
 ```bash
-npm run build
-npm run start
+pnpm build
+pnpm start
 ```
 
 ### 如果要部署到其他平台

@@ -17,7 +17,7 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test:unit": "vitest run",
-    "pretest:e2e:smoke": "bun run build",
+    "pretest:e2e:smoke": "pnpm run build",
     "test:e2e:smoke": "NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost playwright test"
   },
   "dependencies": {

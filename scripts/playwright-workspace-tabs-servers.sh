@@ -50,9 +50,9 @@ build_output() {
 
   rm -rf "$target_dir"
   if [[ "$workspace_flag" == "0" ]]; then
-    VITE_ENABLE_WORKSPACE_TABS=0 bun run build
+    VITE_ENABLE_WORKSPACE_TABS=0 pnpm run build
   else
-    bun run build
+    pnpm run build
   fi
   cp -R .output "$target_dir"
 }
