@@ -99,9 +99,4 @@ export interface WorkspaceScreenDescriptor<TState = unknown> {
   instanceKey: string
 }
 
-export interface WorkspaceRoutePageProps<TState = unknown> {
-  definition: WorkspaceRouteDefinition<TState>
-  screen: React.ComponentType<WorkspaceScreenProps<TState>>
-  instanceKey?: string
-  fallback?: React.ReactNode
-}
+
