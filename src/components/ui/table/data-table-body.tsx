@@ -77,21 +77,19 @@ export function DataTableBody<TData>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headerRowRef])
 
+  const pagination = table.getState().pagination
+  const sorting = table.getState().sorting
+  const columnFilters = table.getState().columnFilters
+
   // Scroll reset — useLayoutEffect for pre-paint timing (Task 3 fix)
   useLayoutEffect(() => {
-    const state = table.getState()
-    const key = `${state.pagination.pageIndex}-${state.pagination.pageSize}-${JSON.stringify(state.sorting)}-${JSON.stringify(state.columnFilters)}`
+    const key = `${pagination.pageIndex}-${pagination.pageSize}-${JSON.stringify(sorting)}-${JSON.stringify(columnFilters)}`
     if (prevKeyRef.current && prevKeyRef.current !== key) {
       rowVirtualizer.scrollToIndex(0, { behavior: 'auto' })
     }
     prevKeyRef.current = key
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    table.getState().pagination.pageIndex,
-    table.getState().pagination.pageSize,
-    table.getState().sorting,
-    table.getState().columnFilters,
-  ])
+  }, [pagination.pageIndex, pagination.pageSize, sorting, columnFilters])
 
   // KeepAlive hidden guard: freeze when viewport rect is 0x0 (Task 3 fix)
   const frozenRef = useRef(false)

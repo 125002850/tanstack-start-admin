@@ -39,11 +39,11 @@ export interface DataTableActionsBarProps<TData> {
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function resolveValue<T>(
-  value: T | ((ctx: DataTableActionContext<any>) => T),
-  ctx: DataTableActionContext<any>,
+  value: T | ((ctx: DataTableActionContext<unknown>) => T),
+  ctx: DataTableActionContext<unknown>,
 ): T {
   return typeof value === 'function'
-    ? (value as (ctx: DataTableActionContext<any>) => T)(ctx)
+    ? (value as (ctx: DataTableActionContext<unknown>) => T)(ctx)
     : value
 }
 
@@ -109,7 +109,7 @@ function ActionItem<TData>({
         setIsLoading(false)
       }
     }
-  }, [action.callback, isLoading, ctx])
+  }, [action, isLoading, ctx])
 
   // Dropdown: has children
   if (action.children && action.children.length > 0) {
@@ -220,7 +220,7 @@ function DropdownActionItem<TData>({
         }
       }
     },
-    [action.callback, isLoading, ctx],
+    [action, isLoading, ctx],
   )
 
   if (hidden) return null

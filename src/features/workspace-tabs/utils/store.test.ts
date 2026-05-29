@@ -184,7 +184,7 @@ describe('workspace-tags store', () => {
       store.openOrActivate(b)
       store.closeOther('a')
       const state = useWorkspaceTagStore.getState()
-      expect(Object.keys(state.tabs).sort()).toEqual([HOME_ID, 'a'])
+      expect(Object.keys(state.tabs).toSorted()).toEqual([HOME_ID, 'a'])
       expect(state.openedOrder).toEqual([HOME_ID, 'a'])
       expect(state.activeId).toBe('a')
     })

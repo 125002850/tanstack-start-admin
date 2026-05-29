@@ -428,6 +428,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
   React.useEffect(() => {
     prevSizingRef.current = table.getState().columnSizing
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Persistence: write to storage only on resize-end ─────────────────
@@ -460,6 +461,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       }
       prevSizingRef.current = { ...currentSizing }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isResizingColumn])
 
   // ── Reset column sizing ──────────────────────────────────────────────

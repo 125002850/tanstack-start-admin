@@ -6,7 +6,7 @@
     "browser": true,
     "node": true
   },
-  "ignorePatterns": [".tanstack/**", "dist/**", "build/**", "src/routeTree.gen.ts", "scripts/**"],
+  "ignorePatterns": [".tanstack/**", "dist/**", "build/**", "src/routeTree.gen.ts", "scripts/**", "e2e/**"],
   "settings": {
     "jsx-a11y": {
       "components": {
@@ -25,6 +25,7 @@
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     "no-unused-expressions": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
+    "no-underscore-dangle": ["warn", { "allow": ["__DATA_TABLE_VIRTUAL_EVENTS__"] }],
 
     "react/react-in-jsx-scope": "off",
     "react/no-unknown-property": "off",

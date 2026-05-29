@@ -62,7 +62,7 @@ describe('data-table-column-resize-storage', () => {
     it('filters out non-finite sizing values', () => {
       localStorage.setItem(
         STORAGE_KEY,
-        buildCache({ name: 200, email: Infinity, role: NaN } as any),
+        buildCache({ name: 200, email: Infinity, role: NaN } as Record<string, number>),
       )
       expect(loadColumnSizing(TABLE_ID, 'localStorage')).toEqual({ name: 200 })
     })
