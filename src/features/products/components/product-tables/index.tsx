@@ -12,7 +12,7 @@ import { columns } from './columns';
 import * as React from 'react';
 import { resolveProductTableVirtualizationOptions } from './virtualization';
 
-const PRODUCT_TABLE_ID = 'product-list'
+const PRODUCT_TABLE_ID = 'product-list';
 const PRODUCT_TABLE_SCROLL_TARGET_ID = 'products-table';
 
 export function ProductTable() {
@@ -75,7 +75,7 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
       pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit },
       columnPinning: { right: ['actions'] }
     },
-    tableId: PRODUCT_TABLE_ID,
+    tableId: PRODUCT_TABLE_ID
   });
 
   const { pagination, sorting, columnFilters } = table.getState();

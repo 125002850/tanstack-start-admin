@@ -12,20 +12,30 @@ interface DataTableBodyProps<TData> {
   emptyMessage: string
   virtualization?: DataTableVirtualizationOptions
   scrollViewportRef: React.RefObject<HTMLDivElement | null>
+  headerRowRef: React.RefObject<HTMLTableRowElement | null>
 }
 
 const ESTIMATE_ROW_HEIGHT = DATA_TABLE_VIRTUAL_PRESET.estimateRowHeight
 const DEFAULT_OVERSCAN = DATA_TABLE_VIRTUAL_PRESET.overscan
 const DEFAULT_ROW_COUNT_THRESHOLD = DATA_TABLE_VIRTUAL_PRESET.rowCountThreshold
 
+function measureHeaderWidths(headerRow: HTMLTableRowElement): number[] {
+  return Array.from(headerRow.querySelectorAll('th')).map((th) => th.offsetWidth)
+}
+
 export function DataTableBody<TData>({
   table,
   emptyMessage,
   virtualization,
   scrollViewportRef,
+  headerRowRef,
 }: DataTableBodyProps<TData>) {
   const prevKeyRef = useRef('')
   const [runtimeFallback, setRuntimeFallback] = useState(false)
+
+  // Measured column widths from the real header cells — the single source of
+  // truth for virtualized td widths (which sit outside the table flow).
+  const [columnWidths, setColumnWidths] = useState<number[]>([])
 
   const rows = table.getRowModel().rows
   const shouldVirtualize =
@@ -46,6 +56,26 @@ export function DataTableBody<TData>({
     overscan: virtualization?.overscan ?? DEFAULT_OVERSCAN,
     enabled: shouldVirtualize,
   })
+
+  // ── Measure actual header widths ──
+  // ResizeObserver on each <th> catches all width changes (column resize,
+  // window resize, toggling). No columnSizing dependency needed — the RO
+  // handles everything.
+  useLayoutEffect(() => {
+    const headerRow = headerRowRef.current
+    if (!headerRow) return
+
+    const measure = () => setColumnWidths(measureHeaderWidths(headerRow))
+
+    measure()
+
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => measure())
+    const ths = headerRow.querySelectorAll('th')
+    ths.forEach((th) => ro.observe(th))
+    return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headerRowRef])
 
   // Scroll reset — useLayoutEffect for pre-paint timing (Task 3 fix)
   useLayoutEffect(() => {
@@ -136,6 +166,7 @@ export function DataTableBody<TData>({
                 aria-rowindex={virtualRow.index + 2}
                 style={{
                   position: 'absolute',
+                  display: 'flex',
                   top: 0,
                   left: 0,
                   width: '100%',
@@ -143,14 +174,27 @@ export function DataTableBody<TData>({
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
               >
-                {row.getVisibleCells().map((cell) => (
+                {row.getVisibleCells().map((cell, ci) => {
+                  const measured = columnWidths[ci]
+                  const thWidth = measured ?? (headerRowRef.current
+                    ? (headerRowRef.current.querySelectorAll('th')[ci] as HTMLTableCellElement | undefined)?.offsetWidth
+                    : undefined)
+                  const pinningStyles = getCommonPinningStyles({ column: cell.column })
+                  return (
                   <TableCell
                     key={cell.id}
-                    style={getCommonPinningStyles({ column: cell.column })}
+                    style={{
+                      display: 'block',
+                      ...pinningStyles,
+                      // Measured header width wins over pinning's configured size.
+                      // Fallback chain: measured → pinned configured → column default.
+                      width: thWidth ?? (pinningStyles.width as number | undefined) ?? cell.column.getSize(),
+                    }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
-                ))}
+                  )
+                })}
               </TableRow>
             )
           })}

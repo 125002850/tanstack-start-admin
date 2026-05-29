@@ -404,7 +404,11 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     enableColumnResizing: true,
-    columnResizeMode: 'onChange' as const,
+    // 'onEnd' is the recommended mode for production — it only commits the new
+    // column width on mouse-up, avoiding per-pixel re-renders during drag.
+    // The resize handle provides visual feedback (cursor + indicator line)
+    // during the drag via header.column.getIsResizing() / data-[resizing].
+    columnResizeMode: 'onEnd' as const,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

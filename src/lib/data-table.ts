@@ -12,19 +12,26 @@ export function getCommonPinningStyles<TData>({
   const isLastLeftPinnedColumn = isPinned === 'left' && column.getIsLastColumn('left');
   const isFirstRightPinnedColumn = isPinned === 'right' && column.getIsFirstColumn('right');
 
-  return {
-    boxShadow: isLastLeftPinnedColumn
-      ? '-5px 0 5px -5px var(--border) inset'
-      : isFirstRightPinnedColumn
-        ? '5px 0 5px -5px var(--border) inset'
-        : undefined,
-    left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-    right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-    position: isPinned ? 'sticky' : 'relative',
-    background: isPinned ? 'var(--background)' : undefined,
-    width: column.getSize(),
-    zIndex: isPinned ? 1 : 0
-  };
+  // Pinned columns need explicit width + sticky positioning for the pinning
+  // offset calculations. Non-pinned cells rely on <colgroup> + table-layout:fixed
+  // for column widths — setting width here would conflict with border-box sizing.
+  if (isPinned) {
+    return {
+      boxShadow: isLastLeftPinnedColumn
+        ? '-5px 0 5px -5px var(--border) inset'
+        : isFirstRightPinnedColumn
+          ? '5px 0 5px -5px var(--border) inset'
+          : undefined,
+      left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
+      right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+      position: 'sticky',
+      background: 'var(--background)',
+      width: column.getSize(),
+      zIndex: 1,
+    }
+  }
+
+  return {}
 }
 
 export function getFilterOperators(filterVariant: FilterVariant) {

@@ -13,7 +13,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/lib/data-table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { DataTableBody } from '@/components/ui/table/data-table-body';
 import { DataTableColumnResizeHandle } from './data-table-column-resize-handle';
 import type { DataTableVirtualizationOptions } from '@/types/data-table';
@@ -58,23 +58,27 @@ export function DataTable<TData>({
     virtConfig?.enabled === true &&
     table.getRowModel().rows.length >= (virtConfig.rowCountThreshold ?? DATA_TABLE_VIRTUAL_PRESET.rowCountThreshold)
 
-  // Pre-compute colgroup widths to prevent equal-width collapse in table-layout:auto
-  const colgroup = shouldVirtualize ? (
+  const colgroup = (
     <colgroup>
       {table.getAllLeafColumns().map((col) => (
         <col key={col.id} style={{ width: col.getSize() }} />
       ))}
     </colgroup>
-  ) : null
+  )
 
   const ariaRowCount =
     shouldVirtualize ? table.getRowModel().rows.length + 1 : undefined
+
+  // Ref to the thead row — DataTableBody measures its children for actual
+  // column widths (table-layout:fixed distributes extra space) and uses
+  // those measurements for virtualized cells that sit outside the table flow.
+  const headerRowRef = useRef<HTMLTableRowElement>(null)
 
   return (
     <div className='flex flex-1 flex-col space-y-4'>
       {children}
       {tableActions && <DataTableActionsBar table={table} actions={tableActions} />}
-      <div className='relative flex flex-1'>
+      <div className='relative flex flex-1 min-h-0'>
         <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
           <ScrollArea
             className='h-full w-full'
@@ -87,11 +91,11 @@ export function DataTable<TData>({
                 : undefined
             }
           >
-            <Table aria-rowcount={ariaRowCount} style={shouldVirtualize ? { tableLayout: 'fixed' } : undefined}>
+            <Table aria-rowcount={ariaRowCount} style={{ tableLayout: 'fixed' }}>
               {colgroup}
               <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
+                  <TableRow key={headerGroup.id} ref={headerRowRef}>
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
@@ -114,9 +118,9 @@ export function DataTable<TData>({
                 emptyMessage={emptyMessage}
                 virtualization={virtConfig}
                 scrollViewportRef={scrollViewportRef}
+                headerRowRef={headerRowRef}
               />
             </Table>
-            <ScrollBar orientation='horizontal' />
           </ScrollArea>
         </div>
       </div>
