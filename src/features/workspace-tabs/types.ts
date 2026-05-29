@@ -29,10 +29,11 @@ export interface WorkspaceTagOpenInput {
 
 export interface WorkspacePageBoundaryProps {
   tabId?: string
-  initialTitle: string
+  initialTitle?: string
   keepAlive?: boolean
   closable?: boolean
   render: () => React.ReactNode
+  renderWhenDisabled?: () => React.ReactNode
   errorFallback?: React.ReactNode
 }
 
@@ -98,5 +99,3 @@ export interface WorkspaceScreenDescriptor<TState = unknown> {
   screen: React.ComponentType<WorkspaceScreenProps<TState>>
   instanceKey: string
 }
-
-

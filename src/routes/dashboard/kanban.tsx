@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import KanbanViewPage from '@/features/kanban/components/kanban-view-page';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
-import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '看板',
@@ -27,14 +26,9 @@ export const Route = createFileRoute('/dashboard/kanban')({
 });
 
 function KanbanPage() {
-  if (!isWorkspaceTabsEnabled()) {
-    return <KanbanViewPage />
-  }
-
   return (
     <WorkspacePageBoundary
       tabId='/dashboard/kanban'
-      initialTitle='看板'
       render={() => <KanbanViewPage />}
     />
   )

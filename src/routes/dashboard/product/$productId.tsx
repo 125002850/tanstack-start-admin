@@ -4,7 +4,6 @@ import ProductViewPage from '@/features/products/components/product-view-page';
 import { productByIdOptions } from '@/features/products/api/queries';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
-import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '产品详情',
@@ -28,14 +27,9 @@ function ProductDetailPage() {
   const tabId =
     productId === 'new' ? '/dashboard/product/new' : `/dashboard/product/${productId}`
 
-  if (!isWorkspaceTabsEnabled()) {
-    return <ProductDetailContent productId={productId} />
-  }
-
   return (
     <WorkspacePageBoundary
       tabId={tabId}
-      initialTitle='产品详情'
       // Editable detail/new routes must preserve their page instance so
       // dirty drafts survive tab switches and close-guard rejection.
       keepAlive

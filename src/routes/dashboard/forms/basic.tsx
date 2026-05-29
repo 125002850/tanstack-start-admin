@@ -3,7 +3,6 @@ import PageContainer from '@/components/layout/page-container';
 import DemoForm from '@/components/forms/demo-form';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
-import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '基础表单',
@@ -29,14 +28,9 @@ export const Route = createFileRoute('/dashboard/forms/basic')({
 });
 
 function BasicFormPage() {
-  if (!isWorkspaceTabsEnabled()) {
-    return <BasicFormContent />
-  }
-
   return (
     <WorkspacePageBoundary
       tabId='/dashboard/forms/basic'
-      initialTitle='基础表单'
       render={() => <BasicFormContent />}
     />
   )

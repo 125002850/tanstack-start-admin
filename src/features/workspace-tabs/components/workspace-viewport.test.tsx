@@ -4,21 +4,37 @@ import { render, cleanup } from '@testing-library/react'
 import { useWorkspaceTagStore } from '../utils/store'
 import { workspaceRegistry } from '../lib/workspace-registry'
 import { WorkspaceViewport } from './workspace-viewport'
-import type { WorkspaceScreenDescriptor, WorkspacePageDescriptor } from '../types'
+import type {
+  WorkspaceScreenDescriptor,
+  WorkspacePageDescriptor,
+  WorkspacePageLifecycle,
+  WorkspaceTab,
+} from '../types'
+
+type TestTabInput = Omit<WorkspaceTab, 'lastVisitedAt'> & {
+  lastVisitedAt?: number
+}
 
 function setStoreState(
-  tabs: Record<string, any>,
+  tabs: Record<string, TestTabInput>,
   activeId: string | null,
   disabledIds: string[] = [],
   extra: Partial<{
     pageDescriptors: Record<string, WorkspacePageDescriptor>
-    lifecycleSnapshots: Record<string, any>
+    lifecycleSnapshots: Record<string, WorkspacePageLifecycle>
   }> = {},
 ) {
+  const normalizedTabs = Object.fromEntries(
+    Object.entries(tabs).map(([id, tab]) => [
+      id,
+      { ...tab, lastVisitedAt: tab.lastVisitedAt ?? 0 },
+    ]),
+  ) as Record<string, WorkspaceTab>
+
   useWorkspaceTagStore.setState({
-    tabs,
+    tabs: normalizedTabs,
     activeId,
-    openedOrder: Object.keys(tabs),
+    openedOrder: Object.keys(normalizedTabs),
     disabledKeepAliveIds: new Set(disabledIds),
     pageDescriptors: extra.pageDescriptors ?? {},
     lifecycleSnapshots: extra.lifecycleSnapshots ?? {},

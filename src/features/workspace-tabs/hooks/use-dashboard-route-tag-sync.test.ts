@@ -20,7 +20,7 @@ const mockRoutesByPath = {
       staticData: { label: '仪表盘', title: '仪表盘', workspace: { tagEnabled: true, keepAlive: false } },
     },
   },
-  '/dashboard/product': {
+  '/dashboard/product/': {
     options: {
       staticData: { label: '产品管理', title: '产品管理', workspace: { tagEnabled: true, keepAlive: true } },
     },
@@ -39,13 +39,22 @@ const mockRoutesByPath = {
 
 vi.mock('@tanstack/react-router', () => ({
   useRouter: () => ({ routesByPath: mockRoutesByPath }),
-  useRouterState: ({ select }: any) => {
+  useRouterState: ({
+    select,
+  }: {
+    select?: (state: {
+      location: { pathname: string; searchStr: string; search: Record<string, never> }
+    }) => unknown
+  }) => {
     const state = { location: { pathname: mockPathname, searchStr: mockSearch, search: {} } }
     return select ? select(state) : state
   },
 }))
 
-const SyncHarness = () => useDashboardRouteTagSync() && null
+function SyncHarness() {
+  useDashboardRouteTagSync()
+  return null
+}
 
 function resetStore() {
   useWorkspaceTagStore.setState({ tabs: {}, activeId: null, openedOrder: [] })
@@ -110,6 +119,27 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
     expect(productTab).toBeDefined()
     expect(productTab.closable).toBe(true)
     expect(productTab.keepAlive).toBe(true)
+  })
+
+  it('normalizes a trailing-slash pathname to the canonical tab id', () => {
+    mockPathname = '/dashboard/product/'
+    render(React.createElement(SyncHarness))
+    const state = useWorkspaceTagStore.getState()
+    expect(state.tabs['/dashboard/product']).toBeDefined()
+    expect(state.tabs['/dashboard/product/']).toBeUndefined()
+    expect(state.tabs['/dashboard/product']?.href).toBe('/dashboard/product')
+  })
+
+  it('does not duplicate tabs when only the trailing slash changes', () => {
+    mockPathname = '/dashboard/product'
+    const { rerender } = render(React.createElement(SyncHarness))
+
+    mockPathname = '/dashboard/product/'
+    rerender(React.createElement(SyncHarness))
+
+    const state = useWorkspaceTagStore.getState()
+    expect(state.openedOrder.filter((id) => id === '/dashboard/product')).toHaveLength(1)
+    expect(state.tabs['/dashboard/product/']).toBeUndefined()
   })
 
   it('sets the synced route as the active tab', () => {

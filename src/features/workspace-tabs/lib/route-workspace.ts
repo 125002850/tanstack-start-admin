@@ -25,8 +25,8 @@ export function resolveRouteTagTitle(
   routeId?: string,
 ): string {
   return (
-    staticData?.title ??
     staticData?.label ??
+    staticData?.title ??
     staticData?.page?.title ??
     routeId ??
     ''

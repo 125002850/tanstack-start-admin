@@ -3,7 +3,6 @@ import PageContainer from '@/components/layout/page-container';
 import FormsShowcasePage from '@/features/forms/components/forms-showcase-page';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
-import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '多步骤表单',
@@ -28,14 +27,9 @@ export const Route = createFileRoute('/dashboard/forms/multi-step')({
 });
 
 function MultiStepFormPage() {
-  if (!isWorkspaceTabsEnabled()) {
-    return <MultiStepFormContent />
-  }
-
   return (
     <WorkspacePageBoundary
       tabId='/dashboard/forms/multi-step'
-      initialTitle='多步骤表单'
       render={() => <MultiStepFormContent />}
     />
   )

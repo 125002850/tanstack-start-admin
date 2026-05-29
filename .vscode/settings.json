@@ -1,0 +1,12 @@
+{
+  "search.exclude": {
+    "**/docs/plans/**": true,
+    "**/spec/archive/**": true,
+    "**/ai-docs/archive/**": true,
+    "**/coverage/**": true,
+    "**/dist/**": true,
+    "**/.next/**": true,
+    "**/node_modules/**": true,
+    "**/skills/**/*.md": true
+  }
+}

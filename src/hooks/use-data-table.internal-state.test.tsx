@@ -9,6 +9,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, act, cleanup } from '@testing-library/react'
 import * as React from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { ExtendedColumnSort } from '@/types/data-table'
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
@@ -48,7 +49,10 @@ function InternalStateTester({
     pageCount: Math.ceil(data.length / (pageSize ?? 10)),
     pageSize,
     onPageSizeChange,
-    initialState: initialSorting.length > 0 ? { sorting: initialSorting as any } : undefined,
+    initialState:
+      initialSorting.length > 0
+        ? { sorting: initialSorting as ExtendedColumnSort<TestRow>[] }
+        : undefined,
   })
 
   const state = table.getState()
@@ -121,7 +125,7 @@ describe('useDataTable — internal-state mode (default)', () => {
   })
 
   it('clears sort when setting empty array', () => {
-    const { rerender } = render(React.createElement(InternalStateTester))
+    render(React.createElement(InternalStateTester))
     act(() => {
       screen.getByTestId('sort-name').click()
     })

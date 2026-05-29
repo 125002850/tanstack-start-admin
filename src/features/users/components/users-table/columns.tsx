@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
@@ -6,12 +7,46 @@ import { Icons } from '@/components/icons';
 import { CellAction } from './cell-action';
 import { ROLE_OPTIONS } from './options';
 
+function translateStatus(status: string) {
+  const map: Record<string, string> = {
+    Active: '已激活',
+    Inactive: '未激活',
+    Invited: '已邀请'
+  };
+  return map[status] ?? status;
+}
+
 export const columns: ColumnDef<User>[] = [
+  {
+    id: 'select',
+    size: 40,
+    minSize: 40,
+    maxSize: 40,
+    enableResizing: false,
+    header: ({ table }) => (
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- inner Checkbox provides full a11y
+      <div
+        className='flex items-center justify-center w-full h-full cursor-pointer'
+        onClick={() => table.toggleAllPageRowsSelected(!table.getIsAllPageRowsSelected())}
+      >
+        <Checkbox checked={table.getIsAllPageRowsSelected()} aria-label='全选' />
+      </div>
+    ),
+    cell: ({ row }) => (
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- inner Checkbox provides full a11y
+      <div
+        className='flex items-center justify-center w-full h-full cursor-pointer'
+        onClick={() => row.toggleSelected(!row.getIsSelected())}
+      >
+        <Checkbox checked={row.getIsSelected()} aria-label='选择行' />
+      </div>
+    )
+  },
   {
     id: 'name',
     accessorFn: (row) => `${row.first_name} ${row.last_name}`,
     header: ({ column }: { column: Column<User, unknown> }) => (
-      <DataTableColumnHeader column={column} title='Name' />
+      <DataTableColumnHeader column={column} title='姓名' />
     ),
     cell: ({ row }) => (
       <div className='flex flex-col'>
@@ -22,8 +57,8 @@ export const columns: ColumnDef<User>[] = [
       </div>
     ),
     meta: {
-      label: 'Name',
-      placeholder: 'Search users...',
+      label: '姓名',
+      placeholder: '搜索用户...',
       variant: 'text' as const,
       icon: Icons.text
     },
@@ -31,41 +66,50 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     accessorKey: 'phone',
-    header: 'PHONE'
+    header: '电话'
   },
   {
     id: 'role',
     accessorKey: 'role',
     enableSorting: false,
     header: ({ column }: { column: Column<User, unknown> }) => (
-      <DataTableColumnHeader column={column} title='Role' />
+      <DataTableColumnHeader column={column} title='角色' />
     ),
     cell: ({ cell }) => {
+      const roleMap: Record<string, string> = {
+        Developer: '开发者',
+        Designer: '设计师',
+        Manager: '管理者',
+        QA: '测试',
+        DevOps: '运维',
+        'Product Owner': '产品负责人'
+      };
       return (
-        <Badge variant='outline' className='capitalize'>
-          {cell.getValue<User['role']>()}
+        <Badge variant='outline'>
+          {roleMap[cell.getValue<User['role']>()] ?? cell.getValue<User['role']>()}
         </Badge>
       );
     },
     enableColumnFilter: true,
     meta: {
-      label: 'roles',
+      label: '角色',
       variant: 'multiSelect' as const,
       options: ROLE_OPTIONS
     }
   },
   {
     accessorKey: 'status',
-    header: 'STATUS',
+    header: '状态',
     cell: ({ cell }) => {
       const status = cell.getValue<User['status']>();
       const variant =
         status === 'Active' ? 'default' : status === 'Inactive' ? 'secondary' : 'outline';
-      return <Badge variant={variant}>{status}</Badge>;
+      return <Badge variant={variant}>{translateStatus(status)}</Badge>;
     }
   },
   {
     id: 'actions',
+    header: '操作',
     cell: ({ row }) => <CellAction data={row.original} />
   }
 ];

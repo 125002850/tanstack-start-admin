@@ -1,4 +1,30 @@
-export type DataTableConfig = typeof dataTableConfig;
+export type DataTableConfig = typeof dataTableConfig
+
+// ── Virtual scroll shared preset ──────────────────────────────────────
+
+export const DATA_TABLE_VIRTUAL_PRESET = {
+  estimateRowHeight: 56,
+  overscan: 8,
+  rowCountThreshold: 100,
+} as const
+
+export function isBrowserSupportedForVirtualization(): boolean {
+  if (typeof ResizeObserver === 'undefined') return false
+  return true
+}
+
+export function isProductTableVirtualizationEnabled(): boolean {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      const env = import.meta.env as Record<string, unknown>
+      const flag = env.VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION
+      if (flag === 'false' || flag === '0' || flag === false) return false
+    }
+  } catch {
+    // import.meta unavailable — fall through to default
+  }
+  return isBrowserSupportedForVirtualization()
+}
 
 export const dataTableConfig = {
   textOperators: [
@@ -78,5 +104,6 @@ export const dataTableConfig = {
     'isBetween',
     'isRelativeToToday'
   ] as const,
-  joinOperators: ['and', 'or'] as const
+  joinOperators: ['and', 'or'] as const,
+  columnResizeStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false,
 };

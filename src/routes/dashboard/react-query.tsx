@@ -7,7 +7,6 @@ import { PokemonSkeleton } from '@/features/react-query-demo/components/pokemon-
 import { reactQueryInfoContent } from '@/features/react-query-demo/info-content';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
-import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: 'React Query',
@@ -35,14 +34,9 @@ export const Route = createFileRoute('/dashboard/react-query')({
 });
 
 function ReactQueryPage() {
-  if (!isWorkspaceTabsEnabled()) {
-    return <ReactQueryContent />
-  }
-
   return (
     <WorkspacePageBoundary
       tabId='/dashboard/react-query'
-      initialTitle='React Query'
       render={() => <ReactQueryContent />}
     />
   )

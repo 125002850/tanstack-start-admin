@@ -38,3 +38,14 @@ export interface DataTableRowAction<TData> {
   row: Row<TData>;
   variant: 'update' | 'delete';
 }
+
+export type ColumnResizeStorageMode = 'localStorage' | 'sessionStorage' | false
+
+export interface DataTableVirtualizationOptions {
+  enabled: boolean
+  estimateRowHeight?: number
+  overscan?: number
+  rowCountThreshold?: number
+  /** Called when virtualization falls back to non-virtual rendering. */
+  onVirtualizationFallback?: (reason: 'runtime-error' | 'unsupported-browser' | 'disabled-by-config') => void
+}

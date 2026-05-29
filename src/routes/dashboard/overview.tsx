@@ -16,7 +16,6 @@ import { AreaGraph } from '@/features/overview/components/area-graph';
 import { PieGraph } from '@/features/overview/components/pie-graph';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
-import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 
 const meta = defineRouteMeta({
   label: '仪表盘',
@@ -36,14 +35,9 @@ export const Route = createFileRoute('/dashboard/overview')({
 });
 
 function OverviewPage() {
-  if (!isWorkspaceTabsEnabled()) {
-    return <OverviewContent />
-  }
-
   return (
     <WorkspacePageBoundary
       tabId='/dashboard/overview'
-      initialTitle='仪表盘'
       closable={false}
       render={() => <OverviewContent />}
     />

@@ -10,7 +10,12 @@ import type { WorkspaceTagId } from '../types'
 import { useWorkspaceTagStore } from '../utils/store'
 
 function tagIdFromPathname(pathname: string): WorkspaceTagId {
-  return pathname
+  return normalizeRoutePath(pathname)
+}
+
+export function normalizeRoutePath(path: string): string {
+  if (path.length <= 1) return path
+  return path.endsWith('/') ? path.slice(0, -1) : path
 }
 
 /**
@@ -18,13 +23,23 @@ function tagIdFromPathname(pathname: string): WorkspaceTagId {
  * into a regex for matching against actual pathnames (e.g. "/dashboard/product/123").
  */
 function compileRoutePattern(routePath: string): RegExp {
+  const normalizedRoutePath = normalizeRoutePath(routePath)
   let escaped = ''
-  for (let i = 0; i < routePath.length; i++) {
-    if (routePath[i] === '$' && i + 1 < routePath.length && routePath[i + 1] !== '/') {
+  for (let i = 0; i < normalizedRoutePath.length; i++) {
+    if (
+      normalizedRoutePath[i] === '$' &&
+      i + 1 < normalizedRoutePath.length &&
+      normalizedRoutePath[i + 1] !== '/'
+    ) {
       escaped += '[^/]+'
-      while (i + 1 < routePath.length && routePath[i + 1] !== '/') i++
+      while (
+        i + 1 < normalizedRoutePath.length &&
+        normalizedRoutePath[i + 1] !== '/'
+      ) {
+        i++
+      }
     } else {
-      const c = routePath[i]
+      const c = normalizedRoutePath[i]
       if (c === '.' || c === '+' || c === '*' || c === '?' || c === '^' || c === '(' || c === ')' || c === '[' || c === ']' || c === '{' || c === '}' || c === '|' || c === '\\') {
         escaped += '\\' + c
       } else {
@@ -40,6 +55,11 @@ export interface DeepestRouteMatch {
   pattern: string
 }
 
+type RouteStaticDataCarrier = {
+  options?: { staticData?: unknown }
+  staticData?: unknown
+}
+
 /**
  * Find the deepest matching route for a given pathname by converting
  * route patterns with $param placeholders into regexes.
@@ -48,14 +68,17 @@ export function findDeepestRouteMatch(
   pathname: string,
   routesByPath: Record<string, unknown>,
 ): DeepestRouteMatch | undefined {
+  const normalizedPathname = normalizeRoutePath(pathname)
   let best: DeepestRouteMatch | undefined
   let bestSegments = 0
 
   for (const [pattern, route] of Object.entries(routesByPath)) {
     const regex = compileRoutePattern(pattern)
-    if (!regex.test(pathname)) continue
+    if (!regex.test(normalizedPathname)) continue
 
-    const data = getAppRouteStaticData(route as any)
+    if (typeof route !== 'object' || route === null) continue
+
+    const data = getAppRouteStaticData(route as RouteStaticDataCarrier)
     if (!data) continue
 
     const segments = pattern.split('/').length
@@ -93,31 +116,35 @@ export function useDashboardRouteTagSync(enabled = true) {
     if (!enabled) return
 
     const pathname = location.pathname
+    const normalizedPathname = normalizeRoutePath(pathname)
     const searchStr = location.searchStr || ''
-    const fullHref = pathname + searchStr
+    const fullHref = normalizedPathname + searchStr
 
     if (fullHref === prevHref.current) return
     prevHref.current = fullHref
 
     // Only track dashboard sub-routes
-    if (!pathname.startsWith('/dashboard')) return
+    if (!normalizedPathname.startsWith('/dashboard')) return
 
     // Skip the layout route itself
-    if (pathname === '/dashboard') return
+    if (normalizedPathname === '/dashboard') return
 
-    const match = findDeepestRouteMatch(pathname, router.routesByPath as Record<string, unknown>)
+    const match = findDeepestRouteMatch(
+      normalizedPathname,
+      router.routesByPath as unknown as Record<string, unknown>,
+    )
 
-    const wsConfig = resolveRouteWorkspaceConfig(pathname, match?.staticData)
+    const wsConfig = resolveRouteWorkspaceConfig(normalizedPathname, match?.staticData)
     if (!wsConfig.tagEnabled) return
 
-    const title = resolveRouteTagTitle(match?.staticData, pathname)
-    const id = tagIdFromPathname(pathname)
-    const closable = !isDashboardHomeHref(pathname)
+    const title = resolveRouteTagTitle(match?.staticData, normalizedPathname)
+    const id = tagIdFromPathname(normalizedPathname)
+    const closable = !isDashboardHomeHref(normalizedPathname)
 
     useWorkspaceTagStore.getState().openOrActivate({
       id,
       href: fullHref,
-      title: title || pathname,
+      title: title || normalizedPathname,
       closable,
       keepAlive: wsConfig.keepAlive,
     })

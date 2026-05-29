@@ -1,6 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { SortingState, ColumnFiltersState, PaginationState } from '@tanstack/react-table'
+import { resolveProductTableVirtualizationOptions } from './product-tables/virtualization'
 
 // ── Pure function: mirrors the filter derivation in product-tables/index.tsx ─
 
@@ -10,17 +11,65 @@ function buildApiFilters(p: PaginationState, s: SortingState, f: ColumnFiltersSt
   return {
     page: p.pageIndex + 1,
     limit: p.pageSize,
-    ...(nameFilter?.value && { search: String(nameFilter.value) }),
-    ...(categoryFilter && Array.isArray(categoryFilter.value) && categoryFilter.value.length > 0 && {
-      categories: categoryFilter.value.join(','),
-    }),
-    ...(s.length > 0 && { sort: JSON.stringify(s) }),
+    ...(nameFilter?.value ? { search: String(nameFilter.value) } : {}),
+    ...(categoryFilter && Array.isArray(categoryFilter.value) && categoryFilter.value.length > 0
+      ? { categories: categoryFilter.value.join(',') }
+      : {}),
+    ...(s.length > 0 ? { sort: JSON.stringify(s) } : {}),
   }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('ProductTable — internal state', () => {
+  describe('resolveProductTableVirtualizationOptions', () => {
+    afterEach(() => {
+      const w = window as unknown as Record<string, unknown>
+      delete w.__DATA_TABLE_VIRTUAL_EVENTS__
+    })
+
+    it('emits disabled-by-config and calls fallback callback when gate is off but browser is supported', () => {
+      const fallback = vi.fn()
+      const originalResizeObserver = globalThis.ResizeObserver
+      globalThis.ResizeObserver = class ResizeObserver {
+        disconnect() {}
+        observe() {}
+        unobserve() {}
+      } as typeof ResizeObserver
+
+      try {
+        const options = resolveProductTableVirtualizationOptions(false, fallback)
+        const events = (window as unknown as { __DATA_TABLE_VIRTUAL_EVENTS__?: Array<Record<string, unknown>> })
+          .__DATA_TABLE_VIRTUAL_EVENTS__
+
+        expect(options.enabled).toBe(false)
+        expect(fallback).toHaveBeenCalledWith('disabled-by-config')
+        expect(events?.some((evt) => evt.event === 'disabled-by-config')).toBe(true)
+      } finally {
+        globalThis.ResizeObserver = originalResizeObserver
+      }
+    })
+
+    it('emits unsupported-browser and calls fallback callback when ResizeObserver is unavailable', () => {
+      const fallback = vi.fn()
+      const originalResizeObserver = globalThis.ResizeObserver
+      // @ts-expect-error test intentionally simulates an unsupported browser
+      delete globalThis.ResizeObserver
+
+      try {
+        const options = resolveProductTableVirtualizationOptions(false, fallback)
+        const events = (window as unknown as { __DATA_TABLE_VIRTUAL_EVENTS__?: Array<Record<string, unknown>> })
+          .__DATA_TABLE_VIRTUAL_EVENTS__
+
+        expect(options.enabled).toBe(false)
+        expect(fallback).toHaveBeenCalledWith('unsupported-browser')
+        expect(events?.some((evt) => evt.event === 'unsupported-browser')).toBe(true)
+      } finally {
+        globalThis.ResizeObserver = originalResizeObserver
+      }
+    })
+  })
+
   describe('buildApiFilters', () => {
     it('defaults to page 1 with the given page size', () => {
       const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, [], [])

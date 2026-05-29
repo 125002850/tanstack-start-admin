@@ -83,7 +83,6 @@ describe('TagsBar', () => {
       title: '仪表盘',
       closable: false,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     store.openOrActivate({
       id: '/dashboard/chat',
@@ -91,7 +90,6 @@ describe('TagsBar', () => {
       title: 'Chat',
       closable: true,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     expect(screen.getByRole('tab', { name: /仪表盘/ })).toBeInTheDocument()
@@ -106,7 +104,6 @@ describe('TagsBar', () => {
       title: '仪表盘',
       closable: false,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     const tab = screen.getByRole('tab', { name: /仪表盘/ })
@@ -121,7 +118,6 @@ describe('TagsBar', () => {
       title: '仪表盘',
       closable: false,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     expect(screen.queryByRole('button', { name: /Close 仪表盘/ })).not.toBeInTheDocument()
@@ -135,7 +131,6 @@ describe('TagsBar', () => {
       title: 'Chat',
       closable: true,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     expect(screen.getByRole('button', { name: /Close Chat/ })).toBeInTheDocument()
@@ -149,7 +144,6 @@ describe('TagsBar', () => {
       title: '仪表盘',
       closable: false,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     store.openOrActivate({
       id: '/dashboard/chat',
@@ -157,7 +151,6 @@ describe('TagsBar', () => {
       title: 'Chat',
       closable: true,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     const tabs = screen.getAllByRole('tab')
@@ -176,7 +169,6 @@ describe('TagsBar', () => {
       title: '仪表盘',
       closable: false,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     store.openOrActivate({
       id: '/dashboard/chat',
@@ -184,7 +176,6 @@ describe('TagsBar', () => {
       title: 'Chat',
       closable: true,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     const tabs = screen.getAllByRole('tab')
@@ -202,7 +193,6 @@ describe('TagsBar', () => {
       title: '仪表盘',
       closable: false,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     store.openOrActivate({
       id: '/dashboard/chat',
@@ -210,7 +200,6 @@ describe('TagsBar', () => {
       title: 'Chat',
       closable: true,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     const tabs = screen.getAllByRole('tab')
@@ -227,7 +216,6 @@ describe('TagsBar', () => {
       title: '仪表盘',
       closable: false,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     render(<TagsBar />)
     const tab = screen.getByRole('tab', { name: /仪表盘/ })
@@ -244,7 +232,6 @@ describe('TagsBar', () => {
       title: 'Chat',
       closable: true,
       keepAlive: false,
-      lastVisitedAt: 0,
     })
     // Set dirty in lifecycle
     useWorkspaceTagStore.setState({

@@ -77,20 +77,28 @@ describe('resolveRouteWorkspaceConfig', () => {
 })
 
 describe('resolveRouteTagTitle', () => {
-  it('returns title when available', () => {
+  it('returns label when available', () => {
     const staticData: AppRouteStaticData = {
       label: 'Label',
       title: 'Document Title',
     }
+    expect(resolveRouteTagTitle(staticData)).toBe('Label')
+  })
+
+  it('falls back to title when label is missing', () => {
+    const staticData = {
+      label: undefined,
+      title: 'Document Title',
+    } as unknown as AppRouteStaticData
     expect(resolveRouteTagTitle(staticData)).toBe('Document Title')
   })
 
-  it('falls back to label when title is missing', () => {
+  it('falls back to label when it is the only route title source', () => {
     const staticData: AppRouteStaticData = { label: 'My Label' }
     expect(resolveRouteTagTitle(staticData)).toBe('My Label')
   })
 
-  it('falls back to page.title when title and label are nullish', () => {
+  it('falls back to page.title when label and title are nullish', () => {
     const staticData = {
       label: undefined,
       page: { title: 'Page Title' },
@@ -109,13 +117,13 @@ describe('resolveRouteTagTitle', () => {
     expect(resolveRouteTagTitle(undefined, undefined)).toBe('')
   })
 
-  it('prioritizes title over label over page.title', () => {
+  it('prioritizes label over title over page.title', () => {
     const staticData: AppRouteStaticData = {
       title: 'Doc Title',
       label: 'Nav Label',
       page: { title: 'Page Heading' },
     }
-    expect(resolveRouteTagTitle(staticData)).toBe('Doc Title')
+    expect(resolveRouteTagTitle(staticData)).toBe('Nav Label')
   })
 
   it('falls back label over page.title when title is absent', () => {

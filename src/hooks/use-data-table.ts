@@ -1,6 +1,7 @@
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
+  type ColumnSizingState,
   type PaginationState,
   type RowSelectionState,
   type SortingState,
@@ -17,13 +18,14 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table'
-import { useNavigate, useSearch } from '@tanstack/react-router'
 import * as React from 'react'
 
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import { DEFAULT_DATA_TABLE_PAGE_SIZE } from '@/lib/data-table-page-size'
+import { loadColumnSizing, saveColumnSizing, clearColumnSizing } from '@/lib/data-table-column-resize-storage'
 import { parseSortingState, serializeSortingState } from '@/lib/parsers'
-import type { ExtendedColumnSort } from '@/types/data-table'
+import { dataTableConfig } from '@/config/data-table'
+import type { ColumnResizeStorageMode, ExtendedColumnSort } from '@/types/data-table'
 import type { DataTableSearchAdapter } from '@/features/workspace-tabs/types'
 import {
   buildPaginationSearch,
@@ -63,6 +65,9 @@ interface UseDataTableProps<TData>
   /** @deprecated Use internal-state mode (default) instead. The searchAdapter path
    *  is preserved for backward compatibility during V2 migration. */
   searchAdapter?: DataTableSearchAdapter
+  tableId?: string
+  columnResizeStorage?: ColumnResizeStorageMode
+  onColumnResizeEnd?: (columnKey: string, width: number) => void
 }
 
 /**
@@ -84,7 +89,6 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     columns,
     pageCount = -1,
     initialState,
-    history = 'replace',
     debounceMs = DEBOUNCE_MS,
     enableAdvancedFilter = false,
     pageSize: controlledPageSize,
@@ -94,9 +98,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     ...tableProps
   } = props
 
-  // ── Router hooks (always called for hook-order stability) ──────────
-  const routerSearch = useSearch({ strict: false }) as Record<string, unknown>
-  const navigate = useNavigate()
+  const resolvedStorageMode: ColumnResizeStorageMode = React.useMemo(
+    () => (props.columnResizeStorage ?? dataTableConfig.columnResizeStorage) as ColumnResizeStorageMode,
+    [props.columnResizeStorage],
+  )
 
   // ── Row selection / column visibility / column pinning (shared) ─────
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
@@ -107,6 +112,23 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   )
   const [columnPinning, setColumnPinning] = React.useState<ColumnPinningState>(
     initialState?.columnPinning ?? {}
+  )
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => ({
+    ...initialState?.columnSizing,
+    ...(props.tableId
+      ? loadColumnSizing(props.tableId, resolvedStorageMode)
+      : {}),
+  }))
+
+  const onColumnSizingChange = React.useCallback(
+    (updaterOrValue: Updater<ColumnSizingState>) => {
+      setColumnSizing((prev) =>
+        typeof updaterOrValue === 'function'
+          ? (updaterOrValue as (prev: ColumnSizingState) => ColumnSizingState)(prev)
+          : updaterOrValue,
+      )
+    },
+    [],
   )
 
   // ── Adapter search snapshot (always called for hook-order stability) ─
@@ -153,7 +175,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   )
 
   const adapterMode = !!searchAdapter
-  const search = adapterMode ? adapterSearch : ({} as Record<string, unknown>)
+  const search = adapterMode ? adapterSearch : EMPTY_SEARCH
 
   // ── Pagination ──────────────────────────────────────────────────────
   const perPage = controlledPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE
@@ -365,8 +387,11 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       columnPinning,
       rowSelection,
       columnFilters,
+      columnSizing,
     },
     defaultColumn: {
+      minSize: 80,
+      size: 150,
       ...tableProps.defaultColumn,
       enableColumnFilter: false,
     },
@@ -375,8 +400,11 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     onPaginationChange,
     onSortingChange,
     onColumnFiltersChange,
+    onColumnSizingChange,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange' as const,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -389,5 +417,56 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     manualFiltering: true,
   })
 
-  return { table, shallow, debounceMs, throttleMs: tableProps.throttleMs }
+  // ── Seed prevSizingRef with initial sizing so the first resize-end
+  //     only fires for columns that actually changed. ───────────────────
+
+  const prevSizingRef = React.useRef<ColumnSizingState>({})
+
+  React.useEffect(() => {
+    prevSizingRef.current = table.getState().columnSizing
+  }, [])
+
+  // ── Persistence: write to storage only on resize-end ─────────────────
+
+  const prevIsResizingRef = React.useRef<string | false>(false)
+
+  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
+
+  React.useEffect(() => {
+    const wasResizing = !!prevIsResizingRef.current
+    const isResizing = !!isResizingColumn
+    prevIsResizingRef.current = isResizingColumn
+
+    if (wasResizing && !isResizing) {
+      const currentSizing = table.getState().columnSizing
+      if (props.tableId && resolvedStorageMode !== false) {
+        saveColumnSizing(
+          props.tableId,
+          currentSizing as Record<string, number>,
+          resolvedStorageMode,
+        )
+      }
+      if (props.onColumnResizeEnd) {
+        const prev = prevSizingRef.current
+        for (const [key, width] of Object.entries(currentSizing)) {
+          if (typeof width === 'number' && prev[key] !== width) {
+            props.onColumnResizeEnd(key, width)
+          }
+        }
+      }
+      prevSizingRef.current = { ...currentSizing }
+    }
+  }, [isResizingColumn])
+
+  // ── Reset column sizing ──────────────────────────────────────────────
+
+  const resetColumnSizing = React.useCallback(() => {
+    if (props.tableId) {
+      clearColumnSizing(props.tableId, resolvedStorageMode)
+    }
+    setColumnSizing(initialState?.columnSizing ?? {})
+    prevSizingRef.current = initialState?.columnSizing ?? {}
+  }, [props.tableId, resolvedStorageMode, initialState?.columnSizing])
+
+  return { table, shallow, debounceMs, throttleMs: tableProps.throttleMs, resetColumnSizing }
 }

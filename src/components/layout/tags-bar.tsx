@@ -16,6 +16,7 @@ export default function TagsBar() {
     const tabEl = tabsRef.current.get(id)
     if (!tabEl) return
     requestAnimationFrame(() => {
+      if (typeof tabEl.scrollIntoView !== 'function') return
       tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
     })
   }, [])
@@ -82,8 +83,8 @@ export default function TagsBar() {
   if (!isWorkspaceTabsEnabled()) return null
 
   return (
-    <ScrollArea className='flex-1 overflow-x-auto min-w-0' viewportProps={{ className: '[&>div]:flex' }}>
-      <div className='flex items-center gap-0.5 pr-2' role='tablist' aria-label='Workspace tabs'>
+    <ScrollArea className='flex-1 min-w-0' viewportProps={{ className: '[&>div]:flex [&>div]:min-w-0' }}>
+      <div className='flex min-w-0 items-center gap-px pr-2 py-px' role='tablist' aria-label='Workspace tabs'>
         {openedOrder.map((id) => {
           const tab = tabs[id]
           if (!tab) return null
@@ -97,17 +98,18 @@ export default function TagsBar() {
                     if (el) tabsRef.current.set(id, el)
                     else tabsRef.current.delete(id)
                   }}
+                  data-tab-id={id}
                   role='tab'
                   aria-selected={isActive}
                   tabIndex={isActive ? 0 : -1}
                   onClick={() => activate(id)}
                   onKeyDown={(e) => handleKeyDown(e, id)}
                   className={cn(
-                    'inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors',
-                    'hover:bg-accent hover:text-accent-foreground',
+                    'group inline-flex h-7 shrink-0 items-center gap-1 rounded-sm px-2.5 text-xs transition-colors',
+                    'hover:text-foreground',
                     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
                     isActive
-                      ? 'bg-accent text-accent-foreground'
+                      ? 'text-foreground bg-muted/40 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06),inset_0_0_0_1px_rgba(228,228,231,1)]'
                       : 'text-muted-foreground',
                   )}
                 >
@@ -133,11 +135,12 @@ export default function TagsBar() {
                       tabIndex={-1}
                       className={cn(
                         'ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm',
-                        'hover:bg-muted-foreground/20',
+                        'opacity-40 group-hover:opacity-100 transition-opacity',
+                        'hover:text-foreground',
                         'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
                       )}
                     >
-                      <Icons.close className='size-3' />
+                      <Icons.close className='size-3 cursor-pointer' />
                     </span>
                   )}
                 </button>

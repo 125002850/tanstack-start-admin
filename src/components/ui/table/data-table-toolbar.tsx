@@ -8,6 +8,7 @@ import { DataTableViewOptions } from '@/components/ui/table/data-table-view-opti
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import type { DataTableFacetedFilterLabels } from '@/components/ui/table/data-table-faceted-filter';
 import type { DataTableViewOptionsLabels } from '@/components/ui/table/data-table-view-options';
@@ -88,10 +89,10 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
       switch (columnMeta.variant) {
         case 'text':
           return (
-            <Input
+            <DebouncedFilterInput
               placeholder={columnMeta.placeholder ?? columnMeta.label}
               value={(column.getFilterValue() as string) ?? ''}
-              onChange={(event) => column.setFilterValue(event.target.value)}
+              onChange={(value) => column.setFilterValue(value)}
               className='h-8 w-40 lg:w-56'
             />
           );
@@ -99,12 +100,12 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
         case 'number':
           return (
             <div className='relative'>
-              <Input
+              <DebouncedFilterInput
                 type='number'
                 inputMode='numeric'
                 placeholder={columnMeta.placeholder ?? columnMeta.label}
                 value={(column.getFilterValue() as string) ?? ''}
-                onChange={(event) => column.setFilterValue(event.target.value)}
+                onChange={(value) => column.setFilterValue(value)}
                 className={cn('h-8 w-[120px]', columnMeta.unit && 'pr-8')}
               />
               {columnMeta.unit && (
@@ -147,4 +148,36 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
 
     return onFilterRender();
   }
+}
+
+interface DebouncedFilterInputProps
+  extends Omit<React.ComponentProps<typeof Input>, 'onChange' | 'value'> {
+  value: string;
+  onChange: (value: string) => void;
+  debounceMs?: number;
+}
+
+function DebouncedFilterInput({
+  value: externalValue,
+  onChange,
+  debounceMs = 300,
+  ...inputProps
+}: DebouncedFilterInputProps) {
+  const [localValue, setLocalValue] = React.useState(externalValue);
+  const debouncedOnChange = useDebouncedCallback(onChange, debounceMs);
+
+  React.useEffect(() => {
+    setLocalValue(externalValue);
+  }, [externalValue]);
+
+  const handleChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value;
+      setLocalValue(next);
+      debouncedOnChange(next);
+    },
+    [debouncedOnChange],
+  );
+
+  return <Input {...inputProps} value={localValue} onChange={handleChange} />;
 }

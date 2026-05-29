@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useWorkspaceTagStore } from './store'
-import type { WorkspaceTab, WorkspacePageDescriptor } from '../types'
+import type {
+  WorkspaceTagOpenInput,
+  WorkspacePageDescriptor,
+} from '../types'
+import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home'
 
-function makeTab(overrides: Partial<WorkspaceTab> = {}): WorkspaceTab {
+const HOME_ID = resolveDashboardHomeHref()
+
+function makeTab(overrides: Partial<WorkspaceTagOpenInput> = {}): WorkspaceTagOpenInput {
   return {
     id: 'tab-1',
     href: '/dashboard/overview',
@@ -37,6 +43,26 @@ function resetStore() {
 
 describe('workspace-tags store', () => {
   beforeEach(resetStore)
+
+  describe('base state', () => {
+    it('resetAll restores the persistent home tab', () => {
+      const store = useWorkspaceTagStore.getState()
+
+      store.resetAll()
+
+      const state = useWorkspaceTagStore.getState()
+      expect(Object.keys(state.tabs)).toEqual([HOME_ID])
+      expect(state.tabs[HOME_ID]).toMatchObject({
+        id: HOME_ID,
+        href: HOME_ID,
+        title: '仪表盘',
+        closable: false,
+        keepAlive: false,
+      })
+      expect(state.activeId).toBe(HOME_ID)
+      expect(state.openedOrder).toEqual([HOME_ID])
+    })
+  })
 
   describe('openOrActivate', () => {
     it('adds a new tab and sets it active', () => {
@@ -77,6 +103,14 @@ describe('workspace-tags store', () => {
       const secondTouch = useWorkspaceTagStore.getState().tabs[tab.id].lastVisitedAt
       expect(secondTouch).toBeGreaterThan(firstTouch)
     })
+
+    it('pins home tab to the first position when it is opened after other tabs', () => {
+      const store = useWorkspaceTagStore.getState()
+      store.openOrActivate(makeTab({ id: 'products', href: '/dashboard/product', title: 'Products' }))
+      store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
+
+      expect(useWorkspaceTagStore.getState().openedOrder).toEqual([HOME_ID, 'products'])
+    })
   })
 
   describe('close', () => {
@@ -98,11 +132,13 @@ describe('workspace-tags store', () => {
       expect(useWorkspaceTagStore.getState().activeId).toBe('b')
     })
 
-    it('sets activeId to null when last tab is closed', () => {
+    it('falls back to home when the last non-home tab is closed', () => {
       const tab = makeTab()
       useWorkspaceTagStore.getState().openOrActivate(tab)
       useWorkspaceTagStore.getState().close(tab.id)
-      expect(useWorkspaceTagStore.getState().activeId).toBeNull()
+      const state = useWorkspaceTagStore.getState()
+      expect(state.activeId).toBe(HOME_ID)
+      expect(state.tabs[HOME_ID]).toBeDefined()
     })
 
     it('cleans up page descriptor and lifecycle on close', () => {
@@ -124,23 +160,42 @@ describe('workspace-tags store', () => {
       store.close('tab-1')
       expect(useWorkspaceTagStore.getState().disabledKeepAliveIds.has('tab-1')).toBe(false)
     })
+
+    it('does not remove home tab', () => {
+      const store = useWorkspaceTagStore.getState()
+      store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
+
+      store.close(HOME_ID)
+
+      const state = useWorkspaceTagStore.getState()
+      expect(state.tabs[HOME_ID]).toBeDefined()
+      expect(state.openedOrder).toEqual([HOME_ID])
+      expect(state.activeId).toBe(HOME_ID)
+    })
   })
 
   describe('closeOther', () => {
-    it('keeps only the specified tab', () => {
+    it('keeps home tab alongside the specified tab', () => {
       const a = makeTab({ id: 'a', href: '/a' })
       const b = makeTab({ id: 'b', href: '/b' })
       const store = useWorkspaceTagStore.getState()
+      store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
       store.openOrActivate(a)
       store.openOrActivate(b)
       store.closeOther('a')
       const state = useWorkspaceTagStore.getState()
-      expect(Object.keys(state.tabs)).toEqual(['a'])
+      expect(Object.keys(state.tabs).sort()).toEqual([HOME_ID, 'a'])
+      expect(state.openedOrder).toEqual([HOME_ID, 'a'])
       expect(state.activeId).toBe('a')
     })
 
     it('cleans up descriptors and lifecycles of closed tabs', () => {
       const store = useWorkspaceTagStore.getState()
+      store.registerPageDescriptor(HOME_ID, makeDescriptor({
+        tabId: HOME_ID,
+        initialTitle: '仪表盘',
+        closable: false,
+      }))
       store.registerPageDescriptor('a', makeDescriptor({ tabId: 'a' }))
       store.registerPageDescriptor('b', makeDescriptor({ tabId: 'b' }))
       store.updateLifecycle('a', { dirty: true })
@@ -148,8 +203,10 @@ describe('workspace-tags store', () => {
 
       store.closeOther('a')
       const state = useWorkspaceTagStore.getState()
+      expect(state.pageDescriptors[HOME_ID]).toBeDefined()
       expect(state.pageDescriptors['a']).toBeDefined()
       expect(state.pageDescriptors['b']).toBeUndefined()
+      expect(state.lifecycleSnapshots[HOME_ID]).toBeDefined()
       expect(state.lifecycleSnapshots['a']).toBeDefined()
       expect(state.lifecycleSnapshots['b']).toBeUndefined()
     })
@@ -158,30 +215,38 @@ describe('workspace-tags store', () => {
   describe('closeAll', () => {
     it('keeps home tab and sets it active', () => {
       const store = useWorkspaceTagStore.getState()
-      const home = makeTab({ id: '/dashboard/overview', href: '/dashboard/overview', closable: false })
+      const home = makeTab({ id: HOME_ID, href: HOME_ID, closable: false, title: '仪表盘' })
       store.openOrActivate(home)
       store.openOrActivate(makeTab({ id: 'a', href: '/a' }))
       store.openOrActivate(makeTab({ id: 'b', href: '/b' }))
       store.closeAll()
       const state = useWorkspaceTagStore.getState()
-      expect(Object.keys(state.tabs)).toEqual(['/dashboard/overview'])
-      expect(state.activeId).toBe('/dashboard/overview')
-      expect(state.tabs['/dashboard/overview']).toBeDefined()
+      expect(Object.keys(state.tabs)).toEqual([HOME_ID])
+      expect(state.activeId).toBe(HOME_ID)
+      expect(state.openedOrder).toEqual([HOME_ID])
+      expect(state.tabs[HOME_ID]).toBeDefined()
     })
 
-    it('clears everything if home tab does not exist', () => {
+    it('creates home tab if it does not exist', () => {
       const store = useWorkspaceTagStore.getState()
       store.openOrActivate(makeTab({ id: 'a', href: '/a' }))
       store.closeAll()
       const state = useWorkspaceTagStore.getState()
-      expect(Object.keys(state.tabs)).toHaveLength(0)
-      expect(state.activeId).toBeNull()
+      expect(Object.keys(state.tabs)).toEqual([HOME_ID])
+      expect(state.activeId).toBe(HOME_ID)
+      expect(state.tabs[HOME_ID]).toMatchObject({
+        id: HOME_ID,
+        href: HOME_ID,
+        title: '仪表盘',
+        closable: false,
+        keepAlive: false,
+      })
     })
 
     it('cleans up all descriptors and lifecycles except home', () => {
       const store = useWorkspaceTagStore.getState()
-      store.registerPageDescriptor('/dashboard/overview', makeDescriptor({
-        tabId: '/dashboard/overview',
+      store.registerPageDescriptor(HOME_ID, makeDescriptor({
+        tabId: HOME_ID,
         initialTitle: 'Home',
         closable: false,
       }))
@@ -189,7 +254,7 @@ describe('workspace-tags store', () => {
 
       store.closeAll()
       const state = useWorkspaceTagStore.getState()
-      expect(state.pageDescriptors['/dashboard/overview']).toBeDefined()
+      expect(state.pageDescriptors[HOME_ID]).toBeDefined()
       expect(state.pageDescriptors['a']).toBeUndefined()
     })
   })
@@ -214,10 +279,13 @@ describe('workspace-tags store', () => {
   describe('evictInactive', () => {
     it('removes tabs not in the keep-alive set', () => {
       const store = useWorkspaceTagStore.getState()
+      store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
       store.openOrActivate(makeTab({ id: 'a', keepAlive: true }))
       store.openOrActivate(makeTab({ id: 'b', keepAlive: false }))
       store.evictInactive(new Set(['a']))
       const state = useWorkspaceTagStore.getState()
+      expect(state.tabs[HOME_ID]).toBeDefined()
+      expect(state.openedOrder).toEqual([HOME_ID, 'a'])
       expect(state.tabs['a']).toBeDefined()
       expect(state.tabs['b']).toBeUndefined()
     })
@@ -227,11 +295,12 @@ describe('workspace-tags store', () => {
     it('returns tabs as an array with ordering', () => {
       const store = useWorkspaceTagStore.getState()
       store.openOrActivate(makeTab({ id: 'a' }))
+      store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
       store.openOrActivate(makeTab({ id: 'b' }))
       const snap = store.getSnapshot()
-      expect(snap.tabs).toHaveLength(2)
+      expect(snap.tabs).toHaveLength(3)
       expect(snap.activeId).toBe('b')
-      expect(snap.openedOrder).toEqual(['a', 'b'])
+      expect(snap.openedOrder).toEqual([HOME_ID, 'a', 'b'])
     })
   })
 
@@ -274,11 +343,57 @@ describe('workspace-tags store', () => {
       expect(getState().lifecycleSnapshots['tab-1']?.title).toBe('Updated by page')
     })
 
+    it('preserves dirty and closeGuard when re-registering', () => {
+      const closeGuard = vi.fn(() => true)
+
+      getState().registerPageDescriptor(
+        'tab-1',
+        makeDescriptor({ tabId: 'tab-1', initialTitle: 'Initial' }),
+      )
+      getState().updateLifecycle('tab-1', { dirty: true, closeGuard })
+      getState().registerPageDescriptor(
+        'tab-1',
+        makeDescriptor({ tabId: 'tab-1', initialTitle: 'Initial Again' }),
+      )
+
+      expect(getState().lifecycleSnapshots['tab-1']?.dirty).toBe(true)
+      expect(getState().lifecycleSnapshots['tab-1']?.closeGuard).toBe(closeGuard)
+    })
+
+    it('preserves the existing href when re-registering an open tab', () => {
+      const store = getState()
+      store.openOrActivate(
+        makeTab({
+          id: 'tab-1',
+          href: '/dashboard/product?page=2',
+          title: 'Products',
+        }),
+      )
+
+      store.registerPageDescriptor(
+        'tab-1',
+        makeDescriptor({ tabId: 'tab-1', initialTitle: 'Products' }),
+      )
+
+      expect(getState().tabs['tab-1']?.href).toBe('/dashboard/product?page=2')
+    })
+
     it('does not duplicate tab in openedOrder when re-registered', () => {
       getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }))
       getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1', initialTitle: 'Changed' }))
       const entries = getState().openedOrder.filter((id) => id === 'tab-1')
       expect(entries).toHaveLength(1)
+    })
+
+    it('keeps home tab first when it is registered after other pages', () => {
+      getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }))
+      getState().registerPageDescriptor(HOME_ID, makeDescriptor({
+        tabId: HOME_ID,
+        initialTitle: '仪表盘',
+        closable: false,
+      }))
+
+      expect(getState().openedOrder).toEqual([HOME_ID, 'tab-1'])
     })
 
     it('works when called during render (idempotent)', () => {
@@ -337,16 +452,16 @@ describe('workspace-tags store', () => {
   })
 
   describe('resetAll', () => {
-    it('clears all state including descriptors and lifecycles', () => {
+    it('restores home and clears descriptors and lifecycles', () => {
       getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }))
       getState().registerPageDescriptor('tab-2', makeDescriptor({ tabId: 'tab-2' }))
       getState().updateLifecycle('tab-1', { dirty: true })
 
       getState().resetAll()
       const state = getState()
-      expect(Object.keys(state.tabs)).toHaveLength(0)
-      expect(state.activeId).toBeNull()
-      expect(state.openedOrder).toHaveLength(0)
+      expect(Object.keys(state.tabs)).toEqual([HOME_ID])
+      expect(state.activeId).toBe(HOME_ID)
+      expect(state.openedOrder).toEqual([HOME_ID])
       expect(Object.keys(state.pageDescriptors)).toHaveLength(0)
       expect(Object.keys(state.lifecycleSnapshots)).toHaveLength(0)
     })

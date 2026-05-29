@@ -1,8 +1,6 @@
 import React from 'react';
 import { Heading } from '../ui/heading';
 import type { InfobarContent } from '@/components/ui/infobar';
-import { useMatches, useRouter } from '@tanstack/react-router';
-import { getAppRouteStaticData } from '@/lib/router/app-route-meta';
 
 function PageSkeleton() {
   return (
@@ -38,25 +36,12 @@ export default function PageContainer({
   infoContent?: InfobarContent;
   pageHeaderAction?: React.ReactNode;
 }) {
-  const matches = useMatches();
-  const router = useRouter();
-  const deepestStaticData = React.useMemo(() => {
-    for (let i = matches.length - 1; i >= 0; i--) {
-      const route = router.routesById[matches[i]?.routeId];
-      if (route) {
-        const sd = getAppRouteStaticData(route);
-        if (sd) return sd;
-      }
-    }
-    return undefined;
-  }, [matches, router.routesById]);
-
   if (!access) {
     return (
       <div className='flex flex-1 items-center justify-center p-4 md:px-6'>
         {accessFallback ?? (
           <div className='text-muted-foreground text-center text-lg'>
-            You do not have access to this page.
+            您没有访问此页面的权限
           </div>
         )}
       </div>
@@ -64,21 +49,16 @@ export default function PageContainer({
   }
 
   const content = isLoading ? <PageSkeleton /> : children;
-
-  // Explicit props still win. Route metadata only provides defaults for route-owned page chrome.
-  const resolvedTitle = pageTitle ?? deepestStaticData?.page?.title ?? deepestStaticData?.label ?? '';
-  const resolvedDescription = pageDescription ?? deepestStaticData?.page?.description ?? '';
-  const resolvedInfoContent = infoContent ?? deepestStaticData?.page?.infoContent;
-  const hasHeader = resolvedTitle || pageHeaderAction;
+  const hasHeader = pageTitle || pageHeaderAction;
 
   return (
     <div className='flex flex-1 flex-col p-4 md:px-6'>
       {hasHeader && (
         <div className='mb-4 flex items-start justify-between gap-4'>
           <Heading
-            title={resolvedTitle}
-            description={resolvedDescription}
-            infoContent={resolvedInfoContent}
+            title={pageTitle ?? ''}
+            description={pageDescription ?? ''}
+            infoContent={infoContent}
           />
           {pageHeaderAction && <div className='shrink-0'>{pageHeaderAction}</div>}
         </div>

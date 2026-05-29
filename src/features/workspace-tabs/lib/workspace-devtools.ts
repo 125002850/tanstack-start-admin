@@ -26,6 +26,7 @@ function isActive(enabled: boolean): boolean {
 }
 
 function logSnapshot(label: string, snapshot: WorkspaceDevtoolsSnapshot) {
+  // oxlint-disable-next-line no-console -- dev-only diagnostic output
   console.debug(
     `[workspace-devtools] ${label}`,
     `active=${snapshot.activeId ?? '(none)'}`,
@@ -75,8 +76,9 @@ export function useWorkspaceDevtools(enabled = true) {
       },
       getStore: () => useWorkspaceTagStore.getState(),
     }
-    ;(window as Record<string, unknown>)[DEVTOOLS_KEY] = bridge
+    ;(window as unknown as Record<string, unknown>)[DEVTOOLS_KEY] = bridge
 
+    // oxlint-disable-next-line no-console -- dev-only diagnostic output
     console.debug(
       '[workspace-devtools] attached — use window.__WORKSPACE_DEVTOOLS__.snapshot() to inspect store',
     )

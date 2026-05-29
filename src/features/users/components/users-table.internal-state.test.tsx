@@ -10,11 +10,11 @@ function buildApiFilters(p: PaginationState, s: SortingState, f: ColumnFiltersSt
   return {
     page: p.pageIndex + 1,
     limit: p.pageSize,
-    ...(nameFilter?.value && { search: String(nameFilter.value) }),
-    ...(roleFilter && Array.isArray(roleFilter.value) && roleFilter.value.length > 0 && {
-      roles: roleFilter.value.join(','),
-    }),
-    ...(s.length > 0 && { sort: JSON.stringify(s) }),
+    ...(nameFilter?.value ? { search: String(nameFilter.value) } : {}),
+    ...(roleFilter && Array.isArray(roleFilter.value) && roleFilter.value.length > 0
+      ? { roles: roleFilter.value.join(',') }
+      : {}),
+    ...(s.length > 0 ? { sort: JSON.stringify(s) } : {}),
   }
 }
 

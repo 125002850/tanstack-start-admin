@@ -8,7 +8,6 @@ import { useWorkspaceTags } from '../hooks/use-workspace-tags'
 import { WorkspacePageBoundary } from './workspace-page-boundary'
 import { WorkspaceViewport } from './workspace-viewport'
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs'
-import type { WorkspacePageDescriptor } from '../types'
 
 // Local test-only type matching the V1 TestRouteDefinition shape
 // needed for workspaceRegistry.register in V1 routing harness tests.
@@ -43,9 +42,19 @@ const mockRoutesByPath: Record<string, unknown> = {
       staticData: { label: '产品管理', title: '产品管理', workspace: { tagEnabled: true, keepAlive: true } },
     },
   },
+  '/dashboard/product': {
+    options: {
+      staticData: { label: '产品', title: '产品', workspace: { tagEnabled: true, keepAlive: true } },
+    },
+  },
   '/dashboard/users': {
     options: {
       staticData: { label: '用户管理', title: '用户管理', workspace: { tagEnabled: true, keepAlive: true } },
+    },
+  },
+  '/dashboard/chat': {
+    options: {
+      staticData: { label: '聊天', title: '聊天', workspace: { tagEnabled: true, keepAlive: true } },
     },
   },
   '/dashboard/settings': {
@@ -57,9 +66,29 @@ const mockRoutesByPath: Record<string, unknown> = {
 
 vi.mock('@tanstack/react-router', () => ({
   useRouter: () => ({ routesByPath: mockRoutesByPath, navigate: mockNavigate }),
-  useRouterState: ({ select }: any) => {
-    const state = { location: { pathname: mockPathname, search: mockSearch } }
+  useRouterState: ({
+    select,
+  }: {
+    select?: (state: {
+      location: { pathname: string; search: string }
+      matches: unknown[]
+    }) => unknown
+  }) => {
+    const leafMatch = mockRoutesByPath[mockPathname] ?? {}
+    const state = {
+      location: { pathname: mockPathname, search: mockSearch },
+      matches: [leafMatch],
+    }
     return select ? select(state) : state
+  },
+  useMatches: ({
+    select,
+  }: {
+    select?: (matches: unknown[]) => unknown
+  }) => {
+    const leafMatch = mockRoutesByPath[mockPathname] ?? {}
+    const matches = [leafMatch]
+    return select ? select(matches) : matches
   },
   useParams: () => ({}),
   useSearch: () => ({}),
@@ -77,7 +106,7 @@ function makeDefinition(label: string): TestRouteDefinition {
     stringify: () => ({}),
     buildHref: () => '',
     getPageChrome: () => ({ title: label }),
-    refresh: () => {},
+    refresh: () => { },
   }
 }
 
@@ -85,7 +114,7 @@ function makeDefinition(label: string): TestRouteDefinition {
 function V1RoutingHarness({
   pathname,
   definition,
-  keepAlive,
+  keepAlive: _keepAlive,
 }: {
   pathname: string
   definition: TestRouteDefinition
@@ -927,7 +956,7 @@ describe('Workspace Routing Integration', () => {
       vi.useFakeTimers()
       setupTab('/dashboard/users', 'Users')
       getState().updateLifecycle('/dashboard/users', {
-        closeGuard: () => new Promise(() => {}), // never resolves
+        closeGuard: () => new Promise(() => { }), // never resolves
         dirty: true,
       })
 
@@ -974,6 +1003,41 @@ describe('Workspace Routing Integration', () => {
       expect(callOrder).toEqual(['users', 'settings'])
     })
 
+    it('closeOther excludes home tab from closeGuard traversal', async () => {
+      setupTab('/dashboard/overview', '仪表盘', { closable: false, keepAlive: false })
+      setupTab('/dashboard/products', 'Products')
+      setupTab('/dashboard/users', 'Users')
+
+      const callOrder: string[] = []
+      getState().updateLifecycle('/dashboard/overview', {
+        closeGuard: () => {
+          callOrder.push('home')
+          return true
+        },
+      })
+      getState().updateLifecycle('/dashboard/products', {
+        closeGuard: () => {
+          callOrder.push('products')
+          return true
+        },
+      })
+      getState().updateLifecycle('/dashboard/users', {
+        closeGuard: () => {
+          callOrder.push('users')
+          return true
+        },
+      })
+
+      const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>()
+      render(React.createElement(CloseGuardTester, { actionsRef }))
+
+      await act(() => actionsRef.current!.closeOther('/dashboard/products'))
+
+      expect(callOrder).toEqual(['users'])
+      expect(getState().tabs['/dashboard/overview']).toBeDefined()
+      expect(getState().tabs['/dashboard/products']).toBeDefined()
+    })
+
     it('closeAll traverses tabs left-to-right including non-home tabs', async () => {
       setupTab('/dashboard/overview', '仪表盘', { closable: false })
       setupTab('/dashboard/products', 'Products')
@@ -992,5 +1056,6 @@ describe('Workspace Routing Integration', () => {
       expect(callOrder).toEqual(['products', 'users'])
       expect(getState().tabs['/dashboard/overview']).toBeDefined()
     })
+
   })
 })

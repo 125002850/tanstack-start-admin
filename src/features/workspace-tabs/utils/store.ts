@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type {
   WorkspaceTab,
   WorkspaceTagId,
+  WorkspaceTagOpenInput,
   WorkspaceTagSnapshot,
   WorkspacePageDescriptor,
   WorkspacePageLifecycle,
@@ -9,6 +10,9 @@ import type {
 } from '../types'
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home'
 import { MAX_KEEPALIVE_TABS } from '@/config/workspace-tabs'
+
+const HOME_ID = resolveDashboardHomeHref()
+const HOME_TITLE = '仪表盘'
 
 interface WorkspaceTagState {
   tabs: Record<WorkspaceTagId, WorkspaceTab>
@@ -18,7 +22,7 @@ interface WorkspaceTagState {
   pageDescriptors: Record<WorkspaceTagId, WorkspacePageDescriptor>
   lifecycleSnapshots: Record<WorkspaceTagId, WorkspacePageLifecycle>
 
-  openOrActivate: (tab: WorkspaceTab) => void
+  openOrActivate: (tab: WorkspaceTagOpenInput) => void
   close: (id: WorkspaceTagId) => void
   closeOther: (id: WorkspaceTagId) => void
   closeAll: () => void
@@ -38,13 +42,23 @@ function makeDefaultLifecycle(title: string): WorkspacePageLifecycle {
   return { title, dirty: false }
 }
 
+function createBaseState(): Pick<
+  WorkspaceTagState,
+  'tabs' | 'activeId' | 'openedOrder' | 'disabledKeepAliveIds' | 'pageDescriptors' | 'lifecycleSnapshots'
+> {
+  const homeTab = createHomeTab()
+  return {
+    tabs: { [HOME_ID]: homeTab },
+    activeId: HOME_ID,
+    openedOrder: [HOME_ID],
+    disabledKeepAliveIds: new Set(),
+    pageDescriptors: {},
+    lifecycleSnapshots: {},
+  }
+}
+
 export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
-  tabs: {},
-  activeId: null,
-  openedOrder: [],
-  disabledKeepAliveIds: new Set(),
-  pageDescriptors: {},
-  lifecycleSnapshots: {},
+  ...createBaseState(),
 
   openOrActivate: (tab) => {
     const result = set((state) => {
@@ -58,33 +72,48 @@ export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
           },
         }
       }
+      const nextTab: WorkspaceTab = {
+        id: tab.id,
+        href: tab.href,
+        title: tab.title,
+        closable: tab.closable ?? true,
+        keepAlive: tab.keepAlive ?? false,
+        lastVisitedAt: Date.now(),
+      }
       return {
         activeId: tab.id,
-        tabs: { ...state.tabs, [tab.id]: { ...tab, lastVisitedAt: Date.now() } },
-        openedOrder: state.openedOrder.includes(tab.id)
-          ? state.openedOrder
-          : [...state.openedOrder, tab.id],
+        tabs: { ...state.tabs, [tab.id]: nextTab },
+        openedOrder: normalizeOpenedOrder(
+          state.openedOrder.includes(tab.id)
+            ? state.openedOrder
+            : [...state.openedOrder, tab.id],
+        ),
       }
     })
-    _enforceLruAfterOpen()
+    enforceLruAfterOpen()
     return result
   },
 
   close: (id) =>
     set((state) => {
+      if (isHomeId(id)) return state
+      const existingTab = state.tabs[id]
+      if (!existingTab) return state
+
       const { [id]: _removed, ...restTabs } = state.tabs
       const { [id]: _removedDesc, ...restDesc } = state.pageDescriptors
       const { [id]: _removedLife, ...restLife } = state.lifecycleSnapshots
-      const order = state.openedOrder.filter((oid) => oid !== id)
+      const nextTabs = ensureHomeTab(restTabs)
+      const order = normalizeOpenedOrder(state.openedOrder.filter((oid) => oid !== id))
       const nextDisabled = new Set(state.disabledKeepAliveIds)
       nextDisabled.delete(id)
 
       let nextActive = state.activeId
       if (state.activeId === id) {
-        nextActive = findFallback(state.tabs, id)
+        nextActive = findFallback(nextTabs, id)
       }
       return {
-        tabs: restTabs,
+        tabs: nextTabs,
         activeId: nextActive,
         openedOrder: order,
         pageDescriptors: restDesc,
@@ -98,21 +127,32 @@ export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
       const keptTab = state.tabs[id]
       if (!keptTab) return state
 
+      const homeTab = state.tabs[HOME_ID]
+      const keepHome = id !== HOME_ID
+      const keptTabs: Record<string, WorkspaceTab> = keepHome
+        ? {
+            [HOME_ID]: homeTab ?? createHomeTab(),
+            [id]: keptTab,
+          }
+        : { [HOME_ID]: homeTab ?? createHomeTab() }
+
       const keptDescriptors: Record<string, WorkspacePageDescriptor> = {}
       const keptLifecycles: Record<string, WorkspacePageLifecycle> = {}
+      if (keepHome && state.pageDescriptors[HOME_ID]) keptDescriptors[HOME_ID] = state.pageDescriptors[HOME_ID]
+      if (keepHome && state.lifecycleSnapshots[HOME_ID]) keptLifecycles[HOME_ID] = state.lifecycleSnapshots[HOME_ID]
       if (state.pageDescriptors[id]) keptDescriptors[id] = state.pageDescriptors[id]
       if (state.lifecycleSnapshots[id]) keptLifecycles[id] = state.lifecycleSnapshots[id]
 
       const nextDisabled = new Set(state.disabledKeepAliveIds)
       for (const oid of state.openedOrder) {
-        if (oid !== id) nextDisabled.delete(oid)
+        if (oid !== id && oid !== HOME_ID) nextDisabled.delete(oid)
       }
 
       const activeId = id
       return {
-        tabs: { [id]: keptTab },
+        tabs: keptTabs,
         activeId,
-        openedOrder: [id],
+        openedOrder: normalizeOpenedOrder(keepHome ? [HOME_ID, id] : [HOME_ID]),
         pageDescriptors: keptDescriptors,
         lifecycleSnapshots: keptLifecycles,
         disabledKeepAliveIds: nextDisabled,
@@ -121,27 +161,27 @@ export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
 
   closeAll: () =>
     set((state) => {
-      const homeId = resolveDashboardHomeHref()
-      const homeTab = state.tabs[homeId]
+      const homeTab = state.tabs[HOME_ID]
       if (homeTab) {
         const keptDescriptors: Record<string, WorkspacePageDescriptor> = {}
         const keptLifecycles: Record<string, WorkspacePageLifecycle> = {}
-        if (state.pageDescriptors[homeId]) keptDescriptors[homeId] = state.pageDescriptors[homeId]
-        if (state.lifecycleSnapshots[homeId]) keptLifecycles[homeId] = state.lifecycleSnapshots[homeId]
+        if (state.pageDescriptors[HOME_ID]) keptDescriptors[HOME_ID] = state.pageDescriptors[HOME_ID]
+        if (state.lifecycleSnapshots[HOME_ID]) keptLifecycles[HOME_ID] = state.lifecycleSnapshots[HOME_ID]
 
         return {
-          tabs: { [homeId]: homeTab },
-          activeId: homeId,
-          openedOrder: [homeId],
+          tabs: { [HOME_ID]: homeTab },
+          activeId: HOME_ID,
+          openedOrder: normalizeOpenedOrder([HOME_ID]),
           pageDescriptors: keptDescriptors,
           lifecycleSnapshots: keptLifecycles,
           disabledKeepAliveIds: new Set(),
         }
       }
+      const nextHomeTab = createHomeTab()
       return {
-        tabs: {},
-        activeId: null,
-        openedOrder: [],
+        tabs: { [HOME_ID]: nextHomeTab },
+        activeId: HOME_ID,
+        openedOrder: normalizeOpenedOrder([HOME_ID]),
         pageDescriptors: {},
         lifecycleSnapshots: {},
         disabledKeepAliveIds: new Set(),
@@ -159,9 +199,15 @@ export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
     set((state) => {
       const kept: Record<string, WorkspaceTab> = {}
       for (const id of Object.keys(state.tabs)) {
-        if (keepAliveIds.has(id)) kept[id] = state.tabs[id]
+        if (keepAliveIds.has(id) || isHomeId(id)) kept[id] = state.tabs[id]
       }
-      return { tabs: kept, openedOrder: state.openedOrder.filter((id) => keepAliveIds.has(id)) }
+      const tabs = ensureHomeTab(kept)
+      return {
+        tabs,
+        openedOrder: normalizeOpenedOrder(
+          state.openedOrder.filter((id) => keepAliveIds.has(id) || isHomeId(id)),
+        ),
+      }
     }),
 
   disableKeepAlive: (id) =>
@@ -187,33 +233,68 @@ export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
 
   registerPageDescriptor: (tabId, descriptor) =>
     set((state) => {
-      const existing = state.tabs[tabId]
-      const tab: WorkspaceTab = {
-        id: tabId,
-        href: tabId,
-        title: descriptor.initialTitle,
-        closable: descriptor.closable,
-        keepAlive: descriptor.keepAlive,
-        lastVisitedAt: Date.now(),
-      }
+      const existingDescriptor = state.pageDescriptors[tabId]
+      const existingTab = state.tabs[tabId]
+      const existingLifecycle = state.lifecycleSnapshots[tabId]
 
-      const nextLifecycle: WorkspacePageLifecycle = {
-        ...makeDefaultLifecycle(descriptor.initialTitle),
-        ...(state.lifecycleSnapshots[tabId]
-          ? { title: state.lifecycleSnapshots[tabId].title }
-          : {}),
+      const pageDescriptors = existingDescriptor
+        ? state.pageDescriptors
+        : { ...state.pageDescriptors, [tabId]: descriptor }
+
+      const nextLifecycle = existingLifecycle ?? makeDefaultLifecycle(descriptor.initialTitle)
+      const lifecycleSnapshots = existingLifecycle
+        ? state.lifecycleSnapshots
+        : { ...state.lifecycleSnapshots, [tabId]: nextLifecycle }
+
+      const nextTab: WorkspaceTab = existingTab
+        ? existingTab.title === nextLifecycle.title &&
+          existingTab.closable === descriptor.closable &&
+          existingTab.keepAlive === descriptor.keepAlive
+          ? existingTab
+          : {
+              ...existingTab,
+              title: nextLifecycle.title,
+              closable: descriptor.closable,
+              keepAlive: descriptor.keepAlive,
+            }
+        : {
+            id: tabId,
+            href: tabId,
+            title: nextLifecycle.title,
+            closable: descriptor.closable,
+            keepAlive: descriptor.keepAlive,
+            lastVisitedAt: Date.now(),
+          }
+
+      const tabs = existingTab
+        ? nextTab === existingTab
+          ? state.tabs
+          : { ...state.tabs, [tabId]: nextTab }
+        : { ...state.tabs, [tabId]: nextTab }
+
+      const activeId = state.activeId === tabId ? state.activeId : tabId
+      const openedOrder = normalizeOpenedOrder(
+        state.openedOrder.includes(tabId)
+          ? state.openedOrder
+          : [...state.openedOrder, tabId],
+      )
+
+      if (
+        pageDescriptors === state.pageDescriptors &&
+        lifecycleSnapshots === state.lifecycleSnapshots &&
+        tabs === state.tabs &&
+        activeId === state.activeId &&
+        openedOrder === state.openedOrder
+      ) {
+        return state
       }
 
       return {
-        pageDescriptors: { ...state.pageDescriptors, [tabId]: descriptor },
-        lifecycleSnapshots: { ...state.lifecycleSnapshots, [tabId]: nextLifecycle },
-        tabs: existing
-          ? { ...state.tabs, [tabId]: { ...existing, title: nextLifecycle.title, href: tabId } }
-          : { ...state.tabs, [tabId]: tab },
-        activeId: tabId,
-        openedOrder: state.openedOrder.includes(tabId)
-          ? state.openedOrder
-          : [...state.openedOrder, tabId],
+        pageDescriptors,
+        lifecycleSnapshots,
+        tabs,
+        activeId,
+        openedOrder,
       }
     }),
 
@@ -245,22 +326,15 @@ export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
     }),
 
   resetAll: () =>
-    set({
-      tabs: {},
-      activeId: null,
-      openedOrder: [],
-      disabledKeepAliveIds: new Set(),
-      pageDescriptors: {},
-      lifecycleSnapshots: {},
-    }),
+    set(createBaseState()),
 }))
 
-function _enforceLruAfterOpen() {
+function enforceLruAfterOpen() {
   const state = useWorkspaceTagStore.getState()
   const keepAliveTabs = Object.values(state.tabs).filter((t) => t.keepAlive)
   if (keepAliveTabs.length <= MAX_KEEPALIVE_TABS) return
 
-  const sorted = [...keepAliveTabs].sort((a, b) => a.lastVisitedAt - b.lastVisitedAt)
+  const sorted = keepAliveTabs.toSorted((a, b) => a.lastVisitedAt - b.lastVisitedAt)
   const toEvict = new Set<WorkspaceTagId>()
 
   for (const tab of sorted) {
@@ -281,6 +355,32 @@ function findFallback(
 ): WorkspaceTagId | null {
   const sorted = Object.values(tabs)
     .filter((t) => t.id !== closedId)
-    .sort((a, b) => b.lastVisitedAt - a.lastVisitedAt)
+    .toSorted((a, b) => b.lastVisitedAt - a.lastVisitedAt)
   return sorted[0]?.id ?? null
+}
+
+function createHomeTab(lastVisitedAt = Date.now()): WorkspaceTab {
+  return {
+    id: HOME_ID,
+    href: HOME_ID,
+    title: HOME_TITLE,
+    closable: false,
+    keepAlive: false,
+    lastVisitedAt,
+  }
+}
+
+function ensureHomeTab(tabs: Record<WorkspaceTagId, WorkspaceTab>): Record<WorkspaceTagId, WorkspaceTab> {
+  if (tabs[HOME_ID]) return tabs
+  return { ...tabs, [HOME_ID]: createHomeTab() }
+}
+
+function isHomeId(id: WorkspaceTagId): boolean {
+  return id === HOME_ID
+}
+
+function normalizeOpenedOrder(ids: WorkspaceTagId[]): WorkspaceTagId[] {
+  const uniqueIds = Array.from(new Set(ids))
+  if (!uniqueIds.includes(HOME_ID)) return uniqueIds
+  return [HOME_ID, ...uniqueIds.filter((id) => id !== HOME_ID)]
 }

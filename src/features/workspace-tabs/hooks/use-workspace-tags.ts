@@ -28,7 +28,10 @@ async function checkCloseGuard(
 
 export function useWorkspaceTags() {
   const router = useRouter()
-  const store = useWorkspaceTagStore()
+  const tabs = useWorkspaceTagStore((state) => state.tabs)
+  const activeId = useWorkspaceTagStore((state) => state.activeId)
+  const openedOrder = useWorkspaceTagStore((state) => state.openedOrder)
+  const lifecycleSnapshots = useWorkspaceTagStore((state) => state.lifecycleSnapshots)
 
   const navigate = useCallback(
     (href: string) => {
@@ -39,15 +42,15 @@ export function useWorkspaceTags() {
 
   const openOrActivate = useCallback(
     (tab: WorkspaceTab) => {
-      store.openOrActivate(tab)
+      useWorkspaceTagStore.getState().openOrActivate(tab)
       navigate(tab.href)
     },
-    [store, navigate],
+    [navigate],
   )
 
   const close = useCallback(
     async (id: WorkspaceTagId) => {
-      const tab = store.tabs[id]
+      const tab = useWorkspaceTagStore.getState().tabs[id]
       if (!tab || isDashboardHomeHref(tab.href)) return
 
       const ok = await checkCloseGuard(id, 'close-current')
@@ -56,21 +59,21 @@ export function useWorkspaceTags() {
         return
       }
 
-      const state = useWorkspaceTagStore.getState()
-      state.close(id)
+      useWorkspaceTagStore.getState().close(id)
       const nextActive = useWorkspaceTagStore.getState().activeId
       if (nextActive) {
         const nextTab = useWorkspaceTagStore.getState().tabs[nextActive]
         if (nextTab) navigate(nextTab.href)
       }
     },
-    [store, navigate],
+    [navigate],
   )
 
   const closeOther = useCallback(
     async (id: WorkspaceTagId) => {
       const state = useWorkspaceTagStore.getState()
-      const tabIdsToClose = state.openedOrder.filter((oid) => oid !== id)
+      const homeId = resolveDashboardHomeHref()
+      const tabIdsToClose = state.openedOrder.filter((oid) => oid !== id && oid !== homeId)
 
       for (const tid of tabIdsToClose) {
         const ok = await checkCloseGuard(tid, 'close-other')
@@ -84,11 +87,11 @@ export function useWorkspaceTags() {
         }
       }
 
-      store.closeOther(id)
+      useWorkspaceTagStore.getState().closeOther(id)
       const tab = useWorkspaceTagStore.getState().tabs[id]
       if (tab) navigate(tab.href)
     },
-    [store, navigate],
+    [navigate],
   )
 
   const closeAll = useCallback(async () => {
@@ -107,9 +110,9 @@ export function useWorkspaceTags() {
       }
     }
 
-    store.closeAll()
+    useWorkspaceTagStore.getState().closeAll()
     navigate(resolveDashboardHomeHref())
-  }, [store, navigate])
+  }, [navigate])
 
   const refresh = useCallback(
     (id: WorkspaceTagId) => {
@@ -121,23 +124,23 @@ export function useWorkspaceTags() {
 
   const touch = useCallback(
     (id: WorkspaceTagId) => {
-      store.touch(id)
+      useWorkspaceTagStore.getState().touch(id)
     },
-    [store],
+    [],
   )
 
   const evictInactive = useCallback(
     (keepAliveIds: Set<WorkspaceTagId>) => {
-      store.evictInactive(keepAliveIds)
+      useWorkspaceTagStore.getState().evictInactive(keepAliveIds)
     },
-    [store],
+    [],
   )
 
   return {
-    tabs: store.tabs,
-    activeId: store.activeId,
-    openedOrder: store.openedOrder,
-    lifecycleSnapshots: store.lifecycleSnapshots,
+    tabs,
+    activeId,
+    openedOrder,
+    lifecycleSnapshots,
     openOrActivate,
     close,
     closeOther,
