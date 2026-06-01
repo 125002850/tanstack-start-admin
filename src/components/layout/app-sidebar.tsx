@@ -233,12 +233,6 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
                   >
                     {isSubLinkable ? (
                       <Link to={subItem.url} className='flex items-center gap-3'>
-                        <Icons.circle
-                          className={cn(
-                            'size-2 fill-current stroke-none',
-                            isSubItemActive ? 'text-primary' : 'text-muted-foreground/50'
-                          )}
-                        />
                         <span className='flex-1 truncate'>{subItem.title}</span>
                         {isSubItemActive && <Icons.check className='size-4 text-primary' />}
                       </Link>

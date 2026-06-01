@@ -234,4 +234,36 @@ describe('DataTable column alignment', () => {
     expect(extractWidth(ths[1]?.getAttribute('style') ?? '')).toBeUndefined();
     expect(extractWidth(tds[1]?.getAttribute('style') ?? '')).toBeUndefined();
   });
+
+  it('colgroup widths follow the visual leaf-column order after pinning reorders columns', () => {
+    const rows = makeRows(5);
+    const { container } = render(
+      React.createElement(() => {
+        const table = useReactTable({
+          data: rows,
+          columns: [
+            { accessorKey: 'id', header: 'ID', size: 80 },
+            { accessorKey: 'name', header: 'Name', size: 170 },
+            { accessorKey: 'price', header: 'Price', size: 111 }
+          ],
+          getCoreRowModel: getCoreRowModel(),
+          getPaginationRowModel: getPaginationRowModel(),
+          enableColumnResizing: true,
+          initialState: {
+            pagination: { pageSize: 5, pageIndex: 0 },
+            columnPinning: { left: ['price'] }
+          }
+        });
+        return <DataTable table={table} />;
+      })
+    );
+
+    const ths = Array.from(container.querySelectorAll('thead th'));
+    const cols = Array.from(container.querySelectorAll('col'));
+
+    expect(ths[0]?.textContent).toContain('Price');
+    expect(extractWidth(cols[0]?.getAttribute('style') ?? '')).toBe('111px');
+    expect(extractWidth(cols[1]?.getAttribute('style') ?? '')).toBe('80px');
+    expect(extractWidth(cols[2]?.getAttribute('style') ?? '')).toBe('170px');
+  });
 });

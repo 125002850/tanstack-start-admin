@@ -10,6 +10,8 @@ import { Table, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/lib/data-table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DataTableBody } from '@/components/ui/table/data-table-body';
+import { Separator } from '@/components/ui/separator';
+import { DataTableViewOptions } from '@/components/ui/table/data-table-view-options';
 import { DataTableColumnResizeHandle } from './data-table-column-resize-handle';
 import type { DataTableVirtualizationOptions } from '@/types/data-table';
 import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
@@ -52,16 +54,24 @@ export function DataTable<TData>({
     virtConfig?.enabled === true &&
     table.getRowModel().rows.length >=
       (virtConfig.rowCountThreshold ?? DATA_TABLE_VIRTUAL_PRESET.rowCountThreshold);
-
+  const resolvedTableWidth = table.getTotalSize();
+  const orderedLeafColumns = [
+    ...table.getLeftVisibleLeafColumns(),
+    ...table.getCenterVisibleLeafColumns(),
+    ...table.getRightVisibleLeafColumns()
+  ];
   const colgroup = (
     <colgroup>
-      {table.getAllLeafColumns().map((col) => (
+      {orderedLeafColumns.map((col) => (
         <col key={col.id} style={{ width: col.getSize() }} />
       ))}
     </colgroup>
   );
 
   const ariaRowCount = shouldVirtualize ? table.getRowModel().rows.length + 1 : undefined;
+  const hasViewOptions = table
+    .getAllColumns()
+    .some((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide());
 
   // Ref to the thead row — DataTableBody measures its children for actual
   // column widths (table-layout:fixed distributes extra space) and uses
@@ -70,15 +80,29 @@ export function DataTable<TData>({
 
   return (
     <div className='flex flex-1 flex-col space-y-4'>
-      {children}
-      {tableActions && <DataTableActionsBar table={table} actions={tableActions} />}
+      {(children || tableActions || hasViewOptions) && (
+        <div className='flex flex-col'>
+          {children && <div>{children}</div>}
+          {children && (tableActions || hasViewOptions) && (
+            <Separator className='my-2 ml-[calc(var(--page-container-padding-x,0rem)*-1)] data-[orientation=horizontal]:!w-[calc(100%+var(--page-container-padding-x,0rem)*2)]' />
+          )}
+          {(tableActions || hasViewOptions) && (
+            <div className='flex items-center gap-2 px-1'>
+              {tableActions && <DataTableActionsBar table={table} actions={tableActions} />}
+              {hasViewOptions && (
+                <DataTableViewOptions table={table} iconOnly className='ml-auto' />
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <div className='relative flex flex-1 min-h-0'>
         <div
           data-table-resize-overlay-root
-          className='absolute inset-0 flex overflow-hidden rounded-lg border'
+          className='absolute inset-0 flex overflow-hidden rounded-lg'
         >
           <ScrollArea
-            className='h-full w-full'
+            className='h-full'
             viewportRef={scrollViewportRef}
             viewportProps={
               scrollTargetId
@@ -88,7 +112,10 @@ export function DataTable<TData>({
                 : undefined
             }
           >
-            <Table aria-rowcount={ariaRowCount} style={{ tableLayout: 'fixed' }}>
+            <Table
+              aria-rowcount={ariaRowCount}
+              style={{ tableLayout: 'fixed', width: resolvedTableWidth }}
+            >
               {colgroup}
               <TableHeader className='bg-muted sticky top-0 z-10'>
                 {table.getHeaderGroups().map((headerGroup) => (

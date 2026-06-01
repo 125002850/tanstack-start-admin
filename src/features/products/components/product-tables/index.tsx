@@ -13,12 +13,8 @@ import { columns } from './columns';
 import * as React from 'react';
 import { resolveProductTableVirtualizationOptions } from './virtualization';
 import { Icons } from '@/components/icons';
-import {
-  DataTableRowActions,
-  type DataTableRowAction
-} from '@/components/ui/table/data-table-row-action';
+import { type DataTableRowAction } from '@/components/ui/table/data-table-row-action';
 import type { Product } from '../../api/types';
-import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { useRouter } from '@tanstack/react-router';
 
@@ -107,23 +103,10 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
     [router, deleteMutation]
   );
 
-  const productsColumns = React.useMemo(
-    () => [
-      ...columns,
-      {
-        id: 'actions',
-        header: '操作',
-        cell: ({ row }: { row: { original: Product } }) => (
-          <DataTableRowActions row={row.original} actions={rowActions} />
-        )
-      } satisfies ColumnDef<Product>
-    ],
-    [rowActions]
-  );
-
   const { table } = useDataTable({
+    tableId: PRODUCT_TABLE_ID,
     data: data.products,
-    columns: productsColumns,
+    columns,
     pageCount,
     debounceMs: 500,
     pageSize: seedPageSize,
@@ -131,10 +114,9 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
       onPageSizePrefChange(newSize);
     },
     initialState: {
-      pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit },
-      columnPinning: { right: ['actions'] }
+      pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit }
     },
-    tableId: PRODUCT_TABLE_ID
+    rowActions
   });
 
   const { pagination, sorting, columnFilters } = table.getState();

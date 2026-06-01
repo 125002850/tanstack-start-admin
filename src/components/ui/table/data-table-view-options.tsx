@@ -25,9 +25,16 @@ export interface DataTableViewOptionsLabels {
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
   labels?: DataTableViewOptionsLabels;
+  iconOnly?: boolean;
+  className?: string;
 }
 
-export function DataTableViewOptions<TData>({ table, labels }: DataTableViewOptionsProps<TData>) {
+export function DataTableViewOptions<TData>({
+  table,
+  labels,
+  iconOnly = false,
+  className
+}: DataTableViewOptionsProps<TData>) {
   const columns = React.useMemo(
     () =>
       table
@@ -36,6 +43,10 @@ export function DataTableViewOptions<TData>({ table, labels }: DataTableViewOpti
     [table]
   );
 
+  if (columns.length === 0) {
+    return null;
+  }
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -43,11 +54,15 @@ export function DataTableViewOptions<TData>({ table, labels }: DataTableViewOpti
           aria-label={labels?.toggleColumnsAriaLabel ?? '切换表格列显示'}
           variant='outline'
           size='sm'
-          className='ml-auto hidden h-8 lg:flex'
+          className={cn('h-8 shrink-0', iconOnly ? 'w-8 p-0' : 'gap-2 px-3', className)}
         >
           <Icons.adjustments />
-          {labels?.buttonText ?? '显示列'}
-          <CaretSortIcon className='ml-auto opacity-50' />
+          {!iconOnly && (
+            <>
+              {labels?.buttonText ?? '显示列'}
+              <CaretSortIcon className='ml-auto opacity-50' />
+            </>
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent align='end' className='w-44 p-0'>

@@ -1,4 +1,3 @@
-import { AlertModal } from '@/components/modal/alert-modal';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,6 +7,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Icons } from '@/components/icons';
 import * as React from 'react';
+import { useConfirmAction } from '@/hooks/use-confirm-action';
+
+const DATA_TABLE_ROW_ACTION_BUTTON_SIZE = 32;
+const DATA_TABLE_ROW_ACTION_GAP = 2;
+const DATA_TABLE_ROW_ACTION_CELL_PADDING_X = 16;
+
+export const DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE = 2;
 
 export interface DataTableRowAction<TData> {
   label: string;
@@ -16,6 +22,8 @@ export interface DataTableRowAction<TData> {
   confirmDelete?: {
     title?: string;
     description?: (row: TData) => string;
+    confirmText?: string;
+    cancelText?: string;
   };
   Sheet?: React.ComponentType<{
     data: TData;
@@ -30,19 +38,47 @@ interface DataTableRowActionsProps<TData> {
   maxVisible?: number;
 }
 
+export function getDataTableRowActionsColumnWidth(
+  actionCount: number,
+  maxVisible = DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE
+): number {
+  if (actionCount <= 0) {
+    return DATA_TABLE_ROW_ACTION_CELL_PADDING_X;
+  }
+
+  const displayedActionCount =
+    actionCount > maxVisible ? maxVisible + 1 : Math.min(actionCount, maxVisible);
+
+  const gapWidth = Math.max(0, displayedActionCount - 1) * DATA_TABLE_ROW_ACTION_GAP;
+
+  return (
+    DATA_TABLE_ROW_ACTION_CELL_PADDING_X +
+    displayedActionCount * DATA_TABLE_ROW_ACTION_BUTTON_SIZE +
+    gapWidth
+  );
+}
+
 export function DataTableRowActions<TData>({
   row,
   actions,
-  maxVisible = 2
+  maxVisible = DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE
 }: DataTableRowActionsProps<TData>) {
-  const [deleteAction, setDeleteAction] = React.useState<DataTableRowAction<TData> | null>(null);
-  const [isDeleting, setIsDeleting] = React.useState(false);
   const [sheetAction, setSheetAction] = React.useState<DataTableRowAction<TData> | null>(null);
+  const { withConfirm, confirmDialog } = useConfirmAction<[DataTableRowAction<TData>, TData]>();
 
   const handleClick = React.useCallback(
     async (action: DataTableRowAction<TData>) => {
       if (action.confirmDelete) {
-        setDeleteAction(action);
+        withConfirm({
+          title: (currentAction) => currentAction.confirmDelete?.title ?? '确认删除',
+          description: (currentAction, currentRow) =>
+            currentAction.confirmDelete?.description?.(currentRow) ?? '此操作不可撤销。',
+          confirmText: (currentAction) => currentAction.confirmDelete?.confirmText ?? '删除',
+          cancelText: (currentAction) => currentAction.confirmDelete?.cancelText ?? '取消',
+          run: async (currentAction, currentRow) => {
+            await currentAction.onClick?.(currentRow);
+          }
+        })(action, row);
         return;
       }
       if (action.Sheet) {
@@ -51,35 +87,15 @@ export function DataTableRowActions<TData>({
       }
       await action.onClick?.(row);
     },
-    [row]
+    [row, withConfirm]
   );
-
-  const handleDeleteConfirm = React.useCallback(async () => {
-    if (!deleteAction?.onClick) return;
-    setIsDeleting(true);
-    try {
-      await deleteAction.onClick(row);
-    } finally {
-      setIsDeleting(false);
-      setDeleteAction(null);
-    }
-  }, [deleteAction, row]);
 
   const visibleActions = actions.slice(0, maxVisible);
   const moreActions = actions.slice(maxVisible);
 
   return (
     <>
-      {deleteAction?.confirmDelete && (
-        <AlertModal
-          isOpen={!!deleteAction}
-          onClose={() => setDeleteAction(null)}
-          onConfirm={handleDeleteConfirm}
-          loading={isDeleting}
-          title={deleteAction.confirmDelete.title ?? '确认删除'}
-          description={deleteAction.confirmDelete.description?.(row) ?? '此操作不可撤销。'}
-        />
-      )}
+      {confirmDialog}
       {sheetAction?.Sheet && (
         <sheetAction.Sheet
           data={row}

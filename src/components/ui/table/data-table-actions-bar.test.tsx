@@ -1,0 +1,131 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import * as React from 'react';
+import userEvent from '@testing-library/user-event';
+
+import {
+  DataTableActionsBar,
+  type DataTableAction
+} from '@/components/ui/table/data-table-actions-bar';
+
+type TestRow = { id: number; name: string };
+
+const DATA: TestRow[] = [{ id: 1, name: 'Alice' }];
+const COLUMNS: ColumnDef<TestRow>[] = [{ accessorKey: 'name', header: 'Name' }];
+
+function ActionsBarHarness({ actions }: { actions: DataTableAction<TestRow>[] }) {
+  const table = useReactTable({
+    data: DATA,
+    columns: COLUMNS,
+    getCoreRowModel: getCoreRowModel()
+  });
+
+  return <DataTableActionsBar table={table} actions={actions} />;
+}
+
+afterEach(cleanup);
+
+describe('DataTableActionsBar', () => {
+  it('renders visible actions inside a single button group', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ActionsBarHarness
+        actions={[
+          {
+            label: '新增用户',
+            callback: vi.fn()
+          },
+          {
+            label: '更多操作',
+            children: [
+              {
+                label: '导出全部',
+                callback: vi.fn()
+              }
+            ]
+          },
+          {
+            label: '隐藏操作',
+            hidden: true,
+            callback: vi.fn()
+          }
+        ]}
+      />
+    );
+
+    const group = screen.getByRole('group', { name: '表格操作' });
+    expect(group).toContainElement(screen.getByRole('button', { name: /新增用户/ }));
+    expect(group).toContainElement(screen.getByRole('button', { name: /更多操作/ }));
+    expect(screen.queryByRole('button', { name: '隐藏操作' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /更多操作/ }));
+
+    expect(await screen.findByRole('menuitem', { name: '导出全部' })).toBeInTheDocument();
+  });
+
+  it('maps danger type to destructive button styling', () => {
+    render(
+      <ActionsBarHarness
+        actions={[
+          {
+            label: '批量删除',
+            type: 'danger',
+            callback: vi.fn()
+          }
+        ]}
+      />
+    );
+
+    expect(screen.getByRole('group', { name: '表格操作' })).toContainElement(
+      screen.getByRole('button', { name: /批量删除/ })
+    );
+    expect(screen.getByRole('button', { name: /批量删除/ }).className).toContain('bg-destructive');
+  });
+
+  it('keeps variant as a compatibility fallback', () => {
+    render(
+      <ActionsBarHarness
+        actions={[
+          {
+            label: '旧危险操作',
+            variant: 'destructive',
+            callback: vi.fn()
+          }
+        ]}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /旧危险操作/ }).className).toContain(
+      'bg-destructive'
+    );
+  });
+
+  it('maps danger children to destructive dropdown items', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ActionsBarHarness
+        actions={[
+          {
+            label: '更多操作',
+            children: [
+              {
+                label: '危险导出',
+                type: 'danger',
+                callback: vi.fn()
+              }
+            ]
+          }
+        ]}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /更多操作/ }));
+
+    expect(
+      (await screen.findByRole('menuitem', { name: '危险导出' })).getAttribute('data-variant')
+    ).toBe('destructive');
+  });
+});

@@ -1,15 +1,13 @@
 import { DataTable } from '@/components/ui/table/data-table';
-import type { DataTableAction } from '@/components/ui/table/data-table-actions-bar';
+import type {
+  DataTableAction,
+  DataTableActionContext
+} from '@/components/ui/table/data-table-actions-bar';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import { useDataTablePageSize } from '@/lib/data-table-page-size';
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query';
-import type {
-  ColumnDef,
-  ColumnFiltersState,
-  PaginationState,
-  SortingState
-} from '@tanstack/react-table';
+import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
 import { usersQueryOptions } from '../../api/queries';
 import { deleteUserMutation } from '../../api/mutations';
 import { columns } from './columns';
@@ -17,11 +15,9 @@ import * as React from 'react';
 import { Icons } from '@/components/icons';
 import type { User } from '../../api/types';
 import { toast } from 'sonner';
-import {
-  DataTableRowActions,
-  type DataTableRowAction
-} from '@/components/ui/table/data-table-row-action';
+import { type DataTableRowAction } from '@/components/ui/table/data-table-row-action';
 import { UserFormSheet } from '../user-form-sheet';
+import { useConfirmAction } from '@/hooks/use-confirm-action';
 
 const USERS_TABLE_ID = 'user-list';
 
@@ -71,6 +67,7 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
   const { data } = useSuspenseQuery(usersQueryOptions(deferredApiFilters));
 
   const pageCount = Math.ceil(data.total_users / deferredApiFilters.limit);
+  const { withConfirm, confirmDialog } = useConfirmAction<[DataTableActionContext<User>]>();
 
   const deleteMutation = useMutation({
     ...deleteUserMutation,
@@ -113,23 +110,9 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
     [deleteMutation]
   );
 
-  const usersColumns = React.useMemo(
-    () => [
-      ...columns,
-      {
-        id: 'actions',
-        header: '操作',
-        cell: ({ row }: { row: { original: User } }) => (
-          <DataTableRowActions row={row.original} actions={rowActions} />
-        )
-      } satisfies ColumnDef<User>
-    ],
-    [rowActions]
-  );
-
   const { table } = useDataTable({
     data: data.users,
-    columns: usersColumns,
+    columns,
     pageCount,
     debounceMs: 500,
     pageSize: seedPageSize,
@@ -137,9 +120,10 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
       onPageSizePrefChange(newSize);
     },
     initialState: {
-      pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit },
-      columnPinning: { right: ['actions'] }
+      pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit }
     },
+    rowActions,
+    actionColumnPin: 'left',
     tableId: USERS_TABLE_ID
   });
 
@@ -202,22 +186,31 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
       {
         label: '批量删除',
         icon: <Icons.trash className='size-3.5' />,
-        variant: 'destructive' as const,
+        type: 'danger',
         hidden: (ctx) => ctx.selectedRows.length === 0,
-        callback: async (ctx) => {
-          await new Promise((r) => setTimeout(r, 1200));
-          toast.success(`已删除 ${ctx.selectedRows.length} 个用户`);
-          ctx.table.toggleAllPageRowsSelected(false);
-        }
+        callback: withConfirm({
+          title: (ctx) => `确认删除 ${ctx.selectedRows.length} 个用户？`,
+          description: '此操作不可撤销。',
+          confirmText: '删除',
+          cancelText: '取消',
+          run: async (ctx) => {
+            await new Promise((r) => setTimeout(r, 1200));
+            toast.success(`已删除 ${ctx.selectedRows.length} 个用户`);
+            ctx.table.toggleAllPageRowsSelected(false);
+          }
+        })
       }
     ],
-    []
+    [withConfirm]
   );
 
   return (
-    <DataTable table={table} tableActions={actions}>
-      <DataTableToolbar table={table} />
-    </DataTable>
+    <>
+      {confirmDialog}
+      <DataTable table={table} tableActions={actions}>
+        <DataTableToolbar table={table} />
+      </DataTable>
+    </>
   );
 }
 

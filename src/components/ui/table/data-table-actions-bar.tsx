@@ -1,6 +1,7 @@
 import type { Table } from '@tanstack/react-table';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup, ButtonGroupSeparator } from '@/components/ui/button-group';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ export interface DataTableActionContext<TData> {
 export interface DataTableAction<TData> {
   label: string;
   icon?: React.ReactNode;
+  type?: 'default' | 'danger';
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   disabled?: boolean | ((ctx: DataTableActionContext<TData>) => boolean);
   hidden?: boolean | ((ctx: DataTableActionContext<TData>) => boolean);
@@ -50,6 +52,45 @@ function resolveValue<T>(
     : value;
 }
 
+function getActionButtonVariant<TData>(
+  action: DataTableAction<TData>
+): 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' {
+  if (action.type === 'danger') {
+    return 'destructive';
+  }
+
+  return action.variant ?? 'outline';
+}
+
+function getActionMenuItemVariant<TData>(action: DataTableAction<TData>): 'default' | 'destructive' {
+  if (action.type === 'danger' || action.variant === 'destructive') {
+    return 'destructive';
+  }
+
+  return 'default';
+}
+
+function hasVisibleChildren<TData>(
+  action: DataTableAction<TData>,
+  ctx: DataTableActionContext<TData>
+): boolean {
+  if (!action.children || action.children.length === 0) {
+    return true;
+  }
+
+  return action.children.some((child) => !resolveValue(child.hidden ?? false, ctx));
+}
+
+function shouldRenderActionSeparator<TData>(
+  previousAction: DataTableAction<TData>,
+  currentAction: DataTableAction<TData>
+): boolean {
+  return (
+    getActionButtonVariant(previousAction) !== 'outline' ||
+    getActionButtonVariant(currentAction) !== 'outline'
+  );
+}
+
 // ── Component ────────────────────────────────────────────────────────
 
 export function DataTableActionsBar<TData>({
@@ -62,22 +103,25 @@ export function DataTableActionsBar<TData>({
     selectedRows: table.getFilteredSelectedRowModel().rows.map((r) => r.original)
   };
 
-  const hasVisibleActions = actions.some((a) => !resolveValue(a.hidden ?? false, ctx));
+  const visibleActions = actions.filter(
+    (action) => !resolveValue(action.hidden ?? false, ctx) && hasVisibleChildren(action, ctx)
+  );
 
-  if (!hasVisibleActions) return null;
+  if (visibleActions.length === 0) return null;
 
   return (
-    <div
-      className={cn(
-        'flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2',
-        'bg-card/50 backdrop-blur-sm',
-        'transition-all duration-300',
-        className
-      )}
-    >
-      {actions.map((action) => (
-        <ActionItem key={action.label} action={action} ctx={ctx} />
-      ))}
+    <div className={cn('flex items-center', className)}>
+      <ButtonGroup aria-label='表格操作'>
+        {visibleActions.map((action, index) => (
+          <React.Fragment key={action.label}>
+            {index > 0 &&
+              shouldRenderActionSeparator(visibleActions[index - 1]!, action) && (
+                <ButtonGroupSeparator />
+              )}
+            <ActionItem action={action} ctx={ctx} />
+          </React.Fragment>
+        ))}
+      </ButtonGroup>
     </div>
   );
 }
@@ -92,7 +136,6 @@ function ActionItem<TData>({
   ctx: DataTableActionContext<TData>;
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
-  const hidden = resolveValue(action.hidden ?? false, ctx);
   const disabled = isLoading || resolveValue(action.disabled ?? false, ctx);
   const className = resolveValue(action.className ?? '', ctx);
 
@@ -115,72 +158,54 @@ function ActionItem<TData>({
       (child) => !resolveValue(child.hidden ?? false, ctx)
     );
 
-    if (visibleChildren.length === 0 && hidden) return null;
+    if (visibleChildren.length === 0) return null;
 
     return (
-      <div
-        className={cn(
-          'shrink-0 transition-all duration-300 ease-out',
-          hidden
-            ? 'pointer-events-none max-w-0 overflow-hidden opacity-0'
-            : 'max-w-[400px] opacity-100'
-        )}
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant={action.variant ?? 'outline'}
-              size='sm'
-              disabled={disabled}
-              className={cn('gap-1.5', className)}
-            >
-              {action.icon}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant={getActionButtonVariant(action)}
+            size='sm'
+            disabled={disabled}
+            className={cn('gap-1.5', className)}
+          >
+            {action.icon}
+            {action.label}
+            <Icons.chevronDown className='size-3.5 opacity-50' />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='start' className='min-w-[160px]'>
+          {action.label && (
+            <DropdownMenuLabel className='text-xs font-normal text-muted-foreground'>
               {action.label}
-              <Icons.chevronDown className='size-3.5 opacity-50' />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='start' className='min-w-[160px]'>
-            {action.label && (
-              <DropdownMenuLabel className='text-xs font-normal text-muted-foreground'>
-                {action.label}
-              </DropdownMenuLabel>
-            )}
-            {visibleChildren.map((child, i) => (
-              <DropdownActionItem
-                key={child.label}
-                action={child}
-                ctx={ctx}
-                showSeparator={i > 0 && child.label !== visibleChildren[i - 1]?.label}
-              />
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+            </DropdownMenuLabel>
+          )}
+          {visibleChildren.map((child, i) => (
+            <DropdownActionItem
+              key={child.label}
+              action={child}
+              ctx={ctx}
+              showSeparator={i > 0 && child.label !== visibleChildren[i - 1]?.label}
+            />
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
   // Regular button
   return (
-    <div
-      className={cn(
-        'shrink-0 transition-all duration-300 ease-out',
-        hidden
-          ? 'pointer-events-none max-w-0 overflow-hidden opacity-0'
-          : 'max-w-[400px] opacity-100'
-      )}
+    <Button
+      variant={getActionButtonVariant(action)}
+      size='sm'
+      disabled={disabled}
+      isLoading={isLoading}
+      onClick={handleClick}
+      className={cn('gap-1.5', className)}
     >
-      <Button
-        variant={action.variant ?? 'outline'}
-        size='sm'
-        disabled={disabled}
-        isLoading={isLoading}
-        onClick={handleClick}
-        className={cn('gap-1.5', className)}
-      >
-        {action.icon}
-        {action.label}
-      </Button>
-    </div>
+      {action.icon}
+      {action.label}
+    </Button>
   );
 }
 
@@ -225,6 +250,7 @@ function DropdownActionItem<TData>({
       <DropdownMenuItem
         disabled={disabled}
         onSelect={handleSelect}
+        variant={getActionMenuItemVariant(action)}
         className={cn('gap-1.5', className)}
       >
         {isLoading ? <Icons.spinner className='size-3.5 animate-spin' /> : action.icon}

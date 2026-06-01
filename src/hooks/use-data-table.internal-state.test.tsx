@@ -8,6 +8,7 @@ import { render, screen, act, cleanup } from '@testing-library/react';
 import * as React from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ExtendedColumnSort } from '@/types/data-table';
+import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
@@ -17,10 +18,50 @@ vi.mock('@tanstack/react-router', () => ({
 import { useDataTable } from '@/hooks/use-data-table';
 
 type TestRow = { id: number; name: string };
+const ROW_NUMBER_COLUMN_ID = '__rowNumber';
+const SELECT_COLUMN_ID = 'select';
+const ACTIONS_COLUMN_ID = 'actions';
+const FIXED_COLUMN_WIDTH = 40;
 
 const columns: ColumnDef<TestRow>[] = [
   { id: 'id', header: 'ID', accessorKey: 'id' },
   { id: 'name', header: 'Name', accessorKey: 'name', enableColumnFilter: true }
+];
+
+const selectableColumns: ColumnDef<TestRow>[] = [
+  {
+    id: SELECT_COLUMN_ID,
+    header: 'Select',
+    cell: () => null,
+    size: FIXED_COLUMN_WIDTH,
+    minSize: FIXED_COLUMN_WIDTH,
+    maxSize: FIXED_COLUMN_WIDTH,
+    enableResizing: false
+  },
+  ...columns
+];
+
+const rowActions: DataTableRowAction<TestRow>[] = [
+  {
+    label: '编辑',
+    icon: React.createElement('span', null, 'edit'),
+    onClick: vi.fn()
+  },
+  {
+    label: '删除',
+    icon: React.createElement('span', null, 'delete'),
+    onClick: vi.fn()
+  },
+  {
+    label: '查看',
+    icon: React.createElement('span', null, 'view'),
+    onClick: vi.fn()
+  },
+  {
+    label: '更多',
+    icon: React.createElement('span', null, 'more'),
+    onClick: vi.fn()
+  }
 ];
 
 const data: TestRow[] = [
@@ -100,6 +141,97 @@ function InternalStateTester({
         onClick: () => table.setColumnFilters([{ id: 'name', value: 'Alice' }])
       },
       'Filter'
+    )
+  ]);
+}
+
+function RowNumberColumnInspector({
+  showRowNumberColumn = true,
+  initialState
+}: {
+  showRowNumberColumn?: boolean;
+  initialState?: {
+    columnOrder?: string[];
+    columnVisibility?: Record<string, boolean>;
+    columnSizing?: Record<string, number>;
+  };
+}) {
+  const { table } = useDataTable({
+    columns,
+    data,
+    pageCount: 1,
+    showRowNumberColumn,
+    initialState
+  });
+
+  const leafColumns = table.getAllLeafColumns();
+  const visibleColumns = table.getVisibleLeafColumns();
+  const firstColumn = leafColumns[0];
+
+  return React.createElement('div', null, [
+    React.createElement(
+      'span',
+      { key: 'leaf-columns', 'data-testid': 'leaf-columns' },
+      JSON.stringify(leafColumns.map((column) => column.id))
+    ),
+    React.createElement(
+      'span',
+      { key: 'visible-columns', 'data-testid': 'visible-columns' },
+      JSON.stringify(visibleColumns.map((column) => column.id))
+    ),
+    React.createElement(
+      'span',
+      { key: 'first-size', 'data-testid': 'first-size' },
+      String(firstColumn?.getSize() ?? '')
+    ),
+    React.createElement(
+      'span',
+      { key: 'first-can-hide', 'data-testid': 'first-can-hide' },
+      String(firstColumn?.getCanHide() ?? '')
+    ),
+    React.createElement(
+      'span',
+      { key: 'first-can-resize', 'data-testid': 'first-can-resize' },
+      String(firstColumn?.getCanResize() ?? '')
+    )
+  ]);
+}
+
+function FixedColumnSizingInspector({
+  initialState
+}: {
+  initialState?: {
+    columnSizing?: Record<string, number>;
+  };
+}) {
+  const { table } = useDataTable({
+    columns: selectableColumns,
+    data,
+    pageCount: 1,
+    rowActions,
+    initialState
+  });
+
+  return React.createElement('div', null, [
+    React.createElement(
+      'span',
+      { key: 'state-column-sizing', 'data-testid': 'state-column-sizing' },
+      JSON.stringify(table.getState().columnSizing)
+    ),
+    React.createElement(
+      'span',
+      { key: 'row-number-size', 'data-testid': 'row-number-size' },
+      String(table.getColumn(ROW_NUMBER_COLUMN_ID)?.getSize() ?? '')
+    ),
+    React.createElement(
+      'span',
+      { key: 'select-size', 'data-testid': 'select-size' },
+      String(table.getColumn(SELECT_COLUMN_ID)?.getSize() ?? '')
+    ),
+    React.createElement(
+      'span',
+      { key: 'actions-size', 'data-testid': 'actions-size' },
+      String(table.getColumn(ACTIONS_COLUMN_ID)?.getSize() ?? '')
     )
   ]);
 }
@@ -258,5 +390,78 @@ describe('useDataTable — internal-state mode (default)', () => {
     expect(screen.getByTestId('has-pagination').textContent).toBe('true');
     expect(screen.getByTestId('has-sorting').textContent).toBe('true');
     expect(screen.getByTestId('has-filters').textContent).toBe('true');
+  });
+
+  it('prepends a fixed row-number column by default', () => {
+    render(React.createElement(RowNumberColumnInspector));
+
+    expect(screen.getByTestId('leaf-columns').textContent).toBe(
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, 'id', 'name'])
+    );
+    expect(screen.getByTestId('first-size').textContent).toBe('40');
+    expect(screen.getByTestId('first-can-hide').textContent).toBe('false');
+    expect(screen.getByTestId('first-can-resize').textContent).toBe('false');
+  });
+
+  it('can disable the row-number column explicitly', () => {
+    render(React.createElement(RowNumberColumnInspector, { showRowNumberColumn: false }));
+
+    expect(screen.getByTestId('leaf-columns').textContent).toBe(JSON.stringify(['id', 'name']));
+  });
+
+  it('keeps the row-number column first when initialState defines column order', () => {
+    render(
+      React.createElement(RowNumberColumnInspector, {
+        initialState: {
+          columnOrder: ['name', 'id']
+        }
+      })
+    );
+
+    expect(screen.getByTestId('leaf-columns').textContent).toBe(
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, 'name', 'id'])
+    );
+  });
+
+  it('forces the row-number column visible and fixed even if initialState tries to override it', () => {
+    render(
+      React.createElement(RowNumberColumnInspector, {
+        initialState: {
+          columnVisibility: {
+            [ROW_NUMBER_COLUMN_ID]: false
+          },
+          columnSizing: {
+            [ROW_NUMBER_COLUMN_ID]: 120
+          }
+        }
+      })
+    );
+
+    expect(screen.getByTestId('visible-columns').textContent).toBe(
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, 'id', 'name'])
+    );
+    expect(screen.getByTestId('first-size').textContent).toBe('40');
+  });
+
+  it('ignores initial columnSizing overrides for row-number, select, and actions columns', () => {
+    render(
+      React.createElement(FixedColumnSizingInspector, {
+        initialState: {
+          columnSizing: {
+            [ROW_NUMBER_COLUMN_ID]: 120,
+            [SELECT_COLUMN_ID]: 96,
+            [ACTIONS_COLUMN_ID]: 220,
+            name: 180
+          }
+        }
+      })
+    );
+
+    expect(screen.getByTestId('state-column-sizing').textContent).toBe(
+      JSON.stringify({ name: 180 })
+    );
+    expect(screen.getByTestId('row-number-size').textContent).toBe(String(FIXED_COLUMN_WIDTH));
+    expect(screen.getByTestId('select-size').textContent).toBe(String(FIXED_COLUMN_WIDTH));
+    expect(screen.getByTestId('actions-size').textContent).toBe('116');
   });
 });
