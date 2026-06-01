@@ -289,7 +289,7 @@ export function DataTableColumnResizeHandle<TData>({
     <div
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
-      className='absolute top-0 right-0 h-full w-2.5 cursor-col-resize select-none touch-none z-10
+      className='absolute top-0 right-0 h-full w-8 cursor-col-resize select-none touch-none z-10
         before:absolute before:inset-y-0 before:left-1/2 before:-translate-x-px before:w-px
         hover:before:bg-border
         data-[resizing=true]:before:bg-primary/30'

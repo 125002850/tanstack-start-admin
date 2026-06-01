@@ -7,6 +7,7 @@ import {
   getPaginationRowModel
 } from '@tanstack/react-table';
 import { DataTable } from '@/components/ui/table/data-table';
+import { useDataTable } from '@/hooks/use-data-table';
 import * as React from 'react';
 import { vi } from 'vitest';
 
@@ -81,6 +82,42 @@ function AlignHarness({ rows }: { rows: TestRow[] }) {
     initialState: { pagination: { pageSize: rows.length || 10, pageIndex: 0 } }
   });
   return <DataTable table={table} />;
+}
+
+function ExpandAlignHarness({ rows }: { rows: TestRow[] }) {
+  const { table, expandConfig, expandedRow, expandedRowKey, setExpandedRowKey, expandPanelId } =
+    useDataTable({
+      data: rows,
+      columns: COLUMNS_WITH_SIZING,
+      pageCount: 1,
+      tableId: 'alignment-expand',
+      showRowNumberColumn: false,
+      expandConfig: {
+        rowKey: 'id',
+        tabs: [
+          {
+            id: 'summary',
+            label: '概览',
+            render: (row) => row.name
+          }
+        ]
+      }
+    });
+
+  React.useEffect(() => {
+    setExpandedRowKey('1');
+  }, [setExpandedRowKey]);
+
+  return (
+    <DataTable
+      table={table}
+      expandConfig={expandConfig}
+      expandedRow={expandedRow}
+      expandedRowKey={expandedRowKey}
+      onExpandedRowKeyChange={setExpandedRowKey}
+      expandPanelId={expandPanelId}
+    />
+  );
 }
 
 function extractWidth(styleAttr: string): string | undefined {
@@ -265,5 +302,21 @@ describe('DataTable column alignment', () => {
     expect(extractWidth(cols[0]?.getAttribute('style') ?? '')).toBe('111px');
     expect(extractWidth(cols[1]?.getAttribute('style') ?? '')).toBe('80px');
     expect(extractWidth(cols[2]?.getAttribute('style') ?? '')).toBe('170px');
+  });
+
+  it('keeps colgroup and pinned utility widths aligned when the expand panel is open', () => {
+    const rows = makeRows(5);
+    const { container } = render(<ExpandAlignHarness rows={rows} />);
+
+    const cols = Array.from(container.querySelectorAll('col'));
+    const ths = Array.from(container.querySelectorAll('thead th'));
+
+    expect(document.querySelector('[data-slot="data-table-expand-panel"]')).not.toBeNull();
+    expect(extractWidth(cols[0]?.getAttribute('style') ?? '')).toBe('40px');
+    expect(extractWidth(cols[1]?.getAttribute('style') ?? '')).toBe('80px');
+    expect(extractWidth(cols[2]?.getAttribute('style') ?? '')).toBe('170px');
+    expect(extractWidth(cols[3]?.getAttribute('style') ?? '')).toBe('111px');
+    expect(extractWidth(ths[0]?.getAttribute('style') ?? '')).toBe('40px');
+    expect(ths[0]?.getAttribute('style')).toContain('position: sticky');
   });
 });
