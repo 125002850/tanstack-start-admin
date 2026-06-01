@@ -4,7 +4,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator,
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { useWorkspaceTags } from '@/features/workspace-tabs/hooks/use-workspace-tags'
-import type { WorkspaceTagId } from '@/features/workspace-tabs/types'
+import type { WorkspaceTabId } from '@/features/workspace-tabs/types'
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs'
 
 export default function TagsBar() {
@@ -26,7 +26,7 @@ export default function TagsBar() {
     setShowRightFade(hasOverflow && viewport.scrollLeft < maxScrollLeft - 1)
   }, [])
 
-  const scrollToTab = useCallback((id: WorkspaceTagId) => {
+  const scrollToTab = useCallback((id: WorkspaceTabId) => {
     const tabEl = tabsRef.current.get(id)
     if (!tabEl) return
     requestAnimationFrame(() => {
@@ -75,7 +75,7 @@ export default function TagsBar() {
   }, [openedOrder, updateEdgeFades])
 
   const activate = useCallback(
-    (id: WorkspaceTagId) => {
+    (id: WorkspaceTabId) => {
       const tab = tabs[id]
       if (tab && id !== activeId) {
         openOrActivate(tab)
@@ -86,7 +86,7 @@ export default function TagsBar() {
   )
 
   const handleKeyDown = useCallback(
-    (e: ReactKeyboardEvent, id: WorkspaceTagId) => {
+    (e: ReactKeyboardEvent, id: WorkspaceTabId) => {
       const ids = openedOrder
       const idx = ids.indexOf(id)
       let next: string | undefined
@@ -122,7 +122,7 @@ export default function TagsBar() {
   )
 
   const handleClose = useCallback(
-    (e: React.MouseEvent, id: WorkspaceTagId) => {
+    (e: React.MouseEvent, id: WorkspaceTabId) => {
       e.stopPropagation()
       close(id)
     },

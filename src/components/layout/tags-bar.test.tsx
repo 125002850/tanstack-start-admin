@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import TagsBar from './tags-bar'
-import { useWorkspaceTagStore } from '@/features/workspace-tabs/utils/store'
+import { useWorkspaceTabStore } from '@/features/workspace-tabs/utils/store'
 
 // Mock Radix ScrollArea — avoids React instance conflicts in jsdom
 vi.mock('@/components/ui/scroll-area', () => ({
@@ -32,7 +32,7 @@ vi.mock('@/components/ui/context-menu', () => ({
 // Mock the router-dependent hook
 vi.mock('@/features/workspace-tabs/hooks/use-workspace-tags', () => ({
   useWorkspaceTags: () => {
-    const store = useWorkspaceTagStore()
+    const store = useWorkspaceTabStore()
     return {
       tabs: store.tabs,
       activeId: store.activeId,
@@ -69,7 +69,7 @@ vi.mock('@tanstack/react-router', () => ({
 afterEach(cleanup)
 
 function resetStore() {
-  useWorkspaceTagStore.setState({
+  useWorkspaceTabStore.setState({
     tabs: {},
     activeId: null,
     openedOrder: [],
@@ -86,7 +86,7 @@ describe('TagsBar', () => {
   })
 
   it('renders tabs in openedOrder', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
@@ -107,7 +107,7 @@ describe('TagsBar', () => {
   })
 
   it('marks active tab with aria-selected', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
@@ -137,7 +137,7 @@ describe('TagsBar', () => {
   })
 
   it('home tab has no close button', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
@@ -150,7 +150,7 @@ describe('TagsBar', () => {
   })
 
   it('closable tab shows close button', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/chat',
       href: '/dashboard/chat',
@@ -163,7 +163,7 @@ describe('TagsBar', () => {
   })
 
   it('ArrowLeft and ArrowRight move focus', async () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
@@ -188,7 +188,7 @@ describe('TagsBar', () => {
   })
 
   it('Enter activates the focused tab', async () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
@@ -208,11 +208,11 @@ describe('TagsBar', () => {
     const overview = tabs[0]!
     overview.focus()
     fireEvent.keyDown(overview, { key: 'Enter' })
-    expect(useWorkspaceTagStore.getState().activeId).toBe('/dashboard/overview')
+    expect(useWorkspaceTabStore.getState().activeId).toBe('/dashboard/overview')
   })
 
   it('Delete triggers close for closable tabs', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
@@ -231,11 +231,11 @@ describe('TagsBar', () => {
     const tabs = screen.getAllByRole('tab')
     tabs[1]?.focus()
     fireEvent.keyDown(tabs[1]!, { key: 'Delete' })
-    expect(useWorkspaceTagStore.getState().tabs['/dashboard/chat']).toBeUndefined()
+    expect(useWorkspaceTabStore.getState().tabs['/dashboard/chat']).toBeUndefined()
   })
 
   it('Delete does not close home tab', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
@@ -247,11 +247,11 @@ describe('TagsBar', () => {
     const tab = screen.getByRole('tab', { name: /仪表盘/ })
     tab.focus()
     fireEvent.keyDown(tab, { key: 'Delete' })
-    expect(useWorkspaceTagStore.getState().tabs['/dashboard/overview']).toBeDefined()
+    expect(useWorkspaceTabStore.getState().tabs['/dashboard/overview']).toBeDefined()
   })
 
   it('shows dirty indicator when lifecycle marks tab as dirty', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/chat',
       href: '/dashboard/chat',
@@ -260,7 +260,7 @@ describe('TagsBar', () => {
       keepAlive: false,
     })
     // Set dirty in lifecycle
-    useWorkspaceTagStore.setState({
+    useWorkspaceTabStore.setState({
       lifecycleSnapshots: {
         '/dashboard/chat': { title: 'Chat', dirty: true },
       },

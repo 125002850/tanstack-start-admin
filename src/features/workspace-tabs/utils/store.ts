@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import type {
   WorkspaceTab,
-  WorkspaceTagId,
-  WorkspaceTagOpenInput,
-  WorkspaceTagSnapshot,
+  WorkspaceTabId,
+  WorkspaceTabOpenInput,
+  WorkspaceTabSnapshot,
   WorkspacePageDescriptor,
   WorkspacePageLifecycle,
   WorkspacePageLifecyclePatch,
@@ -14,27 +14,27 @@ import { MAX_KEEPALIVE_TABS } from '@/config/workspace-tabs'
 const HOME_ID = resolveDashboardHomeHref()
 const HOME_TITLE = '仪表盘'
 
-interface WorkspaceTagState {
-  tabs: Record<WorkspaceTagId, WorkspaceTab>
-  activeId: WorkspaceTagId | null
-  openedOrder: WorkspaceTagId[]
-  disabledKeepAliveIds: Set<WorkspaceTagId>
-  pageDescriptors: Record<WorkspaceTagId, WorkspacePageDescriptor>
-  lifecycleSnapshots: Record<WorkspaceTagId, WorkspacePageLifecycle>
+interface WorkspaceTabState {
+  tabs: Record<WorkspaceTabId, WorkspaceTab>
+  activeId: WorkspaceTabId | null
+  openedOrder: WorkspaceTabId[]
+  disabledKeepAliveIds: Set<WorkspaceTabId>
+  pageDescriptors: Record<WorkspaceTabId, WorkspacePageDescriptor>
+  lifecycleSnapshots: Record<WorkspaceTabId, WorkspacePageLifecycle>
 
-  openOrActivate: (tab: WorkspaceTagOpenInput) => void
-  close: (id: WorkspaceTagId) => void
-  closeOther: (id: WorkspaceTagId) => void
+  openOrActivate: (tab: WorkspaceTabOpenInput) => void
+  close: (id: WorkspaceTabId) => void
+  closeOther: (id: WorkspaceTabId) => void
   closeAll: () => void
-  touch: (id: WorkspaceTagId) => void
-  evictInactive: (keepAliveIds: Set<WorkspaceTagId>) => void
-  disableKeepAlive: (id: WorkspaceTagId) => void
-  enableKeepAlive: (id: WorkspaceTagId) => void
-  getSnapshot: () => WorkspaceTagSnapshot
+  touch: (id: WorkspaceTabId) => void
+  evictInactive: (keepAliveIds: Set<WorkspaceTabId>) => void
+  disableKeepAlive: (id: WorkspaceTabId) => void
+  enableKeepAlive: (id: WorkspaceTabId) => void
+  getSnapshot: () => WorkspaceTabSnapshot
 
-  registerPageDescriptor: (tabId: WorkspaceTagId, descriptor: WorkspacePageDescriptor) => void
-  unregisterPageDescriptor: (tabId: WorkspaceTagId) => void
-  updateLifecycle: (tabId: WorkspaceTagId, patch: WorkspacePageLifecyclePatch) => void
+  registerPageDescriptor: (tabId: WorkspaceTabId, descriptor: WorkspacePageDescriptor) => void
+  unregisterPageDescriptor: (tabId: WorkspaceTabId) => void
+  updateLifecycle: (tabId: WorkspaceTabId, patch: WorkspacePageLifecyclePatch) => void
   resetAll: () => void
 }
 
@@ -43,7 +43,7 @@ function makeDefaultLifecycle(title: string): WorkspacePageLifecycle {
 }
 
 function createBaseState(): Pick<
-  WorkspaceTagState,
+  WorkspaceTabState,
   'tabs' | 'activeId' | 'openedOrder' | 'disabledKeepAliveIds' | 'pageDescriptors' | 'lifecycleSnapshots'
 > {
   const homeTab = createHomeTab()
@@ -57,42 +57,91 @@ function createBaseState(): Pick<
   }
 }
 
-export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
+export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
   ...createBaseState(),
 
-  openOrActivate: (tab) => {
-    const result = set((state) => {
+  openOrActivate: (tab) =>
+    set((state) => {
       const existing = state.tabs[tab.id]
+
+      // Step 1: Build the base next state (open or activate the tab)
+      let nextTabs: Record<WorkspaceTabId, WorkspaceTab>
+      let nextPageDescriptors: Record<WorkspaceTabId, WorkspacePageDescriptor>
+      let nextLifecycleSnapshots: Record<WorkspaceTabId, WorkspacePageLifecycle>
+      let nextActiveId: WorkspaceTabId
+      let nextOpenedOrder: WorkspaceTabId[]
+
       if (existing) {
-        return {
-          activeId: tab.id,
-          tabs: {
-            ...state.tabs,
-            [tab.id]: { ...existing, href: tab.href, title: tab.title, lastVisitedAt: Date.now() },
-          },
+        nextTabs = {
+          ...state.tabs,
+          [tab.id]: { ...existing, href: tab.href, title: tab.title, lastVisitedAt: Date.now() },
         }
-      }
-      const nextTab: WorkspaceTab = {
-        id: tab.id,
-        href: tab.href,
-        title: tab.title,
-        closable: tab.closable ?? true,
-        keepAlive: tab.keepAlive ?? false,
-        lastVisitedAt: Date.now(),
-      }
-      return {
-        activeId: tab.id,
-        tabs: { ...state.tabs, [tab.id]: nextTab },
-        openedOrder: normalizeOpenedOrder(
+        nextActiveId = tab.id
+        nextPageDescriptors = state.pageDescriptors
+        nextLifecycleSnapshots = state.lifecycleSnapshots
+        nextOpenedOrder = state.openedOrder
+      } else {
+        const nextTab: WorkspaceTab = {
+          id: tab.id,
+          href: tab.href,
+          title: tab.title,
+          closable: tab.closable ?? true,
+          keepAlive: tab.keepAlive ?? false,
+          lastVisitedAt: Date.now(),
+        }
+        nextTabs = { ...state.tabs, [tab.id]: nextTab }
+        nextActiveId = tab.id
+        nextPageDescriptors = state.pageDescriptors
+        nextLifecycleSnapshots = state.lifecycleSnapshots
+        nextOpenedOrder = normalizeOpenedOrder(
           state.openedOrder.includes(tab.id)
             ? state.openedOrder
             : [...state.openedOrder, tab.id],
-        ),
+        )
       }
-    })
-    enforceLruAfterOpen()
-    return result
-  },
+
+      // Step 2: Enforce LRU eviction within the same atomic update.
+      // Previously this was an off-cycle mutation (enforceLruAfterOpen) that
+      // called evictInactive via a separate set() after openOrActivate returned,
+      // which could cause subscriber ordering bugs.
+      const keepAliveTabs = Object.values(nextTabs).filter((t) => t.keepAlive)
+      if (keepAliveTabs.length > MAX_KEEPALIVE_TABS) {
+        const sorted = keepAliveTabs.toSorted((a, b) => a.lastVisitedAt - b.lastVisitedAt)
+        const toEvict = new Set<WorkspaceTabId>()
+
+        for (const t of sorted) {
+          if (keepAliveTabs.length - toEvict.size <= MAX_KEEPALIVE_TABS) break
+          // Never evict the tab we just opened — its lifecycle snapshot may not
+          // be registered yet (registerPageDescriptor runs in a LayoutEffect),
+          // so the dirty guard above would treat it as evictable.
+          if (t.id === tab.id) continue
+          if (state.lifecycleSnapshots[t.id]?.dirty) continue
+          toEvict.add(t.id)
+        }
+
+        if (toEvict.size > 0) {
+          // Prune evicted tabs from all state slices to prevent unbounded growth
+          const kept: Record<string, WorkspaceTab> = {}
+          const keptDescriptors: Record<string, WorkspacePageDescriptor> = {}
+          const keptLifecycles: Record<string, WorkspacePageLifecycle> = {}
+          for (const id of Object.keys(nextTabs)) {
+            if (!toEvict.has(id) || isHomeId(id)) {
+              kept[id] = nextTabs[id]
+              if (nextPageDescriptors[id]) keptDescriptors[id] = nextPageDescriptors[id]
+              if (nextLifecycleSnapshots[id]) keptLifecycles[id] = nextLifecycleSnapshots[id]
+            }
+          }
+          nextTabs = ensureHomeTab(kept)
+          nextPageDescriptors = keptDescriptors
+          nextLifecycleSnapshots = keptLifecycles
+          nextOpenedOrder = normalizeOpenedOrder(
+            nextOpenedOrder.filter((id) => !toEvict.has(id) || isHomeId(id)),
+          )
+        }
+      }
+
+      return { tabs: nextTabs, activeId: nextActiveId, openedOrder: nextOpenedOrder, pageDescriptors: nextPageDescriptors, lifecycleSnapshots: nextLifecycleSnapshots }
+    }),
 
   close: (id) =>
     set((state) => {
@@ -329,30 +378,10 @@ export const useWorkspaceTagStore = create<WorkspaceTagState>()((set, get) => ({
     set(createBaseState()),
 }))
 
-function enforceLruAfterOpen() {
-  const state = useWorkspaceTagStore.getState()
-  const keepAliveTabs = Object.values(state.tabs).filter((t) => t.keepAlive)
-  if (keepAliveTabs.length <= MAX_KEEPALIVE_TABS) return
-
-  const sorted = keepAliveTabs.toSorted((a, b) => a.lastVisitedAt - b.lastVisitedAt)
-  const toEvict = new Set<WorkspaceTagId>()
-
-  for (const tab of sorted) {
-    if (keepAliveTabs.length - toEvict.size <= MAX_KEEPALIVE_TABS) break
-    if (state.lifecycleSnapshots[tab.id]?.dirty) continue
-    toEvict.add(tab.id)
-  }
-
-  if (toEvict.size === 0) return
-
-  const keepIds = new Set(Object.keys(state.tabs).filter((id) => !toEvict.has(id)))
-  useWorkspaceTagStore.getState().evictInactive(keepIds)
-}
-
 function findFallback(
-  tabs: Record<WorkspaceTagId, WorkspaceTab>,
-  closedId: WorkspaceTagId,
-): WorkspaceTagId | null {
+  tabs: Record<WorkspaceTabId, WorkspaceTab>,
+  closedId: WorkspaceTabId,
+): WorkspaceTabId | null {
   const sorted = Object.values(tabs)
     .filter((t) => t.id !== closedId)
     .toSorted((a, b) => b.lastVisitedAt - a.lastVisitedAt)
@@ -370,16 +399,16 @@ function createHomeTab(lastVisitedAt = Date.now()): WorkspaceTab {
   }
 }
 
-function ensureHomeTab(tabs: Record<WorkspaceTagId, WorkspaceTab>): Record<WorkspaceTagId, WorkspaceTab> {
+function ensureHomeTab(tabs: Record<WorkspaceTabId, WorkspaceTab>): Record<WorkspaceTabId, WorkspaceTab> {
   if (tabs[HOME_ID]) return tabs
   return { ...tabs, [HOME_ID]: createHomeTab() }
 }
 
-function isHomeId(id: WorkspaceTagId): boolean {
+function isHomeId(id: WorkspaceTabId): boolean {
   return id === HOME_ID
 }
 
-function normalizeOpenedOrder(ids: WorkspaceTagId[]): WorkspaceTagId[] {
+function normalizeOpenedOrder(ids: WorkspaceTabId[]): WorkspaceTabId[] {
   const uniqueIds = Array.from(new Set(ids))
   if (!uniqueIds.includes(HOME_ID)) return uniqueIds
   return [HOME_ID, ...uniqueIds.filter((id) => id !== HOME_ID)]

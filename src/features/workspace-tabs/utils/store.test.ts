@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useWorkspaceTagStore } from './store'
+import { useWorkspaceTabStore } from './store'
 import type {
-  WorkspaceTagOpenInput,
+  WorkspaceTabOpenInput,
   WorkspacePageDescriptor,
 } from '../types'
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home'
+import { MAX_KEEPALIVE_TABS } from '@/config/workspace-tabs'
 
 const HOME_ID = resolveDashboardHomeHref()
 
-function makeTab(overrides: Partial<WorkspaceTagOpenInput> = {}): WorkspaceTagOpenInput {
+function makeTab(overrides: Partial<WorkspaceTabOpenInput> = {}): WorkspaceTabOpenInput {
   return {
     id: 'tab-1',
     href: '/dashboard/overview',
@@ -31,7 +32,7 @@ function makeDescriptor(overrides: Partial<WorkspacePageDescriptor> = {}): Works
 }
 
 function resetStore() {
-  useWorkspaceTagStore.setState({
+  useWorkspaceTabStore.setState({
     tabs: {},
     activeId: null,
     openedOrder: [],
@@ -46,11 +47,11 @@ describe('workspace-tags store', () => {
 
   describe('base state', () => {
     it('resetAll restores the persistent home tab', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
 
       store.resetAll()
 
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(Object.keys(state.tabs)).toEqual([HOME_ID])
       expect(state.tabs[HOME_ID]).toMatchObject({
         id: HOME_ID,
@@ -67,8 +68,8 @@ describe('workspace-tags store', () => {
   describe('openOrActivate', () => {
     it('adds a new tab and sets it active', () => {
       const tab = makeTab()
-      useWorkspaceTagStore.getState().openOrActivate(tab)
-      const state = useWorkspaceTagStore.getState()
+      useWorkspaceTabStore.getState().openOrActivate(tab)
+      const state = useWorkspaceTabStore.getState()
       expect(state.tabs[tab.id]).toBeDefined()
       expect(state.activeId).toBe(tab.id)
       expect(state.openedOrder).toContain(tab.id)
@@ -76,67 +77,67 @@ describe('workspace-tags store', () => {
 
     it('activates an existing tab without duplicating', () => {
       const tab = makeTab()
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(tab)
       store.openOrActivate(tab)
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.openedOrder.length).toBe(1)
       expect(state.activeId).toBe(tab.id)
     })
 
     it('updates href and title on re-activation', () => {
       const tab = makeTab({ href: '/dashboard/product' })
-      useWorkspaceTagStore.getState().openOrActivate(tab)
-      useWorkspaceTagStore.getState().openOrActivate(makeTab({ id: tab.id, href: '/dashboard/product?page=2', title: 'Updated' }))
-      const updated = useWorkspaceTagStore.getState().tabs[tab.id]
+      useWorkspaceTabStore.getState().openOrActivate(tab)
+      useWorkspaceTabStore.getState().openOrActivate(makeTab({ id: tab.id, href: '/dashboard/product?page=2', title: 'Updated' }))
+      const updated = useWorkspaceTabStore.getState().tabs[tab.id]
       expect(updated.href).toBe('/dashboard/product?page=2')
       expect(updated.title).toBe('Updated')
     })
 
     it('updates lastVisitedAt on re-activation', () => {
       const tab = makeTab()
-      useWorkspaceTagStore.getState().openOrActivate(tab)
-      const firstTouch = useWorkspaceTagStore.getState().tabs[tab.id].lastVisitedAt
+      useWorkspaceTabStore.getState().openOrActivate(tab)
+      const firstTouch = useWorkspaceTabStore.getState().tabs[tab.id].lastVisitedAt
       const start = Date.now()
       while (Date.now() === start) { /* wait */ }
-      useWorkspaceTagStore.getState().openOrActivate(tab)
-      const secondTouch = useWorkspaceTagStore.getState().tabs[tab.id].lastVisitedAt
+      useWorkspaceTabStore.getState().openOrActivate(tab)
+      const secondTouch = useWorkspaceTabStore.getState().tabs[tab.id].lastVisitedAt
       expect(secondTouch).toBeGreaterThan(firstTouch)
     })
 
     it('pins home tab to the first position when it is opened after other tabs', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(makeTab({ id: 'products', href: '/dashboard/product', title: 'Products' }))
       store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
 
-      expect(useWorkspaceTagStore.getState().openedOrder).toEqual([HOME_ID, 'products'])
+      expect(useWorkspaceTabStore.getState().openedOrder).toEqual([HOME_ID, 'products'])
     })
   })
 
   describe('close', () => {
     it('removes the tab', () => {
       const tab = makeTab()
-      useWorkspaceTagStore.getState().openOrActivate(tab)
-      useWorkspaceTagStore.getState().close(tab.id)
-      expect(useWorkspaceTagStore.getState().tabs[tab.id]).toBeUndefined()
+      useWorkspaceTabStore.getState().openOrActivate(tab)
+      useWorkspaceTabStore.getState().close(tab.id)
+      expect(useWorkspaceTabStore.getState().tabs[tab.id]).toBeUndefined()
     })
 
     it('selects the most recently visited tab as fallback', () => {
       const a = makeTab({ id: 'a', href: '/a' })
       const b = makeTab({ id: 'b', href: '/b' })
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(a)
       store.openOrActivate(b)
-      useWorkspaceTagStore.getState().touch('a')
+      useWorkspaceTabStore.getState().touch('a')
       store.close('a')
-      expect(useWorkspaceTagStore.getState().activeId).toBe('b')
+      expect(useWorkspaceTabStore.getState().activeId).toBe('b')
     })
 
     it('falls back to home when the last non-home tab is closed', () => {
       const tab = makeTab()
-      useWorkspaceTagStore.getState().openOrActivate(tab)
-      useWorkspaceTagStore.getState().close(tab.id)
-      const state = useWorkspaceTagStore.getState()
+      useWorkspaceTabStore.getState().openOrActivate(tab)
+      useWorkspaceTabStore.getState().close(tab.id)
+      const state = useWorkspaceTabStore.getState()
       expect(state.activeId).toBe(HOME_ID)
       expect(state.tabs[HOME_ID]).toBeDefined()
     })
@@ -148,26 +149,26 @@ describe('workspace-tags store', () => {
       expect(getState().lifecycleSnapshots['tab-1']?.dirty).toBe(true)
 
       getState().close('tab-1')
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.pageDescriptors['tab-1']).toBeUndefined()
       expect(state.lifecycleSnapshots['tab-1']).toBeUndefined()
     })
 
     it('cleans up disabledKeepAlive flag on close', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(makeTab({ id: 'tab-1' }))
       store.disableKeepAlive('tab-1')
       store.close('tab-1')
-      expect(useWorkspaceTagStore.getState().disabledKeepAliveIds.has('tab-1')).toBe(false)
+      expect(useWorkspaceTabStore.getState().disabledKeepAliveIds.has('tab-1')).toBe(false)
     })
 
     it('does not remove home tab', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
 
       store.close(HOME_ID)
 
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.tabs[HOME_ID]).toBeDefined()
       expect(state.openedOrder).toEqual([HOME_ID])
       expect(state.activeId).toBe(HOME_ID)
@@ -178,19 +179,19 @@ describe('workspace-tags store', () => {
     it('keeps home tab alongside the specified tab', () => {
       const a = makeTab({ id: 'a', href: '/a' })
       const b = makeTab({ id: 'b', href: '/b' })
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
       store.openOrActivate(a)
       store.openOrActivate(b)
       store.closeOther('a')
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(Object.keys(state.tabs).toSorted()).toEqual([HOME_ID, 'a'])
       expect(state.openedOrder).toEqual([HOME_ID, 'a'])
       expect(state.activeId).toBe('a')
     })
 
     it('cleans up descriptors and lifecycles of closed tabs', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.registerPageDescriptor(HOME_ID, makeDescriptor({
         tabId: HOME_ID,
         initialTitle: '仪表盘',
@@ -202,7 +203,7 @@ describe('workspace-tags store', () => {
       store.updateLifecycle('b', { dirty: true })
 
       store.closeOther('a')
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.pageDescriptors[HOME_ID]).toBeDefined()
       expect(state.pageDescriptors['a']).toBeDefined()
       expect(state.pageDescriptors['b']).toBeUndefined()
@@ -214,13 +215,13 @@ describe('workspace-tags store', () => {
 
   describe('closeAll', () => {
     it('keeps home tab and sets it active', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       const home = makeTab({ id: HOME_ID, href: HOME_ID, closable: false, title: '仪表盘' })
       store.openOrActivate(home)
       store.openOrActivate(makeTab({ id: 'a', href: '/a' }))
       store.openOrActivate(makeTab({ id: 'b', href: '/b' }))
       store.closeAll()
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(Object.keys(state.tabs)).toEqual([HOME_ID])
       expect(state.activeId).toBe(HOME_ID)
       expect(state.openedOrder).toEqual([HOME_ID])
@@ -228,10 +229,10 @@ describe('workspace-tags store', () => {
     })
 
     it('creates home tab if it does not exist', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(makeTab({ id: 'a', href: '/a' }))
       store.closeAll()
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(Object.keys(state.tabs)).toEqual([HOME_ID])
       expect(state.activeId).toBe(HOME_ID)
       expect(state.tabs[HOME_ID]).toMatchObject({
@@ -244,7 +245,7 @@ describe('workspace-tags store', () => {
     })
 
     it('cleans up all descriptors and lifecycles except home', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.registerPageDescriptor(HOME_ID, makeDescriptor({
         tabId: HOME_ID,
         initialTitle: 'Home',
@@ -253,7 +254,7 @@ describe('workspace-tags store', () => {
       store.registerPageDescriptor('a', makeDescriptor({ tabId: 'a' }))
 
       store.closeAll()
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.pageDescriptors[HOME_ID]).toBeDefined()
       expect(state.pageDescriptors['a']).toBeUndefined()
     })
@@ -262,28 +263,28 @@ describe('workspace-tags store', () => {
   describe('touch', () => {
     it('updates lastVisitedAt', () => {
       const tab = makeTab()
-      useWorkspaceTagStore.getState().openOrActivate(tab)
-      const prev = useWorkspaceTagStore.getState().tabs[tab.id].lastVisitedAt
+      useWorkspaceTabStore.getState().openOrActivate(tab)
+      const prev = useWorkspaceTabStore.getState().tabs[tab.id].lastVisitedAt
       const start = Date.now()
       while (Date.now() === start) { /* wait */ }
-      useWorkspaceTagStore.getState().touch(tab.id)
-      expect(useWorkspaceTagStore.getState().tabs[tab.id].lastVisitedAt).toBeGreaterThan(prev)
+      useWorkspaceTabStore.getState().touch(tab.id)
+      expect(useWorkspaceTabStore.getState().tabs[tab.id].lastVisitedAt).toBeGreaterThan(prev)
     })
 
     it('is a no-op for unknown ids', () => {
-      useWorkspaceTagStore.getState().touch('nonexistent')
-      expect(useWorkspaceTagStore.getState().tabs['nonexistent']).toBeUndefined()
+      useWorkspaceTabStore.getState().touch('nonexistent')
+      expect(useWorkspaceTabStore.getState().tabs['nonexistent']).toBeUndefined()
     })
   })
 
   describe('evictInactive', () => {
     it('removes tabs not in the keep-alive set', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
       store.openOrActivate(makeTab({ id: 'a', keepAlive: true }))
       store.openOrActivate(makeTab({ id: 'b', keepAlive: false }))
       store.evictInactive(new Set(['a']))
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.tabs[HOME_ID]).toBeDefined()
       expect(state.openedOrder).toEqual([HOME_ID, 'a'])
       expect(state.tabs['a']).toBeDefined()
@@ -293,7 +294,7 @@ describe('workspace-tags store', () => {
 
   describe('getSnapshot', () => {
     it('returns tabs as an array with ordering', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.openOrActivate(makeTab({ id: 'a' }))
       store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
       store.openOrActivate(makeTab({ id: 'b' }))
@@ -307,7 +308,7 @@ describe('workspace-tags store', () => {
   // ─── V2 page descriptor lifecycle ───
 
   function getState() {
-    return useWorkspaceTagStore.getState()
+    return useWorkspaceTabStore.getState()
   }
 
   describe('registerPageDescriptor', () => {
@@ -464,6 +465,173 @@ describe('workspace-tags store', () => {
       expect(state.openedOrder).toEqual([HOME_ID])
       expect(Object.keys(state.pageDescriptors)).toHaveLength(0)
       expect(Object.keys(state.lifecycleSnapshots)).toHaveLength(0)
+    })
+  })
+
+  // ─── LRU eviction (inlined in openOrActivate) ───
+
+  describe('LRU eviction (inlined in openOrActivate)', () => {
+    it('evicts oldest keep-alive tab when exceeding MAX_KEEPALIVE_TABS', () => {
+      // Build state with MAX_KEEPALIVE_TABS keep-alive tabs, each with staggered lastVisitedAt
+      const baseTime = 1000000
+      const tabs: Record<string, { id: string; href: string; title: string; closable: boolean; keepAlive: boolean; lastVisitedAt: number }> = {
+        [HOME_ID]: { id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false, keepAlive: false, lastVisitedAt: baseTime }
+      }
+      const order = [HOME_ID]
+
+      for (let i = 0; i < MAX_KEEPALIVE_TABS; i++) {
+        const id = `keep-${i}`
+        tabs[id] = { id, href: `/${id}`, title: id, closable: true, keepAlive: true, lastVisitedAt: baseTime + (i + 1) * 1000 }
+        order.push(id)
+      }
+
+      useWorkspaceTabStore.setState({
+        tabs,
+        openedOrder: order,
+        activeId: `keep-${MAX_KEEPALIVE_TABS - 1}`,
+        disabledKeepAliveIds: new Set(),
+        pageDescriptors: {},
+        lifecycleSnapshots: {},
+      })
+
+      // Open one more keep-alive tab to trigger eviction
+      getState().openOrActivate(makeTab({ id: 'overflow', href: '/overflow', title: 'Overflow', keepAlive: true }))
+
+      const state = getState()
+      // keep-0 is the oldest and should be evicted
+      expect(state.tabs['keep-0']).toBeUndefined()
+      // All other keep-alive tabs should be preserved
+      for (let i = 1; i < MAX_KEEPALIVE_TABS; i++) {
+        expect(state.tabs[`keep-${i}`]).toBeDefined()
+      }
+      // overflow should be present
+      expect(state.tabs['overflow']).toBeDefined()
+      // Home tab should be preserved
+      expect(state.tabs[HOME_ID]).toBeDefined()
+    })
+
+    it('preserves dirty keep-alive tabs during eviction', () => {
+      const store = getState()
+
+      // Register MAX_KEEPALIVE_TABS keep-alive page descriptors
+      for (let i = 0; i < MAX_KEEPALIVE_TABS; i++) {
+        store.registerPageDescriptor(`keep-${i}`, makeDescriptor({
+          tabId: `keep-${i}`,
+          keepAlive: true,
+          initialTitle: `Keep ${i}`,
+        }))
+      }
+
+      // Mark the first two (oldest) as dirty
+      store.updateLifecycle('keep-0', { dirty: true })
+      store.updateLifecycle('keep-1', { dirty: true })
+
+      // Open one more keep-alive tab to exceed the limit (must use openOrActivate to trigger eviction)
+      store.openOrActivate(makeTab({ id: 'overflow', href: '/overflow', title: 'Overflow', keepAlive: true }))
+
+      const state = getState()
+      // Dirty tabs should be preserved
+      expect(state.tabs['keep-0']).toBeDefined()
+      expect(state.tabs['keep-1']).toBeDefined()
+      // The oldest clean tab (keep-2) should be evicted
+      expect(state.tabs['keep-2']).toBeUndefined()
+      // Remaining keep-alive tabs preserved
+      for (let i = 3; i < MAX_KEEPALIVE_TABS; i++) {
+        expect(state.tabs[`keep-${i}`]).toBeDefined()
+      }
+      // overflow and home preserved
+      expect(state.tabs['overflow']).toBeDefined()
+      expect(state.tabs[HOME_ID]).toBeDefined()
+    })
+
+    it('does not evict when under the keep-alive limit', () => {
+      const store = getState()
+
+      // Ensure home tab is in place
+      store.openOrActivate(makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false }))
+
+      // Open fewer than MAX_KEEPALIVE_TABS keep-alive tabs
+      const count = MAX_KEEPALIVE_TABS - 1
+      for (let i = 0; i < count; i++) {
+        store.openOrActivate(makeTab({ id: `keep-${i}`, href: `/${i}`, title: `Keep ${i}`, keepAlive: true }))
+      }
+
+      // All tabs should remain
+      const state = getState()
+      for (let i = 0; i < count; i++) {
+        expect(state.tabs[`keep-${i}`]).toBeDefined()
+      }
+      expect(state.tabs[HOME_ID]).toBeDefined()
+    })
+
+    it('eviction runs atomically within openOrActivate', () => {
+      const store = getState()
+
+      // Open exactly MAX_KEEPALIVE_TABS keep-alive tabs
+      for (let i = 0; i < MAX_KEEPALIVE_TABS; i++) {
+        store.openOrActivate(makeTab({ id: `keep-${i}`, href: `/${i}`, title: `Keep ${i}`, keepAlive: true }))
+      }
+
+      // Subscribe to store updates
+      const listener = vi.fn()
+      const unsub = useWorkspaceTabStore.subscribe(listener)
+
+      // Open one more keep-alive tab — should evict and open in ONE state update
+      store.openOrActivate(makeTab({ id: 'overflow', href: '/overflow', title: 'Overflow', keepAlive: true }))
+
+      expect(listener).toHaveBeenCalledTimes(1)
+
+      unsub()
+    })
+
+    it('preserves non-keep-alive tabs during eviction (only keep-alive tabs count toward limit)', () => {
+      // Build state with MAX_KEEPALIVE_TABS keep-alive tabs plus several non-keep-alive tabs
+      const baseTime = 1000000
+      const tabs: Record<string, { id: string; href: string; title: string; closable: boolean; keepAlive: boolean; lastVisitedAt: number }> = {
+        [HOME_ID]: { id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false, keepAlive: false, lastVisitedAt: baseTime }
+      }
+      const order = [HOME_ID]
+
+      for (let i = 0; i < MAX_KEEPALIVE_TABS; i++) {
+        const id = `keep-${i}`
+        tabs[id] = { id, href: `/${id}`, title: id, closable: true, keepAlive: true, lastVisitedAt: baseTime + (i + 1) * 1000 }
+        order.push(id)
+      }
+
+      // Add several non-keep-alive tabs (they should not count toward the limit)
+      const normalCount = 5
+      for (let i = 0; i < normalCount; i++) {
+        const id = `normal-${i}`
+        tabs[id] = { id, href: `/${id}`, title: id, closable: true, keepAlive: false, lastVisitedAt: baseTime + (MAX_KEEPALIVE_TABS + i + 1) * 1000 }
+        order.push(id)
+      }
+
+      useWorkspaceTabStore.setState({
+        tabs,
+        openedOrder: order,
+        activeId: `normal-${normalCount - 1}`,
+        disabledKeepAliveIds: new Set(),
+        pageDescriptors: {},
+        lifecycleSnapshots: {},
+      })
+
+      // Open one more keep-alive tab to trigger eviction
+      getState().openOrActivate(makeTab({ id: 'overflow', href: '/overflow', title: 'Overflow', keepAlive: true }))
+
+      const state = getState()
+      // keep-0 (oldest keep-alive) should be evicted
+      expect(state.tabs['keep-0']).toBeUndefined()
+      // Other keep-alive tabs preserved
+      for (let i = 1; i < MAX_KEEPALIVE_TABS; i++) {
+        expect(state.tabs[`keep-${i}`]).toBeDefined()
+      }
+      // All non-keep-alive tabs preserved
+      for (let i = 0; i < normalCount; i++) {
+        expect(state.tabs[`normal-${i}`]).toBeDefined()
+      }
+      // overflow and home preserved
+      expect(state.tabs['overflow']).toBeDefined()
+      expect(state.tabs[HOME_ID]).toBeDefined()
     })
   })
 })

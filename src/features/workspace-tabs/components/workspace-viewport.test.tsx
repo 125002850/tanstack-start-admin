@@ -1,11 +1,9 @@
 import * as React from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
-import { useWorkspaceTagStore } from '../utils/store'
-import { workspaceRegistry } from '../lib/workspace-registry'
+import { useWorkspaceTabStore } from '../utils/store'
 import { WorkspaceViewport } from './workspace-viewport'
 import type {
-  WorkspaceScreenDescriptor,
   WorkspacePageDescriptor,
   WorkspacePageLifecycle,
   WorkspaceTab,
@@ -31,7 +29,7 @@ function setStoreState(
     ]),
   ) as Record<string, WorkspaceTab>
 
-  useWorkspaceTagStore.setState({
+  useWorkspaceTabStore.setState({
     tabs: normalizedTabs,
     activeId,
     openedOrder: Object.keys(normalizedTabs),
@@ -39,21 +37,6 @@ function setStoreState(
     pageDescriptors: extra.pageDescriptors ?? {},
     lifecycleSnapshots: extra.lifecycleSnapshots ?? {},
   })
-}
-
-function makeDescriptor(overrides: Partial<WorkspaceScreenDescriptor> = {}): WorkspaceScreenDescriptor {
-  return {
-    definition: {
-      parse: () => ({}),
-      stringify: () => ({}),
-      buildHref: () => '',
-      getPageChrome: () => ({ title: 'Test' }),
-      refresh: () => {},
-    },
-    screen: () => React.createElement('div', { 'data-testid': 'test-screen' }, 'Screen'),
-    instanceKey: 'test-key',
-    ...overrides,
-  }
 }
 
 function makePageDescriptor(overrides: Partial<WorkspacePageDescriptor> = {}): WorkspacePageDescriptor {
@@ -68,7 +51,7 @@ function makePageDescriptor(overrides: Partial<WorkspacePageDescriptor> = {}): W
 }
 
 function resetStore() {
-  useWorkspaceTagStore.setState({
+  useWorkspaceTabStore.setState({
     tabs: {},
     activeId: null,
     openedOrder: [],
@@ -81,12 +64,10 @@ function resetStore() {
 describe('WorkspaceViewport', () => {
   beforeEach(() => {
     resetStore()
-    workspaceRegistry.reset()
     cleanup()
   })
 
   afterEach(() => {
-    workspaceRegistry.reset()
     cleanup()
   })
 
@@ -208,7 +189,7 @@ describe('WorkspaceViewport', () => {
         // Error boundary should catch it; if not caught, test still verifies below
       }
       // Verify that keepAlive was disabled (error boundary behavior)
-      expect(useWorkspaceTagStore.getState().disabledKeepAliveIds.has('/dashboard/fallback')).toBe(true)
+      expect(useWorkspaceTabStore.getState().disabledKeepAliveIds.has('/dashboard/fallback')).toBe(true)
       consoleSpy.mockRestore()
     })
 
@@ -246,164 +227,6 @@ describe('WorkspaceViewport', () => {
       // A and C are inactive keep-alive → hidden
       expect(getByTestId('screen-a')).toHaveStyle({ display: 'none' })
       expect(getByTestId('screen-c')).toHaveStyle({ display: 'none' })
-    })
-  })
-
-  // ─── V1 workspaceRegistry fallback (old routes) ───
-
-  describe('V1 workspaceRegistry fallback', () => {
-    it('renders nothing when no descriptors are registered', () => {
-      setStoreState({}, null)
-      const { container } = render(React.createElement(WorkspaceViewport))
-      expect(container.innerHTML).toBe('')
-    })
-
-    it('renders nothing when tabs exist but none have keepAlive=true', () => {
-      setStoreState({
-        '/dashboard/overview': { id: '/dashboard/overview', keepAlive: false, href: '/dashboard/overview', title: 'Overview', closable: false },
-      }, '/dashboard/overview')
-      workspaceRegistry.register('/dashboard/overview', makeDescriptor({ instanceKey: 'overview' }))
-      const { container } = render(React.createElement(WorkspaceViewport))
-      expect(container.innerHTML).toBe('')
-    })
-
-    it('renders nothing when descriptor is registered but tab does not exist in store', () => {
-      setStoreState({}, null)
-      workspaceRegistry.register('/dashboard/products', makeDescriptor({ instanceKey: 'products' }))
-      const { container } = render(React.createElement(WorkspaceViewport))
-      expect(container.innerHTML).toBe('')
-    })
-
-    it('skips the active keep-alive tab (rendered by route component instead)', () => {
-      const tabs = {
-        '/dashboard/products': { id: '/dashboard/products', keepAlive: true, href: '/dashboard/products', title: 'Products', closable: true },
-      }
-      setStoreState(tabs, '/dashboard/products')
-      workspaceRegistry.register('/dashboard/products', makeDescriptor({ instanceKey: 'products' }))
-
-      const { container } = render(React.createElement(WorkspaceViewport))
-      expect(container.innerHTML).toBe('')
-    })
-
-    it('renders inactive keep-alive tabs in hidden mode', () => {
-      const tabs = {
-        '/dashboard/products': { id: '/dashboard/products', keepAlive: true, href: '/dashboard/products', title: 'Products', closable: true },
-        '/dashboard/users': { id: '/dashboard/users', keepAlive: true, href: '/dashboard/users', title: 'Users', closable: true },
-      }
-      setStoreState(tabs, '/dashboard/products')
-      workspaceRegistry.register('/dashboard/products', makeDescriptor({ instanceKey: 'products' }))
-      workspaceRegistry.register('/dashboard/users', makeDescriptor({
-        instanceKey: 'users',
-        screen: () => React.createElement('div', { 'data-testid': 'users-screen' }, 'Users'),
-      }))
-
-      const { getByTestId } = render(React.createElement(WorkspaceViewport))
-      const usersScreen = getByTestId('users-screen')
-      expect(usersScreen).toBeDefined()
-      expect(usersScreen).toHaveStyle({ display: 'none' })
-    })
-
-    it('skips non-keep-alive tabs even when descriptor is registered', () => {
-      const tabs = {
-        '/dashboard/overview': { id: '/dashboard/overview', keepAlive: false, href: '/dashboard/overview', title: 'Overview', closable: false },
-        '/dashboard/products': { id: '/dashboard/products', keepAlive: true, href: '/dashboard/products', title: 'Products', closable: true },
-      }
-      setStoreState(tabs, '/dashboard/overview')
-      workspaceRegistry.register('/dashboard/overview', makeDescriptor({
-        instanceKey: 'overview',
-        screen: () => React.createElement('div', { 'data-testid': 'overview-screen' }, 'Overview'),
-      }))
-      workspaceRegistry.register('/dashboard/products', makeDescriptor({
-        instanceKey: 'products',
-        screen: () => React.createElement('div', { 'data-testid': 'products-screen' }, 'Products'),
-      }))
-
-      const { queryByTestId, getByTestId } = render(React.createElement(WorkspaceViewport))
-      expect(queryByTestId('overview-screen')).toBeNull()
-      expect(getByTestId('products-screen')).toBeDefined()
-    })
-
-    it('skips tabs with disabled keep-alive (slot error recovery)', () => {
-      const tabs = {
-        '/dashboard/products': { id: '/dashboard/products', keepAlive: true, href: '/dashboard/products', title: 'Products', closable: true },
-        '/dashboard/users': { id: '/dashboard/users', keepAlive: true, href: '/dashboard/users', title: 'Users', closable: true },
-      }
-      setStoreState(tabs, '/dashboard/products', ['/dashboard/products'])
-      workspaceRegistry.register('/dashboard/products', makeDescriptor({ instanceKey: 'products' }))
-      workspaceRegistry.register('/dashboard/users', makeDescriptor({
-        instanceKey: 'users',
-        screen: () => React.createElement('div', { 'data-testid': 'users-screen' }, 'Users'),
-      }))
-
-      const { getByTestId } = render(React.createElement(WorkspaceViewport))
-      // Products has disabled keep-alive → skipped; Users is inactive keep-alive → rendered hidden
-      expect(getByTestId('users-screen')).toBeDefined()
-    })
-
-    it('renders multiple keep-alive slots with correct visibility', () => {
-      const tabs = {
-        '/dashboard/a': { id: '/dashboard/a', keepAlive: true, href: '/dashboard/a', title: 'A', closable: true },
-        '/dashboard/b': { id: '/dashboard/b', keepAlive: true, href: '/dashboard/b', title: 'B', closable: true },
-        '/dashboard/c': { id: '/dashboard/c', keepAlive: true, href: '/dashboard/c', title: 'C', closable: true },
-      }
-      setStoreState(tabs, '/dashboard/b')
-      workspaceRegistry.register('/dashboard/a', makeDescriptor({
-        instanceKey: 'a',
-        screen: () => React.createElement('div', { 'data-testid': 'screen-a' }, 'A'),
-      }))
-      workspaceRegistry.register('/dashboard/b', makeDescriptor({
-        instanceKey: 'b',
-        screen: () => React.createElement('div', { 'data-testid': 'screen-b' }, 'B'),
-      }))
-      workspaceRegistry.register('/dashboard/c', makeDescriptor({
-        instanceKey: 'c',
-        screen: () => React.createElement('div', { 'data-testid': 'screen-c' }, 'C'),
-      }))
-
-      const { getByTestId, queryByTestId } = render(React.createElement(WorkspaceViewport))
-      expect(queryByTestId('screen-b')).toBeNull()
-      expect(getByTestId('screen-a')).toBeDefined()
-      expect(getByTestId('screen-c')).toBeDefined()
-      expect(getByTestId('screen-a')).toHaveStyle({ display: 'none' })
-      expect(getByTestId('screen-c')).toHaveStyle({ display: 'none' })
-    })
-
-    it('afterEach pattern: registry.reset() clears descriptors', () => {
-      workspaceRegistry.register('/test', makeDescriptor({ instanceKey: 'test' }))
-      expect(workspaceRegistry.has('/test')).toBe(true)
-      workspaceRegistry.reset()
-      expect(workspaceRegistry.has('/test')).toBe(false)
-    })
-  })
-
-  // ─── Mixed V2 + V1 rendering ───
-
-  describe('mixed V2 + V1', () => {
-    it('V2 page descriptors take priority over V1 registry entries', () => {
-      const v2Desc = makePageDescriptor({
-        tabId: '/dashboard/mixed',
-        keepAlive: true,
-        render: () => React.createElement('div', { 'data-testid': 'v2-content' }, 'V2'),
-      })
-      setStoreState(
-        {
-          '/dashboard/active': { id: '/dashboard/active', keepAlive: true, href: '/dashboard/active', title: 'Active', closable: true },
-          '/dashboard/mixed': { id: '/dashboard/mixed', keepAlive: true, href: '/dashboard/mixed', title: 'Mixed', closable: true },
-        },
-        '/dashboard/active',
-        [],
-        { pageDescriptors: { '/dashboard/active': makePageDescriptor({ tabId: '/dashboard/active' }), '/dashboard/mixed': v2Desc } },
-      )
-      // Also register a V1 descriptor for the same tab — should be ignored
-      workspaceRegistry.register('/dashboard/mixed', makeDescriptor({
-        instanceKey: 'mixed-v1',
-        screen: () => React.createElement('div', { 'data-testid': 'v1-content' }, 'V1'),
-      }))
-
-      const { getByTestId, queryByTestId } = render(React.createElement(WorkspaceViewport))
-      // V2 content should be rendered (hidden because inactive), V1 content should NOT be rendered
-      expect(getByTestId('v2-content')).toBeDefined()
-      expect(queryByTestId('v1-content')).toBeNull()
     })
   })
 })

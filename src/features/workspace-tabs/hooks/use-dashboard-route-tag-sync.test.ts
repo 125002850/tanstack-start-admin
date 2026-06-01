@@ -2,7 +2,7 @@ import React from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
 import { useDashboardRouteTagSync, findDeepestRouteMatch } from './use-dashboard-route-tag-sync'
-import { useWorkspaceTagStore } from '../utils/store'
+import { useWorkspaceTabStore } from '../utils/store'
 
 // Mutable state that tests control to simulate URL changes
 let mockPathname = '/dashboard/overview'
@@ -57,7 +57,7 @@ function SyncHarness() {
 }
 
 function resetStore() {
-  useWorkspaceTagStore.setState({ tabs: {}, activeId: null, openedOrder: [] })
+  useWorkspaceTabStore.setState({ tabs: {}, activeId: null, openedOrder: [] })
 }
 
 describe('findDeepestRouteMatch', () => {
@@ -104,7 +104,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
 
   it('seeds home tag as non-closable on mount', () => {
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     const homeTab = state.tabs['/dashboard/overview']
     expect(homeTab).toBeDefined()
     expect(homeTab.closable).toBe(false)
@@ -114,7 +114,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   it('syncs a non-home route as a closable tag', () => {
     mockPathname = '/dashboard/product'
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     const productTab = state.tabs['/dashboard/product']
     expect(productTab).toBeDefined()
     expect(productTab.closable).toBe(true)
@@ -124,7 +124,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   it('normalizes a trailing-slash pathname to the canonical tab id', () => {
     mockPathname = '/dashboard/product/'
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     expect(state.tabs['/dashboard/product']).toBeDefined()
     expect(state.tabs['/dashboard/product/']).toBeUndefined()
     expect(state.tabs['/dashboard/product']?.href).toBe('/dashboard/product')
@@ -137,7 +137,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
     mockPathname = '/dashboard/product/'
     rerender(React.createElement(SyncHarness))
 
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     expect(state.openedOrder.filter((id) => id === '/dashboard/product')).toHaveLength(1)
     expect(state.tabs['/dashboard/product/']).toBeUndefined()
   })
@@ -145,7 +145,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   it('sets the synced route as the active tab', () => {
     mockPathname = '/dashboard/users'
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     expect(state.activeId).toBe('/dashboard/users')
     expect(state.tabs['/dashboard/users']).toBeDefined()
   })
@@ -153,7 +153,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   it('skips the layout route /dashboard', () => {
     mockPathname = '/dashboard'
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     // Only the home tab should exist (seeded)
     expect(Object.keys(state.tabs)).toHaveLength(1)
     expect(state.tabs['/dashboard/overview']).toBeDefined()
@@ -163,7 +163,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
     mockPathname = '/dashboard/product'
     mockSearch = '?page=2&sort=name'
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     const productTab = state.tabs['/dashboard/product']
     expect(productTab).toBeDefined()
     expect(productTab.href).toBe('/dashboard/product?page=2&sort=name')
@@ -176,13 +176,13 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
     // Change search params and re-render
     mockSearch = '?page=2'
     rerender(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     expect(state.tabs['/dashboard/product'].href).toBe('/dashboard/product?page=2')
   })
 
   it('does not re-seed home tab if it already exists', () => {
     // Pre-seed the home tab
-    useWorkspaceTagStore.getState().openOrActivate({
+    useWorkspaceTabStore.getState().openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
       title: '仪表盘',
@@ -190,7 +190,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
       keepAlive: false,
     })
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     const homeEntries = state.openedOrder.filter((id) => id === '/dashboard/overview')
     expect(homeEntries).toHaveLength(1)
   })
@@ -198,7 +198,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   it('matches dynamic route and creates tag with correct title', () => {
     mockPathname = '/dashboard/product/789'
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     const detailTab = state.tabs['/dashboard/product/789']
     expect(detailTab).toBeDefined()
     expect(detailTab.title).toBe('产品详情')
@@ -209,7 +209,7 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   it('uses pathname as title when no staticData matches', () => {
     mockPathname = '/dashboard/unknown-page'
     render(React.createElement(SyncHarness))
-    const state = useWorkspaceTagStore.getState()
+    const state = useWorkspaceTabStore.getState()
     const tab = state.tabs['/dashboard/unknown-page']
     expect(tab).toBeDefined()
     expect(tab.title).toBe('/dashboard/unknown-page')

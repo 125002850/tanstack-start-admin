@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useRouter, useRouterState } from '@tanstack/react-router'
 import { findDeepestRouteMatch, normalizeRoutePath } from '../hooks/use-dashboard-route-tag-sync'
-import { useWorkspaceTagStore } from '../utils/store'
+import { useWorkspaceTabStore } from '../utils/store'
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs'
 import { resolveRouteTagTitle } from '../lib/route-workspace'
 import type { WorkspacePageBoundaryProps, WorkspacePageDescriptor } from '../types'
@@ -97,7 +97,7 @@ function WorkspacePageBoundaryRegistration({
     typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
 
   useIsomorphicLayoutEffect(() => {
-    useWorkspaceTagStore.getState().registerPageDescriptor(tabId, descriptor)
+    useWorkspaceTabStore.getState().registerPageDescriptor(tabId, descriptor)
   }, [descriptor, tabId])
 
   return null

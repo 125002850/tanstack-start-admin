@@ -77,7 +77,6 @@ function UsersTableContent({
     data: data.users,
     columns,
     pageCount,
-    shallow: true,
     debounceMs: 500,
     pageSize: seedPageSize,
     onPageSizeChange: (newSize) => {

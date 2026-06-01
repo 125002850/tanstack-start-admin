@@ -1,9 +1,9 @@
 import * as React from 'react'
-import type { WorkspaceTagId } from '../types'
-import { useWorkspaceTagStore } from '../utils/store'
+import type { WorkspaceTabId } from '../types'
+import { useWorkspaceTabStore } from '../utils/store'
 
 interface WorkspaceSlotErrorBoundaryProps {
-  tagId: WorkspaceTagId
+  tagId: WorkspaceTabId
   fallback: React.ReactNode
   children: React.ReactNode
 }
@@ -32,7 +32,7 @@ export class WorkspaceSlotErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
     const { tagId } = this.props
-    useWorkspaceTagStore.getState().disableKeepAlive(tagId)
+    useWorkspaceTabStore.getState().disableKeepAlive(tagId)
     if (typeof window !== 'undefined' && import.meta.env.DEV) {
       console.error(
         `[WorkspaceSlotErrorBoundary] tag "${tagId}" keep-alive host disabled due to error:`,
