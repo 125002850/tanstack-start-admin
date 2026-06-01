@@ -4,7 +4,6 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
-import { CellAction } from './cell-action';
 import { ROLE_OPTIONS } from './options';
 
 function translateStatus(status: string) {
@@ -106,10 +105,5 @@ export const columns: ColumnDef<User>[] = [
         status === 'Active' ? 'default' : status === 'Inactive' ? 'secondary' : 'outline';
       return <Badge variant={variant}>{translateStatus(status)}</Badge>;
     }
-  },
-  {
-    id: 'actions',
-    header: '操作',
-    cell: ({ row }) => <CellAction data={row.original} />
   }
 ];

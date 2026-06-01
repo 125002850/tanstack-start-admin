@@ -10,7 +10,13 @@ type ScrollAreaProps = React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
   viewportRef?: React.Ref<HTMLDivElement>;
 };
 
-function ScrollArea({ className, children, viewportProps, viewportRef, ...props }: ScrollAreaProps) {
+function ScrollArea({
+  className,
+  children,
+  viewportProps,
+  viewportRef,
+  ...props
+}: ScrollAreaProps) {
   const { className: viewportClassName, ...restViewportProps } = viewportProps ?? {};
 
   return (

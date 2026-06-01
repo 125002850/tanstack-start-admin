@@ -4,7 +4,7 @@ import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
 const meta = defineRouteMeta({
   label: '控制台首页',
-  workspace: { keepAlive: false },
+  workspace: { keepAlive: false }
 });
 
 export const Route = createFileRoute('/dashboard/')({

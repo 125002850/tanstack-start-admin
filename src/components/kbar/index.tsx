@@ -8,10 +8,7 @@ import { buildNavGroupsFromRoutes } from '@/lib/router/route-nav';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const navGroups = useMemo(
-    () => buildNavGroupsFromRoutes(router.routesById),
-    [router.routesById],
-  );
+  const navGroups = useMemo(() => buildNavGroupsFromRoutes(router.routesById), [router.routesById]);
   const filteredGroups = useFilteredNavGroups(navGroups);
 
   // These action are for the navigation

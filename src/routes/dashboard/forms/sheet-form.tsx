@@ -13,12 +13,12 @@ const meta = defineRouteMeta({
     group: 'components',
     order: 13,
     parentId: '/dashboard/forms',
-    icon: 'forms',
+    icon: 'forms'
   },
   page: {
     title: 'Sheet & Dialog Forms',
-    description: 'Form patterns inside sheets and dialogs with external submit buttons.',
-  },
+    description: 'Form patterns inside sheets and dialogs with external submit buttons.'
+  }
 });
 
 export const Route = createFileRoute('/dashboard/forms/sheet-form')({
@@ -32,7 +32,7 @@ function SheetFormPage() {
       tabId='/dashboard/forms/sheet-form'
       render={() => <SheetFormContent />}
     />
-  )
+  );
 }
 
 function SheetFormContent() {
@@ -40,5 +40,5 @@ function SheetFormContent() {
     <PageContainer>
       <SheetFormDemo />
     </PageContainer>
-  )
+  );
 }

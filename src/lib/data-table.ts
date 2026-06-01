@@ -27,11 +27,11 @@ export function getCommonPinningStyles<TData>({
       position: 'sticky',
       background: 'var(--background)',
       width: column.getSize(),
-      zIndex: 1,
-    }
+      zIndex: 1
+    };
   }
 
-  return {}
+  return {};
 }
 
 export function getFilterOperators(filterVariant: FilterVariant) {

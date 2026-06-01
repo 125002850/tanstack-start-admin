@@ -10,15 +10,15 @@
 
 ### Initial Load at perPage=2000 (via localStorage pre-set)
 
-| Metric | Value |
-|---|---|
-| Total data rows (server) | 2000 |
-| DOM `<tr>` rendered | 17 |
-| DOM reduction | **99.15%** (exceeds 96% target) |
-| scrollHeight | 112,040px |
-| viewport clientHeight | 450px |
-| Virtual rows with `data-index` | 17 |
-| `data-virtual-enabled` attribute | NOT SET (needs Task 3) |
+| Metric                           | Value                           |
+| -------------------------------- | ------------------------------- |
+| Total data rows (server)         | 2000                            |
+| DOM `<tr>` rendered              | 17                              |
+| DOM reduction                    | **99.15%** (exceeds 96% target) |
+| scrollHeight                     | 112,040px                       |
+| viewport clientHeight            | 450px                           |
+| Virtual rows with `data-index`   | 17                              |
+| `data-virtual-enabled` attribute | NOT SET (needs Task 3)          |
 
 **Bottleneck attribution (inferred, not profiler-measured):**
 
@@ -40,14 +40,14 @@ The plan requires profiling to separate "first screen/page submit time" from "sc
 
 ### Test: Header column widths at top vs middle of scroll
 
-| Column | Top (px) | Middle (px) | Delta |
-|---|---|---|---|
-| 图片 | 161 | 161 | 0 |
-| 产品名称 | 161 | 161 | 0 |
-| 产品分类 | 161 | 161 | 0 |
-| 价格 | 161 | 161 | 0 |
-| 产品描述 | 161 | 161 | 0 |
-| (actions) | 161 | 161 | 0 |
+| Column    | Top (px) | Middle (px) | Delta |
+| --------- | -------- | ----------- | ----- |
+| 图片      | 161      | 161         | 0     |
+| 产品名称  | 161      | 161         | 0     |
+| 产品分类  | 161      | 161         | 0     |
+| 价格      | 161      | 161         | 0     |
+| 产品描述  | 161      | 161         | 0     |
+| (actions) | 161      | 161         | 0     |
 
 **Gate Result: PASS** — All column widths are identical at all scroll positions (delta = 0px ≤ 1px threshold).
 
@@ -65,6 +65,7 @@ While widths are STABLE, they are all equal (161px). In the non-virtualized path
 ### spacer row feasibility assessment
 
 The current absolute-position approach works correctly for:
+
 - Sticky header alignment: PASS
 - Column width stability during scroll: PASS (stable but wrong widths)
 - Pinned columns (`actions` column + `position:sticky`): PASS (no visual overlap observed)
@@ -72,6 +73,7 @@ The current absolute-position approach works correctly for:
 **This task did NOT test a spacer row approach.** The observed column width bug (all columns equal 161px) is caused by `position:absolute` rows being removed from table normal flow. Whether a spacer row approach would also lose column widths or would preserve them (since rows stay in normal flow) has not been established in this gate.
 
 **Decision: V1 stays with absolute positioning** because:
+
 - Absolute positioning is the working prototype with proven sticky header and pinned column behavior
 - No evidence demonstrates spacer row superiority for this codebase
 - The `<colgroup>` fix is needed regardless of approach
@@ -81,9 +83,9 @@ The current absolute-position approach works correctly for:
 
 ## 3. Sticky Header Gate
 
-| Check | Result |
-|---|---|
-| Header at viewport top (initial) | PASS (delta=0) |
+| Check                                       | Result         |
+| ------------------------------------------- | -------------- |
+| Header at viewport top (initial)            | PASS (delta=0) |
 | Header at viewport top (after scroll 500px) | PASS (delta=0) |
 
 Sticky header (`position:sticky; top:0; z-index:10`) works correctly with absolute-position virtual rows.
@@ -93,6 +95,7 @@ Sticky header (`position:sticky; top:0; z-index:10`) works correctly with absolu
 ## 4. Suspense Remount Bug (Found)
 
 When switching perPage at runtime via the Select component:
+
 1. `apiFilters` changes → `useSuspenseQuery` triggers new query
 2. Component suspends → fallback skeleton → unmount → remount
 3. On remount, `DataTableBody` mounts with `useVirtualizer`
@@ -108,11 +111,11 @@ The runtime perPage switch reproduces this bug reliably. The localStorage pre-se
 
 ## 5. Telemetry Audit
 
-| Attribute/Event | Status |
-|---|---|
-| `data-virtual-enabled` | NOT SET |
-| `data-virtual-count` | NOT SET |
-| `data-virtual-scroll-offset` | NOT SET |
+| Attribute/Event                        | Status    |
+| -------------------------------------- | --------- |
+| `data-virtual-enabled`                 | NOT SET   |
+| `data-virtual-count`                   | NOT SET   |
+| `data-virtual-scroll-offset`           | NOT SET   |
 | `window.__DATA_TABLE_VIRTUAL_EVENTS__` | NOT FOUND |
 
 All telemetry needs to be implemented in Task 3.

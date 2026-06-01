@@ -6,7 +6,6 @@
     "name": "Kiran",
     "url": "https://github.com/Kiranism"
   },
-  "packageManager": "pnpm@11.0.9",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -130,5 +129,6 @@
   "overrides": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0"
-  }
+  },
+  "packageManager": "pnpm@11.0.9"
 }

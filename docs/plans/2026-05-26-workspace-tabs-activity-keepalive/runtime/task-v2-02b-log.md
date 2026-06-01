@@ -17,12 +17,12 @@
 
 ## Verification Results
 
-| Check | Status | Notes |
-|------|--------|-------|
-| `bunx vitest run src/features/products/components/product-tables.internal-state.test.tsx src/features/users/components/users-table.internal-state.test.tsx` | PASS | 协调端独立执行，25 tests passing |
-| `bunx vitest run --exclude 'e2e'` | PASS | 协调端独立执行，18 files / 283 tests passing |
-| `bun run build` | PASS | 协调端独立执行，client + SSR build passed |
-| `rg -n "product-workspace-definition|users-workspace-definition|use-bridged-search-adapter|searchAdapter|useSearch|WorkspaceRoutePage" src/routes/dashboard/product src/routes/dashboard/users.tsx src/features/products src/features/users` | PASS | fresh coordinator run，仅剩 legacy workspace 自引用测试命中 |
+| Check                                                                                                                                                       | Status                     | Notes                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------------- | ------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- | ---- | ----------------------------------------------------------- |
+| `bunx vitest run src/features/products/components/product-tables.internal-state.test.tsx src/features/users/components/users-table.internal-state.test.tsx` | PASS                       | 协调端独立执行，25 tests passing             |
+| `bunx vitest run --exclude 'e2e'`                                                                                                                           | PASS                       | 协调端独立执行，18 files / 283 tests passing |
+| `bun run build`                                                                                                                                             | PASS                       | 协调端独立执行，client + SSR build passed    |
+| `rg -n "product-workspace-definition                                                                                                                        | users-workspace-definition | use-bridged-search-adapter                   | searchAdapter | useSearch | WorkspaceRoutePage" src/routes/dashboard/product src/routes/dashboard/users.tsx src/features/products src/features/users` | PASS | fresh coordinator run，仅剩 legacy workspace 自引用测试命中 |
 
 ## Unfinished Work
 

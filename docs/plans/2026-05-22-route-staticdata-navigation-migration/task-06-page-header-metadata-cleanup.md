@@ -48,8 +48,8 @@
 目标逻辑：
 
 ```ts
-const routePageMeta = currentRouteStaticData?.page
-const resolvedTitle = pageTitle ?? routePageMeta?.title ?? ''
+const routePageMeta = currentRouteStaticData?.page;
+const resolvedTitle = pageTitle ?? routePageMeta?.title ?? '';
 ```
 
 ## Step 2: 把 route 层能声明的页面头部信息迁回 route

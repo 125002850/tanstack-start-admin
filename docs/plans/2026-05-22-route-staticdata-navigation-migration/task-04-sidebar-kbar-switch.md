@@ -68,8 +68,8 @@
 目标写法：
 
 ```ts
-id: navItem.id
-perform: () => router.navigate({ to: navItem.url })
+id: navItem.id;
+perform: () => router.navigate({ to: navItem.url });
 ```
 
 仅在 `linkable !== false` 时生成 action。

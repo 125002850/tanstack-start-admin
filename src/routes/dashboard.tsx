@@ -15,7 +15,7 @@ import { useDashboardRouteTagSync } from '@/features/workspace-tabs/hooks/use-da
 const meta = defineRouteMeta({
   label: '控制台',
   breadcrumb: { label: '控制台' },
-  workspace: { tagEnabled: false, keepAlive: false },
+  workspace: { tagEnabled: false, keepAlive: false }
 });
 
 export const Route = createFileRoute('/dashboard')({
@@ -34,9 +34,9 @@ export const Route = createFileRoute('/dashboard')({
 });
 
 function DashboardLayout() {
-  const router = useRouter()
-  const queryClient = router.options.context.queryClient
-  const workspaceEnabled = isWorkspaceTabsEnabled()
+  const router = useRouter();
+  const queryClient = router.options.context.queryClient;
+  const workspaceEnabled = isWorkspaceTabsEnabled();
   useDashboardRouteTagSync(workspaceEnabled);
   useWorkspaceDevtools(workspaceEnabled);
 
@@ -48,9 +48,7 @@ function DashboardLayout() {
           <Header />
           <InfobarProvider defaultOpen={false}>
             <QueryClientProvider client={queryClient}>
-              {workspaceEnabled && (
-                <WorkspaceViewport />
-              )}
+              {workspaceEnabled && <WorkspaceViewport />}
               <Outlet />
             </QueryClientProvider>
             <InfoSidebar side='right' />
@@ -58,5 +56,5 @@ function DashboardLayout() {
         </SidebarInset>
       </SidebarProvider>
     </KBar>
-  )
+  );
 }

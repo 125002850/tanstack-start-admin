@@ -46,9 +46,9 @@ const breadcrumbs = useMatches({
       .filter((m) => !m.staticData?.breadcrumb?.hide)
       .map((m) => ({
         title: m.staticData?.breadcrumb?.label ?? m.staticData?.label,
-        link: m.pathname,
-      })),
-})
+        link: m.pathname
+      }))
+});
 ```
 
 ## Step 2: 更新 README 中的配置描述

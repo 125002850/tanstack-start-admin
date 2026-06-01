@@ -34,7 +34,11 @@ function productNameField(page: Page, submitLabel: '新增产品' | '更新产�
   return productForm(page, submitLabel).getByPlaceholder('请输入产品名称');
 }
 
-async function expectProductDetail(page: Page, tabName: RegExp, submitLabel: '新增产品' | '更新产品') {
+async function expectProductDetail(
+  page: Page,
+  tabName: RegExp,
+  submitLabel: '新增产品' | '更新产品'
+) {
   await expectWorkspaceTabs(page);
   await expectActiveTab(page, tabName);
   await expect(productNameField(page, submitLabel)).toBeVisible();
@@ -61,14 +65,12 @@ async function makeNewProductDirty(page: Page) {
 }
 
 async function expectUnsavedChangesWarning(page: Page) {
-  await expect(
-    page.getByText('当前产品表单有未保存更改，请先保存后再关闭标签页。'),
-  ).toBeVisible();
+  await expect(page.getByText('当前产品表单有未保存更改，请先保存后再关闭标签页。')).toBeVisible();
 }
 
 test.describe('@workspace-v2 tag switch state preservation', () => {
   test('switching away from a paginated list page and back preserves page state', async ({
-    page,
+    page
   }) => {
     await page.goto('/dashboard/product');
     await expectProductList(page);
@@ -217,7 +219,7 @@ test.describe('@workspace-v2 close actions and close guard', () => {
   });
 
   test('dirty new-product page rejects close current and preserves the active tab', async ({
-    page,
+    page
   }) => {
     await page.goto('/dashboard/product/new');
     await expectProductDetail(page, /^新增产品/, '新增产品');
@@ -236,7 +238,7 @@ test.describe('@workspace-v2 close actions and close guard', () => {
   });
 
   test('dirty hidden product form rejects close other and returns focus to the dirty tab', async ({
-    page,
+    page
   }) => {
     await page.goto('/dashboard/product/new');
     await expectProductDetail(page, /^新增产品/, '新增产品');
@@ -258,9 +260,7 @@ test.describe('@workspace-v2 close actions and close guard', () => {
     await expect(productNameField(page, '新增产品')).toHaveValue('Workspace Draft');
   });
 
-  test('dirty hidden product form rejects close all and keeps all tabs open', async ({
-    page,
-  }) => {
+  test('dirty hidden product form rejects close all and keeps all tabs open', async ({ page }) => {
     await page.goto('/dashboard/product/new');
     await expectProductDetail(page, /^新增产品/, '新增产品');
     await makeNewProductDirty(page);
@@ -302,7 +302,9 @@ test.describe('@workspace-v2 virtual scroll regression', () => {
     expect(virtualEnabled).toBe('true');
 
     // Hard: header at viewport top
-    const headerTop = await viewport.locator('thead').evaluate((el) => Math.round(el.getBoundingClientRect().top));
+    const headerTop = await viewport
+      .locator('thead')
+      .evaluate((el) => Math.round(el.getBoundingClientRect().top));
     const vpTop = await viewport.evaluate((el) => Math.round(el.getBoundingClientRect().top));
     expect(Math.abs(headerTop - vpTop)).toBeLessThanOrEqual(1);
 
@@ -328,12 +330,18 @@ test.describe('@workspace-v2 virtual scroll regression', () => {
     expect(tbodyRows).toBeGreaterThan(0);
 
     // Hard: header still sticky after tab switch
-    const hTopAfter = await viewportAfter.locator('thead').evaluate((el) => Math.round(el.getBoundingClientRect().top));
-    const vpTopAfter = await viewportAfter.evaluate((el) => Math.round(el.getBoundingClientRect().top));
+    const hTopAfter = await viewportAfter
+      .locator('thead')
+      .evaluate((el) => Math.round(el.getBoundingClientRect().top));
+    const vpTopAfter = await viewportAfter.evaluate((el) =>
+      Math.round(el.getBoundingClientRect().top)
+    );
     expect(Math.abs(hTopAfter - vpTopAfter)).toBeLessThanOrEqual(1);
 
     // Hard: no blank viewport — visible rows exist
-    await expect(viewportAfter.locator('table tbody tr:visible').first()).toBeVisible({ timeout: 5000 });
+    await expect(viewportAfter.locator('table tbody tr:visible').first()).toBeVisible({
+      timeout: 5000
+    });
 
     console.log('[Task4] Tab switch hard assertions all PASS');
   });
@@ -343,7 +351,7 @@ test.describe('@workspace-v2-rollback no workspace shell', () => {
   test('dashboard overview renders without tags shell when flag is off', async ({ page }) => {
     await page.goto('/dashboard/overview');
     await expect(page.getByRole('heading', { name: '你好，欢迎回来 👋' })).toBeVisible({
-      timeout: 10_000,
+      timeout: 10_000
     });
     await expect(page.getByRole('tablist', { name: 'Workspace tabs' })).toHaveCount(0);
   });
@@ -365,7 +373,9 @@ test.describe('@workspace-v2-rollback no workspace shell', () => {
     await page.goto('/dashboard/product');
     const viewport = page.locator('[data-scroll-target-id="products-table"]');
     await expect(viewport).toBeVisible({ timeout: 10_000 });
-    await expect(viewport.locator('table tbody tr:visible').first()).toBeVisible({ timeout: 10_000 });
+    await expect(viewport.locator('table tbody tr:visible').first()).toBeVisible({
+      timeout: 10_000
+    });
     await expect(page.getByRole('tablist', { name: 'Workspace tabs' })).toHaveCount(0);
   });
 
@@ -408,12 +418,16 @@ test.describe('@workspace-v2-rollback no workspace shell', () => {
     expect(virtualEnabled).toBe('true');
 
     // Hard assertion: data-virtual-first-index must be numeric
-    const firstIndex = Number(await viewport.locator('tbody').getAttribute('data-virtual-first-index'));
+    const firstIndex = Number(
+      await viewport.locator('tbody').getAttribute('data-virtual-first-index')
+    );
     expect(Number.isFinite(firstIndex)).toBe(true);
     expect(firstIndex).toBe(0); // at top of scroll, first index is 0
 
     // Hard assertion: data-virtual-total-size exists and is positive
-    const totalSize = Number(await viewport.locator('tbody').getAttribute('data-virtual-total-size'));
+    const totalSize = Number(
+      await viewport.locator('tbody').getAttribute('data-virtual-total-size')
+    );
     expect(totalSize).toBeGreaterThan(100000); // 2000 * ~56px
 
     // Hard assertion: aria-rowcount is correct
@@ -422,20 +436,20 @@ test.describe('@workspace-v2-rollback no workspace shell', () => {
 
     // Hard assertion: sticky header top matches viewport top
     const headerRect = await viewport.locator('thead').evaluate((el) => {
-      const r = el.getBoundingClientRect()
-      return { top: Math.round(r.top), left: Math.round(r.left) }
+      const r = el.getBoundingClientRect();
+      return { top: Math.round(r.top), left: Math.round(r.left) };
     });
     const viewportRect = await viewport.evaluate((el) => {
-      const r = el.getBoundingClientRect()
-      return { top: Math.round(r.top), left: Math.round(r.left) }
+      const r = el.getBoundingClientRect();
+      return { top: Math.round(r.top), left: Math.round(r.left) };
     });
     expect(Math.abs(headerRect.top - viewportRect.top)).toBeLessThanOrEqual(1);
 
     // Hard assertion: pinned actions column exists with sticky positioning
     const actionsCells = viewport.locator('tbody tr:first-child td').last();
     const actionsComputed = await actionsCells.evaluate((el) => {
-      const style = window.getComputedStyle(el)
-      return { position: style.position, right: style.right }
+      const style = window.getComputedStyle(el);
+      return { position: style.position, right: style.right };
     });
     // Pinned right column has position: sticky
     expect(actionsComputed.position).toBe('sticky');
@@ -444,25 +458,31 @@ test.describe('@workspace-v2-rollback no workspace shell', () => {
     await expect(page.getByText('Something went wrong')).toHaveCount(0);
 
     // Scroll to middle and verify telemetry updates
-    await viewport.evaluate((el) => { el.scrollTop = 20000 });
+    await viewport.evaluate((el) => {
+      el.scrollTop = 20000;
+    });
     await page.waitForTimeout(500);
 
-    const firstIndexAfterScroll = Number(await viewport.locator('tbody').getAttribute('data-virtual-first-index'));
-    const scrollOffsetAfter = Number(await viewport.locator('tbody').getAttribute('data-virtual-scroll-offset'));
+    const firstIndexAfterScroll = Number(
+      await viewport.locator('tbody').getAttribute('data-virtual-first-index')
+    );
+    const scrollOffsetAfter = Number(
+      await viewport.locator('tbody').getAttribute('data-virtual-scroll-offset')
+    );
     expect(firstIndexAfterScroll).toBeGreaterThan(0); // scrolled down → index > 0
     expect(scrollOffsetAfter).toBeGreaterThan(0); // scroll offset > 0
 
     // Verify telemetry event queue exists
     const events = await page.evaluate(() => {
-      const w = window as unknown as Record<string, unknown>
-      return w.__DATA_TABLE_VIRTUAL_EVENTS__ ?? null
+      const w = window as unknown as Record<string, unknown>;
+      return w.__DATA_TABLE_VIRTUAL_EVENTS__ ?? null;
     });
     expect(events).not.toBeNull();
 
     // Header still sticky after scroll
-    const headerTopAfter = await viewport.locator('thead').evaluate((el) =>
-      Math.round(el.getBoundingClientRect().top)
-    );
+    const headerTopAfter = await viewport
+      .locator('thead')
+      .evaluate((el) => Math.round(el.getBoundingClientRect().top));
     const viewportTopAfter = await viewport.evaluate((el) =>
       Math.round(el.getBoundingClientRect().top)
     );

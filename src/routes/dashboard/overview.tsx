@@ -25,8 +25,8 @@ const meta = defineRouteMeta({
     group: 'overview',
     order: 10,
     icon: 'dashboard',
-    shortcut: ['d', 'd'],
-  },
+    shortcut: ['d', 'd']
+  }
 });
 
 export const Route = createFileRoute('/dashboard/overview')({
@@ -41,7 +41,7 @@ function OverviewPage() {
       closable={false}
       render={() => <OverviewContent />}
     />
-  )
+  );
 }
 
 function OverviewContent() {

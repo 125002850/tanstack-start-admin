@@ -77,19 +77,23 @@
 **Type:** `infra`
 
 **Files**
+
 - Create: `docs/plans/2026-05-14-data-table-virtual-scroll-task0-findings.md`
 
 **Shared Runtime Contracts**
+
 - 产品表 `perPage=2000` 下的真实瓶颈归因
 - 当前 `absolute-position virtual rows` prototype 与候选 spacer row 路线的列宽稳定性
 - sticky header / pinned `actions` 列 / `table-layout:auto` 的共同前提
 
 **Invariants**
+
 - 本 task 不修改 `useDataTable`
 - 本 task 不把共享表强行切到 spacer row
 - 本 task 不引入增强版 truncated preview / popover 子系统
 
 **Constraints**
+
 - profiling 必须区分两类成本：`首屏/翻页提交耗时` 与 `滚动过程 scripting/layout/paint 占比`，不能只看一个总时间数字
 - profiling 结论必须落盘到 `docs/plans/2026-05-14-data-table-virtual-scroll-task0-findings.md`，不能只停留在口头判断
 - Column Width Stability Gate 必须以前后对比的方式回答问题：当前 absolute rows 为什么稳定，候选 spacer row 是否会破坏列宽、sticky pinning 或 header 对齐
@@ -97,6 +101,7 @@
 - 若 Column Width Stability Gate 未通过，后续 task 一律守住 absolute rows；spacer row 路线改为未来单独 v2 plan
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-0-feasibility` 通过
 - [ ] `docs/plans/2026-05-14-data-table-virtual-scroll-task0-findings.md` 明确记录 profiling 结论、主要瓶颈排序、以及 DOM virtualization 的预期收益边界
 - [ ] findings 明确记录 Column Width Stability Gate 结论：`pass` / `fail`
@@ -104,15 +109,18 @@
 - [ ] 若 gate 为 `pass`，也只代表“可以进入后续独立设计比较”，不等于本计划必须切换到 spacer row
 
 **Verification Profile**
+
 - `profile: task-0-feasibility`
   - `pnpm run build`
   - `pnpm exec playwright test e2e/workspace-tabs-smoke.spec.ts --project=rollback --grep "product listing exposes stable scroll viewport selector|product listing baseline renders full DOM at page size 2000"`
 - `Expected Signals:` 本地应用可启动；产品页能稳定进入 `perPage=2000`；profiling 与 feasibility 观察可重复；findings 文档填入明确结论而非模糊措辞
 
 **Verification Strategy**
+
 - `build + browser feasibility`
 
 **Browser Gate Role**
+
 - `preflight`
 
 - [ ] Step 1: 以当前仓库代码为基线，进入产品页并切到 `perPage=2000`，用 Chrome/Playwright 配合 DevTools 记录两类性能数据：首屏/翻页提交耗时，以及滚动过程中的 scripting/layout/paint 占比。
@@ -128,31 +136,37 @@
 **Type:** `infra`
 
 **Files**
+
 - Modify: `src/components/ui/table/data-table.test.tsx`
 - Modify: `e2e/workspace-tabs-smoke.spec.ts`
 
 **Shared Runtime Contracts**
+
 - `DataTable` 的 viewport 身份必须继续通过 `scrollTargetId -> data-scroll-target-id` 暴露给浏览器层
 - 当前 `<table><thead/><tbody/></table>` DOM 结构必须在测试里被显式固定下来
 - `perPage=2000` 时产品表当前未虚拟化 DOM 基线必须被记录，供 Task 4 做定量对比
 
 **Invariants**
+
 - rollback 项目下 `Workspace tabs` 仍然不存在
 - 当前非虚拟化渲染路径必须继续一次性渲染所有 body rows
 - 空数据时 `emptyMessage` 仍然渲染在单个 `colSpan={table.getAllColumns().length}` 的占位行里
 
 **Constraints**
+
 - 本 task 不引入 `@tanstack/react-virtual`
 - 本 task 不允许修改 `useDataTable`
 - 若现有生产代码已经能暴露所需 selector，不要为了测试额外添加无业务价值的属性
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-1-preflight` 通过
 - [ ] `src/components/ui/table/data-table.test.tsx` 能用真实 `useReactTable()` harness 覆盖当前 empty / non-empty / `scrollTargetId` 行为
 - [ ] `e2e/workspace-tabs-smoke.spec.ts` 新增一个 rollback smoke，显式证明产品表 viewport selector 稳定可寻址
 - [ ] Task 1 记录产品表在 `perPage=2000` 时的未虚拟化基线：`tbody` 数据行数为 `2000`，作为 Task 4 DOM budget 对照
 
 **Verification Profile**
+
 - `profile: task-1-preflight`
   - `pnpm test:unit -- src/components/ui/table/data-table.test.tsx`
   - `pnpm run build`
@@ -160,9 +174,11 @@
 - `Expected Signals:` Vitest 全绿；Playwright 能看到 `[data-scroll-target-id="products-table"]`、至少一行可见产品数据、且 rollback 项目没有 `Workspace tabs`；切到 `perPage=2000` 后 `tbody` 数据行数仍为 `2000`
 
 **Verification Strategy**
+
 - `build + smoke`
 
 **Browser Gate Role**
+
 - `preflight`
 
 - [ ] Step 1: 在 `src/components/ui/table/data-table.test.tsx` 中建立最小真实 harness，使用 `@tanstack/react-table` 创建 `table`，覆盖以下三件事：正常渲染所有 rows、空态行、`scrollTargetId` 被透传到 viewport。
@@ -178,35 +194,41 @@
 **Type:** `refactor`
 
 **Files**
+
 - Modify: `src/components/ui/table/data-table-body.tsx`
 - Modify: `src/components/ui/scroll-area.tsx`
 - Modify: `src/components/ui/table/data-table.tsx`
 - Modify: `src/components/ui/table/data-table.test.tsx`
 
 **Shared Runtime Contracts**
+
 - `ScrollArea` 的 `viewportProps` 兼容性
 - `DataTable` 对 header / footer / action bar 的所有权
 - `scrollTargetId` 所在 viewport 节点的稳定性
 - `ScrollAreaPrimitive.Viewport` 不能引入会破坏 sticky containing block 或额外 stacking context 的样式副作用
 
 **Invariants**
+
 - 没有传入 `virtualization` 时，`DataTable` 的渲染结果必须与 Task 1 基线一致
 - `TableHeader`、`DataTablePagination`、`actionBar` 条件渲染和 `getCommonPinningStyles()` 使用位置不变
 - `useDataTable` 文件在本 task 中保持零改动
 
 **Constraints**
+
 - 本 task 只做分层和 ref 暴露，不得引入虚拟滚动分支
 - 不得顺手改 workspace-tabs、query filters、分页文案或页面级 API 同步逻辑
 - `ScrollArea` 的新 ref API 必须是 additive，现有 `viewportProps` 调用方式继续可用
 - `ScrollAreaPrimitive.Viewport` 不得新增 `transform`、`filter`、`perspective`、`contain: layout/paint/strict`、`will-change: transform` 这类会改变 sticky containing block 或 stacking context 的样式
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-2-refactor` 通过
 - [ ] `data-table.tsx` 只保留容器、header、footer 和 orchestration；body 行循环迁到新文件
 - [ ] `ScrollArea` 对 viewport ref 的暴露方式不破坏当前 `viewportProps` 数据属性透传
 - [ ] `ScrollArea` viewport 的 className / style 审计结果明确记录：没有新增会破坏 sticky header / sticky column 的 containing block 副作用
 
 **Verification Profile**
+
 - `profile: task-2-refactor`
   - `pnpm test:unit -- src/components/ui/table/data-table.test.tsx`
   - `pnpm exec oxlint src/components/ui/scroll-area.tsx src/components/ui/table/data-table.tsx src/components/ui/table/data-table-body.tsx src/components/ui/table/data-table.test.tsx`
@@ -214,9 +236,11 @@
 - `Expected Signals:` 单测仍证明非虚拟化路径渲染全部 rows；构建无类型错误；`ScrollArea` 新增 ref 能与现有 `viewportProps` 共存；viewport 未引入 sticky-breaking 样式
 
 **Verification Strategy**
+
 - `regression guard`
 
 **Browser Gate Role**
+
 - `none`
 
 - [ ] Step 1: 在 `src/components/ui/scroll-area.tsx` 增加专用 `viewportRef`（或等价 additive API），要求同时保留现有 `viewportProps` 的 `data-*` 透传能力。
@@ -234,6 +258,7 @@
 **Type:** `behavior`
 
 **Files**
+
 - Modify: `src/config/data-table.ts`
 - Modify: `package.json`
 - Modify: `pnpm-lock.yaml`
@@ -246,6 +271,7 @@
 - Create: `src/features/products/components/product-screen.suspense.test.tsx`
 
 **Shared Runtime Contracts**
+
 - `DataTable` 对外虚拟滚动配置契约
 - compact-admin 统一行高 / 单行截断视觉契约
 - 产品表首发 rollout / kill switch / browser denylist 契约
@@ -258,6 +284,7 @@
 - 虚拟化运行时异常的局部降级与埋点上报
 
 **Invariants**
+
 - `src/hooks/use-data-table.ts` 不得新增任何虚拟滚动状态或 `react-virtual` 依赖
 - 用户表 `src/features/users/components/users-table/index.tsx` 不在本 task 启用虚拟滚动
 - 产品页原有分页、筛选、排序、行操作、pinning 与空态行为保持不变
@@ -282,36 +309,43 @@
 - `estimateRowHeight` 属于共享设计 token，不属于 feature 私有魔法数；products 表等首发调用方不应在页面里硬编码 `56`
 
 **Fixed-Height Gate**
+
 - `采样范围:` 在产品页把每页条数切到 `2000`，在产品表仍是普通渲染路径时采集当前页全部数据行高度，计算 `mean`、`stddev`、`cv = stddev / mean`，以及相对候选 `estimateRowHeight` 的 `maxPrefixDrift = max(abs(sum(height_i - estimateRowHeight)))`。
 - `Green:` `cv <= 10%` 且 `maxPrefixDrift <= 0.5 * viewportHeight`。允许继续使用 fixed-height 方案。
 - `Yellow:` `10% < cv <= 15%` 或 `0.5 * viewportHeight < maxPrefixDrift <= 1 * viewportHeight`。允许只调整一次 `estimateRowHeight` 后重测；重测后若仍不达 `Green`，则停止 Task 3 并 replan。
 - `Red:` `cv > 15%`，或 `maxPrefixDrift > 1 * viewportHeight`，或 absolute rows / 候选 spacer row 任一路线出现结构性冲突。立即停止 Task 3，并改写为 `measureElement` 或非虚拟化优化方案。
 
 **Compact Row Visual Contract**
+
 - 在虚拟化首发范围内，真实数据行采用统一 compact-admin 视觉规范：单行文本、不换行、超出宽度时截断、固定垂直 padding、共享行高 token。这个 token 是 virtualizer `estimateRowHeight` 的默认来源。
 - 完整内容首版不通过新 preview 子系统展示，而是使用 `text-overflow: ellipsis` 配合原生 `title` 与必要的 `aria-label`。增强版 preview / popover 明确延后，不阻塞虚拟化主线。
 
 **Accessibility Contract**
+
 - 当 virtual 分支只把当前页 row model 的一部分行保留在 DOM 中时，原生 `<table>` 节点必须声明 `aria-rowcount`，值为“当前页完整 row model 的总行数 + header 行数”；每个渲染出来的数据行都必须声明与该 row model 一致的连续 `aria-rowindex`。
 - 本计划明确不把共享表升级为 `role="grid"`，因此不把 `aria-posinset` / `aria-setsize` / roving focus 作为首版硬要求；目标是修复“部分行不在 DOM 时 reader 行号错误”，不是引入整套 grid 键盘模型。
 - 当前主线 absolute rows 不引入 spacer rows，因此首版 a11y 重点是确保真实 virtual rows 的索引语义连续、容器总行数正确，以及 absolute positioning 不破坏原生表格可读性。
 
 **Suspense + KeepAlive Contract**
+
 - 产品表当前处在 `<Suspense fallback={<ProductTableSkeleton />}>` 内；Task 3 必须把“切页/排序/筛选触发新 query key → fallback → unmount → remount”的生命周期作为一等路径建模，而不是只测同实例内的 props 更新。
 - remount 时 virtualizer 必须以 `scrollTop = 0`、`firstVirtualIndex = 0` 启动；`resetScrollOnChange` 不能仅依赖上一个实例的 effect。
 - 当 workspace tab 进入 `Activity mode="hidden"` 且 viewport rect 变成 `0x0` 时，virtualizer 必须停止零尺寸观测或冻结 snapshot；恢复可见后再继续测量和计算。
 
 **Observability Contract**
+
 - viewport 或 table 容器在开发态必须暴露至少这些 `data-*`：`data-virtual-enabled`、`data-virtual-count`、`data-virtual-total-size`、`data-virtual-scroll-offset`、`data-virtual-first-index`、`data-virtual-last-index`。
 - 开发态必须挂一个轻量事件队列 `window.__DATA_TABLE_VIRTUAL_EVENTS__`，记录 `enabled`、`fallback`、`suspended-hidden`、`resumed-visible`、`runtime-error` 等事件；格式参考现有 `workspace-devtools` 模式。
 
 **Rollout + Kill Switch Contract**
+
 - products 表虚拟滚动必须经过单独的 products-only gate，而不是跟随整个 workspace shell 一起开关。首选在 `src/config/data-table.ts` 增加集中配置入口，由 `src/features/products/components/product-tables/index.tsx` 读取；不要把开关散落到 feature 组件内部。
 - gate 至少覆盖三层：构建时/部署时开关（建议 `VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION` 或等价命名）、运行时浏览器 denylist / unsupported guard、以及 virtualizer runtime error 本地降级。
 - 关闭 products-only gate 后，行为必须回退为“当前产品表继续渲染完整 DOM rows”，而不是关闭整个 workspace V2、也不是影响 users 表等非首发调用方。
 - plan 必须写清 incident rollback 步骤：谁可以关、关哪个开关、关闭后的预期 DOM/功能状态、以及需要观察的 telemetry 事件。
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-3-virtual-core` 通过
 - [ ] `DataTable` 新增 opt-in `virtualization` 配置，且默认行为仍然是关闭；调用方至少支持 `virtualization={true}` 直接启用共享 compact-admin preset
 - [ ] 产品表在 `rows.length >= rowCountThreshold` 时只渲染可见 rows；低于阈值时仍完整渲染
@@ -329,6 +363,7 @@
 - [ ] products-only kill switch、unsupported browser guard 和 runtime fallback 三层降级路径都被显式建模；关闭 products-only gate 后，产品表恢复完整渲染而 users 表与 workspace shell 不受影响
 
 **Verification Profile**
+
 - `profile: task-3-virtual-core`
   - `pnpm test:unit -- src/components/ui/table/data-table.test.tsx src/features/products/components/product-screen.suspense.test.tsx src/hooks/use-data-table.internal-state.test.tsx src/hooks/use-data-table.search-adapter.test.tsx`
   - `pnpm exec oxlint src/config/data-table.ts src/types/data-table.ts src/components/ui/table/data-table.tsx src/components/ui/table/data-table-body.tsx src/features/products/components/product-tables/index.tsx src/features/products/components/product-tables/columns.tsx`
@@ -336,12 +371,15 @@
 - `Expected Signals:` `data-table.test.tsx` 同时覆盖普通分支和 virtual 分支，并断言 virtual rows 的 `aria-rowindex` 连续、`aria-rowcount` 正确，以及 `resetScrollOnChange` 走 pre-paint reset 路径；共享 compact-admin preset 可通过 `virtualization={true}` 启用；产品列的截断内容带原生 `title`；`product-screen.suspense.test.tsx` 证明 `Suspense` remount 后 `scrollTop === 0` 且首帧 range 从 `0` 开始；products-only gate 关闭时产品表恢复完整渲染；hook 回归测试继续全绿；构建通过且没有把 `react-virtual` 泄漏进 `useDataTable`
 
 **Verification Strategy**
+
 - `TDD`
 
 **Browser Gate Role**
+
 - `none`
 
 **Manual Verification Exception**
+
 - `Waiver Reason:` `estimateRowHeight`、absolute rows 下的 sticky/pinned 对齐和 hidden viewport observer 生命周期都依赖真实浏览器布局与 React Activity 行为，`jsdom` 无法给出可信结果；自动化单测只负责验证契约和时序，最终定位仍需浏览器 smoke
 - `Automated Smoke Check:` `pnpm test:unit -- src/components/ui/table/data-table.test.tsx src/features/products/components/product-screen.suspense.test.tsx src/hooks/use-data-table.internal-state.test.tsx src/hooks/use-data-table.search-adapter.test.tsx`
 - `Manual Verification Steps:` 启动本地应用后先在产品表仍为普通渲染路径时把每页条数切到 `2000`，执行一段浏览器测量脚本记录 `mean`、`stddev`、`cv`、`maxPrefixDrift`；通过 fixed-height gate 后再启用产品表虚拟滚动，滚动表 viewport 至中部和底部，读取 dev telemetry `data-*`，并执行至少一次 server pagination 场景（例如 `perPage=500` 后点“前往下一页”）、一次排序或筛选变化、一次切到 users tab 再切回 products tab 的 keepAlive hidden 场景，确认 viewport 会先归零再展示新结果，header 仍 sticky、右侧 `actions` pinning 未错位、hidden 期间没有持续 churn 事件，且文本列的原生 `title` 能暴露完整内容；若出现明显 gap/jitter，只允许在同一 task 内调整一次 `estimateRowHeight` 后重测
@@ -356,8 +394,7 @@
 
 ```ts
 const shouldVirtualize =
-  virtualization?.enabled === true &&
-  rows.length >= (virtualization.rowCountThreshold ?? 100);
+  virtualization?.enabled === true && rows.length >= (virtualization.rowCountThreshold ?? 100);
 ```
 
 - [ ] Step 6: virtual 分支继续基于当前 absolute rows 路线复用 `flexRender()` 与 `getCommonPinningStyles()`；不要改 header 结构，也不要在本 task 引入未经 Task 0 gate 证明的 spacer row。
@@ -379,23 +416,28 @@ const shouldVirtualize =
 **Type:** `wiring`
 
 **Files**
+
 - Modify: `e2e/workspace-tabs-smoke.spec.ts`
 
 **Shared Runtime Contracts**
+
 - 产品表 viewport selector 稳定性
 - workspace tabs 下产品列表的页面状态保留行为
 - rollback 项目下无 workspace shell 的产品/用户列表行为
 
 **Invariants**
+
 - 现有 `switching away from a paginated list page and back preserves page state` 不得被虚拟滚动破坏
 - rollback 项目下 `user listing works via v2 internal-state without workspace shell` 仍必须通过，证明非 opt-in 共享表没有被误伤
 - 本 task 不修改 `useDataTable`、workspace shell 运行时或 feature API filters
 
 **Constraints**
+
 - Playwright 只补与虚拟滚动直接相关的 smoke，不在本计划中顺手重写整份 `workspace-tabs-smoke.spec.ts`
 - 所有新 smoke 都必须有唯一、稳定、可单独 `--grep` 的测试名
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-4-regression` 通过
 - [ ] default 项目下新增一个 workspace 场景，证明大页尺寸产品表在 tab 切换前后都不会出现 blank viewport
 - [ ] rollback 项目下新增一个产品表场景，证明虚拟滚动激活后仍能滚动并保持可见 rows
@@ -404,6 +446,7 @@ const shouldVirtualize =
 - [ ] default 项目下 hidden keepAlive tab 不会导致 products 页在后台持续 virtual churn；切回前台后 sticky / pinned / range telemetry 仍正确
 
 **Verification Profile**
+
 - `profile: task-4-regression`
   - `pnpm test:unit -- src/components/ui/table/data-table.test.tsx src/features/products/components/product-screen.suspense.test.tsx src/hooks/use-data-table.internal-state.test.tsx src/hooks/use-data-table.search-adapter.test.tsx src/features/products/components/product-tables.internal-state.test.tsx src/features/users/components/users-table.internal-state.test.tsx`
   - `pnpm lint`
@@ -413,9 +456,11 @@ const shouldVirtualize =
 - `Expected Signals:` unit tests、lint、build 全绿；default 项目下产品列表切到大页尺寸后切到用户页再切回时，`data-virtual-first-index`、`data-virtual-scroll-offset`、sticky header `top`、右侧 pinned `actions` 列 bounding box 都满足预期；rollback 项目下产品表切到大页尺寸并滚动后不出现空白 viewport，`tbody` 总 `tr` 数满足 `<= 64` 的 DOM budget，且 telemetry 能证明 virtualizer 正在工作；用户页仍可正常渲染
 
 **Verification Strategy**
+
 - `integration smoke`
 
 **Browser Gate Role**
+
 - `regression`
 
 - [ ] Step 1: 在 `e2e/workspace-tabs-smoke.spec.ts` 新增或扩展 default 项目测试 `virtualized product list survives tab switches`；步骤必须包含：进入产品页、把每页条数切到至少 `500`、滚动 `[data-scroll-target-id="products-table"]`、读取 `data-virtual-first-index` / `data-virtual-scroll-offset` / `window.__DATA_TABLE_VIRTUAL_EVENTS__`、记录 viewport 与 header / pinned `actions` 列的 `getBoundingClientRect()`、切到用户页再切回产品页、确认分页状态没有重置、hidden 期间没有异常 churn、切回后 `headerRect.top === viewportRect.top`（允许 1px 误差）、右侧 pinned 列仍贴齐表格右边缘、virtual range 与 sticky/pinned bounding box 都正确。
@@ -477,12 +522,14 @@ const shouldVirtualize =
 <!-- Execution appended below during runtime -->
 
 ### Task 0 Execution
+
 - **Result:** CONDITIONAL PASS
 - **Files:** `docs/plans/...-task0-findings.md` (new), `e2e/task0-feasibility.spec.ts` (new)
 - **Verification:** `pnpm run build` PASS. Column Width Stability Gate PASS. Sticky Header Gate PASS.
 - **Notes:** Three bugs documented. Findings corrected per pane%0 review.
 
 ### Task 1 Execution
+
 - **Result:** PASS
 - **Files:** `e2e/workspace-tabs-smoke.spec.ts` (2 new rollback tests)
 - **Verification:** Unit tests 6/6 PASS. Build PASS. Playwright rollback 2/2 PASS.
@@ -490,6 +537,7 @@ const shouldVirtualize =
 - **Notes:** **Deviation from plan:** 2000-row non-virtual baseline was not captured — current prototype already has virtual scroll enabled. Task 1 confirmed selector stability and `tbodyRows > 0` at perPage=2000. The conceptual 2000-row target remains the reference for Task 4 DOM budget.
 
 ### Task 2 Execution
+
 - **Result:** PASS (refactor already complete in codebase)
 - **Files:** None modified (all Task 2 work pre-exists)
 - **Verification:** `pnpm test:unit -- data-table.test.tsx` PASS. `pnpm exec oxlint` — 1 error + 5 warnings all pre-existing. `pnpm run build` PASS.
@@ -497,14 +545,16 @@ const shouldVirtualize =
 - **Notes:** **Deviation from plan:** `data-table-body.tsx` was NOT rolled back to a plain body baseline as the plan suggested. The file retains `useVirtualizer` + absolute rows branches. This is acceptable because the plan's updated architecture (Task 0 findings) confirms absolute positioning as the V1 incumbent — a full rollback would be destructive churn. `scrollViewportRef` is correctly plumbed through ScrollArea→DataTable→DataTableBody.
 
 ### Task 3 Execution
+
 - **Result:** PASS
-- **Files:** `src/config/data-table.ts` (+preset, +products gate, +browser guard), `src/types/data-table.ts` (+fallback callback), `src/components/ui/table/data-table-body.tsx` (rewrite: useLayoutEffect scroll reset, telemetry data-*, aria-rowindex, keepAlive guard, runtime fallback, shared preset), `src/components/ui/table/data-table.tsx` (+colgroup, +aria-rowcount), `src/features/products/components/product-tables/index.tsx` (gate→virtualization=boolean), `src/features/products/components/product-tables/columns.tsx` (truncation+title)
+- **Files:** `src/config/data-table.ts` (+preset, +products gate, +browser guard), `src/types/data-table.ts` (+fallback callback), `src/components/ui/table/data-table-body.tsx` (rewrite: useLayoutEffect scroll reset, telemetry data-\*, aria-rowindex, keepAlive guard, runtime fallback, shared preset), `src/components/ui/table/data-table.tsx` (+colgroup, +aria-rowcount), `src/features/products/components/product-tables/index.tsx` (gate→virtualization=boolean), `src/features/products/components/product-tables/columns.tsx` (truncation+title)
 - **Verification:** `pnpm run build` PASS. `pnpm test:unit` 261 tests PASS.
-- **Fixed bugs:** (1) colgroup prevents equal-width collapse, (2) useLayoutEffect pre-paint scroll reset, (3) data-virtual-* attrs + window.__DATA_TABLE_VIRTUAL_EVENTS__ added, (4) aria-rowcount/aria-rowindex, (5) keepAlive ResizeObserver guard, (6) runtime try/catch fallback, (7) products-only gate via VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION, (8) browser guard via ResizeObserver detection, (9) shared preset in config — products page now uses virtualization={boolean}
+- **Fixed bugs:** (1) colgroup prevents equal-width collapse, (2) useLayoutEffect pre-paint scroll reset, (3) data-virtual-\* attrs + window.**DATA_TABLE_VIRTUAL_EVENTS** added, (4) aria-rowcount/aria-rowindex, (5) keepAlive ResizeObserver guard, (6) runtime try/catch fallback, (7) products-only gate via VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION, (8) browser guard via ResizeObserver detection, (9) shared preset in config — products page now uses virtualization={boolean}
 - **Suspense integration test:** CREATED. 3 tests PASS covering fallback→remount→viewport ref stable after Suspense cycle. jsdom ResizeObserver guard added to keepAlive effect.
 - **Kill switch telemetry:** `disabled-by-config` and `unsupported-browser` events emitted in product-tables gate check. `enabled` event emitted on first virtual render. `onVirtualizationFallback` covers all 3 reasons. `window.__DATA_TABLE_VIRTUAL_EVENTS__` populated.
 
 ### Task 4 Execution
+
 - **Result:** PASS
 - **Files:** `e2e/workspace-tabs-smoke.spec.ts` (+rollback DOM budget test, +default tab switch regression test)
 - **Verification:** Build PASS. 261 unit tests PASS. Playwright rollback 3/3 PASS. Playwright default 1/1 PASS.

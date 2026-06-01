@@ -15,10 +15,12 @@
 **触发事件：** V2-02A 五轮 review，每一轮协调端独立跑 vitest + build 都通过，但问题仍然存在（hook-order → render setState → stale snapshot → SSR → identity-switch）。executor 只跑了改动的那个测试，没跑全量矩阵。
 
 **依据：**
+
 - writing-plans v4.1.0：`include exact commands for verification whenever possible; include expected pass/fail signals`
 - executing-plans v2.4.0：verification 必须在当前 session 新鲜执行，`an agent's self-report is not evidence`
 
 **建议：**
+
 - task spec 的 acceptance criteria 写死具体文件列表命令，不只写"vitest 通过"
 - task log 模板增加字段：`executor self-verification: <exact command> -> <result>`，不允许模糊表述
 - coordinator 的独立验证是"复核"，不应该是"首次执行"
@@ -30,10 +32,12 @@
 **触发事件：** V2-04 才跑 Playwright，发现 ALL_PROXY 劫持、选择器不匹配、hidden DOM 误命中——这些问题在代码落盘后存活了 2-3 个 task 才暴露。
 
 **依据：**
+
 - writing-plans：migration 类型任务需要 dry-run plus rollback path，但 rollout smoke 不应等到 migration 阶段才第一次执行
 - dag-runtime.md：replan 触发条件包括 acceptance criteria are impossible as written——如果 V2-01 就跑了 smoke，环境问题会立刻触发 replan
 
 **建议：**
+
 - 当 plan 包含浏览器级验收时，第一个实现任务搭建 smoke 骨架（2-3 个核心场景），后续任务增量扩展
 - 这是环境可行性的 early probe，不是把 V2-04 的工作量前移
 
@@ -46,10 +50,12 @@
 **触发事件：** keepAlive=false x closeGuard 语义冲突在 V2-03 review 中被定性为"可接受的内存权衡"，到 V2-04 才暴露。每个 task review 只检查本任务文件集合，没有人做 keepAlive x dirty/closeGuard 矩阵扫描。
 
 **依据：**
+
 - dag-runtime.md gate rules：通过条件包括 verification strategy completed 和 acceptance criteria met——V2-03 的 acceptance criteria 没要求检查 keepAlive 与 lifecycle 的交叉一致性
 - writing-plans：task 必须有 invariants that must remain true——V2-03 的 invariant 是"所有页面默认进入 Activity shell"，但没人验证 closeGuard 消费者是否真的在 Activity shell 里存活
 
 **建议：**
+
 - 当多个 task 修改了共享维度（keepAlive、closeGuard、closable 等），在所有上游 task gate 通过后、下游 task 启动前，coordinator 执行一次 cross-cutting audit
 - 形式：矩阵表 + 异常标注，不是重文档
 - 可以写成 dag-runtime.md gate rules 的一条新规则
@@ -63,6 +69,7 @@
 **触发事件：** task-v2-03-review.md 写了"residual risk: $productId 仍是 keepAlive=false 例外，后续评估"，但没有写这个风险阻塞了哪个后续任务、在哪个 task 验收。结果在 V2-04 变成了 blocker 但没人提前预期到。
 
 **依据：**
+
 - writing-plans 质量规则：禁止 TBD/TODO/implement later 等占位符
 - dag-runtime.md："blocks downstream work until upstream gates pass"——但如果 risk 没有明确 blocks 谁，coordinator 无法判断是否应该 block
 
@@ -103,6 +110,7 @@
 
 ```md
 Task P0: Browser Preflight Smoke
+
 - Type: infra
 - Goal: 建立后续 browser gate 的最小可运行入口
 - Acceptance:
@@ -189,11 +197,11 @@ Task P0: Browser Preflight Smoke
 建议矩阵列：
 
 ```md
-| Dimension | Expected Invariant | Evidence | Status | Note |
-|-----------|--------------------|----------|--------|------|
-| keepAlive x dirty form | dirty form tag 切换后实例仍存活 | route metadata + smoke | pass/fail | |
-| closeGuard x close-other | rejection 中止关闭并保焦点 | unit + e2e | pass/fail | |
-| flag-off x provider chain | rollback 路径仍有 React Query context | SSR smoke | pass/fail | |
+| Dimension                 | Expected Invariant                    | Evidence               | Status    | Note |
+| ------------------------- | ------------------------------------- | ---------------------- | --------- | ---- |
+| keepAlive x dirty form    | dirty form tag 切换后实例仍存活       | route metadata + smoke | pass/fail |      |
+| closeGuard x close-other  | rejection 中止关闭并保焦点            | unit + e2e             | pass/fail |      |
+| flag-off x provider chain | rollback 路径仍有 React Query context | SSR smoke              | pass/fail |      |
 ```
 
 #### 提案 4：Residual risk 改成强约束模板

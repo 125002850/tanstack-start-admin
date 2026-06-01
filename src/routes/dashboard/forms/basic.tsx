@@ -14,12 +14,12 @@ const meta = defineRouteMeta({
     order: 11,
     parentId: '/dashboard/forms',
     icon: 'forms',
-    shortcut: ['f', 'f'],
+    shortcut: ['f', 'f']
   },
   page: {
     title: 'Basic Form',
-    description: 'A comprehensive form demo with all field types.',
-  },
+    description: 'A comprehensive form demo with all field types.'
+  }
 });
 
 export const Route = createFileRoute('/dashboard/forms/basic')({
@@ -29,11 +29,8 @@ export const Route = createFileRoute('/dashboard/forms/basic')({
 
 function BasicFormPage() {
   return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/forms/basic'
-      render={() => <BasicFormContent />}
-    />
-  )
+    <WorkspacePageBoundary tabId='/dashboard/forms/basic' render={() => <BasicFormContent />} />
+  );
 }
 
 function BasicFormContent() {
@@ -41,5 +38,5 @@ function BasicFormContent() {
     <PageContainer>
       <DemoForm />
     </PageContainer>
-  )
+  );
 }

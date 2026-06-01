@@ -1,11 +1,11 @@
-import viteReact from '@vitejs/plugin-react'
-import tsconfigPaths from 'vite-tsconfig-paths'
-import { defineConfig } from 'vitest/config'
+import viteReact from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [tsconfigPaths(), viteReact()],
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    dedupe: ['react', 'react-dom']
   },
   test: {
     environment: 'jsdom',
@@ -13,8 +13,8 @@ export default defineConfig({
     exclude: ['e2e', 'node_modules'],
     server: {
       deps: {
-        inline: ['@tanstack/react-table'],
-      },
-    },
-  },
-})
+        inline: ['@tanstack/react-table']
+      }
+    }
+  }
+});

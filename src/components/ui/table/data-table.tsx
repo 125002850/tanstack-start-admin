@@ -6,12 +6,7 @@ import {
   DataTablePagination,
   type DataTablePaginationLabels
 } from '@/components/ui/table/data-table-pagination';
-import {
-  Table,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { Table, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/lib/data-table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DataTableBody } from '@/components/ui/table/data-table-body';
@@ -20,9 +15,8 @@ import type { DataTableVirtualizationOptions } from '@/types/data-table';
 import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
 import {
   DataTableActionsBar,
-  type DataTableAction,
+  type DataTableAction
 } from '@/components/ui/table/data-table-actions-bar';
-
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
@@ -42,9 +36,9 @@ export function DataTable<TData>({
   scrollTargetId,
   emptyMessage = '暂无数据',
   paginationLabels,
-  virtualization,
+  virtualization
 }: DataTableProps<TData>) {
-  const scrollViewportRef = useRef<HTMLDivElement>(null)
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
 
   // Support virtualization={true} shorthand → shared preset
   const virtConfig: DataTableVirtualizationOptions | undefined =
@@ -52,11 +46,12 @@ export function DataTable<TData>({
       ? { enabled: true }
       : virtualization === false || virtualization === undefined
         ? undefined
-        : virtualization
+        : virtualization;
 
   const shouldVirtualize =
     virtConfig?.enabled === true &&
-    table.getRowModel().rows.length >= (virtConfig.rowCountThreshold ?? DATA_TABLE_VIRTUAL_PRESET.rowCountThreshold)
+    table.getRowModel().rows.length >=
+      (virtConfig.rowCountThreshold ?? DATA_TABLE_VIRTUAL_PRESET.rowCountThreshold);
 
   const colgroup = (
     <colgroup>
@@ -64,22 +59,24 @@ export function DataTable<TData>({
         <col key={col.id} style={{ width: col.getSize() }} />
       ))}
     </colgroup>
-  )
+  );
 
-  const ariaRowCount =
-    shouldVirtualize ? table.getRowModel().rows.length + 1 : undefined
+  const ariaRowCount = shouldVirtualize ? table.getRowModel().rows.length + 1 : undefined;
 
   // Ref to the thead row — DataTableBody measures its children for actual
   // column widths (table-layout:fixed distributes extra space) and uses
   // those measurements for virtualized cells that sit outside the table flow.
-  const headerRowRef = useRef<HTMLTableRowElement>(null)
+  const headerRowRef = useRef<HTMLTableRowElement>(null);
 
   return (
     <div className='flex flex-1 flex-col space-y-4'>
       {children}
       {tableActions && <DataTableActionsBar table={table} actions={tableActions} />}
       <div className='relative flex flex-1 min-h-0'>
-        <div className='absolute inset-0 flex overflow-hidden rounded-lg border'>
+        <div
+          data-table-resize-overlay-root
+          className='absolute inset-0 flex overflow-hidden rounded-lg border'
+        >
           <ScrollArea
             className='h-full w-full'
             viewportRef={scrollViewportRef}
@@ -101,7 +98,10 @@ export function DataTable<TData>({
                         key={header.id}
                         colSpan={header.colSpan}
                         style={{
-                          ...getCommonPinningStyles({ column: header.column })
+                          ...getCommonPinningStyles({ column: header.column }),
+                          // Pinned header cells use --muted to match the bg-muted row.
+                          // Body pinned cells keep --background via getCommonPinningStyles.
+                          ...(header.column.getIsPinned() ? { background: 'var(--muted)' } : {})
                         }}
                       >
                         {header.isPlaceholder

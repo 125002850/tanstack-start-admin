@@ -7,7 +7,4 @@ export const ROLE_OPTIONS = [
   { value: 'Product Owner', label: 'Product Owner' }
 ];
 
-export const ROLE_VALUES = ROLE_OPTIONS.map((option) => option.value) as [
-  string,
-  ...string[]
-];
+export const ROLE_VALUES = ROLE_OPTIONS.map((option) => option.value) as [string, ...string[]];

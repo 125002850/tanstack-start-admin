@@ -202,9 +202,7 @@ type DataTableController = {
   state: DataTableStateSnapshot;
   setPagination: (updater: PaginationState | Updater<PaginationState>) => void;
   setSorting: (updater: SortingState | Updater<SortingState>) => void;
-  setColumnFilters: (
-    updater: ColumnFiltersState | Updater<ColumnFiltersState>
-  ) => void;
+  setColumnFilters: (updater: ColumnFiltersState | Updater<ColumnFiltersState>) => void;
   reset: () => void;
 };
 ```
@@ -228,8 +226,8 @@ type DataTableController = {
 
 ```tsx
 export const Route = createFileRoute('/dashboard/overview')({
-  component: OverviewRoute,
-})
+  component: OverviewRoute
+});
 
 function OverviewRoute() {
   return (
@@ -238,11 +236,11 @@ function OverviewRoute() {
       initialTitle='仪表盘'
       render={() => <OverviewPage />}
     />
-  )
+  );
 }
 
 function OverviewPage() {
-  return <PageContainer>{/* page content */}</PageContainer>
+  return <PageContainer>{/* page content */}</PageContainer>;
 }
 ```
 
@@ -259,8 +257,8 @@ function OverviewPage() {
 
 ```tsx
 export const Route = createFileRoute('/dashboard/product/')({
-  component: ProductsRoute,
-})
+  component: ProductsRoute
+});
 
 function ProductsRoute() {
   return (
@@ -269,7 +267,7 @@ function ProductsRoute() {
       initialTitle='产品'
       render={() => <ProductsPage />}
     />
-  )
+  );
 }
 
 function ProductsPage() {
@@ -277,18 +275,18 @@ function ProductsPage() {
     columns,
     initialState: {
       // 实际实现里由 data-table page-size utility 提供 seed
-      pagination: { pageIndex: 0, pageSize: 50 },
-    },
-  })
+      pagination: { pageIndex: 0, pageSize: 50 }
+    }
+  });
 
   const filters = {
     page: controller.state.pagination.pageIndex + 1,
     limit: controller.state.pagination.pageSize,
     sorting: controller.state.sorting,
-    columnFilters: controller.state.columnFilters,
-  }
+    columnFilters: controller.state.columnFilters
+  };
 
-  const { data } = useSuspenseQuery(productsQueryOptions(filters))
+  const { data } = useSuspenseQuery(productsQueryOptions(filters));
 
   return (
     <PageContainer>
@@ -299,7 +297,7 @@ function ProductsPage() {
         pageCount={Math.ceil(data.total_products / controller.state.pagination.pageSize)}
       />
     </PageContainer>
-  )
+  );
 }
 ```
 
@@ -316,23 +314,23 @@ function ProductsPage() {
 
 ```tsx
 function ProductEditPage() {
-  const { updateLifecycle } = useWorkspacePage()
-  const [draft, setDraft] = useState(initialDraft)
+  const { updateLifecycle } = useWorkspacePage();
+  const [draft, setDraft] = useState(initialDraft);
 
   useEffect(() => {
-    const dirty = isDraftDirty(draft)
+    const dirty = isDraftDirty(draft);
 
     updateLifecycle({
       title: draft.name || '新建产品',
       dirty,
       closeGuard: async () => {
-        if (!dirty) return true
-        return await confirmDiscardChanges()
-      },
-    })
-  }, [draft, updateLifecycle])
+        if (!dirty) return true;
+        return await confirmDiscardChanges();
+      }
+    });
+  }, [draft, updateLifecycle]);
 
-  return <ProductForm value={draft} onChange={setDraft} />
+  return <ProductForm value={draft} onChange={setDraft} />;
 }
 ```
 
@@ -348,11 +346,11 @@ function ProductEditPage() {
 
 ```tsx
 export const Route = createFileRoute('/dashboard/product/$productId')({
-  component: ProductDetailRoute,
-})
+  component: ProductDetailRoute
+});
 
 function ProductDetailRoute() {
-  const { productId } = Route.useParams()
+  const { productId } = Route.useParams();
 
   return (
     <WorkspacePageBoundary
@@ -360,7 +358,7 @@ function ProductDetailRoute() {
       initialTitle={productId === 'new' ? '新建产品' : `产品 ${productId}`}
       render={() => <ProductDetailPage productId={productId} />}
     />
-  )
+  );
 }
 ```
 
@@ -400,12 +398,12 @@ v2 首轮不做以下事情：
 
 ### 6.1 KeepAlive Strategy Matrix
 
-| Route Class | 默认策略 | 允许例外 | 首轮要求 |
-|-------------|----------|----------|----------|
-| overview / list / read-only content | `keepAlive=true` | 极少 | 默认纳入 |
-| detail / form / editor | `keepAlive=true` | 可按证据 opt-out | 默认纳入 |
-| chat / notifications / react-query demo / heavy async page | `keepAlive=true` | 若隐藏态副作用不可接受可 opt-out | 必须先做 inventory |
-| third-party embed / known heavy canvas | `keepAlive=true` | 高概率 opt-out | 需要 review 结论后落地 |
+| Route Class                                                | 默认策略         | 允许例外                         | 首轮要求               |
+| ---------------------------------------------------------- | ---------------- | -------------------------------- | ---------------------- |
+| overview / list / read-only content                        | `keepAlive=true` | 极少                             | 默认纳入               |
+| detail / form / editor                                     | `keepAlive=true` | 可按证据 opt-out                 | 默认纳入               |
+| chat / notifications / react-query demo / heavy async page | `keepAlive=true` | 若隐藏态副作用不可接受可 opt-out | 必须先做 inventory     |
+| third-party embed / known heavy canvas                     | `keepAlive=true` | 高概率 opt-out                   | 需要 review 结论后落地 |
 
 矩阵的作用是控制首轮风险，不是否定“默认 true”。
 
@@ -440,17 +438,17 @@ v2 首轮不做以下事情：
 
 ### Legacy File Ownership
 
-| File | Owner Task | Required Outcome |
-|------|------------|------------------|
-| `src/features/products/workspace/product-workspace-definition.ts` | `Task V2-02B` | 退出 products v2 主链路，标记 deprecated，并纳入零 import gate |
-| `src/features/products/workspace/product-workspace-definition.test.ts` | `Task V2-02B` | 改为遗留 inventory 测试或删除，不能再作为 v2 gate |
-| `src/features/users/workspace/users-workspace-definition.ts` | `Task V2-02B` | 退出 users v2 主链路，标记 deprecated，并纳入零 import gate |
-| `src/features/users/workspace/users-workspace-definition.test.ts` | `Task V2-02B` | 改为遗留 inventory 测试或删除，不能再作为 v2 gate |
-| `src/features/workspace-tabs/hooks/use-bridged-search-adapter.ts` | `Task V2-02B` | products/users 迁移完成后零主链路 import；若无残余依赖，直接删除 |
-| `src/features/workspace-tabs/hooks/use-bridged-search-adapter.test.ts` | `Task V2-02B` | 随实现一并删除或降为 inventory-only，不得再进入主 gate |
-| `src/features/workspace-tabs/components/workspace-route-page.tsx` | `Task V2-04` | 从 flag-on/flag-off 主链路退出；若只剩 dead code，进入 cleanup 或直接删除 |
-| `src/features/workspace-tabs/lib/workspace-route-state.ts` | `Task V2-04` | 从主链路退出，并通过 rg gate 证明无运行时引用 |
-| `src/features/workspace-tabs/lib/workspace-route-state.test.ts` | `Task V2-04` | 转为 inventory-only 或删除，不得继续充当 v2 行为 gate |
+| File                                                                   | Owner Task    | Required Outcome                                                          |
+| ---------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------- |
+| `src/features/products/workspace/product-workspace-definition.ts`      | `Task V2-02B` | 退出 products v2 主链路，标记 deprecated，并纳入零 import gate            |
+| `src/features/products/workspace/product-workspace-definition.test.ts` | `Task V2-02B` | 改为遗留 inventory 测试或删除，不能再作为 v2 gate                         |
+| `src/features/users/workspace/users-workspace-definition.ts`           | `Task V2-02B` | 退出 users v2 主链路，标记 deprecated，并纳入零 import gate               |
+| `src/features/users/workspace/users-workspace-definition.test.ts`      | `Task V2-02B` | 改为遗留 inventory 测试或删除，不能再作为 v2 gate                         |
+| `src/features/workspace-tabs/hooks/use-bridged-search-adapter.ts`      | `Task V2-02B` | products/users 迁移完成后零主链路 import；若无残余依赖，直接删除          |
+| `src/features/workspace-tabs/hooks/use-bridged-search-adapter.test.ts` | `Task V2-02B` | 随实现一并删除或降为 inventory-only，不得再进入主 gate                    |
+| `src/features/workspace-tabs/components/workspace-route-page.tsx`      | `Task V2-04`  | 从 flag-on/flag-off 主链路退出；若只剩 dead code，进入 cleanup 或直接删除 |
+| `src/features/workspace-tabs/lib/workspace-route-state.ts`             | `Task V2-04`  | 从主链路退出，并通过 rg gate 证明无运行时引用                             |
+| `src/features/workspace-tabs/lib/workspace-route-state.test.ts`        | `Task V2-04`  | 转为 inventory-only 或删除，不得继续充当 v2 行为 gate                     |
 
 ### V1 Retirement Criteria
 
@@ -526,13 +524,13 @@ graph TD
 
 ## Task Table
 
-| Task | Spec | Depends On | Parallel Group |
-|------|------|------------|----------------|
-| Task V2-01 | [task-v2-01-shell-and-lifecycle.md](task-v2-01-shell-and-lifecycle.md) | - | A |
-| Task V2-02A | [task-v2-02a-table-core-internal-state.md](task-v2-02a-table-core-internal-state.md) | Task V2-01 | - |
-| Task V2-02B | [task-v2-02b-products-users-internal-state-migration.md](task-v2-02b-products-users-internal-state-migration.md) | Task V2-02A | - |
-| Task V2-03 | [task-v2-03-route-instance-tags-and-close-guard.md](task-v2-03-route-instance-tags-and-close-guard.md) | Task V2-01, Task V2-02B | - |
-| Task V2-04 | [task-v2-04-rollout-and-regression.md](task-v2-04-rollout-and-regression.md) | Task V2-03 | - |
+| Task        | Spec                                                                                                             | Depends On              | Parallel Group |
+| ----------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- | -------------- |
+| Task V2-01  | [task-v2-01-shell-and-lifecycle.md](task-v2-01-shell-and-lifecycle.md)                                           | -                       | A              |
+| Task V2-02A | [task-v2-02a-table-core-internal-state.md](task-v2-02a-table-core-internal-state.md)                             | Task V2-01              | -              |
+| Task V2-02B | [task-v2-02b-products-users-internal-state-migration.md](task-v2-02b-products-users-internal-state-migration.md) | Task V2-02A             | -              |
+| Task V2-03  | [task-v2-03-route-instance-tags-and-close-guard.md](task-v2-03-route-instance-tags-and-close-guard.md)           | Task V2-01, Task V2-02B | -              |
+| Task V2-04  | [task-v2-04-rollout-and-regression.md](task-v2-04-rollout-and-regression.md)                                     | Task V2-03              | -              |
 
 ## Execution Notes
 

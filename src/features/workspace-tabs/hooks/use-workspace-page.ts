@@ -1,5 +1,5 @@
-import { useContext, createContext } from 'react'
-import type { UseWorkspacePageResult } from '../types'
+import { useContext, createContext } from 'react';
+import type { UseWorkspacePageResult } from '../types';
 
 /**
  * Context injected by ActivityHost (WorkspaceViewport).
@@ -8,7 +8,7 @@ import type { UseWorkspacePageResult } from '../types'
  * its owning tabId and a store-backed updater without coupling to the
  * router pathname.
  */
-export const WorkspacePageContext = createContext<UseWorkspacePageResult | null>(null)
+export const WorkspacePageContext = createContext<UseWorkspacePageResult | null>(null);
 
 /**
  * Provides the page lifecycle channel for a page instance hosted by ActivityHost.
@@ -19,9 +19,9 @@ export const WorkspacePageContext = createContext<UseWorkspacePageResult | null>
  * multi-instance scenario where the current router pathname would be wrong.
  */
 export function useWorkspacePage(): UseWorkspacePageResult {
-  const ctx = useContext(WorkspacePageContext)
+  const ctx = useContext(WorkspacePageContext);
   if (!ctx) {
-    return { tabId: '', updateLifecycle: () => {} }
+    return { tabId: '', updateLifecycle: () => {} };
   }
-  return ctx
+  return ctx;
 }

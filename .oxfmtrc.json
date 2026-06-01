@@ -18,7 +18,9 @@
     "scripts/**",
     "src/routeTree.gen.ts",
     "pnpm-lock.yaml",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    ".agents/**",
+    ".claude/**"
   ],
   "overrides": [
     {

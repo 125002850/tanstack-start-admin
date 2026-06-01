@@ -5,35 +5,35 @@
 
 ## Task Status
 
-| Task | Status | Started | Completed | Gate | Log |
-|------|--------|---------|-----------|------|-----|
-| Task 01 | done | 2026-05-26 10:05 | 2026-05-26 12:45 | codex review 通过 | [log](task-01-log.md) |
-| Task 02 | done | 2026-05-26 11:20 | 2026-05-26 12:25 | codex review 通过 | [log](task-02-log.md) |
-| Task 03 | done | 2026-05-26 12:45 | 2026-05-26 11:18 | codex review 通过 | [log](task-03-log.md) |
-| Task 04 | done | 2026-05-26 12:45 | 2026-05-26 12:05 | codex review 通过 | [log](task-04-log.md) |
-| Task 05 | review | 2026-05-26 12:05 | - | codex review changes requested | [log](task-05-log.md) |
-| Task 06 | done | 2026-05-26 14:08 | 2026-05-26 14:54 | codex verification 通过 | [log](task-06-log.md) |
-| Task 07 | done | 2026-05-26 14:08 | 2026-05-26 14:32 | codex verification 通过 | [log](task-07-log.md) |
-| Task 08 | blocked | 2026-05-26 14:56 | - | superseded by approved `spec-v2/` | [log](task-08-log.md) |
+| Task    | Status  | Started          | Completed        | Gate                              | Log                   |
+| ------- | ------- | ---------------- | ---------------- | --------------------------------- | --------------------- |
+| Task 01 | done    | 2026-05-26 10:05 | 2026-05-26 12:45 | codex review 通过                 | [log](task-01-log.md) |
+| Task 02 | done    | 2026-05-26 11:20 | 2026-05-26 12:25 | codex review 通过                 | [log](task-02-log.md) |
+| Task 03 | done    | 2026-05-26 12:45 | 2026-05-26 11:18 | codex review 通过                 | [log](task-03-log.md) |
+| Task 04 | done    | 2026-05-26 12:45 | 2026-05-26 12:05 | codex review 通过                 | [log](task-04-log.md) |
+| Task 05 | review  | 2026-05-26 12:05 | -                | codex review changes requested    | [log](task-05-log.md) |
+| Task 06 | done    | 2026-05-26 14:08 | 2026-05-26 14:54 | codex verification 通过           | [log](task-06-log.md) |
+| Task 07 | done    | 2026-05-26 14:08 | 2026-05-26 14:32 | codex verification 通过           | [log](task-07-log.md) |
+| Task 08 | blocked | 2026-05-26 14:56 | -                | superseded by approved `spec-v2/` | [log](task-08-log.md) |
 
 Status values: `pending` | `running` | `review` | `done` | `blocked`
 
 ## V2 Execution Status
 
-| Task | Status | Started | Completed | Gate | Log |
-|------|--------|---------|-----------|------|-----|
-| Task V2-01 | done | 2026-05-26 | 2026-05-27 | coordinator review 通过 | [log](task-v2-01-log.md) |
-| Task V2-02A | done | 2026-05-27 | 2026-05-27 | codex 五轮验收通过 | [log](task-v2-02a-log.md) |
-| Task V2-02B | done | 2026-05-27 | 2026-05-27 | codex 三轮验收通过 | [log](task-v2-02b-log.md) |
-| Task V2-03 | done | 2026-05-27 | 2026-05-27 | codex 二轮验收通过 | [log](task-v2-03-log.md) |
-| Task V2-04 | done | 2026-05-27 | 2026-05-27 | coordinator final review + full regression 通过 | [log](task-v2-04-log.md) |
+| Task        | Status | Started    | Completed  | Gate                                            | Log                       |
+| ----------- | ------ | ---------- | ---------- | ----------------------------------------------- | ------------------------- |
+| Task V2-01  | done   | 2026-05-26 | 2026-05-27 | coordinator review 通过                         | [log](task-v2-01-log.md)  |
+| Task V2-02A | done   | 2026-05-27 | 2026-05-27 | codex 五轮验收通过                              | [log](task-v2-02a-log.md) |
+| Task V2-02B | done   | 2026-05-27 | 2026-05-27 | codex 三轮验收通过                              | [log](task-v2-02b-log.md) |
+| Task V2-03  | done   | 2026-05-27 | 2026-05-27 | codex 二轮验收通过                              | [log](task-v2-03-log.md)  |
+| Task V2-04  | done   | 2026-05-27 | 2026-05-27 | coordinator final review + full regression 通过 | [log](task-v2-04-log.md)  |
 
 ## Active Agents
 
-| Agent | Task | Since |
-|-------|------|-------|
+| Agent | Task                                           | Since      |
+| ----- | ---------------------------------------------- | ---------- |
 | `%15` | product detail dirty-form keepAlive 收口已关闭 | 2026-05-27 |
-| `%16` | keepAlive opt-out / closeGuard 契约复核已关闭 | 2026-05-27 |
+| `%16` | keepAlive opt-out / closeGuard 契约复核已关闭  | 2026-05-27 |
 
 ## Replan Log
 

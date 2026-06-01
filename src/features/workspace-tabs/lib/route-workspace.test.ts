@@ -1,140 +1,132 @@
-import { describe, it, expect } from 'vitest'
-import {
-  resolveRouteWorkspaceConfig,
-  resolveRouteTagTitle,
-} from './route-workspace'
-import type { AppRouteStaticData } from '@/lib/router/app-route-meta'
+import { describe, it, expect } from 'vitest';
+import { resolveRouteWorkspaceConfig, resolveRouteTagTitle } from './route-workspace';
+import type { AppRouteStaticData } from '@/lib/router/app-route-meta';
 
 describe('resolveRouteWorkspaceConfig', () => {
   it('defaults tagEnabled to true', () => {
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview')
-    expect(cfg.tagEnabled).toBe(true)
-  })
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview');
+    expect(cfg.tagEnabled).toBe(true);
+  });
 
   it('defaults keepAlive to true', () => {
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview')
-    expect(cfg.keepAlive).toBe(true)
-  })
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview');
+    expect(cfg.keepAlive).toBe(true);
+  });
 
   it('defaults instanceStrategy to global for routes without path params', () => {
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/users')
-    expect(cfg.instanceStrategy).toBe('global')
-  })
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/users');
+    expect(cfg.instanceStrategy).toBe('global');
+  });
 
   it('defaults instanceStrategy to by-params for routes with $ path params', () => {
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/product/$productId')
-    expect(cfg.instanceStrategy).toBe('by-params')
-  })
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/product/$productId');
+    expect(cfg.instanceStrategy).toBe('by-params');
+  });
 
   it('uses explicit tagEnabled over default', () => {
     const staticData: AppRouteStaticData = {
       label: 'Test',
-      workspace: { tagEnabled: false },
-    }
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData)
-    expect(cfg.tagEnabled).toBe(false)
-  })
+      workspace: { tagEnabled: false }
+    };
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData);
+    expect(cfg.tagEnabled).toBe(false);
+  });
 
   it('uses explicit keepAlive over default', () => {
     const staticData: AppRouteStaticData = {
       label: 'Test',
-      workspace: { keepAlive: false },
-    }
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData)
-    expect(cfg.keepAlive).toBe(false)
-  })
+      workspace: { keepAlive: false }
+    };
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData);
+    expect(cfg.keepAlive).toBe(false);
+  });
 
   it('uses explicit instanceStrategy over path-param default', () => {
     const staticData: AppRouteStaticData = {
       label: 'Test',
-      workspace: { instanceStrategy: 'global' },
-    }
-    const cfg = resolveRouteWorkspaceConfig(
-      '/dashboard/product/$productId',
-      staticData,
-    )
-    expect(cfg.instanceStrategy).toBe('global')
-  })
+      workspace: { instanceStrategy: 'global' }
+    };
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/product/$productId', staticData);
+    expect(cfg.instanceStrategy).toBe('global');
+  });
 
   it('returns defaults when staticData is undefined', () => {
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview', undefined)
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview', undefined);
     expect(cfg).toEqual({
       tagEnabled: true,
       keepAlive: true,
-      instanceStrategy: 'global',
-    })
-  })
+      instanceStrategy: 'global'
+    });
+  });
 
   it('returns defaults when workspace field is absent', () => {
-    const staticData: AppRouteStaticData = { label: 'Test' }
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData)
+    const staticData: AppRouteStaticData = { label: 'Test' };
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData);
     expect(cfg).toEqual({
       tagEnabled: true,
       keepAlive: true,
-      instanceStrategy: 'global',
-    })
-  })
-})
+      instanceStrategy: 'global'
+    });
+  });
+});
 
 describe('resolveRouteTagTitle', () => {
   it('returns label when available', () => {
     const staticData: AppRouteStaticData = {
       label: 'Label',
-      title: 'Document Title',
-    }
-    expect(resolveRouteTagTitle(staticData)).toBe('Label')
-  })
+      title: 'Document Title'
+    };
+    expect(resolveRouteTagTitle(staticData)).toBe('Label');
+  });
 
   it('falls back to title when label is missing', () => {
     const staticData = {
       label: undefined,
-      title: 'Document Title',
-    } as unknown as AppRouteStaticData
-    expect(resolveRouteTagTitle(staticData)).toBe('Document Title')
-  })
+      title: 'Document Title'
+    } as unknown as AppRouteStaticData;
+    expect(resolveRouteTagTitle(staticData)).toBe('Document Title');
+  });
 
   it('falls back to label when it is the only route title source', () => {
-    const staticData: AppRouteStaticData = { label: 'My Label' }
-    expect(resolveRouteTagTitle(staticData)).toBe('My Label')
-  })
+    const staticData: AppRouteStaticData = { label: 'My Label' };
+    expect(resolveRouteTagTitle(staticData)).toBe('My Label');
+  });
 
   it('falls back to page.title when label and title are nullish', () => {
     const staticData = {
       label: undefined,
-      page: { title: 'Page Title' },
-    } as unknown as AppRouteStaticData
-    expect(resolveRouteTagTitle(staticData)).toBe('Page Title')
-  })
+      page: { title: 'Page Title' }
+    } as unknown as AppRouteStaticData;
+    expect(resolveRouteTagTitle(staticData)).toBe('Page Title');
+  });
 
   it('falls back to routeId when title, label, and page.title are nullish', () => {
-    const staticData = { label: undefined } as unknown as AppRouteStaticData
-    expect(resolveRouteTagTitle(staticData, '/dashboard/test')).toBe(
-      '/dashboard/test',
-    )
-  })
+    const staticData = { label: undefined } as unknown as AppRouteStaticData;
+    expect(resolveRouteTagTitle(staticData, '/dashboard/test')).toBe('/dashboard/test');
+  });
 
   it('returns empty string when nothing is provided', () => {
-    expect(resolveRouteTagTitle(undefined, undefined)).toBe('')
-  })
+    expect(resolveRouteTagTitle(undefined, undefined)).toBe('');
+  });
 
   it('prioritizes label over title over page.title', () => {
     const staticData: AppRouteStaticData = {
       title: 'Doc Title',
       label: 'Nav Label',
-      page: { title: 'Page Heading' },
-    }
-    expect(resolveRouteTagTitle(staticData)).toBe('Nav Label')
-  })
+      page: { title: 'Page Heading' }
+    };
+    expect(resolveRouteTagTitle(staticData)).toBe('Nav Label');
+  });
 
   it('falls back label over page.title when title is absent', () => {
     const staticData: AppRouteStaticData = {
       label: 'Nav Label',
-      page: { title: 'Page Heading' },
-    }
-    expect(resolveRouteTagTitle(staticData)).toBe('Nav Label')
-  })
+      page: { title: 'Page Heading' }
+    };
+    expect(resolveRouteTagTitle(staticData)).toBe('Nav Label');
+  });
 
   it('handles undefined staticData with a routeId', () => {
-    expect(resolveRouteTagTitle(undefined, '/fallback')).toBe('/fallback')
-  })
-})
+    expect(resolveRouteTagTitle(undefined, '/fallback')).toBe('/fallback');
+  });
+});

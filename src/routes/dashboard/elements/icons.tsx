@@ -11,11 +11,11 @@ const meta = defineRouteMeta({
     visible: true,
     group: 'components',
     order: 30,
-    icon: 'palette',
+    icon: 'palette'
   },
   page: {
-    title: 'Icons',
-  },
+    title: 'Icons'
+  }
 });
 
 export const Route = createFileRoute('/dashboard/elements/icons')({
@@ -25,9 +25,6 @@ export const Route = createFileRoute('/dashboard/elements/icons')({
 
 function IconsPage() {
   return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/elements/icons'
-      render={() => <IconsViewPage />}
-    />
-  )
+    <WorkspacePageBoundary tabId='/dashboard/elements/icons' render={() => <IconsViewPage />} />
+  );
 }

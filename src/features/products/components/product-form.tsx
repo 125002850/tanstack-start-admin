@@ -86,7 +86,7 @@ export default function ProductForm({
         if (isDefaultValue) return true;
         toast.warning('当前产品表单有未保存更改，请先保存后再关闭标签页。');
         return false;
-      },
+      }
     });
   }, [isDefaultValue, pageTitle, updateLifecycle]);
 

@@ -11,31 +11,24 @@ import { useFormStepper } from '@/hooks/use-stepper';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-// --- Schema ---
-
 const productFormSchema = z.object({
-  name: z.string().min(2, 'Product name must be at least 2 characters'),
-  category: z.string().min(1, 'Please select a category'),
-  price: z.number().min(0.01, 'Price must be greater than 0'),
-  description: z.string().min(10, 'Description must be at least 10 characters')
+  name: z.string().min(2, '产品名称至少需要 2 个字符'),
+  category: z.string().min(1, '请选择分类'),
+  price: z.number().min(0.01, '价格必须大于 0'),
+  description: z.string().min(10, '描述至少需要 10 个字符')
 });
 
 const stepSchemas = [
-  // Step 1: Basic Info
   productFormSchema.pick({ name: true, category: true, price: true }),
-  // Step 2: Details
   productFormSchema.pick({ description: true }),
-  // Step 3: Review (no validation)
   z.object({})
 ];
 
-// --- Step Groups ---
-
 const categoryOptions = [
-  { value: 'beauty', label: 'Beauty Products' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'home', label: 'Home & Garden' },
-  { value: 'sports', label: 'Sports & Outdoors' }
+  { value: 'beauty', label: '美妆' },
+  { value: 'electronics', label: '电子产品' },
+  { value: 'home', label: '家居园艺' },
+  { value: 'sports', label: '运动户外' }
 ];
 
 const Step1Group = withFieldGroup({
@@ -47,22 +40,22 @@ const Step1Group = withFieldGroup({
   render: function Step1Render({ group }) {
     return (
       <div className='space-y-4'>
-        <h3 className='text-lg font-semibold'>Basic Info</h3>
-        <FieldDescription>Enter the product name, category, and price.</FieldDescription>
+        <h3 className='text-lg font-semibold'>基本信息</h3>
+        <FieldDescription>输入产品名称、分类和价格。</FieldDescription>
 
         <group.AppField name='name'>
           {(field) => (
-            <field.TextField label='Product Name' required placeholder='Enter product name' />
+            <field.TextField label='产品名称' required placeholder='请输入产品名称' />
           )}
         </group.AppField>
 
         <group.AppField name='category'>
           {(field) => (
             <field.SelectField
-              label='Category'
+              label='分类'
               required
               options={categoryOptions}
-              placeholder='Select category'
+              placeholder='请选择分类'
             />
           )}
         </group.AppField>
@@ -70,12 +63,12 @@ const Step1Group = withFieldGroup({
         <group.AppField name='price'>
           {(field) => (
             <field.TextField
-              label='Price'
+              label='价格'
               required
               type='number'
               min={0}
               step={0.01}
-              placeholder='Enter price'
+              placeholder='请输入价格'
             />
           )}
         </group.AppField>
@@ -91,15 +84,15 @@ const Step2Group = withFieldGroup({
   render: function Step2Render({ group }) {
     return (
       <div className='space-y-4'>
-        <h3 className='text-lg font-semibold'>Details</h3>
-        <FieldDescription>Add a detailed product description.</FieldDescription>
+        <h3 className='text-lg font-semibold'>详细信息</h3>
+        <FieldDescription>添加详细的产品描述。</FieldDescription>
 
         <group.AppField name='description'>
           {(field) => (
             <field.TextareaField
-              label='Description'
+              label='描述'
               required
-              placeholder='Enter product description'
+              placeholder='请输入产品描述'
               maxLength={500}
               rows={5}
             />
@@ -115,14 +108,12 @@ const Step3Group = withFieldGroup({
   render: function Step3Render() {
     return (
       <div className='space-y-4'>
-        <h3 className='text-lg font-semibold'>Review & Submit</h3>
-        <FieldDescription>Review the details below before submitting.</FieldDescription>
+        <h3 className='text-lg font-semibold'>确认提交</h3>
+        <FieldDescription>提交前请确认以下信息。</FieldDescription>
       </div>
     );
   }
 });
-
-// --- Review component (reads form values) ---
 
 function ReviewSummary({
   values
@@ -139,27 +130,25 @@ function ReviewSummary({
       <Separator />
       <div className='grid gap-3'>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>Name</p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>名称</p>
           <p className='text-sm'>{values.name || '—'}</p>
         </div>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>Category</p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>分类</p>
           <p className='text-sm capitalize'>{values.category || '—'}</p>
         </div>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>Price</p>
-          <p className='text-sm'>{values.price != null ? `$${values.price}` : '—'}</p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>价格</p>
+          <p className='text-sm'>{values.price != null ? `¥${values.price}` : '—'}</p>
         </div>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>Description</p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>描述</p>
           <p className='text-sm'>{values.description || '—'}</p>
         </div>
       </div>
     </div>
   );
 }
-
-// --- Main Form ---
 
 type ProductFormValues = {
   name: string;
@@ -191,7 +180,7 @@ export default function MultiStepProductForm() {
       onDynamicAsyncDebounceMs: 500
     },
     onSubmit: () => {
-      toast.success('Product created successfully!');
+      toast.success('产品创建成功！');
     }
   });
 
@@ -221,7 +210,7 @@ export default function MultiStepProductForm() {
         <div className='flex flex-col gap-2 pt-3'>
           <div className='flex flex-col items-center justify-start gap-1'>
             <span className='text-muted-foreground text-sm'>
-              Step {currentStep} of {Object.keys(groups).length}
+              第 {currentStep} 步 / 共 {Object.keys(groups).length} 步
             </span>
             <Progress value={(currentStep / Object.keys(groups).length) * 100} />
           </div>
@@ -243,7 +232,7 @@ export default function MultiStepProductForm() {
             <form.StepButton
               label={
                 <>
-                  <Icons.chevronLeft /> Previous
+                  <Icons.chevronLeft /> 上一步
                 </>
               }
               disabled={isFirstStep}
@@ -263,10 +252,10 @@ export default function MultiStepProductForm() {
                     variant='outline'
                     size='sm'
                   >
-                    Reset
+                    重置
                   </Button>
                 )}
-                <form.SubmitButton>Submit</form.SubmitButton>
+                <form.SubmitButton>提交</form.SubmitButton>
               </div>
             ) : (
               <div className='flex w-full items-center justify-end gap-3 pt-3'>
@@ -278,13 +267,13 @@ export default function MultiStepProductForm() {
                     variant='outline'
                     size='sm'
                   >
-                    Reset
+                    重置
                   </Button>
                 )}
                 <form.StepButton
                   label={
                     <>
-                      Next <Icons.chevronRight />
+                      下一步 <Icons.chevronRight />
                     </>
                   }
                   handleMovement={handleNext}

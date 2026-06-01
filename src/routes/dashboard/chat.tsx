@@ -12,8 +12,8 @@ const meta = defineRouteMeta({
     group: 'overview',
     order: 50,
     icon: 'chat',
-    shortcut: ['c', 'c'],
-  },
+    shortcut: ['c', 'c']
+  }
 });
 
 export const Route = createFileRoute('/dashboard/chat')({
@@ -22,10 +22,5 @@ export const Route = createFileRoute('/dashboard/chat')({
 });
 
 function ChatPage() {
-  return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/chat'
-      render={() => <ChatViewPage />}
-    />
-  )
+  return <WorkspacePageBoundary tabId='/dashboard/chat' render={() => <ChatViewPage />} />;
 }

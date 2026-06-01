@@ -23,10 +23,10 @@ import { Icons } from '@/components/icons';
 import { useState } from 'react';
 
 const productSchema = z.object({
-  name: z.string().min(2, 'Product name must be at least 2 characters'),
-  category: z.string().min(1, 'Please select a category'),
-  price: z.number().min(0.01, 'Price must be greater than 0'),
-  description: z.string().min(10, 'Description must be at least 10 characters')
+  name: z.string().min(2, '产品名称至少需要 2 个字符'),
+  category: z.string().min(1, '请选择分类'),
+  price: z.number().min(0.01, '价格必须大于 0'),
+  description: z.string().min(10, '描述至少需要 10 个字符')
 });
 
 export default function SheetProductForm() {
@@ -44,7 +44,7 @@ export default function SheetProductForm() {
       onSubmit: productSchema as any
     },
     onSubmit: () => {
-      alert('Product created successfully!');
+      alert('产品创建成功！');
       setOpen(false);
       form.reset();
     }
@@ -55,13 +55,13 @@ export default function SheetProductForm() {
       <SheetTrigger asChild>
         <Button>
           <Icons.add className='mr-2 h-4 w-4' />
-          Add Product
+          新增产品
         </Button>
       </SheetTrigger>
       <SheetContent className='flex flex-col'>
         <SheetHeader>
-          <SheetTitle>New Product</SheetTitle>
-          <SheetDescription>Fill in the details to create a new product.</SheetDescription>
+          <SheetTitle>新增产品</SheetTitle>
+          <SheetDescription>填写以下信息创建新产品。</SheetDescription>
         </SheetHeader>
 
         <div className='flex-1 overflow-auto'>
@@ -74,14 +74,14 @@ export default function SheetProductForm() {
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Product Name *</field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>产品名称 *</field.FieldLabel>
                         <Input
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Enter product name'
+                          placeholder='请输入产品名称'
                           aria-invalid={isInvalid}
                         />
                       </field.Field>
@@ -98,20 +98,20 @@ export default function SheetProductForm() {
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Category *</field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>分类 *</field.FieldLabel>
                         <Select
                           name={field.name}
                           value={field.state.value}
                           onValueChange={field.handleChange}
                         >
                           <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-                            <SelectValue placeholder='Select category' />
+                            <SelectValue placeholder='请选择分类' />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value='beauty'>Beauty Products</SelectItem>
-                            <SelectItem value='electronics'>Electronics</SelectItem>
-                            <SelectItem value='home'>Home & Garden</SelectItem>
-                            <SelectItem value='sports'>Sports & Outdoors</SelectItem>
+                            <SelectItem value='beauty'>美妆</SelectItem>
+                            <SelectItem value='electronics'>电子产品</SelectItem>
+                            <SelectItem value='home'>家居园艺</SelectItem>
+                            <SelectItem value='sports'>运动户外</SelectItem>
                           </SelectContent>
                         </Select>
                       </field.Field>
@@ -128,7 +128,7 @@ export default function SheetProductForm() {
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Price *</field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>价格 *</field.FieldLabel>
                         <Input
                           id={field.name}
                           name={field.name}
@@ -141,7 +141,7 @@ export default function SheetProductForm() {
                             const v = e.target.value;
                             field.handleChange(v === '' ? undefined : parseFloat(v));
                           }}
-                          placeholder='Enter price'
+                          placeholder='请输入价格'
                           aria-invalid={isInvalid}
                         />
                       </field.Field>
@@ -158,14 +158,14 @@ export default function SheetProductForm() {
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel htmlFor={field.name}>Description *</field.FieldLabel>
+                        <field.FieldLabel htmlFor={field.name}>描述 *</field.FieldLabel>
                         <Textarea
                           id={field.name}
                           name={field.name}
                           value={field.state.value}
                           onBlur={field.handleBlur}
                           onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder='Enter product description'
+                          placeholder='请输入产品描述'
                           maxLength={500}
                           rows={4}
                           aria-invalid={isInvalid}
@@ -185,10 +185,10 @@ export default function SheetProductForm() {
 
         <SheetFooter>
           <Button type='button' variant='outline' onClick={() => setOpen(false)}>
-            Cancel
+            取消
           </Button>
           <Button type='submit' form='sheet-product-form'>
-            Create Product
+            创建产品
           </Button>
         </SheetFooter>
       </SheetContent>

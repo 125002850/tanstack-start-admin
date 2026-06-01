@@ -20,11 +20,11 @@
 
 ## Verification Results
 
-| Check | Status | Notes |
-|------|--------|-------|
-| `bunx vitest run src/features/users/workspace/users-workspace-definition.test.ts` | PASS | 18 tests passing |
-| `bunx vitest run src/features/workspace-tabs/` | PASS | 8 files, 100 tests passing |
-| `bun run build` | PASS | client + SSR build passed |
+| Check                                                                             | Status | Notes                      |
+| --------------------------------------------------------------------------------- | ------ | -------------------------- |
+| `bunx vitest run src/features/users/workspace/users-workspace-definition.test.ts` | PASS   | 18 tests passing           |
+| `bunx vitest run src/features/workspace-tabs/`                                    | PASS   | 8 files, 100 tests passing |
+| `bun run build`                                                                   | PASS   | client + SSR build passed  |
 
 ## Unfinished Work
 

@@ -150,8 +150,10 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
   }
 }
 
-interface DebouncedFilterInputProps
-  extends Omit<React.ComponentProps<typeof Input>, 'onChange' | 'value'> {
+interface DebouncedFilterInputProps extends Omit<
+  React.ComponentProps<typeof Input>,
+  'onChange' | 'value'
+> {
   value: string;
   onChange: (value: string) => void;
   debounceMs?: number;
@@ -176,7 +178,7 @@ function DebouncedFilterInput({
       setLocalValue(next);
       debouncedOnChange(next);
     },
-    [debouncedOnChange],
+    [debouncedOnChange]
   );
 
   return <Input {...inputProps} value={localValue} onChange={handleChange} />;

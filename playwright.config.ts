@@ -28,24 +28,24 @@ export default defineConfig({
     command: 'bash scripts/playwright-workspace-tabs-servers.sh',
     timeout: 240_000,
     url: 'http://127.0.0.1:3099/dashboard/product',
-    reuseExistingServer: false,
+    reuseExistingServer: false
   },
   use: {
     browserName: 'chromium',
     launchOptions: {
-      args: ['--no-proxy-server'],
-    },
+      args: ['--no-proxy-server']
+    }
   },
   projects: [
     {
       name: 'default',
       grep: /@workspace-v2(?!-)/,
-      use: { baseURL: 'http://127.0.0.1:3099' },
+      use: { baseURL: 'http://127.0.0.1:3099' }
     },
     {
       name: 'rollback',
       grep: /@workspace-v2-rollback/,
-      use: { baseURL: 'http://127.0.0.1:3100' },
-    },
-  ],
+      use: { baseURL: 'http://127.0.0.1:3100' }
+    }
+  ]
 });

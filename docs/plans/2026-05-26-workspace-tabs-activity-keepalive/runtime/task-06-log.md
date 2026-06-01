@@ -20,12 +20,12 @@
 
 ## Verification Results
 
-| Check | Status | Notes |
-|------|--------|-------|
-| `bunx vitest run src/features/products/workspace/product-workspace-definition.test.ts` | PASS | 23 tests passing |
-| `bunx vitest run src/features/workspace-tabs/` | PASS | 8 files, 100 tests passing |
-| `rg -n "usePageCacheSearch|usePageCacheScroll|PageCacheProvider" src/features/products/components/product-listing.tsx src/features/products/components/product-tables/index.tsx` | PASS | no output |
-| `bun run build` | PASS | client + SSR build passed |
+| Check                                                                                  | Status             | Notes                                                                                                                              |
+| -------------------------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---- | --------- |
+| `bunx vitest run src/features/products/workspace/product-workspace-definition.test.ts` | PASS               | 23 tests passing                                                                                                                   |
+| `bunx vitest run src/features/workspace-tabs/`                                         | PASS               | 8 files, 100 tests passing                                                                                                         |
+| `rg -n "usePageCacheSearch                                                             | usePageCacheScroll | PageCacheProvider" src/features/products/components/product-listing.tsx src/features/products/components/product-tables/index.tsx` | PASS | no output |
+| `bun run build`                                                                        | PASS               | client + SSR build passed                                                                                                          |
 
 ## Unfinished Work
 

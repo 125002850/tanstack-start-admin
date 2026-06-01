@@ -17,13 +17,13 @@
 
 ## Verification Results
 
-| Check | Status | Notes |
-|------|--------|-------|
-| `bunx vitest run src/hooks/use-data-table.internal-state.test.tsx src/lib/data-table-page-size.test.ts` | PASS | 协调端独立执行，25 tests passing |
-| `bunx vitest run src/hooks/use-data-table.internal-state.test.tsx src/hooks/use-data-table.search-adapter.test.tsx src/lib/data-table-page-size.test.ts` | PASS | 协调端独立执行，54 tests passing |
-| `bunx vitest run src/features/workspace-tabs/ src/components/layout/tags-bar.test.tsx src/hooks/use-data-table.internal-state.test.tsx src/hooks/use-data-table.search-adapter.test.tsx src/lib/data-table-page-size.test.ts` | PASS | 协调端独立执行，13 files / 216 tests passing |
-| `bun run build` | PASS | 协调端独立执行，client + SSR build passed |
-| `bun run lint` | FAIL（non-blocking） | 当前 hard errors 位于 `workspace-page-boundary.tsx` 等仓库存量文件，不属于 V2-02A 变更范围 |
+| Check                                                                                                                                                                                                                         | Status               | Notes                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------ |
+| `bunx vitest run src/hooks/use-data-table.internal-state.test.tsx src/lib/data-table-page-size.test.ts`                                                                                                                       | PASS                 | 协调端独立执行，25 tests passing                                                           |
+| `bunx vitest run src/hooks/use-data-table.internal-state.test.tsx src/hooks/use-data-table.search-adapter.test.tsx src/lib/data-table-page-size.test.ts`                                                                      | PASS                 | 协调端独立执行，54 tests passing                                                           |
+| `bunx vitest run src/features/workspace-tabs/ src/components/layout/tags-bar.test.tsx src/hooks/use-data-table.internal-state.test.tsx src/hooks/use-data-table.search-adapter.test.tsx src/lib/data-table-page-size.test.ts` | PASS                 | 协调端独立执行，13 files / 216 tests passing                                               |
+| `bun run build`                                                                                                                                                                                                               | PASS                 | 协调端独立执行，client + SSR build passed                                                  |
+| `bun run lint`                                                                                                                                                                                                                | FAIL（non-blocking） | 当前 hard errors 位于 `workspace-page-boundary.tsx` 等仓库存量文件，不属于 V2-02A 变更范围 |
 
 ## Unfinished Work
 

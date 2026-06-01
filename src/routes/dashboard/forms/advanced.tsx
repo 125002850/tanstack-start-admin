@@ -13,12 +13,13 @@ const meta = defineRouteMeta({
     group: 'components',
     order: 14,
     parentId: '/dashboard/forms',
-    icon: 'forms',
+    icon: 'forms'
   },
   page: {
     title: 'Advanced Form Patterns',
-    description: 'Linked fields, async validation, dynamic rows, nested objects, cross-field validation, and form-level errors.',
-  },
+    description:
+      'Linked fields, async validation, dynamic rows, nested objects, cross-field validation, and form-level errors.'
+  }
 });
 
 export const Route = createFileRoute('/dashboard/forms/advanced')({
@@ -32,7 +33,7 @@ function AdvancedFormPage() {
       tabId='/dashboard/forms/advanced'
       render={() => <AdvancedFormContent />}
     />
-  )
+  );
 }
 
 function AdvancedFormContent() {
@@ -40,5 +41,5 @@ function AdvancedFormContent() {
     <PageContainer>
       <AdvancedFormPatterns />
     </PageContainer>
-  )
+  );
 }

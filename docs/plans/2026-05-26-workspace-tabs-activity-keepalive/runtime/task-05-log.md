@@ -17,10 +17,10 @@
 
 ## Verification Results
 
-| Check | Status | Notes |
-|------|--------|-------|
-| `bunx vitest run src/features/workspace-tabs/components/workspace-viewport.test.tsx src/features/workspace-tabs/components/workspace-routing.integration.test.tsx` | PASS | 17 tests passing |
-| `bun run build` | PASS | client + SSR build passed |
+| Check                                                                                                                                                              | Status | Notes                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------------------------- |
+| `bunx vitest run src/features/workspace-tabs/components/workspace-viewport.test.tsx src/features/workspace-tabs/components/workspace-routing.integration.test.tsx` | PASS   | 17 tests passing          |
+| `bun run build`                                                                                                                                                    | PASS   | client + SSR build passed |
 
 ## Unfinished Work
 

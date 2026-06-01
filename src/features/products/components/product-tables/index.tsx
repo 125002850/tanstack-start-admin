@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery, useMutation } from '@tanstack/react-query';
 import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
 
 import { DataTable } from '@/components/ui/table/data-table';
@@ -8,9 +8,19 @@ import { useDataTablePageSize } from '@/lib/data-table-page-size';
 import { isProductTableVirtualizationEnabled } from '@/config/data-table';
 import { emitDataTableVirtualEvent } from '@/components/ui/table/data-table-virtual-events';
 import { productsQueryOptions } from '../../api/queries';
+import { deleteProductMutation } from '../../api/mutations';
 import { columns } from './columns';
 import * as React from 'react';
 import { resolveProductTableVirtualizationOptions } from './virtualization';
+import { Icons } from '@/components/icons';
+import {
+  DataTableRowActions,
+  type DataTableRowAction
+} from '@/components/ui/table/data-table-row-action';
+import type { Product } from '../../api/types';
+import type { ColumnDef } from '@tanstack/react-table';
+import { toast } from 'sonner';
+import { useRouter } from '@tanstack/react-router';
 
 const PRODUCT_TABLE_ID = 'product-list';
 const PRODUCT_TABLE_SCROLL_TARGET_ID = 'products-table';
@@ -61,9 +71,59 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
   const { data } = useSuspenseQuery(productsQueryOptions(deferredApiFilters));
   const pageCount = Math.ceil(data.total_products / deferredApiFilters.limit);
 
+  const router = useRouter();
+
+  const deleteMutation = useMutation({
+    ...deleteProductMutation,
+    onSuccess: () => {
+      toast.success('产品删除成功');
+    },
+    onError: () => {
+      toast.error('产品删除失败');
+    }
+  });
+
+  const rowActions = React.useMemo<DataTableRowAction<Product>[]>(
+    () => [
+      {
+        label: '编辑',
+        icon: <Icons.edit className='size-4' />,
+        onClick: (row) => {
+          router.navigate({ to: `/dashboard/product/${row.id}` });
+        }
+      },
+      {
+        label: '删除',
+        icon: <Icons.trash className='size-4' />,
+        confirmDelete: {
+          title: '确认删除产品？',
+          description: () => '删除后将无法恢复，请谨慎操作。'
+        },
+        onClick: (row) => {
+          deleteMutation.mutate(row.id);
+        }
+      }
+    ],
+    [router, deleteMutation]
+  );
+
+  const productsColumns = React.useMemo(
+    () => [
+      ...columns,
+      {
+        id: 'actions',
+        header: '操作',
+        cell: ({ row }: { row: { original: Product } }) => (
+          <DataTableRowActions row={row.original} actions={rowActions} />
+        )
+      } satisfies ColumnDef<Product>
+    ],
+    [rowActions]
+  );
+
   const { table } = useDataTable({
     data: data.products,
-    columns,
+    columns: productsColumns,
     pageCount,
     debounceMs: 500,
     pageSize: seedPageSize,
@@ -79,9 +139,6 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
 
   const { pagination, sorting, columnFilters } = table.getState();
 
-  // Sync table state → apiFilters on user interaction.
-  // useRef guards against re-syncing the same values, preventing infinite loops
-  // when useSuspenseQuery re-renders with new data.
   const prevRef = React.useRef({ pageIndex: 0, pageSize: seedPageSize, sorting: '', filters: '' });
 
   React.useEffect(() => {

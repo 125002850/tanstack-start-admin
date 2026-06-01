@@ -9,7 +9,7 @@
 本文档对应当前仓库状态，其中 `vite.config.ts` 已配置为：
 
 ```ts
-nitro({ preset: 'node-server' })
+nitro({ preset: 'node-server' });
 ```
 
 ## 涉及文件

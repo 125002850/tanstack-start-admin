@@ -1,13 +1,13 @@
-import { describe, it, expect, afterEach, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import type { SortingState, ColumnFiltersState, PaginationState } from '@tanstack/react-table'
-import { resolveProductTableVirtualizationOptions } from './product-tables/virtualization'
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import type { SortingState, ColumnFiltersState, PaginationState } from '@tanstack/react-table';
+import { resolveProductTableVirtualizationOptions } from './product-tables/virtualization';
 
 // ── Pure function: mirrors the filter derivation in product-tables/index.tsx ─
 
 function buildApiFilters(p: PaginationState, s: SortingState, f: ColumnFiltersState) {
-  const nameFilter = f.find((flt) => flt.id === 'name')
-  const categoryFilter = f.find((flt) => flt.id === 'category')
+  const nameFilter = f.find((flt) => flt.id === 'name');
+  const categoryFilter = f.find((flt) => flt.id === 'category');
   return {
     page: p.pageIndex + 1,
     limit: p.pageSize,
@@ -15,8 +15,8 @@ function buildApiFilters(p: PaginationState, s: SortingState, f: ColumnFiltersSt
     ...(categoryFilter && Array.isArray(categoryFilter.value) && categoryFilter.value.length > 0
       ? { categories: categoryFilter.value.join(',') }
       : {}),
-    ...(s.length > 0 ? { sort: JSON.stringify(s) } : {}),
-  }
+    ...(s.length > 0 ? { sort: JSON.stringify(s) } : {})
+  };
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────────
@@ -24,110 +24,112 @@ function buildApiFilters(p: PaginationState, s: SortingState, f: ColumnFiltersSt
 describe('ProductTable — internal state', () => {
   describe('resolveProductTableVirtualizationOptions', () => {
     afterEach(() => {
-      const w = window as unknown as Record<string, unknown>
-      delete w.__DATA_TABLE_VIRTUAL_EVENTS__
-    })
+      const w = window as unknown as Record<string, unknown>;
+      delete w.__DATA_TABLE_VIRTUAL_EVENTS__;
+    });
 
     it('emits disabled-by-config and calls fallback callback when gate is off but browser is supported', () => {
-      const fallback = vi.fn()
-      const originalResizeObserver = globalThis.ResizeObserver
+      const fallback = vi.fn();
+      const originalResizeObserver = globalThis.ResizeObserver;
       globalThis.ResizeObserver = class ResizeObserver {
         disconnect() {}
         observe() {}
         unobserve() {}
-      } as typeof ResizeObserver
+      } as typeof ResizeObserver;
 
       try {
-        const options = resolveProductTableVirtualizationOptions(false, fallback)
-        const events = (window as unknown as { __DATA_TABLE_VIRTUAL_EVENTS__?: Array<Record<string, unknown>> })
-          .__DATA_TABLE_VIRTUAL_EVENTS__
+        const options = resolveProductTableVirtualizationOptions(false, fallback);
+        const events = (
+          window as unknown as { __DATA_TABLE_VIRTUAL_EVENTS__?: Array<Record<string, unknown>> }
+        ).__DATA_TABLE_VIRTUAL_EVENTS__;
 
-        expect(options.enabled).toBe(false)
-        expect(fallback).toHaveBeenCalledWith('disabled-by-config')
-        expect(events?.some((evt) => evt.event === 'disabled-by-config')).toBe(true)
+        expect(options.enabled).toBe(false);
+        expect(fallback).toHaveBeenCalledWith('disabled-by-config');
+        expect(events?.some((evt) => evt.event === 'disabled-by-config')).toBe(true);
       } finally {
-        globalThis.ResizeObserver = originalResizeObserver
+        globalThis.ResizeObserver = originalResizeObserver;
       }
-    })
+    });
 
     it('emits unsupported-browser and calls fallback callback when ResizeObserver is unavailable', () => {
-      const fallback = vi.fn()
-      const originalResizeObserver = globalThis.ResizeObserver
+      const fallback = vi.fn();
+      const originalResizeObserver = globalThis.ResizeObserver;
       // @ts-expect-error test intentionally simulates an unsupported browser
-      delete globalThis.ResizeObserver
+      delete globalThis.ResizeObserver;
 
       try {
-        const options = resolveProductTableVirtualizationOptions(false, fallback)
-        const events = (window as unknown as { __DATA_TABLE_VIRTUAL_EVENTS__?: Array<Record<string, unknown>> })
-          .__DATA_TABLE_VIRTUAL_EVENTS__
+        const options = resolveProductTableVirtualizationOptions(false, fallback);
+        const events = (
+          window as unknown as { __DATA_TABLE_VIRTUAL_EVENTS__?: Array<Record<string, unknown>> }
+        ).__DATA_TABLE_VIRTUAL_EVENTS__;
 
-        expect(options.enabled).toBe(false)
-        expect(fallback).toHaveBeenCalledWith('unsupported-browser')
-        expect(events?.some((evt) => evt.event === 'unsupported-browser')).toBe(true)
+        expect(options.enabled).toBe(false);
+        expect(fallback).toHaveBeenCalledWith('unsupported-browser');
+        expect(events?.some((evt) => evt.event === 'unsupported-browser')).toBe(true);
       } finally {
-        globalThis.ResizeObserver = originalResizeObserver
+        globalThis.ResizeObserver = originalResizeObserver;
       }
-    })
-  })
+    });
+  });
 
   describe('buildApiFilters', () => {
     it('defaults to page 1 with the given page size', () => {
-      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, [], [])
-      expect(filters).toMatchObject({ page: 1, limit: 10 })
-    })
+      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, [], []);
+      expect(filters).toMatchObject({ page: 1, limit: 10 });
+    });
 
     it('maps pageIndex to page + 1', () => {
-      const filters = buildApiFilters({ pageIndex: 4, pageSize: 25 }, [], [])
-      expect(filters.page).toBe(5)
-      expect(filters.limit).toBe(25)
-    })
+      const filters = buildApiFilters({ pageIndex: 4, pageSize: 25 }, [], []);
+      expect(filters.page).toBe(5);
+      expect(filters.limit).toBe(25);
+    });
 
     it('maps name column filter to search param', () => {
       const filters = buildApiFilters(
         { pageIndex: 0, pageSize: 10 },
         [],
-        [{ id: 'name', value: 'test' }],
-      )
-      expect(filters).toMatchObject({ page: 1, limit: 10, search: 'test' })
-    })
+        [{ id: 'name', value: 'test' }]
+      );
+      expect(filters).toMatchObject({ page: 1, limit: 10, search: 'test' });
+    });
 
     it('omits search when name filter value is empty string', () => {
       const filters = buildApiFilters(
         { pageIndex: 0, pageSize: 10 },
         [],
-        [{ id: 'name', value: '' }],
-      )
-      expect(filters).not.toHaveProperty('search')
-    })
+        [{ id: 'name', value: '' }]
+      );
+      expect(filters).not.toHaveProperty('search');
+    });
 
     it('maps category multiSelect to comma-joined categories', () => {
       const filters = buildApiFilters(
         { pageIndex: 1, pageSize: 25 },
         [],
-        [{ id: 'category', value: ['电子产品', '服装'] }],
-      )
-      expect(filters).toMatchObject({ page: 2, limit: 25, categories: '电子产品,服装' })
-    })
+        [{ id: 'category', value: ['电子产品', '服装'] }]
+      );
+      expect(filters).toMatchObject({ page: 2, limit: 25, categories: '电子产品,服装' });
+    });
 
     it('omits categories when category filter value is empty array', () => {
       const filters = buildApiFilters(
         { pageIndex: 0, pageSize: 10 },
         [],
-        [{ id: 'category', value: [] }],
-      )
-      expect(filters).not.toHaveProperty('categories')
-    })
+        [{ id: 'category', value: [] }]
+      );
+      expect(filters).not.toHaveProperty('categories');
+    });
 
     it('includes serialized sort when sorting is non-empty', () => {
-      const sort: SortingState = [{ id: 'name', desc: true }]
-      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, sort, [])
-      expect(filters.sort).toBe(JSON.stringify(sort))
-    })
+      const sort: SortingState = [{ id: 'name', desc: true }];
+      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, sort, []);
+      expect(filters.sort).toBe(JSON.stringify(sort));
+    });
 
     it('omits sort key when sorting is empty', () => {
-      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, [], [])
-      expect(filters).not.toHaveProperty('sort')
-    })
+      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, [], []);
+      expect(filters).not.toHaveProperty('sort');
+    });
 
     it('resets page to 1 when filters change (caller responsibility — verified via filter presence)', () => {
       // When filters are applied, the caller should reset page to 1.
@@ -135,49 +137,49 @@ describe('ProductTable — internal state', () => {
       const withFilters = buildApiFilters(
         { pageIndex: 0, pageSize: 10 },
         [],
-        [{ id: 'name', value: 'filtered' }],
-      )
-      expect(withFilters.page).toBe(1)
-      expect(withFilters.search).toBe('filtered')
-    })
-  })
+        [{ id: 'name', value: 'filtered' }]
+      );
+      expect(withFilters.page).toBe(1);
+      expect(withFilters.search).toBe('filtered');
+    });
+  });
 
   describe('useDataTablePageSize preference seed', () => {
     afterEach(() => {
-      localStorage.clear()
-    })
+      localStorage.clear();
+    });
 
     it('falls back to default page size 10 when localStorage is empty', async () => {
-      const { useDataTablePageSize } = await import('@/lib/data-table-page-size')
-      const { result } = renderHook(() => useDataTablePageSize({}))
-      expect(result.current.pageSize).toBe(10)
-    })
+      const { useDataTablePageSize } = await import('@/lib/data-table-page-size');
+      const { result } = renderHook(() => useDataTablePageSize({}));
+      expect(result.current.pageSize).toBe(10);
+    });
 
     it('seeds page size from localStorage preference', async () => {
-      localStorage.setItem('app-data-table-per-page', '50')
-      const { useDataTablePageSize } = await import('@/lib/data-table-page-size')
-      const { result } = renderHook(() => useDataTablePageSize({}))
-      expect(result.current.pageSize).toBe(50)
-    })
+      localStorage.setItem('app-data-table-per-page', '50');
+      const { useDataTablePageSize } = await import('@/lib/data-table-page-size');
+      const { result } = renderHook(() => useDataTablePageSize({}));
+      expect(result.current.pageSize).toBe(50);
+    });
 
     it('setPageSize writes to localStorage and updates state', async () => {
-      const { useDataTablePageSize } = await import('@/lib/data-table-page-size')
-      const { result } = renderHook(() => useDataTablePageSize({}))
-      expect(result.current.pageSize).toBe(10)
+      const { useDataTablePageSize } = await import('@/lib/data-table-page-size');
+      const { result } = renderHook(() => useDataTablePageSize({}));
+      expect(result.current.pageSize).toBe(10);
 
       act(() => {
-        result.current.setPageSize(100)
-      })
+        result.current.setPageSize(100);
+      });
 
-      expect(result.current.pageSize).toBe(100)
-      expect(localStorage.getItem('app-data-table-per-page')).toBe('100')
-    })
+      expect(result.current.pageSize).toBe(100);
+      expect(localStorage.getItem('app-data-table-per-page')).toBe('100');
+    });
 
     it('normalizes invalid page size values to default', async () => {
-      localStorage.setItem('app-data-table-per-page', '999')
-      const { useDataTablePageSize } = await import('@/lib/data-table-page-size')
-      const { result } = renderHook(() => useDataTablePageSize({}))
-      expect(result.current.pageSize).toBe(10)
-    })
-  })
-})
+      localStorage.setItem('app-data-table-per-page', '999');
+      const { useDataTablePageSize } = await import('@/lib/data-table-page-size');
+      const { result } = renderHook(() => useDataTablePageSize({}));
+      expect(result.current.pageSize).toBe(10);
+    });
+  });
+});

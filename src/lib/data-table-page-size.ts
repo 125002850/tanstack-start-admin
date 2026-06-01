@@ -15,13 +15,13 @@ const DATA_TABLE_PAGE_SIZE_OPTION_SET = new Set<number>(DATA_TABLE_PAGE_SIZE_OPT
  */
 export function readDataTablePageSize(): number | null {
   try {
-    if (typeof window === 'undefined') return null
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = Number.parseInt(raw, 10)
-    return isValidDataTablePageSize(parsed) ? parsed : null
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = Number.parseInt(raw, 10);
+    return isValidDataTablePageSize(parsed) ? parsed : null;
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -33,9 +33,9 @@ export function readDataTablePageSize(): number | null {
  */
 export function writeDataTablePageSize(pageSize: number): void {
   try {
-    if (typeof window === 'undefined') return
-    const normalized = normalizeDataTablePageSize(pageSize)
-    window.localStorage.setItem(STORAGE_KEY, String(normalized))
+    if (typeof window === 'undefined') return;
+    const normalized = normalizeDataTablePageSize(pageSize);
+    window.localStorage.setItem(STORAGE_KEY, String(normalized));
   } catch {
     // write blocked — degrade silently
   }

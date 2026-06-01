@@ -3,7 +3,6 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import type { Product } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
-import { CellAction } from './cell-action';
 import { CATEGORY_OPTIONS } from './options';
 
 export const columns: ColumnDef<Product>[] = [
@@ -12,11 +11,11 @@ export const columns: ColumnDef<Product>[] = [
     header: '图片',
     cell: ({ row }) => {
       return (
-        <div className='relative aspect-square'>
+        <div className='relative size-[40px] shrink-0 overflow-hidden rounded-lg'>
           <img
             src={row.getValue('photo_url')}
             alt={row.getValue('name')}
-            className='rounded-lg object-cover w-32px h-32px'
+            className='size-full object-cover'
           />
         </div>
       );
@@ -87,10 +86,5 @@ export const columns: ColumnDef<Product>[] = [
     meta: {
       label: '产品描述'
     }
-  },
-
-  {
-    id: 'actions',
-    cell: ({ row }) => <CellAction data={row.original} />
   }
 ];

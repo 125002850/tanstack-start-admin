@@ -12,12 +12,12 @@ const meta = defineRouteMeta({
     group: 'account',
     order: 10,
     icon: 'notification',
-    shortcut: ['n', 'n'],
+    shortcut: ['n', 'n']
   },
   page: {
     title: 'Notifications',
-    description: 'View and manage all your notifications.',
-  },
+    description: 'View and manage all your notifications.'
+  }
 });
 
 export const Route = createFileRoute('/dashboard/notifications')({
@@ -27,9 +27,6 @@ export const Route = createFileRoute('/dashboard/notifications')({
 
 function NotificationsPageComponent() {
   return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/notifications'
-      render={() => <NotificationsPage />}
-    />
-  )
+    <WorkspacePageBoundary tabId='/dashboard/notifications' render={() => <NotificationsPage />} />
+  );
 }

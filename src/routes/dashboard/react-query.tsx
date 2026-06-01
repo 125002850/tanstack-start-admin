@@ -16,13 +16,13 @@ const meta = defineRouteMeta({
     visible: true,
     group: 'components',
     order: 20,
-    icon: 'code',
+    icon: 'code'
   },
   page: {
     title: 'React Query',
     description: 'Server prefetch + client hydration + suspense query pattern.',
-    infoContent: reactQueryInfoContent,
-  },
+    infoContent: reactQueryInfoContent
+  }
 });
 
 export const Route = createFileRoute('/dashboard/react-query')({
@@ -35,11 +35,8 @@ export const Route = createFileRoute('/dashboard/react-query')({
 
 function ReactQueryPage() {
   return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/react-query'
-      render={() => <ReactQueryContent />}
-    />
-  )
+    <WorkspacePageBoundary tabId='/dashboard/react-query' render={() => <ReactQueryContent />} />
+  );
 }
 
 function ReactQueryContent() {

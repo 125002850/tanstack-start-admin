@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
-import UserListingPage from '@/features/users/components/user-listing'
-import UsersScreen from '@/features/users/components/users-screen'
-import { defineRouteMeta } from '@/lib/router/app-route-meta'
-import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary'
+import { createFileRoute } from '@tanstack/react-router';
+import UserListingPage from '@/features/users/components/user-listing';
+import UsersScreen from '@/features/users/components/users-screen';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
+import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
 
 const meta = defineRouteMeta({
   label: '用户',
@@ -17,12 +17,12 @@ const meta = defineRouteMeta({
   workspace: {
     refreshPolicy: 'query-invalidate'
   }
-})
+});
 
 export const Route = createFileRoute('/dashboard/users')({
   ...meta,
   component: UsersPage
-})
+});
 
 function UsersPage() {
   return (
@@ -31,5 +31,5 @@ function UsersPage() {
       render={() => <UsersScreen />}
       renderWhenDisabled={() => <UserListingPage />}
     />
-  )
+  );
 }

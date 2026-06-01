@@ -49,7 +49,8 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
   const { isMobile, state } = useSidebar();
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
   const hasChildren = Boolean(item.items?.length);
-  const hasActiveChild = item.items?.some((subItem) => isRouteActive(pathname, subItem.url)) ?? false;
+  const hasActiveChild =
+    item.items?.some((subItem) => isRouteActive(pathname, subItem.url)) ?? false;
   const isActive = isRouteActive(pathname, item.url) || hasActiveChild;
   const isCollapsedDesktop = state === 'collapsed' && !isMobile;
   const [open, setOpen] = React.useState(() => hasActiveChild);
@@ -141,7 +142,7 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
   }, [flyoutOpen, releaseFlyoutFocus]);
 
   if (!hasChildren) {
-    const isLinkable = item.linkable !== false
+    const isLinkable = item.linkable !== false;
     return (
       <SidebarMenuItem>
         <SidebarMenuButton asChild={isLinkable} tooltip={item.title} isActive={isActive}>
@@ -283,7 +284,10 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
               const isSubLinkable = subItem.linkable !== false;
               return (
                 <SidebarMenuSubItem key={subItem.id}>
-                  <SidebarMenuSubButton asChild={isSubLinkable} isActive={isRouteActive(pathname, subItem.url)}>
+                  <SidebarMenuSubButton
+                    asChild={isSubLinkable}
+                    isActive={isRouteActive(pathname, subItem.url)}
+                  >
                     {isSubLinkable ? (
                       <Link to={subItem.url}>
                         <span>{subItem.title}</span>
@@ -307,7 +311,7 @@ export default function AppSidebar() {
   const router = useRouter();
   const navGroups = React.useMemo(
     () => buildNavGroupsFromRoutes(router.routesById),
-    [router.routesById],
+    [router.routesById]
   );
   const filteredGroups = useFilteredNavGroups(navGroups);
 

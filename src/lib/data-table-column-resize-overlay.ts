@@ -1,4 +1,4 @@
-const DEFAULT_MIN_SIZE = 80
+const DEFAULT_MIN_SIZE = 80;
 
 /**
  * Clamp a preview width to column min/max constraints.
@@ -8,23 +8,23 @@ export function clampWidth(
   startWidth: number,
   deltaX: number,
   minSize?: number,
-  maxSize?: number,
+  maxSize?: number
 ): number {
-  const min = minSize ?? DEFAULT_MIN_SIZE
-  const max = maxSize ?? Number.MAX_SAFE_INTEGER
-  const raw = startWidth + deltaX
-  if (raw < min) return min
-  if (raw > max) return max
-  return raw
+  const min = minSize ?? DEFAULT_MIN_SIZE;
+  const max = maxSize ?? Number.MAX_SAFE_INTEGER;
+  const raw = startWidth + deltaX;
+  if (raw < min) return min;
+  if (raw > max) return max;
+  return raw;
 }
 
 export interface OverlayPositionParams {
   /** The column th's left edge relative to viewport */
-  columnLeft: number
+  columnLeft: number;
   /** The overlay root's left edge relative to viewport */
-  rootLeft: number
+  rootLeft: number;
   /** The scroll viewport's current scrollLeft (horizontal scroll offset) */
-  scrollLeft: number
+  scrollLeft: number;
 }
 
 /**
@@ -33,5 +33,5 @@ export interface OverlayPositionParams {
  * when the user has scrolled right.
  */
 export function calculateOverlayLeft(params: OverlayPositionParams): number {
-  return params.columnLeft - params.rootLeft + params.scrollLeft
+  return params.columnLeft - params.rootLeft + params.scrollLeft;
 }

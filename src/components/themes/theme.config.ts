@@ -6,31 +6,31 @@ export const DEFAULT_THEME = 'vercel';
 
 export const THEMES = [
   {
-    name: 'Claude',
+    name: '暖砂',
     value: 'claude'
   },
   {
-    name: '野性主义',
+    name: '荒原',
     value: 'neobrutualism'
   },
   {
-    name: 'Supabase',
+    name: '云杉',
     value: 'supabase'
   },
   {
-    name: 'Vercel',
+    name: '极夜',
     value: 'vercel'
   },
   {
-    name: '单色',
+    name: '墨影',
     value: 'mono'
   },
   {
-    name: '笔记本',
+    name: '纸境',
     value: 'notebook'
   },
   {
-    name: '浅绿',
+    name: '浅春',
     value: 'light-green'
   },
   {
@@ -42,7 +42,7 @@ export const THEMES = [
     value: 'astro-vista'
   },
   {
-    name: 'WhatsApp',
+    name: '林深',
     value: 'whatsapp'
   }
 ];

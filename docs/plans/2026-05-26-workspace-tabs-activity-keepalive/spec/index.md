@@ -101,25 +101,25 @@ graph TD
 
 ## Task Table
 
-| Task | Spec | Depends On | Parallel Group |
-|------|------|------------|----------------|
-| Task 01 | [task-01-test-infra-baseline.md](task-01-test-infra-baseline.md) | - | A |
-| Task 02 | [task-02-route-workspace-contract.md](task-02-route-workspace-contract.md) | - | A |
-| Task 03 | [task-03-tags-store-and-header-bar.md](task-03-tags-store-and-header-bar.md) | Task 01, Task 02 | B |
-| Task 04 | [task-04-route-state-and-table-adapter.md](task-04-route-state-and-table-adapter.md) | Task 01, Task 02 | B |
-| Task 05 | [task-05-viewport-and-route-hosting.md](task-05-viewport-and-route-hosting.md) | Task 03, Task 04 | - |
-| Task 06 | [task-06-product-list-workspace-migration.md](task-06-product-list-workspace-migration.md) | Task 04, Task 05 | C |
-| Task 07 | [task-07-users-list-workspace-migration.md](task-07-users-list-workspace-migration.md) | Task 04, Task 05 | C |
-| Task 08 | [task-08-regression-devtools-and-rollout.md](task-08-regression-devtools-and-rollout.md) | Task 06, Task 07 | - |
+| Task    | Spec                                                                                       | Depends On       | Parallel Group |
+| ------- | ------------------------------------------------------------------------------------------ | ---------------- | -------------- |
+| Task 01 | [task-01-test-infra-baseline.md](task-01-test-infra-baseline.md)                           | -                | A              |
+| Task 02 | [task-02-route-workspace-contract.md](task-02-route-workspace-contract.md)                 | -                | A              |
+| Task 03 | [task-03-tags-store-and-header-bar.md](task-03-tags-store-and-header-bar.md)               | Task 01, Task 02 | B              |
+| Task 04 | [task-04-route-state-and-table-adapter.md](task-04-route-state-and-table-adapter.md)       | Task 01, Task 02 | B              |
+| Task 05 | [task-05-viewport-and-route-hosting.md](task-05-viewport-and-route-hosting.md)             | Task 03, Task 04 | -              |
+| Task 06 | [task-06-product-list-workspace-migration.md](task-06-product-list-workspace-migration.md) | Task 04, Task 05 | C              |
+| Task 07 | [task-07-users-list-workspace-migration.md](task-07-users-list-workspace-migration.md)     | Task 04, Task 05 | C              |
+| Task 08 | [task-08-regression-devtools-and-rollout.md](task-08-regression-devtools-and-rollout.md)   | Task 06, Task 07 | -              |
 
 ## Coordinator Assignment
 
-| Scope | Coordinator | Tasks |
-|-------|-------------|-------|
-| Global | 首席执行代理 | Task 01-08 |
-| Workspace Shell | 前端主程 / 子代理 | Task 03-05 |
-| Feature Migration | 列表页迁移子代理 | Task 06-07 |
-| Release Gate | 评审代理 | Task 08 |
+| Scope             | Coordinator       | Tasks      |
+| ----------------- | ----------------- | ---------- |
+| Global            | 首席执行代理      | Task 01-08 |
+| Workspace Shell   | 前端主程 / 子代理 | Task 03-05 |
+| Feature Migration | 列表页迁移子代理  | Task 06-07 |
+| Release Gate      | 评审代理          | Task 08    |
 
 ## Execution Notes
 

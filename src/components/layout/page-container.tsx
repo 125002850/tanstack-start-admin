@@ -40,9 +40,7 @@ export default function PageContainer({
     return (
       <div className='flex flex-1 items-center justify-center p-4 md:px-6'>
         {accessFallback ?? (
-          <div className='text-muted-foreground text-center text-lg'>
-            您没有访问此页面的权限
-          </div>
+          <div className='text-muted-foreground text-center text-lg'>您没有访问此页面的权限</div>
         )}
       </div>
     );

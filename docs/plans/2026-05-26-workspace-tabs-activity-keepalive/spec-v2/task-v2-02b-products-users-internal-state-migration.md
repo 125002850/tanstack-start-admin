@@ -63,7 +63,7 @@
    - `product-workspace-definition.ts` / `.test.ts`
    - `users-workspace-definition.ts` / `.test.ts`
    - `use-bridged-search-adapter.ts` / `.test.ts`
-   这些文件要么被删除，要么保留为明确的 deprecated / inventory-only 资产，但不得再被 products/users v2 主链路引用。
+     这些文件要么被删除，要么保留为明确的 deprecated / inventory-only 资产，但不得再被 products/users v2 主链路引用。
 6. 跑 `rg` 零 import gate，证明 products/users 在 flag-on 主链路下已退出 definition / bridged adapter 依赖。
 
 ## Notes For Executor

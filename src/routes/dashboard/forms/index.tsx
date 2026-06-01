@@ -10,8 +10,8 @@ const meta = defineRouteMeta({
     order: 10,
     kind: 'container',
     icon: 'forms',
-    linkable: false,
-  },
+    linkable: false
+  }
 });
 
 export const Route = createFileRoute('/dashboard/forms/')({

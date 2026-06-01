@@ -1,72 +1,72 @@
-import { AlertModal } from '@/components/modal/alert-modal'
-import { Button } from '@/components/ui/button'
+import { AlertModal } from '@/components/modal/alert-modal';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Icons } from '@/components/icons'
-import * as React from 'react'
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Icons } from '@/components/icons';
+import * as React from 'react';
 
 export interface DataTableRowAction<TData> {
-  label: string
-  icon: React.ReactNode
-  onClick?: (row: TData) => void | Promise<void>
+  label: string;
+  icon: React.ReactNode;
+  onClick?: (row: TData) => void | Promise<void>;
   confirmDelete?: {
-    title?: string
-    description?: (row: TData) => string
-  }
+    title?: string;
+    description?: (row: TData) => string;
+  };
   Sheet?: React.ComponentType<{
-    data: TData
-    open: boolean
-    onOpenChange: (open: boolean) => void
-  }>
+    data: TData;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }>;
 }
 
 interface DataTableRowActionsProps<TData> {
-  row: TData
-  actions: DataTableRowAction<TData>[]
-  maxVisible?: number
+  row: TData;
+  actions: DataTableRowAction<TData>[];
+  maxVisible?: number;
 }
 
 export function DataTableRowActions<TData>({
   row,
   actions,
-  maxVisible = 2,
+  maxVisible = 2
 }: DataTableRowActionsProps<TData>) {
-  const [deleteAction, setDeleteAction] = React.useState<DataTableRowAction<TData> | null>(null)
-  const [isDeleting, setIsDeleting] = React.useState(false)
-  const [sheetAction, setSheetAction] = React.useState<DataTableRowAction<TData> | null>(null)
+  const [deleteAction, setDeleteAction] = React.useState<DataTableRowAction<TData> | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [sheetAction, setSheetAction] = React.useState<DataTableRowAction<TData> | null>(null);
 
   const handleClick = React.useCallback(
     async (action: DataTableRowAction<TData>) => {
       if (action.confirmDelete) {
-        setDeleteAction(action)
-        return
+        setDeleteAction(action);
+        return;
       }
       if (action.Sheet) {
-        setSheetAction(action)
-        return
+        setSheetAction(action);
+        return;
       }
-      await action.onClick?.(row)
+      await action.onClick?.(row);
     },
-    [row],
-  )
+    [row]
+  );
 
   const handleDeleteConfirm = React.useCallback(async () => {
-    if (!deleteAction?.onClick) return
-    setIsDeleting(true)
+    if (!deleteAction?.onClick) return;
+    setIsDeleting(true);
     try {
-      await deleteAction.onClick(row)
+      await deleteAction.onClick(row);
     } finally {
-      setIsDeleting(false)
-      setDeleteAction(null)
+      setIsDeleting(false);
+      setDeleteAction(null);
     }
-  }, [deleteAction, row])
+  }, [deleteAction, row]);
 
-  const visibleActions = actions.slice(0, maxVisible)
-  const moreActions = actions.slice(maxVisible)
+  const visibleActions = actions.slice(0, maxVisible);
+  const moreActions = actions.slice(maxVisible);
 
   return (
     <>
@@ -85,7 +85,7 @@ export function DataTableRowActions<TData>({
           data={row}
           open={!!sheetAction}
           onOpenChange={(open) => {
-            if (!open) setSheetAction(null)
+            if (!open) setSheetAction(null);
           }}
         />
       )}
@@ -121,5 +121,5 @@ export function DataTableRowActions<TData>({
         )}
       </div>
     </>
-  )
+  );
 }

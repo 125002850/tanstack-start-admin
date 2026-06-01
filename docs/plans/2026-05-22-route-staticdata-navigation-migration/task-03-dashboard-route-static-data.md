@@ -51,8 +51,8 @@
 ```ts
 const staticData = defineAppRouteStaticData({
   label: '控制台',
-  breadcrumb: { label: '控制台' },
-})
+  breadcrumb: { label: '控制台' }
+});
 ```
 
 该路由不提供 `nav`。
@@ -109,7 +109,7 @@ breadcrumb: {
 每个已声明文档标题的 route 都按以下模式收口：
 
 ```ts
-head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] })
+head: () => ({ meta: [{ title: staticData.documentTitle ?? staticData.label }] });
 ```
 
 ## Step 6: Run verification

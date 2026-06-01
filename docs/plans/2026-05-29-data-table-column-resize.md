@@ -25,31 +25,38 @@
 **Type:** `infra`
 
 **Files**
+
 - Modify: `src/config/data-table.ts`
 - Create: `src/lib/data-table-column-resize-storage.ts`
 - Create: `src/lib/data-table-column-resize-storage.test.ts`
 
 **Shared Runtime Contracts**
+
 - `none`
 
 **Invariants**
+
 - 现有 `dataTableConfig` 结构与类型不变
 - `DataTableConfig` 类型自动从 `typeof dataTableConfig` 推导
 
 **Constraints**
+
 - 不修改 `data-table-page-size` 的 localStorage 逻辑
 - 不引入新的第三方依赖
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-1-core` 测试通过
 - [ ] `npx tsc --noEmit` 零错误
 
 **Verification Profile**
+
 - `profile: task-1-core`
   - `npx vitest run src/lib/data-table-column-resize-storage.test.ts`
 - `Expected Signals:` 全部测试通过
 
 **Verification Strategy**
+
 - `TDD` — 先写测试，再写实现
 
 ---
@@ -67,78 +74,68 @@ columnResizeStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false
 缓存结构带 version，为未来迁移预留空间：
 
 ```ts
-export type ColumnResizeStorageMode = 'localStorage' | 'sessionStorage' | false
+export type ColumnResizeStorageMode = 'localStorage' | 'sessionStorage' | false;
 
 // Key pattern: data-table:${tableId}:column-sizing
 // Resource-oriented naming groups all table-scoped keys under the same prefix.
 function storageKey(tableId: string): string {
-  return `data-table:${tableId}:column-sizing`
+  return `data-table:${tableId}:column-sizing`;
 }
-const CACHE_VERSION = 1
+const CACHE_VERSION = 1;
 
 interface ColumnSizingCache {
-  version: number
-  sizing: Record<string, number>
+  version: number;
+  sizing: Record<string, number>;
 }
 
 function resolveStorage(mode: 'localStorage' | 'sessionStorage'): Storage {
-  return mode === 'sessionStorage' ? sessionStorage : localStorage
+  return mode === 'sessionStorage' ? sessionStorage : localStorage;
 }
 
 export function loadColumnSizing(
   tableId: string,
-  mode: ColumnResizeStorageMode,
+  mode: ColumnResizeStorageMode
 ): Record<string, number> {
-  if (mode === false) return {}
+  if (mode === false) return {};
   try {
-    const raw = resolveStorage(mode).getItem(storageKey(tableId))
-    if (!raw) return {}
-    const parsed: unknown = JSON.parse(raw)
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      Array.isArray(parsed)
-    ) return {}
-    const cache = parsed as ColumnSizingCache
+    const raw = resolveStorage(mode).getItem(storageKey(tableId));
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    const cache = parsed as ColumnSizingCache;
     // Version mismatch invalidates cache
-    if (cache.version !== CACHE_VERSION) return {}
-    if (typeof cache.sizing !== 'object' || cache.sizing === null) return {}
-    const result: Record<string, number> = {}
+    if (cache.version !== CACHE_VERSION) return {};
+    if (typeof cache.sizing !== 'object' || cache.sizing === null) return {};
+    const result: Record<string, number> = {};
     for (const [key, value] of Object.entries(cache.sizing)) {
       if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-        result[key] = value
+        result[key] = value;
       }
     }
-    return result
+    return result;
   } catch {
-    return {}
+    return {};
   }
 }
 
 export function saveColumnSizing(
   tableId: string,
   sizing: Record<string, number>,
-  mode: ColumnResizeStorageMode,
+  mode: ColumnResizeStorageMode
 ): void {
-  if (mode === false) return
+  if (mode === false) return;
   try {
-    const cache: ColumnSizingCache = { version: CACHE_VERSION, sizing }
-    resolveStorage(mode).setItem(
-      storageKey(tableId),
-      JSON.stringify(cache),
-    )
+    const cache: ColumnSizingCache = { version: CACHE_VERSION, sizing };
+    resolveStorage(mode).setItem(storageKey(tableId), JSON.stringify(cache));
   } catch {
     // storage full or unavailable — silently ignore
   }
 }
 
-export function clearColumnSizing(
-  tableId: string,
-  mode: ColumnResizeStorageMode,
-): void {
-  if (mode === false) return
+export function clearColumnSizing(tableId: string, mode: ColumnResizeStorageMode): void {
+  if (mode === false) return;
   try {
-    resolveStorage(mode).removeItem(storageKey(tableId))
+    resolveStorage(mode).removeItem(storageKey(tableId));
   } catch {
     // silently ignore
   }
@@ -148,6 +145,7 @@ export function clearColumnSizing(
 #### 新建 `src/lib/data-table-column-resize-storage.test.ts`
 
 覆盖场景：
+
 1. `loadColumnSizing` 正确读取有效缓存（含 `version: 1` + `sizing`）
 2. `loadColumnSizing` 无缓存时返回 `{}`
 3. `loadColumnSizing` mode=false 时返回 `{}`
@@ -178,26 +176,32 @@ export function clearColumnSizing(
 **Type:** `behavior`
 
 **Files**
+
 - Modify: `src/types/data-table.ts`
 - Modify: `src/hooks/use-data-table.ts`
 
 **Shared Runtime Contracts**
+
 - `none`
 
 **Invariants**
+
 - 现有 state（pagination/sorting/filters/rowSelection）行为不变
 - adapter mode 与 internal mode 均正常工作
 - 无 `tableId` 时 resize 仍可用（仅无持久化）
 
 **Constraints**
+
 - `tableId` 必须在组件生命周期内保持稳定（类似 `queryKey`）。切换 tableId 需要重新挂载组件，不支持运行时动态切换
 - 本 task 不引入持久化逻辑（留给 Task 4）
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-2-regression` 现有测试全绿
 - [ ] `npx tsc --noEmit` 零错误
 
 **Verification Profile**
+
 - `profile: task-2-regression`
   - `npx vitest run src/hooks/use-data-table.internal-state.test.tsx`
   - `npx vitest run src/features/users/components/users-table.internal-state.test.tsx`
@@ -205,6 +209,7 @@ export function clearColumnSizing(
 - `Expected Signals:` 全部通过，无新增失败
 
 **Verification Strategy**
+
 - `regression guard`
 
 ---
@@ -214,7 +219,7 @@ export function clearColumnSizing(
 在文件末尾新增：
 
 ```ts
-export type ColumnResizeStorageMode = 'localStorage' | 'sessionStorage' | false
+export type ColumnResizeStorageMode = 'localStorage' | 'sessionStorage' | false;
 ```
 
 #### 修改 `src/hooks/use-data-table.ts`
@@ -228,7 +233,7 @@ type ColumnSizingState,
 **新增 import：**
 
 ```ts
-import { dataTableConfig, type ColumnResizeStorageMode } from '@/config/data-table'
+import { dataTableConfig, type ColumnResizeStorageMode } from '@/config/data-table';
 ```
 
 **在 `UseDataTableProps` 中新增字段：**
@@ -243,19 +248,16 @@ onColumnResizeEnd?: (columnKey: string, width: number) => void
 
 ```ts
 const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(
-  initialState?.columnSizing ?? {},
-)
+  initialState?.columnSizing ?? {}
+);
 
-const onColumnSizingChange = React.useCallback(
-  (updaterOrValue: Updater<ColumnSizingState>) => {
-    setColumnSizing((prev) =>
-      typeof updaterOrValue === 'function'
-        ? (updaterOrValue as (prev: ColumnSizingState) => ColumnSizingState)(prev)
-        : updaterOrValue,
-    )
-  },
-  [],
-)
+const onColumnSizingChange = React.useCallback((updaterOrValue: Updater<ColumnSizingState>) => {
+  setColumnSizing((prev) =>
+    typeof updaterOrValue === 'function'
+      ? (updaterOrValue as (prev: ColumnSizingState) => ColumnSizingState)(prev)
+      : updaterOrValue
+  );
+}, []);
 ```
 
 **修改 `useReactTable` 调用：**
@@ -293,24 +295,29 @@ defaultColumn: {
 **Type:** `behavior`
 
 **Files**
+
 - Create: `src/components/ui/table/data-table-column-resize-handle.tsx`
 - Modify: `src/components/ui/table/data-table.tsx`
 
 **Shared Runtime Contracts**
+
 - `none`
 
 **Invariants**
+
 - 排序、筛选功能不受影响
 - selection 列不可拖拽（`enableResizing: false` → `getCanResize()` 返回 false → 不渲染 handle）
 - 虚拟滚动模式下列宽调整正常（`getCommonPinningStyles` 已包含 `width: column.getSize()`）
 - 拖拽过程中 userSelect 被禁用，释放后恢复
 
 **Constraints**
+
 - 不修改 `DataTableColumnHeader` 组件
 - 不修改列定义文件（columns.tsx）
 - resize handle 在 `TableHead` 层统一渲染，对所有 header 类型生效
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-3-regression` 现有测试全绿
 - [ ] 拖拽列右边缘可调整列宽
 - [ ] Hover 时显示 `col-resize` 光标
@@ -318,14 +325,17 @@ defaultColumn: {
 - [ ] 拖拽中禁止文本选中，释放后恢复
 
 **Verification Profile**
+
 - `profile: task-3-regression`
   - `npx vitest run src/components/ui/table/data-table.test.tsx`
 - `Expected Signals:` 现有测试通过
 
 **Verification Strategy**
+
 - `regression guard` + manual browser smoke
 
 **Manual Verification Exception**
+
 - `Waiver Reason:` 拖拽交互的视觉反馈和光标变化需要真实浏览器环境验证，pointer 事件序列无法在单元测试中可靠模拟
 - `Automated Smoke Check:` `npx vitest run src/components/ui/table/data-table.test.tsx`
 - `Manual Verification Steps:`
@@ -346,51 +356,51 @@ defaultColumn: {
 使用 pointer capture + pointerup/pointercancel 管理 userSelect 和 cursor，替代 MutationObserver：
 
 ```tsx
-import { useRef, useCallback } from 'react'
-import type { Header } from '@tanstack/react-table'
+import { useRef, useCallback } from 'react';
+import type { Header } from '@tanstack/react-table';
 
 interface DataTableColumnResizeHandleProps<TData> {
-  header: Header<TData, unknown>
+  header: Header<TData, unknown>;
 }
 
 export function DataTableColumnResizeHandle<TData>({
-  header,
+  header
 }: DataTableColumnResizeHandleProps<TData>) {
-  if (!header.column.getCanResize()) return null
+  if (!header.column.getCanResize()) return null;
 
-  const isResizingRef = useRef(false)
+  const isResizingRef = useRef(false);
 
   const cleanup = useCallback(() => {
-    if (!isResizingRef.current) return
-    isResizingRef.current = false
-    document.body.style.userSelect = ''
-    document.body.style.cursor = ''
-  }, [])
+    if (!isResizingRef.current) return;
+    isResizingRef.current = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  }, []);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      e.stopPropagation()
-      isResizingRef.current = true
-      document.body.style.userSelect = 'none'
-      document.body.style.cursor = 'col-resize'
-      document.addEventListener('pointerup', cleanup, { once: true })
-      document.addEventListener('pointercancel', cleanup, { once: true })
-      header.getResizeHandler()(e)
+      e.stopPropagation();
+      isResizingRef.current = true;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+      document.addEventListener('pointerup', cleanup, { once: true });
+      document.addEventListener('pointercancel', cleanup, { once: true });
+      header.getResizeHandler()(e);
     },
-    [header, cleanup],
-  )
+    [header, cleanup]
+  );
 
   return (
     <div
       onPointerDown={handlePointerDown}
       onPointerDownCapture={(e) => e.stopPropagation()}
       onTouchStart={(e) => {
-        e.stopPropagation()
-        isResizingRef.current = true
-        document.body.style.userSelect = 'none'
-        document.addEventListener('touchend', cleanup, { once: true })
-        document.addEventListener('touchcancel', cleanup, { once: true })
-        header.getResizeHandler()(e)
+        e.stopPropagation();
+        isResizingRef.current = true;
+        document.body.style.userSelect = 'none';
+        document.addEventListener('touchend', cleanup, { once: true });
+        document.addEventListener('touchcancel', cleanup, { once: true });
+        header.getResizeHandler()(e);
       }}
       onTouchStartCapture={(e) => e.stopPropagation()}
       className='absolute top-0 right-0 h-full w-1.5 cursor-col-resize select-none touch-none z-10
@@ -399,11 +409,12 @@ export function DataTableColumnResizeHandle<TData>({
         data-[resizing=true]:before:bg-primary/30'
       data-resizing={header.column.getIsResizing()}
     />
-  )
+  );
 }
 ```
 
 关键设计：
+
 - `isResizingRef` 防止 `cleanup` 被多次调用（`header.getResizeHandler()` 内部可能也监听 pointerup）
 - `{ once: true }` 保证 listener 自动注销
 - `before:` 伪元素提供 6px 热区（视觉上 1.5px 的线太窄不易点击）
@@ -415,7 +426,7 @@ export function DataTableColumnResizeHandle<TData>({
 **新增 import：**
 
 ```ts
-import { DataTableColumnResizeHandle } from './data-table-column-resize-handle'
+import { DataTableColumnResizeHandle } from './data-table-column-resize-handle';
 ```
 
 **修改 `TableHead` 渲染，在 flexRender 之后添加 resize handle：**
@@ -425,12 +436,10 @@ import { DataTableColumnResizeHandle } from './data-table-column-resize-handle'
   key={header.id}
   colSpan={header.colSpan}
   style={{
-    ...getCommonPinningStyles({ column: header.column }),
+    ...getCommonPinningStyles({ column: header.column })
   }}
 >
-  {header.isPlaceholder
-    ? null
-    : flexRender(header.column.columnDef.header, header.getContext())}
+  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
   <DataTableColumnResizeHandle header={header} />
 </TableHead>
 ```
@@ -453,21 +462,26 @@ import { DataTableColumnResizeHandle } from './data-table-column-resize-handle'
 **Type:** `behavior`
 
 **Files**
+
 - Modify: `src/hooks/use-data-table.ts`
 
 **Shared Runtime Contracts**
+
 - `none`
 
 **Invariants**
+
 - 拖拽过程中不写 storage（通过 `columnSizingInfo.isResizingColumn` false→string→false 跃迁检测控制）
 - `onColumnResizeEnd` 在 resize 结束后仅对实际变更的列触发（prevSizingRef diff）
 - 无 `tableId` 时 resize 功能正常（仅无持久化）
 - `resetColumnSizing` 清除缓存并恢复为 `initialState.columnSizing` 或 `defaultColumn` 默认值
 
 **Constraints**
+
 - 只修改 `use-data-table.ts`，不改动其他文件
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-4-regression` 现有测试全绿
 - [ ] 拖拽列宽后刷新页面，列宽保持
 - [ ] 拖拽过程中无 storage 写入
@@ -475,6 +489,7 @@ import { DataTableColumnResizeHandle } from './data-table-column-resize-handle'
 - [ ] 调用 `resetColumnSizing()` 后列宽恢复默认，storage 缓存被清除
 
 **Verification Profile**
+
 - `profile: task-4-regression`
   - `npx vitest run src/hooks/use-data-table.internal-state.test.tsx`
   - `npx vitest run src/features/users/components/users-table.internal-state.test.tsx`
@@ -482,9 +497,11 @@ import { DataTableColumnResizeHandle } from './data-table-column-resize-handle'
 - `Expected Signals:` 全部通过
 
 **Verification Strategy**
+
 - `regression guard` + manual browser smoke
 
 **Manual Verification Exception**
+
 - `Waiver Reason:` localStorage 持久化行为需要浏览器环境验证
 - `Automated Smoke Check:` `npx vitest run src/hooks/use-data-table.internal-state.test.tsx`
 - `Manual Verification Steps:`
@@ -503,35 +520,36 @@ import { DataTableColumnResizeHandle } from './data-table-column-resize-handle'
 **新增 import：**
 
 ```ts
-import { loadColumnSizing, saveColumnSizing } from '@/lib/data-table-column-resize-storage'
+import { loadColumnSizing, saveColumnSizing } from '@/lib/data-table-column-resize-storage';
 ```
 
 **Step A — 在 hook 顶部计算 storage mode**（放在所有 `useState` 之前，确保 hook 顺序稳定）：
 
 ```ts
 const resolvedStorageMode: ColumnResizeStorageMode = React.useMemo(
-  () => (props.columnResizeStorage ?? dataTableConfig.columnResizeStorage) as ColumnResizeStorageMode,
-  [props.columnResizeStorage],
-)
+  () =>
+    (props.columnResizeStorage ?? dataTableConfig.columnResizeStorage) as ColumnResizeStorageMode,
+  [props.columnResizeStorage]
+);
 ```
 
 **Step B — 修改 `columnSizing` 的 `useState` initializer**，将缓存合并前移到受控 state 的初始值中（而非 `useReactTable` 的 `initialState`）：
 
 Task 2 中写的是：
+
 ```ts
 const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(
-  initialState?.columnSizing ?? {},
-)
+  initialState?.columnSizing ?? {}
+);
 ```
 
 Task 4 改为：
+
 ```ts
 const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => ({
   ...initialState?.columnSizing,
-  ...(props.tableId
-    ? loadColumnSizing(props.tableId, resolvedStorageMode)
-    : {}),
-}))
+  ...(props.tableId ? loadColumnSizing(props.tableId, resolvedStorageMode) : {})
+}));
 ```
 
 合并顺序：`initialState.columnSizing` 在前，用户缓存在后 → 缓存优先。无 `tableId` 时跳过 storage 查询。
@@ -547,45 +565,41 @@ TanStack 中 `state.columnSizing`（受控）会覆盖 `initialState.columnSizin
 // ── Seed prevSizingRef with initial sizing so the first resize-end
 //     only fires for columns that actually changed. ───────────────────
 
-const prevSizingRef = React.useRef<ColumnSizingState>({})
+const prevSizingRef = React.useRef<ColumnSizingState>({});
 
 React.useEffect(() => {
-  prevSizingRef.current = table.getState().columnSizing
-}, [])
+  prevSizingRef.current = table.getState().columnSizing;
+}, []);
 
 // ── Persistence: write to storage only on resize-end ─────────────────
 
-const prevIsResizingRef = React.useRef<string | false>(false)
+const prevIsResizingRef = React.useRef<string | false>(false);
 
-const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
+const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn;
 
 React.useEffect(() => {
-  const wasResizing = !!prevIsResizingRef.current
-  const isResizing = !!isResizingColumn
-  prevIsResizingRef.current = isResizingColumn
+  const wasResizing = !!prevIsResizingRef.current;
+  const isResizing = !!isResizingColumn;
+  prevIsResizingRef.current = isResizingColumn;
 
   if (wasResizing && !isResizing) {
     // Resize just ended — persist
-    const currentSizing = table.getState().columnSizing
+    const currentSizing = table.getState().columnSizing;
     if (props.tableId && resolvedStorageMode !== false) {
-      saveColumnSizing(
-        props.tableId,
-        currentSizing as Record<string, number>,
-        resolvedStorageMode,
-      )
+      saveColumnSizing(props.tableId, currentSizing as Record<string, number>, resolvedStorageMode);
     }
     // Only fire for columns that actually changed
     if (props.onColumnResizeEnd) {
-      const prev = prevSizingRef.current
+      const prev = prevSizingRef.current;
       for (const [key, width] of Object.entries(currentSizing)) {
         if (typeof width === 'number' && prev[key] !== width) {
-          props.onColumnResizeEnd(key, width)
+          props.onColumnResizeEnd(key, width);
         }
       }
     }
-    prevSizingRef.current = { ...currentSizing }
+    prevSizingRef.current = { ...currentSizing };
   }
-}, [isResizingColumn])
+}, [isResizingColumn]);
 ```
 
 第一个 effect（`[]` deps）在首次渲染后把 `prevSizingRef` 同步为当前列宽，确保后续 diff 不会误报。第二个 effect 依赖 `isResizingColumn`，仅在 resize 开始/结束时触发。
@@ -596,19 +610,19 @@ React.useEffect(() => {
 const resetColumnSizing = React.useCallback(() => {
   // Clear persisted cache
   if (props.tableId) {
-    clearColumnSizing(props.tableId, resolvedStorageMode)
+    clearColumnSizing(props.tableId, resolvedStorageMode);
   }
   // Reset to initialState.columnSizing or empty (falls back to defaultColumn.size)
-  setColumnSizing(initialState?.columnSizing ?? {})
+  setColumnSizing(initialState?.columnSizing ?? {});
   // Sync prevSizingRef so the next resize-end diff is valid
-  prevSizingRef.current = initialState?.columnSizing ?? {}
-}, [props.tableId, resolvedStorageMode, initialState?.columnSizing])
+  prevSizingRef.current = initialState?.columnSizing ?? {};
+}, [props.tableId, resolvedStorageMode, initialState?.columnSizing]);
 ```
 
 **修改 return 语句**，新增 `resetColumnSizing`：
 
 ```ts
-return { table, shallow, debounceMs, throttleMs: tableProps.throttleMs, resetColumnSizing }
+return { table, shallow, debounceMs, throttleMs: tableProps.throttleMs, resetColumnSizing };
 ```
 
 **保留 Task 2 中的 `onColumnSizingChange` 不变** — 它只更新 state，不写 storage。
@@ -628,29 +642,36 @@ return { table, shallow, debounceMs, throttleMs: tableProps.throttleMs, resetCol
 **Type:** `wiring`
 
 **Files**
+
 - Modify: `src/features/users/components/users-table/index.tsx`
 - Modify: `src/features/products/components/product-tables/index.tsx`
 
 **Shared Runtime Contracts**
+
 - `none`
 
 **Invariants**
+
 - 用户表、产品表行为不变
 
 **Constraints**
+
 - tableId 使用稳定的字符串常量
 
 **Acceptance Criteria**
+
 - [ ] `profile: task-5-regression` 现有测试全绿
 - [ ] `npx tsc --noEmit` 零错误
 
 **Verification Profile**
+
 - `profile: task-5-regression`
   - `npx vitest run src/features/users/components/users-table.internal-state.test.tsx`
   - `npx vitest run src/features/products/components/product-tables.internal-state.test.tsx`
 - `Expected Signals:` 全部通过
 
 **Verification Strategy**
+
 - `regression guard`
 
 ---
@@ -658,7 +679,7 @@ return { table, shallow, debounceMs, throttleMs: tableProps.throttleMs, resetCol
 #### 修改 `src/features/users/components/users-table/index.tsx`
 
 ```ts
-const USERS_TABLE_ID = 'user-list'
+const USERS_TABLE_ID = 'user-list';
 ```
 
 在 `useDataTable` 调用处添加：
@@ -666,14 +687,14 @@ const USERS_TABLE_ID = 'user-list'
 ```ts
 const { table } = useDataTable({
   // ... existing props
-  tableId: USERS_TABLE_ID,
-})
+  tableId: USERS_TABLE_ID
+});
 ```
 
 #### 修改 `src/features/products/components/product-tables/index.tsx`
 
 ```ts
-const PRODUCT_TABLE_ID = 'product-list'
+const PRODUCT_TABLE_ID = 'product-list';
 ```
 
 在 `useDataTable` 调用处添加：
@@ -681,8 +702,8 @@ const PRODUCT_TABLE_ID = 'product-list'
 ```ts
 const { table } = useDataTable({
   // ... existing props
-  tableId: PRODUCT_TABLE_ID,
-})
+  tableId: PRODUCT_TABLE_ID
+});
 ```
 
 ---
@@ -713,36 +734,42 @@ const { table } = useDataTable({
 <!-- Execution appended below during runtime -->
 
 ### Task 1 Execution
+
 - Result: pass
 - Files changed: `src/lib/data-table-column-resize-storage.ts` (create), `src/lib/data-table-column-resize-storage.test.ts` (create), `src/config/data-table.ts` (modify)
 - Verification: `npx vitest run src/lib/data-table-column-resize-storage.test.ts` -> 19 tests PASS; `npx tsc --noEmit` -> zero errors
 - Notes: none
 
 ### Task 2 Execution
+
 - Result: pass
 - Files changed: `src/types/data-table.ts` (add ColumnResizeStorageMode export), `src/hooks/use-data-table.ts` (add ColumnSizingState import, columnSizing state, onColumnSizingChange, useReactTable column resize config)
 - Verification: `profile: task-2-regression` -> 43 tests PASS; `npx tsc --noEmit` -> zero errors
 - Notes: none
 
 ### Task 3 Execution
+
 - Result: pass
 - Files changed: `src/components/ui/table/data-table-column-resize-handle.tsx` (create), `src/components/ui/table/data-table.tsx` (import + render handle in TableHead)
 - Verification: `npx vitest run src/components/ui/table/data-table.test.tsx` -> 6 tests PASS; `npx tsc --noEmit` -> zero errors
 - Notes: Manual browser verification deferred — drag interaction requires real browser environment. Automated tests pass.
 
 ### Task 4 Execution
+
 - Result: pass
 - Files changed: `src/hooks/use-data-table.ts` (add imports, resolvedStorageMode, useState initializer merge, prevSizingRef effect, persistence effect, resetColumnSizing)
 - Verification: `profile: task-4-regression` -> 43 tests PASS; `npx tsc --noEmit` -> zero errors
 - Notes: none
 
 ### Task 5 Execution
+
 - Result: pass
 - Files changed: `src/features/users/components/users-table/index.tsx` (add USERS_TABLE_ID + tableId prop), `src/features/products/components/product-tables/index.tsx` (add PRODUCT_TABLE_ID + tableId prop)
 - Verification: `profile: task-5-regression` -> 27 tests PASS; `npx tsc --noEmit` -> zero errors
 - Notes: none
 
 ### Final Verification
+
 - `npx tsc --noEmit` -> zero errors
 - `npx vitest run` -> 293 passed, 1 failed (pre-existing virtualization test, not caused by these changes)
 - Pre-existing failure verified by running same test on base commit — reproduces identically

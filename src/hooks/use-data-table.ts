@@ -17,15 +17,19 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable
-} from '@tanstack/react-table'
-import * as React from 'react'
+} from '@tanstack/react-table';
+import * as React from 'react';
 
-import { DEFAULT_DATA_TABLE_PAGE_SIZE } from '@/lib/data-table-page-size'
-import { loadColumnSizing, saveColumnSizing, clearColumnSizing } from '@/lib/data-table-column-resize-storage'
-import { dataTableConfig } from '@/config/data-table'
-import type { ColumnResizeStorageMode, ExtendedColumnSort } from '@/types/data-table'
+import { DEFAULT_DATA_TABLE_PAGE_SIZE } from '@/lib/data-table-page-size';
+import {
+  loadColumnSizing,
+  saveColumnSizing,
+  clearColumnSizing
+} from '@/lib/data-table-column-resize-storage';
+import { dataTableConfig } from '@/config/data-table';
+import type { ColumnResizeStorageMode, ExtendedColumnSort } from '@/types/data-table';
 
-const DEBOUNCE_MS = 300
+const DEBOUNCE_MS = 300;
 
 interface UseDataTableProps<TData>
   extends
@@ -40,20 +44,20 @@ interface UseDataTableProps<TData>
     >,
     Required<Pick<TableOptions<TData>, 'pageCount'>> {
   initialState?: Omit<Partial<TableState>, 'sorting'> & {
-    sorting?: ExtendedColumnSort<TData>[]
-  }
-  history?: 'push' | 'replace'
-  debounceMs?: number
-  throttleMs?: number
-  clearOnDefault?: boolean
-  enableAdvancedFilter?: boolean
-  pageSize?: number
-  onPageSizeChange?: (pageSize: number) => void
-  scroll?: boolean
-  startTransition?: React.TransitionStartFunction
-  tableId?: string
-  columnResizeStorage?: ColumnResizeStorageMode
-  onColumnResizeEnd?: (columnKey: string, width: number) => void
+    sorting?: ExtendedColumnSort<TData>[];
+  };
+  history?: 'push' | 'replace';
+  debounceMs?: number;
+  throttleMs?: number;
+  clearOnDefault?: boolean;
+  enableAdvancedFilter?: boolean;
+  pageSize?: number;
+  onPageSizeChange?: (pageSize: number) => void;
+  scroll?: boolean;
+  startTransition?: React.TransitionStartFunction;
+  tableId?: string;
+  columnResizeStorage?: ColumnResizeStorageMode;
+  onColumnResizeEnd?: (columnKey: string, width: number) => void;
 }
 
 /**
@@ -70,110 +74,119 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     pageSize: controlledPageSize,
     onPageSizeChange,
     ...tableProps
-  } = props
+  } = props;
 
   const resolvedStorageMode: ColumnResizeStorageMode = React.useMemo(
-    () => (props.columnResizeStorage ?? dataTableConfig.columnResizeStorage) as ColumnResizeStorageMode,
-    [props.columnResizeStorage],
-  )
+    () =>
+      (props.columnResizeStorage ?? dataTableConfig.columnResizeStorage) as ColumnResizeStorageMode,
+    [props.columnResizeStorage]
+  );
+
+  // ── Dev warning: tableId must not change at runtime ──────────────────
+  const initialTableIdRef = React.useRef(props.tableId);
+  React.useEffect(() => {
+    if (
+      import.meta.env.DEV &&
+      props.tableId !== initialTableIdRef.current &&
+      initialTableIdRef.current !== undefined
+    ) {
+      console.warn(
+        `[useDataTable] tableId changed from "${initialTableIdRef.current}" to "${props.tableId}" at runtime. ` +
+          'Column sizing persistence uses the initial tableId for storage keys. ' +
+          'Changing tableId will cause mismatched storage reads/writes.'
+      );
+    }
+  }, [props.tableId]);
 
   // ── Row selection / column visibility / column pinning (shared) ─────
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
     initialState?.rowSelection ?? {}
-  )
+  );
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(
     initialState?.columnVisibility ?? {}
-  )
+  );
   const [columnPinning, setColumnPinning] = React.useState<ColumnPinningState>(
     initialState?.columnPinning ?? {}
-  )
+  );
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => ({
     ...initialState?.columnSizing,
-    ...(props.tableId
-      ? loadColumnSizing(props.tableId, resolvedStorageMode)
-      : {}),
-  }))
+    ...(props.tableId ? loadColumnSizing(props.tableId, resolvedStorageMode) : {})
+  }));
 
-  const onColumnSizingChange = React.useCallback(
-    (updaterOrValue: Updater<ColumnSizingState>) => {
-      setColumnSizing((prev) =>
-        typeof updaterOrValue === 'function'
-          ? (updaterOrValue as (prev: ColumnSizingState) => ColumnSizingState)(prev)
-          : updaterOrValue,
-      )
-    },
-    [],
-  )
+  const onColumnSizingChange = React.useCallback((updaterOrValue: Updater<ColumnSizingState>) => {
+    setColumnSizing((prev) =>
+      typeof updaterOrValue === 'function'
+        ? (updaterOrValue as (prev: ColumnSizingState) => ColumnSizingState)(prev)
+        : updaterOrValue
+    );
+  }, []);
 
   // ── Pagination ──────────────────────────────────────────────────────
-  const perPage = controlledPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE
+  const perPage = controlledPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE;
 
   const [internalPagination, setInternalPagination] = React.useState<PaginationState>(() => ({
     pageIndex: initialState?.pagination?.pageIndex ?? 0,
-    pageSize: perPage,
-  }))
+    pageSize: perPage
+  }));
 
-  const pagination = internalPagination
+  const pagination = internalPagination;
 
   // Keep pageSize in sync with controlled prop changes
   React.useEffect(() => {
     setInternalPagination((prev) => {
-      if (prev.pageSize === perPage) return prev
-      return { ...prev, pageSize: perPage }
-    })
-  }, [perPage])
+      if (prev.pageSize === perPage) return prev;
+      return { ...prev, pageSize: perPage };
+    });
+  }, [perPage]);
 
   const internalOnPaginationChange = React.useCallback(
     (updaterOrValue: Updater<PaginationState>) => {
       setInternalPagination((prev) => {
-        const next = typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+        const next = typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue;
         if (next.pageSize !== prev.pageSize) {
-          onPageSizeChange?.(next.pageSize)
+          onPageSizeChange?.(next.pageSize);
         }
-        return next
-      })
+        return next;
+      });
     },
-    [onPageSizeChange],
-  )
+    [onPageSizeChange]
+  );
 
-  const onPaginationChange = internalOnPaginationChange
+  const onPaginationChange = internalOnPaginationChange;
 
   // ── Sorting ──────────────────────────────────────────────────────────
   const [internalSorting, setInternalSorting] = React.useState<SortingState>(
     initialState?.sorting ?? []
-  )
+  );
 
-  const sorting = internalSorting
+  const sorting = internalSorting;
 
-  const internalOnSortingChange = React.useCallback(
-    (updaterOrValue: Updater<SortingState>) => {
-      setInternalSorting((prev) =>
-        typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue,
-      )
-    },
-    [],
-  )
+  const internalOnSortingChange = React.useCallback((updaterOrValue: Updater<SortingState>) => {
+    setInternalSorting((prev) =>
+      typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+    );
+  }, []);
 
-  const onSortingChange = internalOnSortingChange
+  const onSortingChange = internalOnSortingChange;
 
   // ── Column filters ───────────────────────────────────────────────────
   const [internalColumnFilters, setInternalColumnFilters] = React.useState<ColumnFiltersState>(
     initialState?.columnFilters ?? []
-  )
+  );
 
-  const columnFilters = internalColumnFilters
+  const columnFilters = internalColumnFilters;
 
   const internalOnColumnFiltersChange = React.useCallback(
     (updaterOrValue: Updater<ColumnFiltersState>) => {
-      if (enableAdvancedFilter) return
+      if (enableAdvancedFilter) return;
       setInternalColumnFilters((prev) =>
-        typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue,
-      )
+        typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+      );
     },
-    [enableAdvancedFilter],
-  )
+    [enableAdvancedFilter]
+  );
 
-  const onColumnFiltersChange = internalOnColumnFiltersChange
+  const onColumnFiltersChange = internalOnColumnFiltersChange;
 
   // ── React Table (exactly one call, always in the same position) ──────
   const table = useReactTable({
@@ -188,13 +201,13 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       columnPinning,
       rowSelection,
       columnFilters,
-      columnSizing,
+      columnSizing
     },
     defaultColumn: {
       minSize: 80,
       size: 150,
       ...tableProps.defaultColumn,
-      enableColumnFilter: false,
+      enableColumnFilter: false
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -219,61 +232,61 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
     manualPagination: true,
     manualSorting: true,
-    manualFiltering: true,
-  })
+    manualFiltering: true
+  });
 
   // ── Seed prevSizingRef with initial sizing so the first resize-end
   //     only fires for columns that actually changed. ───────────────────
 
-  const prevSizingRef = React.useRef<ColumnSizingState>({})
+  const prevSizingRef = React.useRef<ColumnSizingState>({});
 
   React.useEffect(() => {
-    prevSizingRef.current = table.getState().columnSizing
+    prevSizingRef.current = table.getState().columnSizing;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   // ── Persistence: write to storage only on resize-end ─────────────────
 
-  const prevIsResizingRef = React.useRef<string | false>(false)
+  const prevIsResizingRef = React.useRef<string | false>(false);
 
-  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn
+  const isResizingColumn = table.getState().columnSizingInfo.isResizingColumn;
 
   React.useEffect(() => {
-    const wasResizing = !!prevIsResizingRef.current
-    const isResizing = !!isResizingColumn
-    prevIsResizingRef.current = isResizingColumn
+    const wasResizing = !!prevIsResizingRef.current;
+    const isResizing = !!isResizingColumn;
+    prevIsResizingRef.current = isResizingColumn;
 
     if (wasResizing && !isResizing) {
-      const currentSizing = table.getState().columnSizing
+      const currentSizing = table.getState().columnSizing;
       if (props.tableId && resolvedStorageMode !== false) {
         saveColumnSizing(
           props.tableId,
           currentSizing as Record<string, number>,
-          resolvedStorageMode,
-        )
+          resolvedStorageMode
+        );
       }
       if (props.onColumnResizeEnd) {
-        const prev = prevSizingRef.current
+        const prev = prevSizingRef.current;
         for (const [key, width] of Object.entries(currentSizing)) {
           if (typeof width === 'number' && prev[key] !== width) {
-            props.onColumnResizeEnd(key, width)
+            props.onColumnResizeEnd(key, width);
           }
         }
       }
-      prevSizingRef.current = { ...currentSizing }
+      prevSizingRef.current = { ...currentSizing };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isResizingColumn])
+  }, [isResizingColumn]);
 
   // ── Reset column sizing ──────────────────────────────────────────────
 
   const resetColumnSizing = React.useCallback(() => {
     if (props.tableId) {
-      clearColumnSizing(props.tableId, resolvedStorageMode)
+      clearColumnSizing(props.tableId, resolvedStorageMode);
     }
-    setColumnSizing(initialState?.columnSizing ?? {})
-    prevSizingRef.current = initialState?.columnSizing ?? {}
-  }, [props.tableId, resolvedStorageMode, initialState?.columnSizing])
+    setColumnSizing(initialState?.columnSizing ?? {});
+    prevSizingRef.current = initialState?.columnSizing ?? {};
+  }, [props.tableId, resolvedStorageMode, initialState?.columnSizing]);
 
-  return { table, debounceMs, throttleMs: tableProps.throttleMs, resetColumnSizing }
+  return { table, debounceMs, throttleMs: tableProps.throttleMs, resetColumnSizing };
 }

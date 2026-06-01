@@ -12,12 +12,12 @@ const meta = defineRouteMeta({
     group: 'overview',
     order: 40,
     icon: 'kanban',
-    shortcut: ['k', 'k'],
+    shortcut: ['k', 'k']
   },
   page: {
     title: 'Kanban',
-    description: 'Manage tasks with drag and drop',
-  },
+    description: 'Manage tasks with drag and drop'
+  }
 });
 
 export const Route = createFileRoute('/dashboard/kanban')({
@@ -26,10 +26,5 @@ export const Route = createFileRoute('/dashboard/kanban')({
 });
 
 function KanbanPage() {
-  return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/kanban'
-      render={() => <KanbanViewPage />}
-    />
-  )
+  return <WorkspacePageBoundary tabId='/dashboard/kanban' render={() => <KanbanViewPage />} />;
 }

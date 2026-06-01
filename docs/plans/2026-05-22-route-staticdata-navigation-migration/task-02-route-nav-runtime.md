@@ -34,9 +34,7 @@
 实现：
 
 ```ts
-export function buildNavGroupsFromRoutes(
-  routesById: Record<string, AnyRoute>,
-): NavGroup[] {
+export function buildNavGroupsFromRoutes(routesById: Record<string, AnyRoute>): NavGroup[] {
   // ...
 }
 ```
@@ -64,17 +62,17 @@ export function buildNavGroupsFromRoutes(
 
 ```ts
 for (const route of visibleRoutes) {
-  const meta = getAppRouteStaticData(route)!
-  const parentId = meta.nav?.parentId
+  const meta = getAppRouteStaticData(route)!;
+  const parentId = meta.nav?.parentId;
 
   if (parentId) {
-    const parent = visibleRoutesByFullPath.get(parentId)
-    invariant(parent && getAppRouteStaticData(parent)?.nav?.kind === 'container')
-    attachChild(parent, route)
-    continue
+    const parent = visibleRoutesByFullPath.get(parentId);
+    invariant(parent && getAppRouteStaticData(parent)?.nav?.kind === 'container');
+    attachChild(parent, route);
+    continue;
   }
 
-  attachTopLevel(route)
+  attachTopLevel(route);
 }
 ```
 

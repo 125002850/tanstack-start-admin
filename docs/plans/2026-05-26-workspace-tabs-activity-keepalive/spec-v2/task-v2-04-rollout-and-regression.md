@@ -55,14 +55,14 @@
 
 ## Release Gate Matrix
 
-| Gate | Mode | Scenario | Expected Result |
-|------|------|----------|-----------------|
-| `@workspace-v2` | flag-on | 列表页切到其他 tag 再切回 | table/filter/pagination 仍保留在同一页面实例内 |
-| `@workspace-v2` | flag-on | 当前页执行 `page.reload()` | 页面实例重建，table/form 状态回默认或 preference seed |
-| `@workspace-v2` | flag-on | 首次打开新详情/表单实例 | host 在同一导航周期渲染非空内容，无空白 viewport/闪空 |
-| `@workspace-v2` | flag-on | 打开两个不同详情/表单实例 | 生成两个独立 tag，彼此状态隔离 |
-| `@workspace-v2` | flag-on | dirty page 执行 close current / close other / close all | 统一走 `closeGuard`，拒绝时中止并聚焦被拒绝 tab |
-| `@workspace-v2-rollback` | flag-off | 进入 dashboard 任一列表/详情页 | 无 tags、无 Activity host，但页面仍按 v2 internal state 工作 |
+| Gate                     | Mode     | Scenario                                                | Expected Result                                              |
+| ------------------------ | -------- | ------------------------------------------------------- | ------------------------------------------------------------ |
+| `@workspace-v2`          | flag-on  | 列表页切到其他 tag 再切回                               | table/filter/pagination 仍保留在同一页面实例内               |
+| `@workspace-v2`          | flag-on  | 当前页执行 `page.reload()`                              | 页面实例重建，table/form 状态回默认或 preference seed        |
+| `@workspace-v2`          | flag-on  | 首次打开新详情/表单实例                                 | host 在同一导航周期渲染非空内容，无空白 viewport/闪空        |
+| `@workspace-v2`          | flag-on  | 打开两个不同详情/表单实例                               | 生成两个独立 tag，彼此状态隔离                               |
+| `@workspace-v2`          | flag-on  | dirty page 执行 close current / close other / close all | 统一走 `closeGuard`，拒绝时中止并聚焦被拒绝 tab              |
+| `@workspace-v2-rollback` | flag-off | 进入 dashboard 任一列表/详情页                          | 无 tags、无 Activity host，但页面仍按 v2 internal state 工作 |
 
 ## Verification Strategy
 
@@ -85,7 +85,7 @@
    - `src/features/workspace-tabs/components/workspace-route-page.tsx`
    - `src/features/workspace-tabs/lib/workspace-route-state.ts`
    - `src/features/workspace-tabs/lib/workspace-route-state.test.ts`
-   要么删除，要么保留为 inventory-only，但不得再被 flag-on 或 flag-off 主链路引用。
+     要么删除，要么保留为 inventory-only，但不得再被 flag-on 或 flag-off 主链路引用。
 5. 跑 `rg` 零 import gate，确认 flag-on 主链路与 flag-off 主链路都不再依赖 v1 route-state / adapter / definition。
 6. 在 runtime/review 中记录 v1 superseded、inventory 与 rollout 决策。
 7. 跑完全量验证并完成手工验收。

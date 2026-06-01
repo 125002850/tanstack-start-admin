@@ -1,10 +1,10 @@
-import * as React from 'react'
-import { useRouter, useRouterState } from '@tanstack/react-router'
-import { findDeepestRouteMatch, normalizeRoutePath } from '../hooks/use-dashboard-route-tag-sync'
-import { useWorkspaceTabStore } from '../utils/store'
-import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs'
-import { resolveRouteTagTitle } from '../lib/route-workspace'
-import type { WorkspacePageBoundaryProps, WorkspacePageDescriptor } from '../types'
+import * as React from 'react';
+import { useRouter, useRouterState } from '@tanstack/react-router';
+import { findDeepestRouteMatch, normalizeRoutePath } from '../hooks/use-dashboard-route-tag-sync';
+import { useWorkspaceTabStore } from '../utils/store';
+import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
+import { resolveRouteTagTitle } from '../lib/route-workspace';
+import type { WorkspacePageBoundaryProps, WorkspacePageDescriptor } from '../types';
 
 /**
  * WorkspacePageBoundary is the single registration point for a page instance
@@ -26,31 +26,30 @@ export function WorkspacePageBoundary({
   closable = true,
   render,
   renderWhenDisabled,
-  errorFallback,
+  errorFallback
 }: WorkspacePageBoundaryProps) {
-  const enabled = isWorkspaceTabsEnabled()
-  const router = useRouter()
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const normalizedPathname = normalizeRoutePath(pathname)
-  const resolvedTabId = tabId ?? normalizedPathname
+  const enabled = isWorkspaceTabsEnabled();
+  const router = useRouter();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const normalizedPathname = normalizeRoutePath(pathname);
+  const resolvedTabId = tabId ?? normalizedPathname;
   const staticData = React.useMemo(
     () =>
       findDeepestRouteMatch(
         resolvedTabId,
-        router.routesByPath as unknown as Record<string, unknown>,
+        router.routesByPath as unknown as Record<string, unknown>
       )?.staticData,
-    [resolvedTabId, router.routesByPath],
-  )
-  const resolvedInitialTitle =
-    initialTitle ?? resolveRouteTagTitle(staticData, resolvedTabId)
-  const isCurrentRouteInstance = normalizedPathname === resolvedTabId
+    [resolvedTabId, router.routesByPath]
+  );
+  const resolvedInitialTitle = initialTitle ?? resolveRouteTagTitle(staticData, resolvedTabId);
+  const isCurrentRouteInstance = normalizedPathname === resolvedTabId;
 
   if (!enabled) {
-    return <>{(renderWhenDisabled ?? render)()}</>
+    return <>{(renderWhenDisabled ?? render)()}</>;
   }
 
   if (!isCurrentRouteInstance) {
-    return null
+    return null;
   }
 
   return (
@@ -63,7 +62,7 @@ export function WorkspacePageBoundary({
       render={render}
       errorFallback={errorFallback}
     />
-  )
+  );
 }
 
 function WorkspacePageBoundaryRegistration({
@@ -72,14 +71,14 @@ function WorkspacePageBoundaryRegistration({
   keepAlive,
   closable,
   render,
-  errorFallback,
+  errorFallback
 }: {
-  tabId: string
-  initialTitle: string
-  keepAlive: boolean
-  closable: boolean
-  render: () => React.ReactNode
-  errorFallback?: React.ReactNode
+  tabId: string;
+  initialTitle: string;
+  keepAlive: boolean;
+  closable: boolean;
+  render: () => React.ReactNode;
+  errorFallback?: React.ReactNode;
 }) {
   const descriptor = React.useMemo<WorkspacePageDescriptor>(
     () => ({
@@ -88,17 +87,17 @@ function WorkspacePageBoundaryRegistration({
       keepAlive,
       closable,
       render,
-      errorFallback,
+      errorFallback
     }),
-    [closable, errorFallback, initialTitle, keepAlive, render, tabId],
-  )
+    [closable, errorFallback, initialTitle, keepAlive, render, tabId]
+  );
 
   const useIsomorphicLayoutEffect =
-    typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
+    typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
 
   useIsomorphicLayoutEffect(() => {
-    useWorkspaceTabStore.getState().registerPageDescriptor(tabId, descriptor)
-  }, [descriptor, tabId])
+    useWorkspaceTabStore.getState().registerPageDescriptor(tabId, descriptor);
+  }, [descriptor, tabId]);
 
-  return null
+  return null;
 }

@@ -47,8 +47,8 @@
 export const NAV_GROUP_META = {
   overview: { label: '概览', order: 10 },
   components: { label: '组件', order: 20 },
-  account: { label: '账户', order: 30 },
-} as const
+  account: { label: '账户', order: 30 }
+} as const;
 ```
 
 ## Step 2: 收紧导航类型
@@ -65,13 +65,13 @@ export const NAV_GROUP_META = {
 
 ```ts
 export interface NavItem {
-  id: string
-  title: string
-  url: string
-  linkable?: boolean
-  shortcut?: [string, string]
-  icon?: keyof typeof Icons
-  items?: NavItem[]
+  id: string;
+  title: string;
+  url: string;
+  linkable?: boolean;
+  shortcut?: [string, string];
+  icon?: keyof typeof Icons;
+  items?: NavItem[];
 }
 ```
 
@@ -82,7 +82,7 @@ export interface NavItem {
 ```ts
 declare module '@tanstack/react-router' {
   interface Register {
-    router: ReturnType<typeof getRouter>
+    router: ReturnType<typeof getRouter>;
   }
 }
 ```
@@ -131,4 +131,3 @@ git commit -m "refactor: define app route static data contract"
 **后续行动项：**
 
 - 无
-

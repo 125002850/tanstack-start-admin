@@ -11,16 +11,19 @@
 ## What Was Done
 
 ### Round 1
+
 - Created all spec files (types, store, hooks, TagsBar component, tests)
 - Integrated TagsBar into Header and wired sync hook in DashboardLayout
 
 ### Round 2 (codex review — 4 blockers)
+
 - **Blocker 1:** closeAll now preserves home tab and navigates home
 - **Blocker 2:** Added "刷新页面" refresh action to context menu
 - **Blocker 3:** Fixed sync hook: search params in href, regex-based dynamic route matching via `findDeepestRouteMatch`
 - **Blocker 4:** Rewrote sync hook tests to actually render the hook (14 tests, 9 integration)
 
 ### Round 3 (codex review — acceptance command failed + closeAll hardcoding)
+
 - **Critical fix:** Added `resolve.dedupe: ['react', 'react-dom']` to `vitest.config.ts`. Without this, Vite resolves React to different pnpm paths for project source files vs. node_modules packages, causing `ReactCurrentDispatcher.current` to be null. This produced "Invalid hook call" / "Cannot read properties of null (reading 'useRef')" errors.
 - **closeAll fix:** Store `closeAll` now uses `resolveDashboardHomeHref()` from `@/lib/router/dashboard-home` instead of hardcoded `'/dashboard/overview'`.
 - **Refresh placeholder noted:** The `refresh(id)` implementation in `useWorkspaceTags` simply calls `navigate(tab.href)` to re-navigate to the current tab URL. This is a Task 03 placeholder — a full refresh implementation (e.g., router.invalidate) can be added later when route-level loaders are defined.

@@ -13,12 +13,12 @@ const meta = defineRouteMeta({
     group: 'components',
     order: 12,
     parentId: '/dashboard/forms',
-    icon: 'forms',
+    icon: 'forms'
   },
   page: {
     title: 'Multi-Step Form',
-    description: 'Multi-step wizard form pattern.',
-  },
+    description: 'Multi-step wizard form pattern.'
+  }
 });
 
 export const Route = createFileRoute('/dashboard/forms/multi-step')({
@@ -32,7 +32,7 @@ function MultiStepFormPage() {
       tabId='/dashboard/forms/multi-step'
       render={() => <MultiStepFormContent />}
     />
-  )
+  );
 }
 
 function MultiStepFormContent() {
@@ -40,5 +40,5 @@ function MultiStepFormContent() {
     <PageContainer>
       <FormsShowcasePage />
     </PageContainer>
-  )
+  );
 }

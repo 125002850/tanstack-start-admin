@@ -9,7 +9,7 @@ const meta = defineRouteMeta({
   label: '产品详情',
   title: '控制台：产品详情',
   breadcrumb: { label: '产品详情' },
-  workspace: { keepAlive: true },
+  workspace: { keepAlive: true }
 });
 
 export const Route = createFileRoute('/dashboard/product/$productId')({
@@ -24,8 +24,7 @@ export const Route = createFileRoute('/dashboard/product/$productId')({
 
 function ProductDetailPage() {
   const { productId } = Route.useParams();
-  const tabId =
-    productId === 'new' ? '/dashboard/product/new' : `/dashboard/product/${productId}`
+  const tabId = productId === 'new' ? '/dashboard/product/new' : `/dashboard/product/${productId}`;
 
   return (
     <WorkspacePageBoundary
@@ -35,7 +34,7 @@ function ProductDetailPage() {
       keepAlive
       render={() => <ProductDetailContent productId={productId} />}
     />
-  )
+  );
 }
 
 function ProductDetailContent({ productId }: { productId: string }) {
