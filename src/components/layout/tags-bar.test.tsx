@@ -6,7 +6,17 @@ import { useWorkspaceTagStore } from '@/features/workspace-tabs/utils/store'
 
 // Mock Radix ScrollArea — avoids React instance conflicts in jsdom
 vi.mock('@/components/ui/scroll-area', () => ({
-  ScrollArea: ({ children }: { children: ReactNode }) => <div data-testid='scroll-area'>{children}</div>,
+  ScrollArea: ({
+    children,
+    className,
+  }: {
+    children: ReactNode
+    className?: string
+  }) => (
+    <div data-testid='scroll-area' className={className}>
+      {children}
+    </div>
+  ),
   ScrollBar: () => null,
 }))
 
@@ -108,6 +118,22 @@ describe('TagsBar', () => {
     render(<TagsBar />)
     const tab = screen.getByRole('tab', { name: /仪表盘/ })
     expect(tab).toHaveAttribute('aria-selected', 'true')
+    expect(tab).toHaveClass('bg-card', 'text-card-foreground')
+  })
+
+  it('hides the horizontal scrollbar on tags bar', () => {
+    const store = useWorkspaceTagStore.getState()
+    store.openOrActivate({
+      id: '/dashboard/overview',
+      href: '/dashboard/overview',
+      title: '仪表盘',
+      closable: false,
+      keepAlive: false,
+    })
+    render(<TagsBar />)
+    expect(screen.getByTestId('scroll-area')).toHaveClass(
+      '[&>[data-slot=scroll-area-scrollbar][data-orientation=horizontal]]:hidden',
+    )
   })
 
   it('home tab has no close button', () => {

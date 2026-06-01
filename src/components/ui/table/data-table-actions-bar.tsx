@@ -39,11 +39,14 @@ export interface DataTableActionsBarProps<TData> {
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function resolveValue<T>(
-  value: T | ((ctx: DataTableActionContext<unknown>) => T),
-  ctx: DataTableActionContext<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: T | ((ctx: DataTableActionContext<any>) => T),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ctx: DataTableActionContext<any>,
 ): T {
   return typeof value === 'function'
-    ? (value as (ctx: DataTableActionContext<unknown>) => T)(ctx)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? (value as (ctx: DataTableActionContext<any>) => T)(ctx)
     : value
 }
 
