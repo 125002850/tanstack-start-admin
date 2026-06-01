@@ -381,7 +381,7 @@ export function DataTable<TData>({
             aria-valuenow={expandSplitLayout.topPx}
             aria-disabled={expandSplitLayout.dragEnabled ? undefined : true}
             data-slot='data-table-expand-split-handle'
-            className='bg-border hover:bg-border/80 focus-visible:ring-ring/50 h-2 shrink-0 cursor-row-resize outline-none transition-colors focus-visible:ring-[3px]'
+            className='group relative h-2 shrink-0 cursor-row-resize outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
             onKeyDown={handleSplitKeyDown}
             onPointerDown={(event) => {
               if (!expandSplitLayout.dragEnabled) {
@@ -395,8 +395,13 @@ export function DataTable<TData>({
                 startTopPx: expandSplitLayout.topPx
               };
             }}
-          />
-          <div className='min-h-0 flex-1'>
+          >
+            <div className='absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-border opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100' />
+          </div>
+          <div
+            className='min-h-0 flex-1'
+            style={{ boxShadow: '0 -4px 6px -4px var(--border) inset' }}
+          >
             <DataTableExpandPanel
               panelId={expandPanelId}
               row={expandedRow}
