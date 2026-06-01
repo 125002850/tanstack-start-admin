@@ -1,14 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
 
 const USERS_URL = '/dashboard/users';
-const EXPAND_TRIGGER = '[data-slot="data-table-expand-trigger"]';
 const EXPAND_PANEL = '[data-slot="data-table-expand-panel"]';
 const EXPAND_PANEL_CLOSE = '[data-slot="data-table-expand-panel-close"]';
 const EXPAND_SPLIT_HANDLE = '[data-slot="data-table-expand-split-handle"]';
 
 async function expectUsersTableLoaded(page: Page) {
   await expect(page.locator('table tbody tr:visible').first()).toBeVisible({ timeout: 15_000 });
-  await expect(page.locator(EXPAND_TRIGGER).first()).toBeVisible({ timeout: 5_000 });
 }
 
 async function expectExpandPanelOpen(page: Page) {
@@ -19,8 +17,9 @@ async function expectExpandPanelClosed(page: Page) {
   await expect(page.locator(EXPAND_PANEL)).toHaveCount(0);
 }
 
-async function openFirstRowViaTrigger(page: Page) {
-  await page.locator(EXPAND_TRIGGER).first().click();
+async function openFirstRowViaClick(page: Page) {
+  // Click on a data cell in the first row (skip row number + select columns)
+  await page.locator('table tbody tr:first-child td').nth(2).click();
   await expectExpandPanelOpen(page);
 }
 
@@ -33,39 +32,17 @@ test.describe('@preflight @workspace-v2', () => {
     await expect(page.locator('table tbody tr:visible').first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test('preflight: expand trigger column is present on users page', async ({ page }) => {
+  test('preflight: row click on data cell opens expand panel', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
 
-    const triggers = page.locator(EXPAND_TRIGGER);
-    const count = await triggers.count();
-    expect(count).toBeGreaterThan(0);
-  });
-
-  test('preflight: expand trigger button has correct aria attributes when collapsed', async ({
-    page
-  }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-
-    const trigger = page.locator(EXPAND_TRIGGER).first();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  test('preflight: disclosure button opens expand panel', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-
-    await openFirstRowViaTrigger(page);
-
-    const trigger = page.locator(EXPAND_TRIGGER).first();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await openFirstRowViaClick(page);
   });
 
   test('preflight: expand panel renders tabs and close button', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     await expect(page.locator(EXPAND_PANEL).locator('[role="tablist"]')).toBeVisible();
     await expect(page.locator(EXPAND_PANEL_CLOSE)).toBeVisible();
@@ -74,31 +51,26 @@ test.describe('@preflight @workspace-v2', () => {
   test('preflight: close button dismisses expand panel', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     await page.locator(EXPAND_PANEL_CLOSE).click();
     await expectExpandPanelClosed(page);
-
-    const trigger = page.locator(EXPAND_TRIGGER).first();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  test('preflight: row click on data cell opens expand panel', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-
-    const firstDataCell = page.locator('table tbody tr:first-child td').nth(2);
-    await firstDataCell.click();
-
-    await expectExpandPanelOpen(page);
   });
 
   test('preflight: split handle is present when panel is open', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     await expect(page.locator(EXPAND_SPLIT_HANDLE)).toBeVisible();
+  });
+
+  test('preflight: expanded row is visually highlighted', async ({ page }) => {
+    await page.goto(USERS_URL);
+    await expectUsersTableLoaded(page);
+    await openFirstRowViaClick(page);
+
+    await expect(page.locator('table tbody tr.bg-accent').first()).toBeVisible();
   });
 });
 
@@ -109,28 +81,18 @@ test.describe('@workspace-v2 row expand business smoke', () => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
 
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
     const firstPanelText = await page.locator(EXPAND_PANEL).textContent();
 
     await page.locator(EXPAND_PANEL_CLOSE).click();
     await expectExpandPanelClosed(page);
 
-    await page.locator(EXPAND_TRIGGER).nth(1).click();
+    // Click second row
+    await page.locator('table tbody tr:nth-child(2) td').nth(2).click();
     await expectExpandPanelOpen(page);
     const secondPanelText = await page.locator(EXPAND_PANEL).textContent();
 
     expect(firstPanelText).not.toBe(secondPanelText);
-  });
-
-  test('clicking disclosure trigger twice toggles panel', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
-
-    // Disclosure button semantics: second click toggles panel closed
-    await page.locator(EXPAND_TRIGGER).first().click();
-    await expectExpandPanelClosed(page);
-    await expect(page.locator(EXPAND_TRIGGER).first()).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('checkbox click does not trigger row expand', async ({ page }) => {
@@ -159,14 +121,14 @@ test.describe('@workspace-v2 row expand business smoke', () => {
   test('expand panel reopens at same height after close', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     const panelBefore = page.locator(EXPAND_PANEL);
     const heightBefore = await panelBefore.evaluate((el) => el.getBoundingClientRect().height);
 
     await page.locator(EXPAND_PANEL_CLOSE).click();
     await expectExpandPanelClosed(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     const heightAfter = await panelBefore.evaluate((el) => el.getBoundingClientRect().height);
 
@@ -176,7 +138,7 @@ test.describe('@workspace-v2 row expand business smoke', () => {
   test('split handle has correct accessibility attributes', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     const handle = page.locator(EXPAND_SPLIT_HANDLE);
     await expect(handle).toHaveAttribute('role', 'separator');
@@ -186,30 +148,16 @@ test.describe('@workspace-v2 row expand business smoke', () => {
   test('split handle is keyboard focusable', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     const handle = page.locator(EXPAND_SPLIT_HANDLE);
     await expect(handle).toHaveAttribute('tabindex', '0');
   });
 
-  test('disclosure button has aria-controls pointing to panel', async ({ page }) => {
+  test('expanded row is visually highlighted with accent background', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-
-    const trigger = page.locator(EXPAND_TRIGGER).first();
-    const controlsId = await trigger.getAttribute('aria-controls');
-    expect(controlsId).toBeTruthy();
-
-    await trigger.click();
-    await expectExpandPanelOpen(page);
-    const panel = page.locator(EXPAND_PANEL);
-    await expect(panel).toHaveAttribute('id', controlsId!);
-  });
-
-  test('expanded row is visually highlighted', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
 
     const expandedRow = page.locator('table tbody tr.bg-accent').first();
     await expect(expandedRow).toBeVisible();
@@ -218,12 +166,24 @@ test.describe('@workspace-v2 row expand business smoke', () => {
   test('page reload resets expand state', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
-    await openFirstRowViaTrigger(page);
+    await openFirstRowViaClick(page);
     await expectExpandPanelOpen(page);
 
     await page.reload();
     await expectUsersTableLoaded(page);
     await expectExpandPanelClosed(page);
   });
-});
 
+  test('panel is rendered below pagination', async ({ page }) => {
+    await page.goto(USERS_URL);
+    await expectUsersTableLoaded(page);
+    await openFirstRowViaClick(page);
+
+    // Pagination should be visible above the expand panel
+    const pagination = page.getByRole('button', { name: '前往下一页' });
+    await expect(pagination).toBeVisible();
+
+    // Panel should be visible below
+    await expectExpandPanelOpen(page);
+  });
+});

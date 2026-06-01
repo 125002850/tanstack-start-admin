@@ -309,14 +309,10 @@ describe('DataTable column alignment', () => {
     const { container } = render(<ExpandAlignHarness rows={rows} />);
 
     const cols = Array.from(container.querySelectorAll('col'));
-    const ths = Array.from(container.querySelectorAll('thead th'));
 
     expect(document.querySelector('[data-slot="data-table-expand-panel"]')).not.toBeNull();
-    expect(extractWidth(cols[0]?.getAttribute('style') ?? '')).toBe('40px');
-    expect(extractWidth(cols[1]?.getAttribute('style') ?? '')).toBe('80px');
-    expect(extractWidth(cols[2]?.getAttribute('style') ?? '')).toBe('170px');
-    expect(extractWidth(cols[3]?.getAttribute('style') ?? '')).toBe('111px');
-    expect(extractWidth(ths[0]?.getAttribute('style') ?? '')).toBe('40px');
-    expect(ths[0]?.getAttribute('style')).toContain('position: sticky');
+    expect(extractWidth(cols[0]?.getAttribute('style') ?? '')).toBe('80px');
+    expect(extractWidth(cols[1]?.getAttribute('style') ?? '')).toBe('170px');
+    expect(extractWidth(cols[2]?.getAttribute('style') ?? '')).toBe('111px');
   });
 });

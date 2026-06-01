@@ -66,7 +66,6 @@ const DATA: TestRow[] = [
   { id: 1, name: 'Alice' },
   { id: 2, name: 'Bob' }
 ];
-const EXPAND_COLUMN_ID = '__rowExpand';
 
 const COLUMNS: ColumnDef<TestRow>[] = [
   { accessorKey: 'id', header: 'ID', size: 80 },
@@ -238,7 +237,7 @@ describe('DataTable actions column', () => {
     expect(getByTestId('right-pinning').textContent).toBe(JSON.stringify(['id']));
   });
 
-  it('keeps row number, checkbox, expand trigger, and actions as a unified left-pinned group', () => {
+  it('keeps row number, checkbox, and actions as a unified left-pinned group with expand enabled', () => {
     const { getByTestId } = render(
       <ActionColumnStateHarness
         actionColumnPin='left'
@@ -255,12 +254,12 @@ describe('DataTable actions column', () => {
     );
 
     expect(getByTestId('left-pinning').textContent).toBe(
-      JSON.stringify(['__rowNumber', 'select', EXPAND_COLUMN_ID, 'actions', 'name'])
+      JSON.stringify(['__rowNumber', 'select', 'actions', 'name'])
     );
     expect(getByTestId('right-pinning').textContent).toBe(JSON.stringify(['id']));
   });
 
-  it('normalizes __rowExpand inside initialState.columnOrder instead of appending it to the tail', () => {
+  it('keeps initialState.columnOrder with leading utility columns when expand is enabled', () => {
     const { getByTestId } = render(
       <ActionColumnStateHarness
         columns={SELECTABLE_COLUMNS}
@@ -272,7 +271,7 @@ describe('DataTable actions column', () => {
     );
 
     expect(getByTestId('column-order').textContent).toBe(
-      JSON.stringify(['select', EXPAND_COLUMN_ID, 'name', 'id'])
+      JSON.stringify(['select', 'name', 'id'])
     );
   });
 

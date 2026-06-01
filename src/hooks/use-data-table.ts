@@ -35,14 +35,11 @@ import {
   getDataTableRowActionsColumnWidth,
   type DataTableRowAction
 } from '@/components/ui/table/data-table-row-action';
-import { DataTableExpandTrigger } from '@/components/ui/table/data-table-expand-trigger';
 import type { ExpandConfigEdge } from '@/types/data-table';
 
 const DEBOUNCE_MS = 300;
 const DATA_TABLE_ROW_NUMBER_COLUMN_ID = '__rowNumber';
 const DATA_TABLE_ROW_NUMBER_COLUMN_WIDTH = 40;
-const DATA_TABLE_EXPAND_COLUMN_ID = '__rowExpand';
-const DATA_TABLE_EXPAND_COLUMN_WIDTH = 40;
 const DATA_TABLE_ACTIONS_COLUMN_ID = 'actions';
 
 type DataTablePinnedSide = 'left' | 'right';
@@ -194,7 +191,6 @@ function omitFixedWidthColumnSizing(
   for (const [columnId, width] of Object.entries(columnSizing)) {
     if (
       columnId === DATA_TABLE_ROW_NUMBER_COLUMN_ID ||
-      columnId === DATA_TABLE_EXPAND_COLUMN_ID ||
       columnId === 'select' ||
       columnId === DATA_TABLE_ACTIONS_COLUMN_ID
     ) {
@@ -213,7 +209,6 @@ function normalizeGeneratedColumnOrder(
   options: {
     showRowNumberColumn: boolean;
     hasSelectColumn: boolean;
-    hasExpandTriggerColumn: boolean;
   }
 ): string[] | undefined {
   if (!columnOrder) return columnOrder;
@@ -226,10 +221,6 @@ function normalizeGeneratedColumnOrder(
 
   if (options.hasSelectColumn) {
     leadingIds.push('select');
-  }
-
-  if (options.hasExpandTriggerColumn) {
-    leadingIds.push(DATA_TABLE_EXPAND_COLUMN_ID);
   }
 
   if (leadingIds.length === 0) {
@@ -266,50 +257,8 @@ function createRowActionsColumn<TData>(rowActions: DataTableRowAction<TData>[]):
   };
 }
 
-function createExpandTriggerColumn<TData>(options: {
-  expandConfig: ExpandConfigEdge<TData>;
-  expandedRowKey: string | null;
-  expandPanelId: string;
-  onExpandedRowKeyChange: React.Dispatch<React.SetStateAction<string | null>>;
-}): ColumnDef<TData> {
-  const { expandConfig, expandedRowKey, expandPanelId, onExpandedRowKeyChange } = options;
-
-  return {
-    id: DATA_TABLE_EXPAND_COLUMN_ID,
-    header: () =>
-      React.createElement('span', { className: 'block text-center text-xs font-medium' }, ''),
-    cell: ({ row }) => {
-      const rowKey = getExpandRowKeyValue(row.original, expandConfig.rowKey);
-
-      if (!rowKey) {
-        return null;
-      }
-
-      const expanded = expandedRowKey === rowKey;
-
-      return React.createElement(DataTableExpandTrigger, {
-        expanded,
-        panelId: expandPanelId,
-        onPressed: () => {
-          onExpandedRowKeyChange((current) => (current === rowKey ? null : rowKey));
-        }
-      });
-    },
-    size: DATA_TABLE_EXPAND_COLUMN_WIDTH,
-    minSize: DATA_TABLE_EXPAND_COLUMN_WIDTH,
-    maxSize: DATA_TABLE_EXPAND_COLUMN_WIDTH,
-    enableSorting: false,
-    enableHiding: false,
-    enableResizing: false,
-    enableColumnFilter: false,
-    meta: {
-      label: '详情'
-    }
-  };
-}
-
 function normalizeActionColumn<TData>(column: ColumnDef<TData>): ColumnDef<TData> {
-  if (column.id !== DATA_TABLE_ACTIONS_COLUMN_ID && column.id !== DATA_TABLE_EXPAND_COLUMN_ID) {
+  if (column.id !== DATA_TABLE_ACTIONS_COLUMN_ID) {
     return column;
   }
 
@@ -326,18 +275,16 @@ function resolveUtilityColumnPinning(
     actionColumnPin: DataTablePinnedSide;
     showRowNumberColumn: boolean;
     hasSelectColumn: boolean;
-    hasExpandTriggerColumn: boolean;
   }
 ): ColumnPinningState | undefined {
   const {
     hasPinnedActionsColumn,
     actionColumnPin,
     showRowNumberColumn,
-    hasSelectColumn,
-    hasExpandTriggerColumn
+    hasSelectColumn
   } = options;
 
-  if (!hasPinnedActionsColumn && !showRowNumberColumn && !hasSelectColumn && !hasExpandTriggerColumn) {
+  if (!hasPinnedActionsColumn && !showRowNumberColumn && !hasSelectColumn) {
     return columnPinning;
   }
 
@@ -351,23 +298,17 @@ function resolveUtilityColumnPinning(
     utilityLeftOrder.push('select');
   }
 
-  if (hasExpandTriggerColumn) {
-    utilityLeftOrder.push(DATA_TABLE_EXPAND_COLUMN_ID);
-  }
-
   const left = (columnPinning?.left ?? []).filter(
     (columnId) =>
       columnId !== DATA_TABLE_ACTIONS_COLUMN_ID &&
       columnId !== DATA_TABLE_ROW_NUMBER_COLUMN_ID &&
-      columnId !== 'select' &&
-      columnId !== DATA_TABLE_EXPAND_COLUMN_ID
+      columnId !== 'select'
   );
   const right = (columnPinning?.right ?? []).filter(
     (columnId) =>
       columnId !== DATA_TABLE_ACTIONS_COLUMN_ID &&
       columnId !== DATA_TABLE_ROW_NUMBER_COLUMN_ID &&
-      columnId !== 'select' &&
-      columnId !== DATA_TABLE_EXPAND_COLUMN_ID
+      columnId !== 'select'
   );
 
   const nextLeft = [...utilityLeftOrder];
@@ -382,20 +323,6 @@ function resolveUtilityColumnPinning(
         ? [...right, DATA_TABLE_ACTIONS_COLUMN_ID]
         : right
   };
-}
-
-function insertExpandTriggerColumn<TData>(columns: ColumnDef<TData>[], expandColumn: ColumnDef<TData>) {
-  const selectIndex = columns.findIndex((column) => column.id === 'select');
-
-  if (selectIndex === -1) {
-    return [expandColumn, ...columns];
-  }
-
-  return [
-    ...columns.slice(0, selectIndex + 1),
-    expandColumn,
-    ...columns.slice(selectIndex + 1)
-  ];
 }
 
 /**
@@ -427,35 +354,21 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   );
 
   const hasGeneratedRowActionsColumn = !!rowActions?.length;
-  const hasExpandTriggerColumn = !!expandConfig;
 
   const baseColumns = React.useMemo<ColumnDef<TData>[]>(
     () =>
       normalizedColumns.filter(
         (column) =>
-          (!hasGeneratedRowActionsColumn || column.id !== DATA_TABLE_ACTIONS_COLUMN_ID) &&
-          column.id !== DATA_TABLE_EXPAND_COLUMN_ID
+          !hasGeneratedRowActionsColumn || column.id !== DATA_TABLE_ACTIONS_COLUMN_ID
       ),
     [hasGeneratedRowActionsColumn, normalizedColumns]
   );
 
   const resolvedColumns = React.useMemo<ColumnDef<TData>[]>(
     () => {
-      const columnsWithExpand = expandConfig
-        ? insertExpandTriggerColumn(
-            baseColumns,
-            createExpandTriggerColumn({
-              expandConfig,
-              expandedRowKey,
-              expandPanelId: expandPanelId ?? getStableExpandPanelId(undefined, 'fallback'),
-              onExpandedRowKeyChange: setExpandedRowKey
-            })
-          )
-        : baseColumns;
-
       const columnsWithActions = hasGeneratedRowActionsColumn
-        ? [...columnsWithExpand, createRowActionsColumn(rowActions)]
-        : columnsWithExpand;
+        ? [...baseColumns, createRowActionsColumn(rowActions)]
+        : baseColumns;
 
       return showRowNumberColumn
         ? [createRowNumberColumn<TData>(), ...columnsWithActions]
@@ -463,9 +376,6 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     },
     [
       baseColumns,
-      expandConfig,
-      expandPanelId,
-      expandedRowKey,
       hasGeneratedRowActionsColumn,
       rowActions,
       showRowNumberColumn
@@ -490,8 +400,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     if (
       !showRowNumberColumn &&
       !hasPinnedActionsColumn &&
-      !hasSelectColumn &&
-      !hasExpandTriggerColumn
+      !hasSelectColumn
     ) {
       return initialState;
     }
@@ -500,8 +409,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       hasPinnedActionsColumn,
       actionColumnPin,
       showRowNumberColumn,
-      hasSelectColumn,
-      hasExpandTriggerColumn
+      hasSelectColumn
     });
 
     return {
@@ -509,8 +417,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       columnPinning,
       columnOrder: normalizeGeneratedColumnOrder(initialState?.columnOrder, {
         showRowNumberColumn,
-        hasSelectColumn,
-        hasExpandTriggerColumn
+        hasSelectColumn
       }),
       columnVisibility: showRowNumberColumn
         ? {
@@ -522,7 +429,6 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     };
   }, [
     actionColumnPin,
-    hasExpandTriggerColumn,
     hasPinnedActionsColumn,
     hasSelectColumn,
     initialState,

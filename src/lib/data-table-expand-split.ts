@@ -17,6 +17,8 @@ interface ClampExpandSplitTopOptions {
 interface ResolveExpandSplitLayoutOptions {
   hostHeight: number;
   requestedTopPx?: number | null;
+  /** Fixed-height slots between table viewport and split handle (e.g. pagination). */
+  overheadPx?: number;
 }
 
 export interface DataTableExpandSplitLayout {
@@ -54,18 +56,20 @@ export function clampExpandSplitTop({ hostHeight, topPx }: ClampExpandSplitTopOp
 
 export function resolveExpandSplitLayout({
   hostHeight,
-  requestedTopPx
+  requestedTopPx,
+  overheadPx = 0
 }: ResolveExpandSplitLayoutOptions): DataTableExpandSplitLayout {
   const handlePx = DATA_TABLE_EXPAND_SPLIT_HANDLE_PX;
+  const effectiveHeight = Math.max(0, hostHeight - overheadPx);
   const nextTopPx = clampExpandSplitTop({
-    hostHeight,
-    topPx: requestedTopPx ?? getDefaultTopPx(hostHeight)
+    hostHeight: effectiveHeight,
+    topPx: requestedTopPx ?? getDefaultTopPx(effectiveHeight)
   });
-  const bottomPx = Math.max(0, hostHeight - handlePx - nextTopPx);
-  const dragEnabled = hostHeight >= MIN_EXPAND_HOST_HEIGHT;
+  const bottomPx = Math.max(0, effectiveHeight - handlePx - nextTopPx);
+  const dragEnabled = effectiveHeight >= MIN_EXPAND_HOST_HEIGHT;
   const maxTopPx = dragEnabled
-    ? hostHeight - handlePx - DATA_TABLE_EXPAND_MIN_BOTTOM_PX
-    : Math.max(0, hostHeight - handlePx);
+    ? effectiveHeight - handlePx - DATA_TABLE_EXPAND_MIN_BOTTOM_PX
+    : Math.max(0, effectiveHeight - handlePx);
 
   return {
     topPx: nextTopPx,

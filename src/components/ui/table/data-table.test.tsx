@@ -380,39 +380,6 @@ describe('DataTable body', () => {
     expect(screen.getByTestId('expanded-row-key').textContent).toBe('null');
   });
 
-  it('supports disclosure button keyboard toggle with a stable aria-controls contract', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<ExpandHarness rows={makeRows(5)} />);
-    const trigger = container.querySelector('[data-slot="data-table-expand-trigger"]');
-
-    if (!(trigger instanceof HTMLButtonElement)) {
-      throw new Error('expand trigger button missing');
-    }
-
-    trigger.focus();
-    await user.keyboard('{Enter}');
-
-    const expandedTrigger = container.querySelector('[data-slot="data-table-expand-trigger"]');
-    if (!(expandedTrigger instanceof HTMLButtonElement)) {
-      throw new Error('expanded trigger button missing');
-    }
-
-    expect(screen.getByTestId('expanded-row-key').textContent).toBe('1');
-    expect(expandedTrigger).toHaveAttribute('aria-expanded', 'true');
-    expect(expandedTrigger).toHaveAttribute('aria-controls', 'data-table-expand-panel-test-users');
-
-    expandedTrigger.focus();
-    await user.keyboard(' ');
-
-    const collapsedTrigger = container.querySelector('[data-slot="data-table-expand-trigger"]');
-    if (!(collapsedTrigger instanceof HTMLButtonElement)) {
-      throw new Error('collapsed trigger button missing');
-    }
-
-    expect(screen.getByTestId('expanded-row-key').textContent).toBe('null');
-    expect(collapsedTrigger).toHaveAttribute('aria-expanded', 'false');
-  });
-
   it('applies the same row-click boundary rules in the virtualized branch', async () => {
     const user = userEvent.setup();
 

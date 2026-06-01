@@ -86,9 +86,11 @@ export function DataTable<TData>({
   const headerRowRef = React.useRef<HTMLTableRowElement>(null);
   const expandHostRef = React.useRef<HTMLDivElement>(null);
   const dragStateRef = React.useRef<{ startY: number; startTopPx: number } | null>(null);
+  const paginationRef = React.useRef<HTMLDivElement>(null);
   const [requestedSplitTopPx, setRequestedSplitTopPx] = React.useState<number | null>(null);
   const [activeExpandTab, setActiveExpandTab] = React.useState<string | null>(null);
   const [expandHostHeight, setExpandHostHeight] = React.useState(FALLBACK_EXPAND_HOST_HEIGHT);
+  const [expandOverheadPx, setExpandOverheadPx] = React.useState(0);
 
   const virtConfig: DataTableVirtualizationOptions | undefined =
     virtualization === true
@@ -125,10 +127,11 @@ export function DataTable<TData>({
       isExpanded
         ? resolveExpandSplitLayout({
             hostHeight: expandHostHeight,
-            requestedTopPx: requestedSplitTopPx
+            requestedTopPx: requestedSplitTopPx,
+            overheadPx: expandOverheadPx
           })
         : null,
-    [expandHostHeight, isExpanded, requestedSplitTopPx]
+    [expandHostHeight, expandOverheadPx, isExpanded, requestedSplitTopPx]
   );
 
   const getExpandRowKey = React.useCallback(
@@ -169,6 +172,12 @@ export function DataTable<TData>({
         FALLBACK_EXPAND_HOST_HEIGHT;
 
       setExpandHostHeight((current) => (current === nextHeight ? current : nextHeight));
+
+      const paginationEl = paginationRef.current;
+      if (paginationEl) {
+        const paginationHeight = Math.round(paginationEl.getBoundingClientRect().height);
+        setExpandOverheadPx((current) => (current === paginationHeight ? current : paginationHeight));
+      }
     };
 
     measure();
@@ -190,7 +199,7 @@ export function DataTable<TData>({
   }, [isExpanded]);
 
   React.useEffect(() => {
-    if (!expandSplitLayout || !dragStateRef.current) {
+    if (!expandSplitLayout) {
       return;
     }
 
@@ -359,6 +368,10 @@ export function DataTable<TData>({
           <div className='relative min-h-0' style={{ height: `${expandSplitLayout.topPx}px` }}>
             {tableViewport}
           </div>
+          <div ref={paginationRef} className='flex flex-col gap-2.5'>
+            <DataTablePagination table={table} labels={paginationLabels} />
+            {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
+          </div>
           <div
             role='separator'
             tabIndex={0}
@@ -383,7 +396,7 @@ export function DataTable<TData>({
               };
             }}
           />
-          <div className='min-h-0' style={{ height: `${expandSplitLayout.bottomPx}px` }}>
+          <div className='min-h-0 flex-1'>
             <DataTableExpandPanel
               panelId={expandPanelId}
               row={expandedRow}
@@ -395,12 +408,14 @@ export function DataTable<TData>({
           </div>
         </div>
       ) : (
-        <div className='relative flex flex-1 min-h-0'>{tableViewport}</div>
+        <>
+          <div className='relative flex flex-1 min-h-0'>{tableViewport}</div>
+          <div className='flex flex-col gap-2.5'>
+            <DataTablePagination table={table} labels={paginationLabels} />
+            {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
+          </div>
+        </>
       )}
-      <div className='flex flex-col gap-2.5'>
-        <DataTablePagination table={table} labels={paginationLabels} />
-        {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
-      </div>
     </div>
   );
 }

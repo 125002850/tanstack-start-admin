@@ -21,7 +21,6 @@ type TestRow = { id: number; name: string };
 const ROW_NUMBER_COLUMN_ID = '__rowNumber';
 const SELECT_COLUMN_ID = 'select';
 const ACTIONS_COLUMN_ID = 'actions';
-const EXPAND_COLUMN_ID = '__rowExpand';
 const FIXED_COLUMN_WIDTH = 40;
 
 const columns: ColumnDef<TestRow>[] = [
@@ -554,14 +553,14 @@ describe('useDataTable — internal-state mode (default)', () => {
       'data-table-expand-panel-users'
     );
     expect(screen.getByTestId('expand-leaf-columns').textContent).toBe(
-      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, EXPAND_COLUMN_ID, 'id', 'name', 'actions'])
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, 'id', 'name', 'actions'])
     );
     expect(screen.getByTestId('expand-left-pinning').textContent).toBe(
-      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, EXPAND_COLUMN_ID, ACTIONS_COLUMN_ID])
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, ACTIONS_COLUMN_ID])
     );
   });
 
-  it('normalizes __rowExpand into initialState.columnOrder after select', () => {
+  it('normalizes initialState.columnOrder with leading utility columns', () => {
     function ExpandColumnOrderInspector() {
       const { table } = useDataTable({
         columns: selectableColumns,
@@ -595,7 +594,7 @@ describe('useDataTable — internal-state mode (default)', () => {
     render(React.createElement(ExpandColumnOrderInspector));
 
     expect(screen.getByTestId('normalized-column-order').textContent).toBe(
-      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, EXPAND_COLUMN_ID, 'name', 'id'])
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, 'name', 'id'])
     );
   });
 
