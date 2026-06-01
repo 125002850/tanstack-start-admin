@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useWorkspaceTagStore } from '../utils/store'
+import { useWorkspaceTabStore } from '../utils/store'
 
 const DEVTOOLS_KEY = '__WORKSPACE_DEVTOOLS__'
 
@@ -36,7 +36,7 @@ function logSnapshot(label: string, snapshot: WorkspaceDevtoolsSnapshot) {
 }
 
 function storeToSnapshot(): WorkspaceDevtoolsSnapshot {
-  const state = useWorkspaceTagStore.getState()
+  const state = useWorkspaceTabStore.getState()
   return {
     tabs: Object.values(state.tabs).map((t) => ({
       id: t.id,
@@ -74,7 +74,7 @@ export function useWorkspaceDevtools(enabled = true) {
         logSnapshot('manual snapshot', snap)
         return snap
       },
-      getStore: () => useWorkspaceTagStore.getState(),
+      getStore: () => useWorkspaceTabStore.getState(),
     }
     ;(window as unknown as Record<string, unknown>)[DEVTOOLS_KEY] = bridge
 
@@ -88,7 +88,7 @@ export function useWorkspaceDevtools(enabled = true) {
   useEffect(() => {
     if (!isActive(enabled)) return
 
-    const unsub = useWorkspaceTagStore.subscribe((state, prev) => {
+    const unsub = useWorkspaceTabStore.subscribe((state, prev) => {
       const prevCount = Object.keys(prev.tabs).length
       const nextCount = Object.keys(state.tabs).length
       const activeChanged = prev.activeId !== state.activeId

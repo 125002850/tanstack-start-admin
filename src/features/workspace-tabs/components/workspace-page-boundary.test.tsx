@@ -2,7 +2,7 @@ import * as React from 'react'
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs'
-import { useWorkspaceTagStore } from '../utils/store'
+import { useWorkspaceTabStore } from '../utils/store'
 import { WorkspacePageBoundary } from './workspace-page-boundary'
 
 const mockUseRouterState = vi.fn()
@@ -19,7 +19,7 @@ vi.mock('@/config/workspace-tabs', () => ({
 }))
 
 function resetStore() {
-  useWorkspaceTagStore.setState({
+  useWorkspaceTabStore.setState({
     tabs: {},
     activeId: null,
     openedOrder: [],
@@ -65,7 +65,7 @@ describe('WorkspacePageBoundary', () => {
     )
 
     expect(container.innerHTML).toBe('')
-    expect(useWorkspaceTagStore.getState().pageDescriptors['/dashboard/users']).toMatchObject({
+    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toMatchObject({
       tabId: '/dashboard/users',
       initialTitle: '用户',
     })
@@ -91,7 +91,7 @@ describe('WorkspacePageBoundary', () => {
     )
 
     expect(
-      useWorkspaceTagStore.getState().pageDescriptors['/dashboard/product/new'],
+      useWorkspaceTabStore.getState().pageDescriptors['/dashboard/product/new'],
     ).toMatchObject({
       tabId: '/dashboard/product/new',
       initialTitle: '新增产品',
@@ -115,12 +115,12 @@ describe('WorkspacePageBoundary', () => {
       />,
     )
 
-    expect(useWorkspaceTagStore.getState().pageDescriptors['/dashboard/users']).toMatchObject({
+    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toMatchObject({
       tabId: '/dashboard/users',
       initialTitle: '用户',
     })
 
-    useWorkspaceTagStore.getState().close('/dashboard/users')
+    useWorkspaceTabStore.getState().close('/dashboard/users')
 
     pathname = '/dashboard/overview'
     matches = [{ options: { staticData: { label: '仪表盘' } } }]
@@ -132,8 +132,8 @@ describe('WorkspacePageBoundary', () => {
       />,
     )
 
-    expect(useWorkspaceTagStore.getState().pageDescriptors['/dashboard/users']).toBeUndefined()
-    expect(useWorkspaceTagStore.getState().tabs['/dashboard/users']).toBeUndefined()
+    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toBeUndefined()
+    expect(useWorkspaceTabStore.getState().tabs['/dashboard/users']).toBeUndefined()
   })
 
   it('normalizes the implicit tabId when pathname has a trailing slash', () => {
@@ -150,11 +150,11 @@ describe('WorkspacePageBoundary', () => {
       <WorkspacePageBoundary render={() => <div>Products</div>} />,
     )
 
-    expect(useWorkspaceTagStore.getState().pageDescriptors['/dashboard/product']).toMatchObject({
+    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/product']).toMatchObject({
       tabId: '/dashboard/product',
       initialTitle: '产品',
     })
-    expect(useWorkspaceTagStore.getState().pageDescriptors['/dashboard/product/']).toBeUndefined()
+    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/product/']).toBeUndefined()
   })
 
   it('renders content directly when workspace tabs are disabled', () => {
@@ -165,7 +165,7 @@ describe('WorkspacePageBoundary', () => {
     )
 
     expect(getByText('Inline Content')).toBeTruthy()
-    expect(useWorkspaceTagStore.getState().pageDescriptors).toEqual({})
+    expect(useWorkspaceTabStore.getState().pageDescriptors).toEqual({})
   })
 
   it('prefers renderWhenDisabled when workspace tabs are disabled', () => {
@@ -180,6 +180,6 @@ describe('WorkspacePageBoundary', () => {
 
     expect(getByText('Inline Disabled Content')).toBeTruthy()
     expect(queryByText('Workspace Content')).toBeNull()
-    expect(useWorkspaceTagStore.getState().pageDescriptors).toEqual({})
+    expect(useWorkspaceTabStore.getState().pageDescriptors).toEqual({})
   })
 })

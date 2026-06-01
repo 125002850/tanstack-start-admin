@@ -1,9 +1,7 @@
 /**
  * Internal-state mode tests for useDataTable.
  *
- * These tests validate the DEFAULT code path (no searchAdapter).
- * The searchAdapter path is covered separately in the deprecated
- * use-data-table.search-adapter.test.tsx file.
+ * These tests validate the default code path (no external state adapter).
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, act, cleanup } from '@testing-library/react'
@@ -17,8 +15,6 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 import { useDataTable } from '@/hooks/use-data-table'
-import { createStaticAdapter } from '@/features/workspace-tabs/lib/workspace-route-state'
-import type { DataTableSearchAdapter } from '@/features/workspace-tabs/types'
 
 type TestRow = { id: number; name: string }
 
@@ -219,77 +215,3 @@ describe('useDataTable — internal-state mode (default)', () => {
   })
 })
 
-// ─── Hook-order safety (mode switching across renders) ──────────────
-
-function ModeSwitchTester({ adapter }: { adapter?: DataTableSearchAdapter }) {
-  // pageSize is intentionally NOT passed — the adapter's perPage should
-  // be the source of truth in adapter mode, and the default (10) in
-  // internal mode. This lets us verify that the adapter's data flows
-  // through correctly after a mode switch.
-  const { table } = useDataTable({
-    columns,
-    data,
-    pageCount: 2,
-    searchAdapter: adapter,
-  })
-
-  const state = table.getState()
-
-  return React.createElement('div', null, [
-    React.createElement('span', { key: 'page', 'data-testid': 'page' }, String(state.pagination.pageIndex + 1)),
-    React.createElement('span', { key: 'size', 'data-testid': 'pageSize' }, String(state.pagination.pageSize)),
-  ])
-}
-
-describe('useDataTable — hook-order safety (mode switching)', () => {
-  afterEach(cleanup)
-
-  it('survives switching from internal-state to adapter mode without crash', () => {
-    const { rerender } = render(React.createElement(ModeSwitchTester))
-
-    // Internal-state mode — page starts at 1, default page size
-    expect(screen.getByTestId('page').textContent).toBe('1')
-
-    // Switch to adapter mode without unmount — must not throw
-    const adapter = createStaticAdapter({ page: 3, perPage: 50 })
-    expect(() => {
-      rerender(React.createElement(ModeSwitchTester, { adapter }))
-    }).not.toThrow()
-
-    // Now reading from adapter
-    expect(screen.getByTestId('page').textContent).toBe('3')
-    expect(screen.getByTestId('pageSize').textContent).toBe('50')
-  })
-
-  it('survives switching from adapter mode to internal-state without crash', () => {
-    const adapter = createStaticAdapter({ page: 2, perPage: 25 })
-    const { rerender } = render(React.createElement(ModeSwitchTester, { adapter }))
-
-    expect(screen.getByTestId('page').textContent).toBe('2')
-    expect(screen.getByTestId('pageSize').textContent).toBe('25')
-
-    // Remove adapter — must not throw
-    expect(() => {
-      rerender(React.createElement(ModeSwitchTester))
-    }).not.toThrow()
-
-    // Falls back to internal defaults
-    expect(screen.getByTestId('page').textContent).toBe('1')
-    expect(screen.getByTestId('pageSize').textContent).toBe('10')
-  })
-
-  it('survives adapter identity change without crash (adapter A → adapter B)', () => {
-    const adapterA = createStaticAdapter({ page: 1, perPage: 10 })
-    const { rerender } = render(React.createElement(ModeSwitchTester, { adapter: adapterA }))
-
-    expect(screen.getByTestId('pageSize').textContent).toBe('10')
-
-    const adapterB = createStaticAdapter({ page: 5, perPage: 100 })
-    expect(() => {
-      rerender(React.createElement(ModeSwitchTester, { adapter: adapterB }))
-    }).not.toThrow()
-
-    expect(screen.getByTestId('page').textContent).toBe('5')
-    expect(screen.getByTestId('pageSize').textContent).toBe('100')
-  })
-})

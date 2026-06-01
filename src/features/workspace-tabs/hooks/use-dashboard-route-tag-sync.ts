@@ -6,10 +6,10 @@ import {
 } from '@/lib/router/app-route-meta'
 import { resolveDashboardHomeHref, isDashboardHomeHref } from '@/lib/router/dashboard-home'
 import { resolveRouteWorkspaceConfig, resolveRouteTagTitle } from '../lib/route-workspace'
-import type { WorkspaceTagId } from '../types'
-import { useWorkspaceTagStore } from '../utils/store'
+import type { WorkspaceTabId } from '../types'
+import { useWorkspaceTabStore } from '../utils/store'
 
-function tagIdFromPathname(pathname: string): WorkspaceTagId {
+function tagIdFromPathname(pathname: string): WorkspaceTabId {
   return normalizeRoutePath(pathname)
 }
 
@@ -100,7 +100,7 @@ export function useDashboardRouteTagSync(enabled = true) {
     if (!enabled) return
 
     const homeHref = resolveDashboardHomeHref()
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     if (!store.tabs[tagIdFromPathname(homeHref)]) {
       store.openOrActivate({
         id: tagIdFromPathname(homeHref),
@@ -141,7 +141,7 @@ export function useDashboardRouteTagSync(enabled = true) {
     const id = tagIdFromPathname(normalizedPathname)
     const closable = !isDashboardHomeHref(normalizedPathname)
 
-    useWorkspaceTagStore.getState().openOrActivate({
+    useWorkspaceTabStore.getState().openOrActivate({
       id,
       href: fullHref,
       title: title || normalizedPathname,

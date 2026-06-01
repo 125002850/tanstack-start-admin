@@ -1,24 +1,12 @@
 import * as React from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, cleanup, act } from '@testing-library/react'
-import { useWorkspaceTagStore } from '../utils/store'
-import { workspaceRegistry } from '../lib/workspace-registry'
+import { useWorkspaceTabStore } from '../utils/store'
 import { useDashboardRouteTagSync } from '../hooks/use-dashboard-route-tag-sync'
 import { useWorkspaceTags } from '../hooks/use-workspace-tags'
 import { WorkspacePageBoundary } from './workspace-page-boundary'
 import { WorkspaceViewport } from './workspace-viewport'
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs'
-
-// Local test-only type matching the V1 TestRouteDefinition shape
-// needed for workspaceRegistry.register in V1 routing harness tests.
-// Not importing from the deprecated V1 types section.
-interface TestRouteDefinition {
-  parse: (search: Record<string, unknown>, params?: Record<string, string>) => unknown
-  stringify: (state: unknown) => Record<string, unknown>
-  buildHref: (state: unknown) => string
-  getPageChrome: () => { title: string; description?: string }
-  refresh: () => void
-}
 
 // ---- Mutable router state controlled by each test case ----
 let mockPathname = '/dashboard/overview'
@@ -100,54 +88,6 @@ vi.mock('@/config/workspace-tabs', () => ({
   MAX_KEEPALIVE_TABS: 15,
 }))
 
-function makeDefinition(label: string): TestRouteDefinition {
-  return {
-    parse: () => ({}),
-    stringify: () => ({}),
-    buildHref: () => '',
-    getPageChrome: () => ({ title: label }),
-    refresh: () => { },
-  }
-}
-
-// ---- V1 Harness (old WorkspaceRoutePage behavior) ----
-function V1RoutingHarness({
-  pathname,
-  definition,
-  keepAlive: _keepAlive,
-}: {
-  pathname: string
-  definition: TestRouteDefinition
-  keepAlive: boolean
-}) {
-  mockPathname = pathname
-  mockSearch = ''
-
-  useDashboardRouteTagSync(isWorkspaceTabsEnabled())
-
-  React.useEffect(() => {
-    workspaceRegistry.register(pathname, {
-      definition,
-      screen: () => React.createElement('div', { 'data-testid': `screen-${pathname}` }, pathname),
-      instanceKey: pathname,
-    })
-    return () => {
-      workspaceRegistry.unregister(pathname)
-    }
-  }, [pathname, definition])
-
-  const tag = useWorkspaceTagStore((s) => s.tabs[pathname])
-  const disabledKeepAlive = useWorkspaceTagStore((s) =>
-    s.disabledKeepAliveIds.has(pathname),
-  )
-
-  if (tag?.keepAlive && !disabledKeepAlive) {
-    return null
-  }
-
-  return React.createElement('div', { 'data-testid': `inline-${pathname}` }, pathname)
-}
-
 // ---- V2 Harness (new WorkspacePageBoundary behavior) ----
 function V2RoutingHarness({
   pathname,
@@ -178,7 +118,7 @@ function V2RoutingHarness({
 }
 
 function resetStore() {
-  useWorkspaceTagStore.setState({
+  useWorkspaceTabStore.setState({
     tabs: {},
     activeId: null,
     openedOrder: [],
@@ -191,7 +131,6 @@ function resetStore() {
 describe('Workspace Routing Integration', () => {
   beforeEach(() => {
     resetStore()
-    workspaceRegistry.reset()
     mockPathname = '/dashboard/overview'
     mockSearch = ''
     mockNavigate.mockClear()
@@ -200,168 +139,7 @@ describe('Workspace Routing Integration', () => {
   })
 
   afterEach(() => {
-    workspaceRegistry.reset()
     cleanup()
-  })
-
-  // ─── V1 tag open/activate uniqueness ───
-
-  describe('V1 tag open/activate uniqueness', () => {
-    it('does not create duplicate tags on repeated URL navigation', () => {
-      mockPathname = '/dashboard/products'
-      const def = makeDefinition('products')
-
-      const { rerender } = render(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      rerender(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      const state = useWorkspaceTagStore.getState()
-      const productEntries = state.openedOrder.filter((id) => id === '/dashboard/products')
-      expect(productEntries).toHaveLength(1)
-    })
-
-    it('maintains single tag instance across search param changes', () => {
-      mockPathname = '/dashboard/products'
-      mockSearch = '?page=1'
-      const def = makeDefinition('products')
-
-      const { rerender } = render(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      mockSearch = '?page=2'
-      rerender(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      const state = useWorkspaceTagStore.getState()
-      const productEntries = state.openedOrder.filter((id) => id === '/dashboard/products')
-      expect(productEntries).toHaveLength(1)
-    })
-
-    it('handles rapid URL switching without creating duplicate tags', () => {
-      const def = makeDefinition('generic')
-
-      const paths = ['/dashboard/products', '/dashboard/users', '/dashboard/products', '/dashboard/settings']
-      const { rerender } = render(
-        React.createElement(V1RoutingHarness, { pathname: paths[0], definition: def, keepAlive: true }),
-      )
-
-      for (const path of paths.slice(1)) {
-        mockPathname = path
-        rerender(
-          React.createElement(V1RoutingHarness, { pathname: path, definition: def, keepAlive: true }),
-        )
-      }
-
-      const state = useWorkspaceTagStore.getState()
-      for (const path of ['/dashboard/products', '/dashboard/users', '/dashboard/settings']) {
-        const entries = state.openedOrder.filter((id) => id === path)
-        expect(entries).toHaveLength(1)
-      }
-    })
-  })
-
-  // ─── V1 back/forward consistency ───
-
-  describe('V1 back/forward consistency', () => {
-    it('keeps activeTag in sync with current URL after navigation', () => {
-      const def = makeDefinition('generic')
-
-      mockPathname = '/dashboard/products'
-      const { rerender } = render(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      expect(useWorkspaceTagStore.getState().activeId).toBe('/dashboard/products')
-
-      mockPathname = '/dashboard/users'
-      rerender(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/users', definition: def, keepAlive: true }),
-      )
-
-      expect(useWorkspaceTagStore.getState().activeId).toBe('/dashboard/users')
-
-      mockPathname = '/dashboard/products'
-      rerender(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      expect(useWorkspaceTagStore.getState().activeId).toBe('/dashboard/products')
-    })
-
-    it('descriptor is registered for the active route after navigation', () => {
-      const def = makeDefinition('users')
-
-      mockPathname = '/dashboard/users'
-      render(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/users', definition: def, keepAlive: true }),
-      )
-
-      expect(workspaceRegistry.has('/dashboard/users')).toBe(true)
-    })
-
-    it('keep-alive tab is registered and non-keep-alive tab renders inline', () => {
-      const def = makeDefinition('settings')
-
-      mockPathname = '/dashboard/settings'
-      const { getByTestId } = render(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/settings', definition: def, keepAlive: false }),
-      )
-
-      expect(getByTestId('inline-/dashboard/settings')).toBeDefined()
-    })
-
-    it('activeId and descriptor remain consistent across back/forward cycles', () => {
-      const def = makeDefinition('generic')
-
-      mockPathname = '/dashboard/products'
-      const { rerender } = render(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      expect(useWorkspaceTagStore.getState().activeId).toBe('/dashboard/products')
-      expect(workspaceRegistry.has('/dashboard/products')).toBe(true)
-
-      mockPathname = '/dashboard/users'
-      rerender(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/users', definition: def, keepAlive: true }),
-      )
-
-      expect(useWorkspaceTagStore.getState().activeId).toBe('/dashboard/users')
-      expect(workspaceRegistry.has('/dashboard/users')).toBe(true)
-
-      mockPathname = '/dashboard/products'
-      rerender(
-        React.createElement(V1RoutingHarness, { pathname: '/dashboard/products', definition: def, keepAlive: true }),
-      )
-
-      expect(useWorkspaceTagStore.getState().activeId).toBe('/dashboard/products')
-    })
-  })
-
-  // ─── V1 error recovery flow ───
-
-  describe('V1 error recovery flow', () => {
-    it('disabling keep-alive for a tag removes it from viewport consideration', () => {
-      act(() => {
-        useWorkspaceTagStore.getState().disableKeepAlive('/dashboard/products')
-      })
-
-      const state = useWorkspaceTagStore.getState()
-      expect(state.disabledKeepAliveIds.has('/dashboard/products')).toBe(true)
-
-      act(() => {
-        useWorkspaceTagStore.getState().enableKeepAlive('/dashboard/products')
-      })
-
-      const state2 = useWorkspaceTagStore.getState()
-      expect(state2.disabledKeepAliveIds.has('/dashboard/products')).toBe(false)
-    })
   })
 
   // ─── V2 host ownership ───
@@ -395,7 +173,7 @@ describe('Workspace Routing Integration', () => {
         }),
       )
 
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.pageDescriptors['/dashboard/users']).toBeDefined()
       expect(state.tabs['/dashboard/users']).toBeDefined()
       expect(state.activeId).toBe('/dashboard/users')
@@ -414,7 +192,7 @@ describe('Workspace Routing Integration', () => {
         }),
       )
 
-      const state = useWorkspaceTagStore.getState()
+      const state = useWorkspaceTabStore.getState()
       expect(state.pageDescriptors['/dashboard/users']).toBeDefined()
       expect(state.pageDescriptors['/dashboard/users']?.tabId).toBe('/dashboard/users')
       expect(state.tabs['/dashboard/users']).toBeDefined()
@@ -474,17 +252,17 @@ describe('Workspace Routing Integration', () => {
       )
 
       // Descriptor is registered
-      expect(useWorkspaceTagStore.getState().pageDescriptors['/dashboard/users']).toBeDefined()
+      expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toBeDefined()
 
       // Unmount the boundary (simulating route navigation away)
       unmount()
 
       // Descriptor should STILL be registered (shell store owns it now)
-      expect(useWorkspaceTagStore.getState().pageDescriptors['/dashboard/users']).toBeDefined()
+      expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toBeDefined()
     })
 
     it('tab close cleans up descriptor and lifecycle', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.registerPageDescriptor('/dashboard/users', {
         tabId: '/dashboard/users',
         initialTitle: 'Users',
@@ -501,7 +279,7 @@ describe('Workspace Routing Integration', () => {
     })
 
     it('shell resetAll cleans up all descriptors', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       store.registerPageDescriptor('/dashboard/users', {
         tabId: '/dashboard/users', initialTitle: 'Users', keepAlive: true, closable: true, render: () => null,
       })
@@ -520,7 +298,7 @@ describe('Workspace Routing Integration', () => {
 
   describe('V2 lifecycle', () => {
     function getState() {
-      return useWorkspaceTagStore.getState()
+      return useWorkspaceTabStore.getState()
     }
 
     it('title can be updated via updateLifecycle', () => {
@@ -564,7 +342,7 @@ describe('Workspace Routing Integration', () => {
 
   describe('V2 keepAlive=false', () => {
     function getState() {
-      return useWorkspaceTagStore.getState()
+      return useWorkspaceTabStore.getState()
     }
 
     it('non-keep-alive page descriptor is still owned by ActivityHost', () => {
@@ -593,7 +371,7 @@ describe('Workspace Routing Integration', () => {
       })
 
       // Set products as active so settings is inactive (and non-keep-alive → should not render)
-      useWorkspaceTagStore.setState({ activeId: '/dashboard/products' })
+      useWorkspaceTabStore.setState({ activeId: '/dashboard/products' })
 
       const { queryByTestId, getByTestId } = render(React.createElement(WorkspaceViewport))
       // Products is active → visible
@@ -632,7 +410,7 @@ describe('Workspace Routing Integration', () => {
     })
 
     it('viewport renders non-null content for first-opened tag', () => {
-      const store = useWorkspaceTagStore.getState()
+      const store = useWorkspaceTabStore.getState()
       // Pre-register a descriptor (simulating first tag open)
       store.registerPageDescriptor('/dashboard/products', {
         tabId: '/dashboard/products',
@@ -654,7 +432,7 @@ describe('Workspace Routing Integration', () => {
   describe('V2 descriptor missing / error fallback', () => {
     it('ActivityHost handles descriptor missing gracefully', () => {
       // Tab exists in store but no page descriptor — viewport returns null
-      useWorkspaceTagStore.setState({
+      useWorkspaceTabStore.setState({
         tabs: { '/dashboard/orphan': { id: '/dashboard/orphan', keepAlive: true, href: '/dashboard/orphan', title: 'Orphan', closable: true, lastVisitedAt: Date.now() } },
         activeId: '/dashboard/orphan',
         openedOrder: ['/dashboard/orphan'],
@@ -670,7 +448,7 @@ describe('Workspace Routing Integration', () => {
 
   describe('V2 flag-off — WorkspacePageBoundary direct render', () => {
     function getState() {
-      return useWorkspaceTagStore.getState()
+      return useWorkspaceTabStore.getState()
     }
 
     it('renders page directly when feature flag is off', () => {
@@ -752,7 +530,7 @@ describe('Workspace Routing Integration', () => {
 
   describe('V2 route instance tags', () => {
     function getState() {
-      return useWorkspaceTagStore.getState()
+      return useWorkspaceTabStore.getState()
     }
 
     it('creates separate tags for different detail page instances', () => {
@@ -814,7 +592,7 @@ describe('Workspace Routing Integration', () => {
 
   describe('V2 closeGuard integration', () => {
     function getState() {
-      return useWorkspaceTagStore.getState()
+      return useWorkspaceTabStore.getState()
     }
 
     function setupTab(id: string, title: string, opts?: { closable?: boolean; keepAlive?: boolean }) {

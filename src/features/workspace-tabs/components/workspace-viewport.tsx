@@ -1,7 +1,6 @@
 import * as React from 'react'
-import type { WorkspacePageDescriptor, WorkspaceScreenProps, WorkspacePageLifecyclePatch } from '../types'
-import { useWorkspaceTagStore } from '../utils/store'
-import { workspaceRegistry } from '../lib/workspace-registry'
+import type { WorkspacePageDescriptor, WorkspacePageLifecyclePatch } from '../types'
+import { useWorkspaceTabStore } from '../utils/store'
 import { WorkspacePageContext } from '../hooks/use-workspace-page'
 import { Activity } from './activity'
 import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary'
@@ -14,16 +13,12 @@ import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary'
  *   - Active tab → rendered visibly
  *   - Inactive keep-alive tab → rendered via Activity hidden
  *   - Inactive non-keep-alive tab → not rendered (unmounted)
- *
- * V1 fallback (workspaceRegistry, for routes not yet migrated to V2):
- *   - Inactive keep-alive tabs → rendered via Activity hidden
- *   - Active tab is rendered by the route component directly (legacy)
  */
 export function WorkspaceViewport() {
-  const tabs = useWorkspaceTagStore((s) => s.tabs)
-  const activeId = useWorkspaceTagStore((s) => s.activeId)
-  const pageDescriptors = useWorkspaceTagStore((s) => s.pageDescriptors)
-  const disabledKeepAliveIds = useWorkspaceTagStore((s) => s.disabledKeepAliveIds)
+  const tabs = useWorkspaceTabStore((s) => s.tabs)
+  const activeId = useWorkspaceTabStore((s) => s.activeId)
+  const pageDescriptors = useWorkspaceTabStore((s) => s.pageDescriptors)
+  const disabledKeepAliveIds = useWorkspaceTabStore((s) => s.disabledKeepAliveIds)
 
   const entries = React.useMemo(() => {
     const result: Array<{
@@ -47,29 +42,7 @@ export function WorkspaceViewport() {
     return result
   }, [tabs, activeId, pageDescriptors, disabledKeepAliveIds])
 
-  // V1 fallback: inactive keep-alive tabs that only have workspaceRegistry descriptors
-  const v1FallbackEntries = React.useMemo(() => {
-    const result: Array<{
-      tagId: string
-      descriptor: ReturnType<typeof workspaceRegistry.get>
-    }> = []
-
-    for (const [tagId, tab] of Object.entries(tabs)) {
-      if (pageDescriptors[tagId]) continue
-      if (!tab.keepAlive) continue
-      if (tagId === activeId) continue
-      if (disabledKeepAliveIds.has(tagId)) continue
-
-      const desc = workspaceRegistry.get(tagId)
-      if (!desc) continue
-
-      result.push({ tagId, descriptor: desc })
-    }
-
-    return result
-  }, [tabs, activeId, pageDescriptors, disabledKeepAliveIds])
-
-  if (entries.length === 0 && v1FallbackEntries.length === 0) return null
+  if (entries.length === 0) return null
 
   return (
     <>
@@ -88,28 +61,6 @@ export function WorkspaceViewport() {
           </PageContextProvider>
         </WorkspaceSlotErrorBoundary>
       ))}
-
-      {/* V1 fallback: inactive keep-alive tabs from workspaceRegistry */}
-      {v1FallbackEntries.map(({ tagId, descriptor }) => {
-        if (!descriptor) return null
-        const Screen = descriptor.screen as React.ComponentType<WorkspaceScreenProps>
-
-        return (
-          <WorkspaceSlotErrorBoundary
-            key={descriptor.instanceKey}
-            tagId={tagId}
-            fallback={null}
-          >
-            <Activity mode="hidden">
-              <Screen
-                state={null as never}
-                updateState={() => {}}
-                definition={descriptor.definition}
-              />
-            </Activity>
-          </WorkspaceSlotErrorBoundary>
-        )
-      })}
     </>
   )
 }
@@ -133,7 +84,7 @@ function PageContextProvider({
 }) {
   const updateLifecycle = React.useCallback(
     (patch: WorkspacePageLifecyclePatch) => {
-      useWorkspaceTagStore.getState().updateLifecycle(tagId, patch)
+      useWorkspaceTabStore.getState().updateLifecycle(tagId, patch)
     },
     [tagId],
   )

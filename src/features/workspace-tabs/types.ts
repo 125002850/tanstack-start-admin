@@ -1,9 +1,9 @@
 // ─── V2 page lifecycle types ───
 
-export type WorkspaceTagId = string
+export type WorkspaceTabId = string
 
 export interface WorkspaceTab {
-  id: WorkspaceTagId
+  id: WorkspaceTabId
   href: string
   title: string
   closable: boolean
@@ -11,14 +11,14 @@ export interface WorkspaceTab {
   lastVisitedAt: number
 }
 
-export interface WorkspaceTagSnapshot {
+export interface WorkspaceTabSnapshot {
   tabs: WorkspaceTab[]
-  activeId: WorkspaceTagId | null
-  openedOrder: WorkspaceTagId[]
+  activeId: WorkspaceTabId | null
+  openedOrder: WorkspaceTabId[]
 }
 
-export interface WorkspaceTagOpenInput {
-  id: WorkspaceTagId
+export interface WorkspaceTabOpenInput {
+  id: WorkspaceTabId
   href: string
   title: string
   closable?: boolean
@@ -61,7 +61,7 @@ export interface WorkspacePageLifecycle {
 }
 
 export interface WorkspacePageDescriptor {
-  tabId: WorkspaceTagId
+  tabId: WorkspaceTabId
   initialTitle: string
   keepAlive: boolean
   closable: boolean
@@ -69,33 +69,3 @@ export interface WorkspacePageDescriptor {
   errorFallback?: React.ReactNode
 }
 
-// ─── V1 legacy types (inventory-only, superseded by V2 internal-state) ───
-//
-// @deprecated Kept as archival reference. Not used by flag-on or flag-off main paths.
-// DO NOT import these types in new route or feature code.
-
-export interface DataTableSearchAdapter {
-  getSearch: () => Record<string, unknown>
-  setSearch: (reducer: (prev: Record<string, unknown>) => Record<string, unknown>) => void
-  subscribe?: (listener: () => void) => () => void
-}
-
-export interface WorkspaceRouteDefinition<TState = unknown> {
-  parse: (search: Record<string, unknown>, params?: Record<string, string>) => TState
-  stringify: (state: TState) => Record<string, unknown>
-  buildHref: (state: TState) => string
-  getPageChrome: () => { title: string; description?: string }
-  refresh: () => void
-}
-
-export interface WorkspaceScreenProps<TState = unknown> {
-  state: TState
-  updateState: (updater: (prev: TState) => TState) => void
-  definition: WorkspaceRouteDefinition<TState>
-}
-
-export interface WorkspaceScreenDescriptor<TState = unknown> {
-  definition: WorkspaceRouteDefinition<TState>
-  screen: React.ComponentType<WorkspaceScreenProps<TState>>
-  instanceKey: string
-}

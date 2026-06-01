@@ -65,7 +65,6 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
     data: data.products,
     columns,
     pageCount,
-    shallow: true,
     debounceMs: 500,
     pageSize: seedPageSize,
     onPageSizeChange: (newSize) => {
