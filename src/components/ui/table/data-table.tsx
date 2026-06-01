@@ -381,7 +381,7 @@ export function DataTable<TData>({
             aria-valuenow={expandSplitLayout.topPx}
             aria-disabled={expandSplitLayout.dragEnabled ? undefined : true}
             data-slot='data-table-expand-split-handle'
-            className='group relative h-2 shrink-0 cursor-row-resize outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+            className='group relative flex h-2 shrink-0 cursor-row-resize items-center justify-center outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
             onKeyDown={handleSplitKeyDown}
             onPointerDown={(event) => {
               if (!expandSplitLayout.dragEnabled) {
@@ -396,11 +396,18 @@ export function DataTable<TData>({
               };
             }}
           >
-            <div className='absolute inset-x-0 top-1/2 -translate-y-1/2 h-px bg-border opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100' />
+            {/* Hover pill: rounded handle with grip dots */}
+            <span className='inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/0 opacity-0 transition-all duration-200 group-hover:w-10 group-hover:bg-border/40 group-hover:opacity-100 group-focus-visible:w-10 group-focus-visible:bg-border/40 group-focus-visible:opacity-100'>
+              <span className='inline-flex gap-px'>
+                <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
+                <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
+                <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
+              </span>
+            </span>
           </div>
           <div
             className='min-h-0 flex-1'
-            style={{ boxShadow: '0 -4px 6px -4px var(--border) inset' }}
+            style={{ boxShadow: 'inset 0 6px 10px -6px hsl(var(--border))' }}
           >
             <DataTableExpandPanel
               panelId={expandPanelId}
