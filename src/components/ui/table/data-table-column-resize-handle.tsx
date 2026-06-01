@@ -31,7 +31,6 @@ export function DataTableColumnResizeHandle<TData>({
     (event: React.MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
-
       // ── Save pre-drag body styles ──
       const prevUserSelect = document.body.style.userSelect;
       const prevCursor = document.body.style.cursor;
@@ -59,8 +58,10 @@ export function DataTableColumnResizeHandle<TData>({
       }
 
       // ── Read column metrics ──
+      const handleElem = event.currentTarget as HTMLElement;
+      const handleWidth = handleElem.offsetWidth;
       const startX = event.clientX;
-      const startWidth = th.offsetWidth;
+      const startWidth = header.getSize() - handleWidth / 2;
       const columnDef = header.column.columnDef;
       const minSize = columnDef.minSize ?? 80;
       const maxSize = columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
@@ -69,7 +70,6 @@ export function DataTableColumnResizeHandle<TData>({
         rootLeft: overlayRoot.getBoundingClientRect().left,
         scrollLeft: scrollViewport.scrollLeft
       });
-
       // ── Create overlay div ──
       const overlay = document.createElement('div');
       overlay.style.position = 'absolute';
@@ -77,6 +77,7 @@ export function DataTableColumnResizeHandle<TData>({
       overlay.style.zIndex = '20';
       overlay.style.height = '100%';
       overlay.style.pointerEvents = 'none';
+      overlay.style.willChange = 'width';
       overlay.style.left = `${columnLeft}px`;
       overlay.style.width = `${startWidth}px`;
 
@@ -117,7 +118,11 @@ export function DataTableColumnResizeHandle<TData>({
         // the user reverses direction the preview responds immediately.
         const deltaX = Math.min(Math.max(rawDeltaX, minSize - startWidth), maxSize - startWidth);
         const previewWidth = clampWidth(startWidth, deltaX, minSize, maxSize);
-        overlayRef.current.style.width = `${previewWidth}px`;
+        requestAnimationFrame(() => {
+          if (overlayRef.current) {
+            overlayRef.current.style.width = `${previewWidth}px`;
+          }
+        });
       };
 
       const upHandler = (_e: MouseEvent) => {
@@ -181,7 +186,6 @@ export function DataTableColumnResizeHandle<TData>({
   const handleTouchStart = useCallback(
     (event: React.TouchEvent) => {
       event.stopPropagation();
-
       const prevUserSelect = document.body.style.userSelect;
 
       const overlayRoot = event.currentTarget.closest(
@@ -205,8 +209,10 @@ export function DataTableColumnResizeHandle<TData>({
       const touch = event.touches[0];
       if (!touch) return;
 
+      const handleElem = event.currentTarget as HTMLElement;
+      const handleWidth = handleElem.offsetWidth;
       const startX = touch.clientX;
-      const startWidth = th.offsetWidth;
+      const startWidth = header.getSize() - handleWidth / 2;
       const columnDef = header.column.columnDef;
       const minSize = columnDef.minSize ?? 80;
       const maxSize = columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
@@ -222,6 +228,7 @@ export function DataTableColumnResizeHandle<TData>({
       overlay.style.zIndex = '20';
       overlay.style.height = '100%';
       overlay.style.pointerEvents = 'none';
+      overlay.style.willChange = 'width';
       overlay.style.left = `${columnLeft}px`;
       overlay.style.width = `${startWidth}px`;
 
@@ -260,7 +267,11 @@ export function DataTableColumnResizeHandle<TData>({
         // Same dead-zone elimination as the mouse handler
         const deltaX = Math.min(Math.max(rawDeltaX, minSize - startWidth), maxSize - startWidth);
         const previewWidth = clampWidth(startWidth, deltaX, minSize, maxSize);
-        overlayRef.current.style.width = `${previewWidth}px`;
+        requestAnimationFrame(() => {
+          if (overlayRef.current) {
+            overlayRef.current.style.width = `${previewWidth}px`;
+          }
+        });
       };
 
       const cleanup = () => {
