@@ -67,7 +67,7 @@ test.describe('@preflight @workspace-v2', () => {
     await expectUsersTableLoaded(page);
     await openFirstRowViaTrigger(page);
 
-    await expect(page.locator('[role="tablist"]')).toBeVisible();
+    await expect(page.locator(EXPAND_PANEL).locator('[role="tablist"]')).toBeVisible();
     await expect(page.locator(EXPAND_PANEL_CLOSE)).toBeVisible();
   });
 
@@ -122,13 +122,15 @@ test.describe('@workspace-v2 row expand business smoke', () => {
     expect(firstPanelText).not.toBe(secondPanelText);
   });
 
-  test('clicking same row trigger twice does not close panel', async ({ page }) => {
+  test('clicking disclosure trigger twice toggles panel', async ({ page }) => {
     await page.goto(USERS_URL);
     await expectUsersTableLoaded(page);
     await openFirstRowViaTrigger(page);
 
+    // Disclosure button semantics: second click toggles panel closed
     await page.locator(EXPAND_TRIGGER).first().click();
-    await expectExpandPanelOpen(page);
+    await expectExpandPanelClosed(page);
+    await expect(page.locator(EXPAND_TRIGGER).first()).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('checkbox click does not trigger row expand', async ({ page }) => {
