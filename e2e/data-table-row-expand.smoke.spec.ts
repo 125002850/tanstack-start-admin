@@ -18,8 +18,8 @@ async function expectExpandPanelClosed(page: Page) {
 }
 
 async function openFirstRowViaClick(page: Page) {
-  // Click on a data cell in the first row (skip row number + select columns)
-  await page.locator('table tbody tr:first-child td').nth(2).click();
+  // Click on the name data cell (skip row number + select + actions columns)
+  await page.locator('table tbody tr:first-child td').nth(3).click();
   await expectExpandPanelOpen(page);
 }
 
@@ -88,7 +88,7 @@ test.describe('@workspace-v2 row expand business smoke', () => {
     await expectExpandPanelClosed(page);
 
     // Click second row
-    await page.locator('table tbody tr:nth-child(2) td').nth(2).click();
+    await page.locator('table tbody tr:nth-child(2) td').nth(3).click();
     await expectExpandPanelOpen(page);
     const secondPanelText = await page.locator(EXPAND_PANEL).textContent();
 
