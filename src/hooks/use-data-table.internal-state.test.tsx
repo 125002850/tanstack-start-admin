@@ -4,7 +4,7 @@
  * These tests validate the default code path (no external state adapter).
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, act, cleanup } from '@testing-library/react';
+import { render, screen, act, cleanup, waitFor } from '@testing-library/react';
 import * as React from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ExtendedColumnSort } from '@/types/data-table';
@@ -21,6 +21,7 @@ type TestRow = { id: number; name: string };
 const ROW_NUMBER_COLUMN_ID = '__rowNumber';
 const SELECT_COLUMN_ID = 'select';
 const ACTIONS_COLUMN_ID = 'actions';
+const EXPAND_COLUMN_ID = '__rowExpand';
 const FIXED_COLUMN_WIDTH = 40;
 
 const columns: ColumnDef<TestRow>[] = [
@@ -232,6 +233,87 @@ function FixedColumnSizingInspector({
       'span',
       { key: 'actions-size', 'data-testid': 'actions-size' },
       String(table.getColumn(ACTIONS_COLUMN_ID)?.getSize() ?? '')
+    )
+  ]);
+}
+
+function ExpandStateInspector({
+  rows = data,
+  columns: tableColumns = selectableColumns,
+  showRowNumberColumn = true,
+  actionColumnPin = 'left',
+  tableId = 'users'
+}: {
+  rows?: TestRow[];
+  columns?: ColumnDef<TestRow>[];
+  showRowNumberColumn?: boolean;
+  actionColumnPin?: 'left' | 'right';
+  tableId?: string;
+}) {
+  const { table, expandedRowKey, expandedRow, setExpandedRowKey, expandPanelId } = useDataTable({
+    columns: tableColumns,
+    data: rows,
+    pageCount: 1,
+    showRowNumberColumn,
+    actionColumnPin,
+    rowActions,
+    tableId,
+    expandConfig: {
+      rowKey: 'id',
+      tabs: [
+        {
+          id: 'summary',
+          label: '概览',
+          render: (row) => row.name
+        }
+      ]
+    }
+  });
+
+  return React.createElement('div', null, [
+    React.createElement(
+      'span',
+      { key: 'left-pinning', 'data-testid': 'expand-left-pinning' },
+      JSON.stringify(table.getState().columnPinning.left ?? [])
+    ),
+    React.createElement(
+      'span',
+      { key: 'right-pinning', 'data-testid': 'expand-right-pinning' },
+      JSON.stringify(table.getState().columnPinning.right ?? [])
+    ),
+    React.createElement(
+      'span',
+      { key: 'column-order', 'data-testid': 'expand-column-order' },
+      JSON.stringify(table.getState().columnOrder ?? [])
+    ),
+    React.createElement(
+      'span',
+      { key: 'leaf-columns', 'data-testid': 'expand-leaf-columns' },
+      JSON.stringify(table.getAllLeafColumns().map((column) => column.id))
+    ),
+    React.createElement(
+      'span',
+      { key: 'expanded-row-key', 'data-testid': 'expanded-row-key' },
+      expandedRowKey ?? 'null'
+    ),
+    React.createElement(
+      'span',
+      { key: 'expanded-row-name', 'data-testid': 'expanded-row-name' },
+      expandedRow?.name ?? 'null'
+    ),
+    React.createElement(
+      'span',
+      { key: 'expand-panel-id', 'data-testid': 'expand-panel-id' },
+      expandPanelId ?? 'null'
+    ),
+    React.createElement(
+      'button',
+      {
+        key: 'expand-second',
+        'data-testid': 'expand-second',
+        onClick: () => setExpandedRowKey?.('2')
+      },
+      'Expand second'
     )
   ]);
 }
@@ -463,5 +545,79 @@ describe('useDataTable — internal-state mode (default)', () => {
     expect(screen.getByTestId('row-number-size').textContent).toBe(String(FIXED_COLUMN_WIDTH));
     expect(screen.getByTestId('select-size').textContent).toBe(String(FIXED_COLUMN_WIDTH));
     expect(screen.getByTestId('actions-size').textContent).toBe('116');
+  });
+
+  it('adds row-key based expand state and derives the panel id from tableId', () => {
+    render(React.createElement(ExpandStateInspector));
+
+    expect(screen.getByTestId('expand-panel-id').textContent).toBe(
+      'data-table-expand-panel-users'
+    );
+    expect(screen.getByTestId('expand-leaf-columns').textContent).toBe(
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, EXPAND_COLUMN_ID, 'id', 'name', 'actions'])
+    );
+    expect(screen.getByTestId('expand-left-pinning').textContent).toBe(
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, EXPAND_COLUMN_ID, ACTIONS_COLUMN_ID])
+    );
+  });
+
+  it('normalizes __rowExpand into initialState.columnOrder after select', () => {
+    function ExpandColumnOrderInspector() {
+      const { table } = useDataTable({
+        columns: selectableColumns,
+        data,
+        pageCount: 1,
+        showRowNumberColumn: true,
+        actionColumnPin: 'left',
+        rowActions,
+        expandConfig: {
+          rowKey: 'id',
+          tabs: [
+            {
+              id: 'summary',
+              label: '概览',
+              render: (row) => row.name
+            }
+          ]
+        },
+        initialState: {
+          columnOrder: [SELECT_COLUMN_ID, 'name', 'id']
+        }
+      });
+
+      return React.createElement(
+        'span',
+        { 'data-testid': 'normalized-column-order' },
+        JSON.stringify(table.getState().columnOrder ?? [])
+      );
+    }
+
+    render(React.createElement(ExpandColumnOrderInspector));
+
+    expect(screen.getByTestId('normalized-column-order').textContent).toBe(
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, EXPAND_COLUMN_ID, 'name', 'id'])
+    );
+  });
+
+  it('auto-closes the expanded row when the current page data no longer contains its rowKey', async () => {
+    const { rerender } = render(React.createElement(ExpandStateInspector));
+
+    act(() => {
+      screen.getByTestId('expand-second').click();
+    });
+
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('2');
+    expect(screen.getByTestId('expanded-row-name').textContent).toBe('Bob');
+
+    rerender(
+      React.createElement(ExpandStateInspector, {
+        rows: data.filter((row) => row.id !== 2)
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('expanded-row-key').textContent).toBe('null');
+      expect(screen.getByTestId('expanded-row-name').textContent).toBe('null');
+    });
   });
 });

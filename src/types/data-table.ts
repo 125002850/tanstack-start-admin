@@ -36,6 +36,49 @@ export interface ExtendedColumnFilter<TData> extends FilterItemSchema {
 
 export type ColumnResizeStorageMode = 'localStorage' | 'sessionStorage' | false;
 
+export type ExpandRowKeyField<TData> = Extract<
+  {
+    [K in keyof TData]-?: TData[K] extends string | number ? K : never;
+  }[keyof TData],
+  string
+>;
+
+export interface ExpandTab<TData, TId extends string = string> {
+  id: TId;
+  label: string;
+  icon?: React.ReactNode;
+  disabled?: boolean | ((row: TData) => boolean);
+  render: (row: TData) => React.ReactNode;
+}
+
+export interface ExpandConfig<
+  TData,
+  TKey extends ExpandRowKeyField<TData>,
+  TTabs extends readonly ExpandTab<TData, string>[]
+> {
+  rowKey: TKey;
+  tabs: TTabs;
+  defaultTab?: TTabs[number]['id'];
+}
+
+export interface ExpandTabEdge<TData> extends Omit<ExpandTab<TData, string>, 'id'> {
+  id: string;
+}
+
+export interface ExpandConfigEdge<TData> {
+  rowKey: keyof TData & string;
+  tabs: readonly ExpandTabEdge<TData>[];
+  defaultTab?: string;
+}
+
+export function defineExpandConfig<
+  TData,
+  TKey extends ExpandRowKeyField<TData>,
+  const TTabs extends readonly ExpandTab<TData, string>[]
+>(config: ExpandConfig<TData, TKey, TTabs>) {
+  return config;
+}
+
 export interface DataTableVirtualizationOptions {
   enabled: boolean;
   estimateRowHeight?: number;
