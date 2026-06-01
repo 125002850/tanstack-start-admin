@@ -59,6 +59,9 @@ coverage
 tmp
 temp
 
+# Superpowers
+.superpowers/
+
 # clerk configuration (can include secrets)
 /.clerk/
 .playwright-mcp
