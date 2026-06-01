@@ -122,7 +122,7 @@ describe('TagsBar', () => {
   })
 
   it('hides the horizontal scrollbar on tags bar', () => {
-    const store = useWorkspaceTagStore.getState()
+    const store = useWorkspaceTabStore.getState()
     store.openOrActivate({
       id: '/dashboard/overview',
       href: '/dashboard/overview',
