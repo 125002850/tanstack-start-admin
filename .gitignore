@@ -10,10 +10,6 @@ build
 .vercel
 .vinxi
 *.tsbuildinfo
-.output-flag-off
-.output-flag-on
-.output-playwright-default
-.output-playwright-rollback
 
 # TanStack Router generated
 src/routeTree.gen.ts
@@ -65,3 +61,8 @@ temp
 # clerk configuration (can include secrets)
 /.clerk/
 .playwright-mcp
+.output-flag-off
+.output-flag-on
+.output-playwright-default
+.output-playwright-rollback
+artifacts/**
