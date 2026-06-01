@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { type DataTableRowAction } from '@/components/ui/table/data-table-row-action';
 import { UserFormSheet } from '../user-form-sheet';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
+import { userTableExpandConfig } from './expand-config';
 
 const USERS_TABLE_ID = 'user-list';
 
@@ -110,7 +111,8 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
     [deleteMutation]
   );
 
-  const { table } = useDataTable({
+  const { table, expandConfig, expandedRow, expandedRowKey, setExpandedRowKey, expandPanelId } =
+    useDataTable({
     data: data.users,
     columns,
     pageCount,
@@ -124,7 +126,8 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
     },
     rowActions,
     actionColumnPin: 'left',
-    tableId: USERS_TABLE_ID
+    tableId: USERS_TABLE_ID,
+    expandConfig: userTableExpandConfig
   });
 
   const { pagination, sorting, columnFilters } = table.getState();
@@ -207,7 +210,15 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
   return (
     <>
       {confirmDialog}
-      <DataTable table={table} tableActions={actions}>
+      <DataTable
+        table={table}
+        tableActions={actions}
+        expandConfig={expandConfig}
+        expandedRow={expandedRow}
+        expandedRowKey={expandedRowKey}
+        onExpandedRowKeyChange={setExpandedRowKey}
+        expandPanelId={expandPanelId}
+      >
         <DataTableToolbar table={table} />
       </DataTable>
     </>

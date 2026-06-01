@@ -26,7 +26,11 @@ export const columns: ColumnDef<User>[] = [
       // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- inner Checkbox provides full a11y
       <div
         className='flex items-center justify-center w-full h-full cursor-pointer'
-        onClick={() => table.toggleAllPageRowsSelected(!table.getIsAllPageRowsSelected())}
+        data-row-expand-ignore
+        onClick={(event) => {
+          event.stopPropagation();
+          table.toggleAllPageRowsSelected(!table.getIsAllPageRowsSelected());
+        }}
       >
         <Checkbox checked={table.getIsAllPageRowsSelected()} aria-label='全选' />
       </div>
@@ -35,7 +39,11 @@ export const columns: ColumnDef<User>[] = [
       // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- inner Checkbox provides full a11y
       <div
         className='flex items-center justify-center w-full h-full cursor-pointer'
-        onClick={() => row.toggleSelected(!row.getIsSelected())}
+        data-row-expand-ignore
+        onClick={(event) => {
+          event.stopPropagation();
+          row.toggleSelected(!row.getIsSelected());
+        }}
       >
         <Checkbox checked={row.getIsSelected()} aria-label='选择行' />
       </div>
