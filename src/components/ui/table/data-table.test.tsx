@@ -8,7 +8,10 @@ import {
 } from '@tanstack/react-table';
 import { DataTable } from '@/components/ui/table/data-table';
 import type { DataTableAction } from '@/components/ui/table/data-table-actions-bar';
+import { useDataTable } from '@/hooks/use-data-table';
+import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
 import * as React from 'react';
+import userEvent from '@testing-library/user-event';
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({
@@ -153,6 +156,77 @@ function ControlsHarness({
   );
 }
 
+function ExpandHarness({
+  rows,
+  virtualization,
+  rowActions,
+  expandConfigOverride
+}: {
+  rows: TestRow[];
+  virtualization?: {
+    enabled: boolean;
+    estimateRowHeight?: number;
+    overscan?: number;
+    rowCountThreshold?: number;
+  };
+  rowActions?: DataTableRowAction<TestRow>[];
+  expandConfigOverride?: {
+    rowKey: 'id';
+    tabs: Array<{
+      id: string;
+      label: string;
+      disabled?: boolean | ((row: TestRow) => boolean);
+      render: (row: TestRow) => React.ReactNode;
+    }>;
+    defaultTab?: string;
+  };
+}) {
+  const expandConfig =
+    expandConfigOverride ??
+    ({
+      rowKey: 'id',
+      tabs: [
+        {
+          id: 'summary',
+          label: '概览',
+          render: (row: TestRow) => <div>{`summary:${row.name}`}</div>
+        }
+      ]
+    } as const);
+
+  const {
+    table,
+    expandedRow,
+    expandedRowKey,
+    setExpandedRowKey,
+    expandPanelId
+  } = useDataTable({
+    data: rows,
+    columns: COLUMNS,
+    pageCount: 1,
+    showRowNumberColumn: false,
+    rowActions,
+    tableId: 'test-users',
+    expandConfig
+  });
+
+  return (
+    <div>
+      <span data-testid='expanded-row-key'>{expandedRowKey ?? 'null'}</span>
+      <span data-testid='expanded-row-name'>{expandedRow?.name ?? 'null'}</span>
+      <DataTable
+        table={table}
+        virtualization={virtualization}
+        expandConfig={expandConfig}
+        expandedRow={expandedRow}
+        expandedRowKey={expandedRowKey}
+        onExpandedRowKeyChange={setExpandedRowKey}
+        expandPanelId={expandPanelId}
+      />
+    </div>
+  );
+}
+
 afterEach(cleanup);
 
 describe('DataTable body', () => {
@@ -270,5 +344,194 @@ describe('DataTable body', () => {
     );
     expect(virtualRows.length).toBeGreaterThan(0);
     expect((virtualRows[0] as HTMLTableRowElement).style.height).toBe('56px');
+  });
+
+  it('expands the clicked row when clicking normal cell content', async () => {
+    const user = userEvent.setup();
+    render(<ExpandHarness rows={makeRows(5)} />);
+
+    await user.click(screen.getByText('Item 2'));
+
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('2');
+    expect(screen.getByTestId('expanded-row-name').textContent).toBe('Item 2');
+  });
+
+  it('does not expand when clicking a row action button', async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+
+    render(
+      <ExpandHarness
+        rows={makeRows(5)}
+        rowActions={[
+          {
+            label: '编辑',
+            icon: <span>edit</span>,
+            onClick: onEdit
+          }
+        ]}
+      />
+    );
+
+    const actionButtons = screen.getAllByRole('button', { name: '编辑' });
+    await user.click(actionButtons[0]);
+
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('null');
+  });
+
+  it('supports disclosure button keyboard toggle with a stable aria-controls contract', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ExpandHarness rows={makeRows(5)} />);
+    const trigger = container.querySelector('[data-slot="data-table-expand-trigger"]');
+
+    if (!(trigger instanceof HTMLButtonElement)) {
+      throw new Error('expand trigger button missing');
+    }
+
+    trigger.focus();
+    await user.keyboard('{Enter}');
+
+    const expandedTrigger = container.querySelector('[data-slot="data-table-expand-trigger"]');
+    if (!(expandedTrigger instanceof HTMLButtonElement)) {
+      throw new Error('expanded trigger button missing');
+    }
+
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('1');
+    expect(expandedTrigger).toHaveAttribute('aria-expanded', 'true');
+    expect(expandedTrigger).toHaveAttribute('aria-controls', 'data-table-expand-panel-test-users');
+
+    expandedTrigger.focus();
+    await user.keyboard(' ');
+
+    const collapsedTrigger = container.querySelector('[data-slot="data-table-expand-trigger"]');
+    if (!(collapsedTrigger instanceof HTMLButtonElement)) {
+      throw new Error('collapsed trigger button missing');
+    }
+
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('null');
+    expect(collapsedTrigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('applies the same row-click boundary rules in the virtualized branch', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ExpandHarness
+        rows={makeRows(200)}
+        virtualization={{ enabled: true, rowCountThreshold: 10, overscan: 0 }}
+      />
+    );
+
+    const firstRowText = screen.getAllByText('Item 1').at(-1);
+    if (!firstRowText) {
+      throw new Error('row text for Item 1 missing');
+    }
+
+    await user.click(firstRowText);
+
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('1');
+  });
+
+  it('renders and closes the expand panel after a row is opened', async () => {
+    const user = userEvent.setup();
+    render(<ExpandHarness rows={makeRows(5)} />);
+
+    const firstRowText = screen.getAllByText('Item 1').at(-1);
+    if (!firstRowText) {
+      throw new Error('row text for Item 1 missing');
+    }
+
+    await user.click(firstRowText);
+
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('1');
+    expect(screen.getByText('summary:Item 1')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="data-table-expand-panel"]')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '关闭详情面板' }));
+
+    expect(screen.getByTestId('expanded-row-key').textContent).toBe('null');
+    expect(document.querySelector('[data-slot="data-table-expand-panel"]')).toBeNull();
+  });
+
+  it('preserves splitter height on same-row click and after close/reopen within the same mount', async () => {
+    const user = userEvent.setup();
+    render(<ExpandHarness rows={makeRows(5)} />);
+
+    await user.click(screen.getByText('Item 1'));
+
+    const separator = screen.getByRole('separator');
+    separator.focus();
+    await user.keyboard('{End}');
+
+    expect(separator).toHaveAttribute('aria-valuenow', '642');
+
+    const sameRowText = screen.getAllByText('Item 1').at(-1);
+    if (!sameRowText) {
+      throw new Error('row text for Item 1 missing');
+    }
+
+    await user.click(sameRowText);
+    expect(screen.getByRole('separator')).toHaveAttribute('aria-valuenow', '642');
+
+    await user.click(screen.getByRole('button', { name: '关闭详情面板' }));
+    await user.click(screen.getByText('Item 2'));
+
+    expect(screen.getByRole('separator')).toHaveAttribute('aria-valuenow', '642');
+  });
+
+  it('resets splitter height after remount', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<ExpandHarness rows={makeRows(5)} />);
+
+    await user.click(screen.getByText('Item 1'));
+
+    const separator = screen.getByRole('separator');
+    separator.focus();
+    await user.keyboard('{End}');
+    expect(separator).toHaveAttribute('aria-valuenow', '642');
+
+    unmount();
+    render(<ExpandHarness rows={makeRows(5)} />);
+
+    await user.click(screen.getByText('Item 1'));
+    expect(screen.getByRole('separator')).toHaveAttribute('aria-valuenow', '480');
+  });
+
+  it('falls back to the default available tab when switching rows invalidates the active tab', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ExpandHarness
+        rows={makeRows(5)}
+        expandConfigOverride={{
+          rowKey: 'id',
+          defaultTab: 'summary',
+          tabs: [
+            {
+              id: 'summary',
+              label: '概览',
+              render: (row) => <div>{`summary:${row.name}`}</div>
+            },
+            {
+              id: 'audit',
+              label: '审计',
+              disabled: (row) => row.id === 2,
+              render: (row) => <div>{`audit:${row.name}`}</div>
+            }
+          ]
+        }}
+      />
+    );
+
+    await user.click(screen.getByText('Item 1'));
+    await user.click(screen.getByRole('tab', { name: '审计' }));
+
+    expect(screen.getByText('audit:Item 1')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Item 2'));
+
+    expect(screen.getByText('summary:Item 2')).toBeInTheDocument();
+    expect(screen.queryByText('audit:Item 2')).toBeNull();
   });
 });

@@ -6,6 +6,7 @@ import { getCommonPinningStyles } from '@/lib/data-table';
 import type { DataTableVirtualizationOptions } from '@/types/data-table';
 import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
 import { emitDataTableVirtualEvent } from '@/components/ui/table/data-table-virtual-events';
+import { cn } from '@/lib/utils';
 
 interface DataTableBodyProps<TData> {
   table: TanstackTable<TData>;
@@ -13,11 +14,25 @@ interface DataTableBodyProps<TData> {
   virtualization?: DataTableVirtualizationOptions;
   scrollViewportRef: React.RefObject<HTMLDivElement | null>;
   headerRowRef: React.RefObject<HTMLTableRowElement | null>;
+  onRowClick?: (rowKey: string) => void;
+  expandedRowKey?: string | null;
+  getExpandRowKey?: (row: TData) => string | null;
 }
 
 const ESTIMATE_ROW_HEIGHT = DATA_TABLE_VIRTUAL_PRESET.estimateRowHeight;
 const DEFAULT_OVERSCAN = DATA_TABLE_VIRTUAL_PRESET.overscan;
 const DEFAULT_ROW_COUNT_THRESHOLD = DATA_TABLE_VIRTUAL_PRESET.rowCountThreshold;
+const ROW_EXPAND_IGNORE_SELECTOR = [
+  '[data-row-expand-ignore]',
+  'button',
+  'a[href]',
+  'input',
+  'select',
+  'textarea',
+  '[role="button"]',
+  '[role="menuitem"]',
+  '[role="checkbox"]'
+].join(',');
 
 function measureHeaderWidths(headerRow: HTMLTableRowElement): number[] {
   return Array.from(headerRow.querySelectorAll('th')).map((th) => th.offsetWidth);
@@ -28,7 +43,10 @@ export function DataTableBody<TData>({
   emptyMessage,
   virtualization,
   scrollViewportRef,
-  headerRowRef
+  headerRowRef,
+  onRowClick,
+  expandedRowKey,
+  getExpandRowKey
 }: DataTableBodyProps<TData>) {
   const prevKeyRef = useRef('');
   const [runtimeFallback, setRuntimeFallback] = useState(false);
@@ -80,6 +98,32 @@ export function DataTableBody<TData>({
   const pagination = table.getState().pagination;
   const sorting = table.getState().sorting;
   const columnFilters = table.getState().columnFilters;
+
+  const handleRowClick = useCallback(
+    (event: React.MouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(ROW_EXPAND_IGNORE_SELECTOR)) {
+        return;
+      }
+
+      const rowKey = getExpandRowKey?.(row.original);
+      if (!rowKey) {
+        return;
+      }
+
+      onRowClick?.(rowKey);
+    },
+    [getExpandRowKey, onRowClick]
+  );
+
+  const getRowClassName = useCallback(
+    (row: Row<TData>) =>
+      cn(
+        expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey && 'bg-accent',
+        onRowClick && 'cursor-pointer'
+      ),
+    [expandedRowKey, getExpandRowKey, onRowClick]
+  );
 
   // Scroll reset — useLayoutEffect for pre-paint timing (Task 3 fix)
   useLayoutEffect(() => {
@@ -162,6 +206,8 @@ export function DataTableBody<TData>({
                 data-state={row.getIsSelected() && 'selected'}
                 data-index={virtualRow.index}
                 aria-rowindex={virtualRow.index + 2}
+                className={getRowClassName(row)}
+                onClick={(event) => handleRowClick(event, row)}
                 style={{
                   position: 'absolute',
                   display: 'flex',
@@ -222,6 +268,8 @@ export function DataTableBody<TData>({
           key={row.id}
           data-state={row.getIsSelected() && 'selected'}
           data-row-index={index}
+          className={getRowClassName(row)}
+          onClick={(event) => handleRowClick(event, row)}
         >
           {row.getVisibleCells().map((cell) => (
             <TableCell key={cell.id} style={getCommonPinningStyles({ column: cell.column })}>

@@ -66,6 +66,7 @@ const DATA: TestRow[] = [
   { id: 1, name: 'Alice' },
   { id: 2, name: 'Bob' }
 ];
+const EXPAND_COLUMN_ID = '__rowExpand';
 
 const COLUMNS: ColumnDef<TestRow>[] = [
   { accessorKey: 'id', header: 'ID', size: 80 },
@@ -106,7 +107,8 @@ function ActionColumnStateHarness({
   rowActions = ROW_ACTIONS,
   initialState,
   columns = COLUMNS,
-  showRowNumberColumn = false
+  showRowNumberColumn = false,
+  expandEnabled = false
 }: {
   actionColumnPin?: 'left' | 'right';
   rowActions?: DataTableRowAction<TestRow>[];
@@ -117,7 +119,9 @@ function ActionColumnStateHarness({
       left?: string[];
       right?: string[];
     };
+    columnOrder?: string[];
   };
+  expandEnabled?: boolean;
 }) {
   const { table } = useDataTable({
     data: DATA,
@@ -126,7 +130,19 @@ function ActionColumnStateHarness({
     showRowNumberColumn,
     actionColumnPin,
     rowActions,
-    initialState
+    initialState,
+    expandConfig: expandEnabled
+      ? {
+          rowKey: 'id',
+          tabs: [
+            {
+              id: 'summary',
+              label: '概览',
+              render: (row) => row.name
+            }
+          ]
+        }
+      : undefined
   });
 
   const actionsColumn = table.getColumn('actions');
@@ -152,6 +168,11 @@ function ActionColumnStateHarness({
       'span',
       { key: 'size', 'data-testid': 'actions-size' },
       String(actionsColumn?.getSize() ?? '')
+    ),
+    React.createElement(
+      'span',
+      { key: 'order', 'data-testid': 'column-order' },
+      JSON.stringify(table.getState().columnOrder ?? [])
     )
   ]);
 }
@@ -215,6 +236,44 @@ describe('DataTable actions column', () => {
       JSON.stringify(['__rowNumber', 'select', 'actions', 'name'])
     );
     expect(getByTestId('right-pinning').textContent).toBe(JSON.stringify(['id']));
+  });
+
+  it('keeps row number, checkbox, expand trigger, and actions as a unified left-pinned group', () => {
+    const { getByTestId } = render(
+      <ActionColumnStateHarness
+        actionColumnPin='left'
+        columns={SELECTABLE_COLUMNS}
+        showRowNumberColumn
+        expandEnabled
+        initialState={{
+          columnPinning: {
+            left: ['name'],
+            right: ['id']
+          }
+        }}
+      />
+    );
+
+    expect(getByTestId('left-pinning').textContent).toBe(
+      JSON.stringify(['__rowNumber', 'select', EXPAND_COLUMN_ID, 'actions', 'name'])
+    );
+    expect(getByTestId('right-pinning').textContent).toBe(JSON.stringify(['id']));
+  });
+
+  it('normalizes __rowExpand inside initialState.columnOrder instead of appending it to the tail', () => {
+    const { getByTestId } = render(
+      <ActionColumnStateHarness
+        columns={SELECTABLE_COLUMNS}
+        expandEnabled
+        initialState={{
+          columnOrder: ['select', 'name', 'id']
+        }}
+      />
+    );
+
+    expect(getByTestId('column-order').textContent).toBe(
+      JSON.stringify(['select', EXPAND_COLUMN_ID, 'name', 'id'])
+    );
   });
 
   it('re-homes an existing actions pin without duplicating it and keeps it ahead of user columns', () => {

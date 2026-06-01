@@ -105,15 +105,19 @@ export function DataTableRowActions<TData>({
           }}
         />
       )}
-      <div className='flex items-center gap-0.5'>
+      <div className='flex items-center gap-0.5' data-row-expand-ignore>
         {visibleActions.map((action) => (
           <Button
             key={action.label}
             variant='ghost'
             size='icon'
             className='h-8 w-8'
-            onClick={() => handleClick(action)}
+            onClick={(event) => {
+              event.stopPropagation();
+              void handleClick(action);
+            }}
             aria-label={action.label}
+            data-row-expand-ignore
           >
             {action.icon}
           </Button>
@@ -121,13 +125,28 @@ export function DataTableRowActions<TData>({
         {moreActions.length > 0 && (
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant='ghost' className='h-8 w-8 p-0' aria-label='更多操作'>
+              <Button
+                variant='ghost'
+                className='h-8 w-8 p-0'
+                aria-label='更多操作'
+                data-row-expand-ignore
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+              >
                 <Icons.ellipsis className='size-4' />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end'>
               {moreActions.map((action) => (
-                <DropdownMenuItem key={action.label} onClick={() => handleClick(action)}>
+                <DropdownMenuItem
+                  key={action.label}
+                  data-row-expand-ignore
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleClick(action);
+                  }}
+                >
                   {action.icon}
                   <span className='ml-2'>{action.label}</span>
                 </DropdownMenuItem>
