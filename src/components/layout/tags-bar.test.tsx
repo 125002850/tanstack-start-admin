@@ -1,20 +1,34 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TagsBar from './tags-bar';
 import { useWorkspaceTabStore } from '@/features/workspace-tabs/utils/store';
 
-// Mock Radix ScrollArea — avoids React instance conflicts in jsdom
-vi.mock('@/components/ui/scroll-area', () => ({
-  ScrollArea: ({ children, className }: { children: ReactNode; className?: string }) => (
-    <div data-testid='scroll-area' className={className}>
-      {children}
-    </div>
-  ),
-  ScrollBar: () => null
-}));
+vi.mock('@dnd-kit/core', async () => {
+  const actual = await vi.importActual<typeof import('@dnd-kit/core')>('@dnd-kit/core');
 
-// Mock Radix ContextMenu — avoids React instance conflicts in jsdom
+  return {
+    ...actual,
+    DragOverlay: ({
+      children,
+      className,
+      dropAnimation
+    }: {
+      children?: ReactNode;
+      className?: string;
+      dropAnimation?: unknown;
+    }) => (
+      <div
+        data-slot='mock-drag-overlay'
+        data-has-drop-animation={dropAnimation == null ? 'false' : 'true'}
+        className={className}
+      >
+        {children}
+      </div>
+    )
+  };
+});
+
 vi.mock('@/components/ui/context-menu', () => ({
   ContextMenu: ({ children }: { children: ReactNode }) => <>{children}</>,
   ContextMenuTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -23,7 +37,6 @@ vi.mock('@/components/ui/context-menu', () => ({
   ContextMenuSeparator: () => null
 }));
 
-// Mock the router-dependent hook
 vi.mock('@/features/workspace-tabs/hooks/use-workspace-tags', () => ({
   useWorkspaceTags: () => {
     const store = useWorkspaceTabStore();
@@ -47,20 +60,21 @@ vi.mock('@/features/workspace-tabs/hooks/use-workspace-tags', () => ({
   }
 }));
 
-// Mock icons
 vi.mock('@/components/icons', () => ({
   Icons: {
     close: () => <span data-testid='icon-close' />
   }
 }));
 
-// Mock router
 vi.mock('@tanstack/react-router', () => ({
   useRouter: () => ({ navigate: vi.fn() }),
   useRouterState: () => ({})
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 function resetStore() {
   useWorkspaceTabStore.setState({
@@ -73,105 +87,151 @@ function resetStore() {
   });
 }
 
+function openTab(
+  id: string,
+  title: string,
+  options?: {
+    closable?: boolean;
+    keepAlive?: boolean;
+  }
+) {
+  useWorkspaceTabStore.getState().openOrActivate({
+    id,
+    href: id,
+    title,
+    closable: options?.closable ?? true,
+    keepAlive: options?.keepAlive ?? false
+  });
+}
+
+function setupHomeAndChat() {
+  openTab('/dashboard/overview', '仪表盘', { closable: false });
+  openTab('/dashboard/chat', 'Chat');
+}
+
+function setupThreeTabs() {
+  openTab('/dashboard/overview', '仪表盘', { closable: false });
+  openTab('/dashboard/users', 'Users');
+  openTab('/dashboard/chat', 'Chat');
+}
+
+function getWorkspaceTagById(id: string) {
+  return document.querySelector<HTMLElement>(`[data-slot="workspace-tag"][data-tab-id="${id}"]`);
+}
+
+function getVisualOrder() {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-slot="workspace-tag"]')).map((node) =>
+    node.getAttribute('data-tab-id')
+  );
+}
+
+function mockHorizontalTagRects() {
+  const tags = Array.from(document.querySelectorAll<HTMLElement>('[data-slot="workspace-tag"]'));
+  tags.forEach((tag, index) => {
+    const left = index * 140;
+    const rect = {
+      x: left,
+      y: 0,
+      left,
+      top: 0,
+      right: left + 120,
+      bottom: 28,
+      width: 120,
+      height: 28,
+      toJSON: () => ({})
+    };
+
+    Object.defineProperty(tag, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => rect
+    });
+
+    const wrapper = tag.parentElement;
+    if (wrapper) {
+      Object.defineProperty(wrapper, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => rect
+      });
+    }
+  });
+}
+
+function startDrag(tab: HTMLElement, nextPointerX = 180) {
+  act(() => {
+    fireEvent.mouseDown(tab, { button: 0, clientX: 80, clientY: 12 });
+    vi.advanceTimersByTime(181);
+    fireEvent.mouseMove(document, { clientX: nextPointerX, clientY: 12 });
+  });
+}
+
+function finishDrag(pointerX = 180, flushTimers = true) {
+  act(() => {
+    fireEvent.mouseMove(document, { clientX: pointerX, clientY: 12 });
+    fireEvent.mouseUp(document, { clientX: pointerX, clientY: 12 });
+    if (flushTimers) {
+      vi.runOnlyPendingTimers();
+    }
+  });
+}
+
 describe('TagsBar', () => {
   beforeEach(() => {
     resetStore();
     cleanup();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn()
+    });
   });
 
   it('renders tabs in openedOrder', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
-    store.openOrActivate({
-      id: '/dashboard/chat',
-      href: '/dashboard/chat',
-      title: 'Chat',
-      closable: true,
-      keepAlive: false
-    });
+    setupHomeAndChat();
     render(<TagsBar />);
     expect(screen.getByRole('tab', { name: /仪表盘/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Chat/ })).toBeInTheDocument();
   });
 
   it('marks active tab with aria-selected', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
+    openTab('/dashboard/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
     const tab = screen.getByRole('tab', { name: /仪表盘/ });
     expect(tab).toHaveAttribute('aria-selected', 'true');
     expect(tab).toHaveClass('bg-card', 'text-card-foreground');
   });
 
-  it('hides the horizontal scrollbar on tags bar', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
+  it('uses ScrollArea viewport and hides the horizontal scrollbar on tags bar', () => {
+    openTab('/dashboard/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
-    expect(screen.getByTestId('scroll-area')).toHaveClass(
-      '[&>[data-slot=scroll-area-scrollbar][data-orientation=horizontal]]:hidden'
+    const tablist = screen.getByRole('tablist', { name: 'Workspace tabs' });
+    const viewport = tablist.closest('[data-slot="scroll-area-viewport"]');
+    const scrollArea = tablist.closest('[data-slot="scroll-area"]');
+
+    expect(viewport).toBeInTheDocument();
+    expect(scrollArea).toBeInTheDocument();
+    expect(viewport).toHaveClass(
+      'overflow-x-auto',
+      'overflow-y-hidden',
+      '[scrollbar-width:none]',
+      '[-ms-overflow-style:none]',
+      '[&::-webkit-scrollbar]:hidden'
     );
+    expect(scrollArea).toHaveClass('[&>[data-slot=scroll-area-scrollbar]]:hidden');
   });
 
   it('home tab has no close button', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
+    openTab('/dashboard/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
     expect(screen.queryByRole('button', { name: /Close 仪表盘/ })).not.toBeInTheDocument();
   });
 
   it('closable tab shows close button', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/chat',
-      href: '/dashboard/chat',
-      title: 'Chat',
-      closable: true,
-      keepAlive: false
-    });
+    openTab('/dashboard/chat', 'Chat');
     render(<TagsBar />);
     expect(screen.getByRole('button', { name: /Close Chat/ })).toBeInTheDocument();
   });
 
-  it('ArrowLeft and ArrowRight move focus', async () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
-    store.openOrActivate({
-      id: '/dashboard/chat',
-      href: '/dashboard/chat',
-      title: 'Chat',
-      closable: true,
-      keepAlive: false
-    });
+  it('ArrowLeft and ArrowRight move focus', () => {
+    setupHomeAndChat();
     render(<TagsBar />);
     const tabs = screen.getAllByRole('tab');
     tabs[0]?.focus();
@@ -181,22 +241,8 @@ describe('TagsBar', () => {
     expect(document.activeElement).toBe(tabs[0]);
   });
 
-  it('Enter activates the focused tab', async () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
-    store.openOrActivate({
-      id: '/dashboard/chat',
-      href: '/dashboard/chat',
-      title: 'Chat',
-      closable: true,
-      keepAlive: false
-    });
+  it('Enter activates the focused tab', () => {
+    setupHomeAndChat();
     render(<TagsBar />);
     const tabs = screen.getAllByRole('tab');
     const overview = tabs[0]!;
@@ -206,21 +252,7 @@ describe('TagsBar', () => {
   });
 
   it('Delete triggers close for closable tabs', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
-    store.openOrActivate({
-      id: '/dashboard/chat',
-      href: '/dashboard/chat',
-      title: 'Chat',
-      closable: true,
-      keepAlive: false
-    });
+    setupHomeAndChat();
     render(<TagsBar />);
     const tabs = screen.getAllByRole('tab');
     tabs[1]?.focus();
@@ -229,14 +261,7 @@ describe('TagsBar', () => {
   });
 
   it('Delete does not close home tab', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/overview',
-      href: '/dashboard/overview',
-      title: '仪表盘',
-      closable: false,
-      keepAlive: false
-    });
+    openTab('/dashboard/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
     const tab = screen.getByRole('tab', { name: /仪表盘/ });
     tab.focus();
@@ -245,15 +270,7 @@ describe('TagsBar', () => {
   });
 
   it('shows dirty indicator when lifecycle marks tab as dirty', () => {
-    const store = useWorkspaceTabStore.getState();
-    store.openOrActivate({
-      id: '/dashboard/chat',
-      href: '/dashboard/chat',
-      title: 'Chat',
-      closable: true,
-      keepAlive: false
-    });
-    // Set dirty in lifecycle
+    openTab('/dashboard/chat', 'Chat');
     useWorkspaceTabStore.setState({
       lifecycleSnapshots: {
         '/dashboard/chat': { title: 'Chat', dirty: true }
@@ -262,5 +279,202 @@ describe('TagsBar', () => {
     render(<TagsBar />);
     expect(screen.getByRole('tab', { name: /Chat/ })).toBeInTheDocument();
     expect(screen.getByLabelText(/Chat has unsaved changes/)).toBeInTheDocument();
+  });
+
+  it('marks the home tab as pinned and exposes stable data slots', () => {
+    setupHomeAndChat();
+    render(<TagsBar />);
+
+    expect(screen.getByRole('tab', { name: /仪表盘/ })).toHaveAttribute('data-pinned', 'home');
+    expect(screen.getByRole('tab', { name: /Chat/ })).toHaveAttribute('data-slot', 'workspace-tag');
+    expect(screen.getByRole('tablist', { name: 'Workspace tabs' })).toHaveAttribute(
+      'data-slot',
+      'workspace-tags-bar'
+    );
+  });
+
+  it('renders aria-hidden placeholder and overlay during a long-press drag', () => {
+    vi.useFakeTimers();
+    setupThreeTabs();
+    render(<TagsBar />);
+    mockHorizontalTagRects();
+
+    startDrag(screen.getByRole('tab', { name: /Users/ }));
+
+    expect(document.querySelector('[data-slot="workspace-tag-overlay"]')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    );
+    expect(document.querySelector('[data-slot="workspace-tag-placeholder"]')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    );
+
+    finishDrag();
+  });
+
+  it('does not displace the adjacent tag when drag activates before leaving the source tag', () => {
+    vi.useFakeTimers();
+    setupThreeTabs();
+    render(<TagsBar />);
+    mockHorizontalTagRects();
+
+    const usersTab = screen.getByRole('tab', { name: /Users/ });
+    const chatWrapper = getWorkspaceTagById('/dashboard/chat')?.parentElement as HTMLElement | null;
+
+    expect(chatWrapper).not.toBeNull();
+
+    act(() => {
+      fireEvent.mouseDown(usersTab, { button: 0, clientX: 200, clientY: 12 });
+      vi.advanceTimersByTime(181);
+      fireEvent.mouseMove(document, { clientX: 200, clientY: 12 });
+    });
+
+    expect(document.querySelector('[data-slot="workspace-tag-placeholder"]')).toHaveAttribute(
+      'data-tab-id',
+      '/dashboard/users'
+    );
+    expect(chatWrapper?.style.transform ?? '').toBe('');
+
+    finishDrag(200);
+  });
+
+  it('computes edge fades from the ScrollArea viewport metrics', () => {
+    setupThreeTabs();
+    render(<TagsBar />);
+
+    const tablist = screen.getByRole('tablist', { name: 'Workspace tabs' });
+    const viewport = tablist.closest('[data-slot="scroll-area-viewport"]') as HTMLDivElement | null;
+    const shell = viewport?.closest('[data-slot="scroll-area"]')?.parentElement as HTMLElement | null;
+
+    expect(viewport).not.toBeNull();
+    expect(shell).not.toBeNull();
+
+    let scrollLeft = 0;
+
+    Object.defineProperties(viewport!, {
+      scrollWidth: {
+        configurable: true,
+        get: () => 360
+      },
+      clientWidth: {
+        configurable: true,
+        get: () => 160
+      },
+      scrollLeft: {
+        configurable: true,
+        get: () => scrollLeft
+      }
+    });
+
+    act(() => {
+      fireEvent.scroll(viewport!);
+    });
+    expect(shell).not.toHaveClass('before:pointer-events-none');
+    expect(shell).toHaveClass('after:pointer-events-none');
+
+    scrollLeft = 96;
+    act(() => {
+      fireEvent.scroll(viewport!);
+    });
+    expect(shell).toHaveClass('before:pointer-events-none');
+    expect(shell).toHaveClass('after:pointer-events-none');
+
+    scrollLeft = 200;
+    act(() => {
+      fireEvent.scroll(viewport!);
+    });
+    expect(shell).toHaveClass('before:pointer-events-none');
+    expect(shell).not.toHaveClass('after:pointer-events-none');
+  });
+
+  it('portals the drag overlay to document.body and keeps drop animation enabled', () => {
+    vi.useFakeTimers();
+    setupThreeTabs();
+    render(<TagsBar />);
+    mockHorizontalTagRects();
+
+    startDrag(screen.getByRole('tab', { name: /Users/ }));
+
+    const overlay = document.querySelector('[data-slot="mock-drag-overlay"]');
+
+    expect(overlay).toBeInTheDocument();
+    expect(overlay).toHaveAttribute('data-has-drop-animation', 'true');
+    expect(overlay?.parentElement).toBe(document.body);
+
+    finishDrag();
+  });
+
+  it('reorders non-home tabs after a completed drag', () => {
+    vi.useFakeTimers();
+    setupThreeTabs();
+    render(<TagsBar />);
+    mockHorizontalTagRects();
+
+    startDrag(screen.getByRole('tab', { name: /Chat/ }), 145);
+    finishDrag(145);
+
+    expect(getVisualOrder()).toEqual([
+      '/dashboard/overview',
+      '/dashboard/chat',
+      '/dashboard/users'
+    ]);
+  });
+
+  it('restores the original order when dragging back to the source position before drop', () => {
+    vi.useFakeTimers();
+    setupThreeTabs();
+    render(<TagsBar />);
+    mockHorizontalTagRects();
+
+    const chatTab = screen.getByRole('tab', { name: /Chat/ });
+
+    act(() => {
+      fireEvent.mouseDown(chatTab, { button: 0, clientX: 340, clientY: 12 });
+      vi.advanceTimersByTime(181);
+      fireEvent.mouseMove(document, { clientX: 200, clientY: 12 });
+    });
+
+    act(() => {
+      fireEvent.mouseMove(document, { clientX: 340, clientY: 12 });
+    });
+    finishDrag(340);
+
+    expect(getVisualOrder()).toEqual([
+      '/dashboard/overview',
+      '/dashboard/users',
+      '/dashboard/chat'
+    ]);
+  });
+
+  it('suppresses the immediate post-drag click', () => {
+    vi.useFakeTimers();
+    setupThreeTabs();
+    openTab('/dashboard/overview', '仪表盘', { closable: false });
+    render(<TagsBar />);
+    mockHorizontalTagRects();
+
+    startDrag(screen.getByRole('tab', { name: /Chat/ }), 240);
+    finishDrag(240, false);
+
+    expect(useWorkspaceTabStore.getState().activeId).toBe('/dashboard/overview');
+
+    fireEvent.click(screen.getByRole('tab', { name: /Chat/ }));
+    expect(useWorkspaceTabStore.getState().activeId).toBe('/dashboard/overview');
+  });
+
+  it('invalidates an in-flight drag when the active dragged tag disappears from openedOrder', async () => {
+    vi.useFakeTimers();
+    setupThreeTabs();
+    render(<TagsBar />);
+    mockHorizontalTagRects();
+
+    startDrag(screen.getByRole('tab', { name: /Users/ }), 240);
+
+    useWorkspaceTabStore.getState().close('/dashboard/users');
+    finishDrag(240);
+
+    expect(getWorkspaceTagById('/dashboard/users')).toBeNull();
+    expect(getVisualOrder()).toEqual(['/dashboard/overview', '/dashboard/chat']);
   });
 });
