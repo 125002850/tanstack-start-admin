@@ -100,6 +100,7 @@ export function DataTable<TData>({
   const [activeExpandTab, setActiveExpandTab] = React.useState<string | null>(null);
   const [expandHostHeight, setExpandHostHeight] = React.useState(FALLBACK_EXPAND_HOST_HEIGHT);
   const [expandOverheadPx, setExpandOverheadPx] = React.useState(0);
+  const [isDragging, setIsDragging] = React.useState(false);
 
   const virtConfig: DataTableVirtualizationOptions | undefined =
     virtualization === true
@@ -240,6 +241,7 @@ export function DataTable<TData>({
         setRequestedSplitTopPx(parseInt(dragState.topPanel.style.height, 10));
       }
       dragStateRef.current = null;
+      setIsDragging(false);
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -414,6 +416,7 @@ export function DataTable<TData>({
               const bottomEl = bottomPanelRef.current;
               if (!topEl || !bottomEl) return;
 
+              setIsDragging(true);
               dragStateRef.current = {
                 startY: event.clientY,
                 startTopPx: expandSplitLayout.topPx,
@@ -423,8 +426,14 @@ export function DataTable<TData>({
               };
             }}
           >
-            {/* Hover pill: rounded handle with grip dots */}
-            <span className='inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/0 opacity-0 transition-all duration-200 group-hover:w-10 group-hover:bg-border/40 group-hover:opacity-100 group-focus-visible:w-10 group-focus-visible:bg-border/40 group-focus-visible:opacity-100'>
+            {/* Pill handle with grip dots — visible on hover, focus, and during active drag */}
+            <span
+              className={
+                isDragging
+                  ? 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/40 opacity-100'
+                  : 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/0 opacity-0 transition-all duration-200 group-hover:bg-border/40 group-hover:opacity-100 group-focus-visible:bg-border/40 group-focus-visible:opacity-100'
+              }
+            >
               <span className='inline-flex gap-px'>
                 <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
                 <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
