@@ -30,14 +30,6 @@ export const columns: ColumnDef<Product>[] = [
     header: ({ column }: { column: Column<Product, unknown> }) => (
       <DataTableColumnHeader column={column} title='产品名称' />
     ),
-    cell: ({ cell }) => {
-      const value = cell.getValue<Product['name']>() as string;
-      return (
-        <div className='truncate max-w-[200px]' title={value}>
-          {value}
-        </div>
-      );
-    },
     meta: {
       label: '产品名称',
       placeholder: '搜索产品名称...',
@@ -75,14 +67,6 @@ export const columns: ColumnDef<Product>[] = [
   {
     accessorKey: 'description',
     header: '产品描述',
-    cell: ({ cell }) => {
-      const value = cell.getValue<Product['description']>() as string;
-      return (
-        <div className='truncate max-w-[300px]' title={value}>
-          {value}
-        </div>
-      );
-    },
     meta: {
       label: '产品描述'
     }

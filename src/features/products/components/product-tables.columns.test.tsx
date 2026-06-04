@@ -40,13 +40,12 @@ describe('product table columns', () => {
     const thumbnail = screen.getByRole('img', { name: 'Product 1' });
 
     expect(thumbnail.parentElement).toHaveClass(
-      'size-[53px]',
+      'relative',
+      'size-[40px]',
       'shrink-0',
       'overflow-hidden',
       'rounded-lg'
     );
-    expect(thumbnail).toHaveAttribute('width', '53');
-    expect(thumbnail).toHaveAttribute('height', '53');
     expect(thumbnail).toHaveClass('size-full', 'object-cover');
   });
 });

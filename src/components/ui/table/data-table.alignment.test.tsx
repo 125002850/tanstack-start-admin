@@ -311,6 +311,7 @@ describe('DataTable column alignment', () => {
     const cols = Array.from(container.querySelectorAll('col'));
 
     expect(document.querySelector('[data-slot="data-table-expand-panel"]')).not.toBeNull();
+    expect(cols).toHaveLength(3);
     expect(extractWidth(cols[0]?.getAttribute('style') ?? '')).toBe('80px');
     expect(extractWidth(cols[1]?.getAttribute('style') ?? '')).toBe('170px');
     expect(extractWidth(cols[2]?.getAttribute('style') ?? '')).toBe('111px');

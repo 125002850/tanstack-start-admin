@@ -66,7 +66,6 @@ const DATA: TestRow[] = [
   { id: 1, name: 'Alice' },
   { id: 2, name: 'Bob' }
 ];
-const EXPAND_COLUMN_ID = '__rowExpand';
 
 const COLUMNS: ColumnDef<TestRow>[] = [
   { accessorKey: 'id', header: 'ID', size: 80 },
@@ -238,7 +237,7 @@ describe('DataTable actions column', () => {
     expect(getByTestId('right-pinning').textContent).toBe(JSON.stringify(['id']));
   });
 
-  it('keeps row number, checkbox, and actions as a unified left-pinned group with expand enabled', () => {
+  it('keeps row number, checkbox, and actions as a unified left-pinned group when expand uses row highlight only', () => {
     const { getByTestId } = render(
       <ActionColumnStateHarness
         actionColumnPin='left'
@@ -271,9 +270,7 @@ describe('DataTable actions column', () => {
       />
     );
 
-    expect(getByTestId('column-order').textContent).toBe(
-      JSON.stringify(['select', 'name', 'id'])
-    );
+    expect(getByTestId('column-order').textContent).toBe(JSON.stringify(['select', 'name', 'id']));
   });
 
   it('re-homes an existing actions pin without duplicating it and keeps it ahead of user columns', () => {

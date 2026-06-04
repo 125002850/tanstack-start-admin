@@ -19,7 +19,6 @@ import { useDataTable } from '@/hooks/use-data-table';
 
 type TestRow = { id: number; name: string };
 const ROW_NUMBER_COLUMN_ID = '__rowNumber';
-const EXPAND_COLUMN_ID = '__rowExpand';
 const SELECT_COLUMN_ID = 'select';
 const ACTIONS_COLUMN_ID = 'actions';
 const FIXED_COLUMN_WIDTH = 40;
@@ -554,13 +553,7 @@ describe('useDataTable — internal-state mode (default)', () => {
       'data-table-expand-panel-users'
     );
     expect(screen.getByTestId('expand-leaf-columns').textContent).toBe(
-      JSON.stringify([
-        ROW_NUMBER_COLUMN_ID,
-        SELECT_COLUMN_ID,
-        'id',
-        'name',
-        'actions'
-      ])
+      JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, 'id', 'name', 'actions'])
     );
     expect(screen.getByTestId('expand-left-pinning').textContent).toBe(
       JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, ACTIONS_COLUMN_ID])

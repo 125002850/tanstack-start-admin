@@ -214,6 +214,39 @@ describe('DataTableColumnResizeHandle overlay lifecycle', () => {
     expect(overlayAfter).toBeUndefined();
   });
 
+  it('creates and removes the overlay on touchstart/touchend while restoring userSelect', () => {
+    document.body.style.userSelect = 'text';
+
+    const { container } = render(<Harness />);
+    const handle = container.querySelector('div[data-resizing]') as HTMLElement;
+
+    fireEvent.touchStart(handle, {
+      touches: [{ clientX: 180 }]
+    });
+
+    const overlayRoot = container.querySelector('[data-table-resize-overlay-root]');
+    const childrenDuring = Array.from(overlayRoot!.children);
+    const overlayDuring = childrenDuring.find(
+      (el) =>
+        (el as HTMLElement).style.position === 'absolute' &&
+        (el as HTMLElement).style.pointerEvents === 'none'
+    );
+
+    expect(overlayDuring).toBeTruthy();
+
+    fireEvent.touchEnd(document);
+
+    const childrenAfter = Array.from(overlayRoot!.children);
+    const overlayAfter = childrenAfter.find(
+      (el) =>
+        (el as HTMLElement).style.position === 'absolute' &&
+        (el as HTMLElement).style.pointerEvents === 'none'
+    );
+
+    expect(overlayAfter).toBeUndefined();
+    expect(document.body.style.userSelect).toBe('text');
+  });
+
   it('overlay is not created when column is not resizable', () => {
     const { container } = render(<Harness />);
     const ths = container.querySelectorAll('thead th');

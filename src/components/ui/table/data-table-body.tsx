@@ -7,6 +7,7 @@ import type { DataTableVirtualizationOptions } from '@/types/data-table';
 import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
 import { emitDataTableVirtualEvent } from '@/components/ui/table/data-table-virtual-events';
 import { cn } from '@/lib/utils';
+import { DataTableCellContent } from '@/components/ui/table/data-table-cell-content';
 
 interface DataTableBodyProps<TData> {
   table: TanstackTable<TData>;
@@ -245,7 +246,9 @@ export function DataTableBody<TData>({
                           cell.column.getSize()
                       }}
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      <DataTableCellContent cell={cell}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </DataTableCellContent>
                     </TableCell>
                   );
                 })}
@@ -273,7 +276,9 @@ export function DataTableBody<TData>({
         >
           {row.getVisibleCells().map((cell) => (
             <TableCell key={cell.id} style={getCommonPinningStyles({ column: cell.column })}>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              <DataTableCellContent cell={cell}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </DataTableCellContent>
             </TableCell>
           ))}
         </TableRow>

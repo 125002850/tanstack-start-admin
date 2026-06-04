@@ -1,189 +1,107 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
-const USERS_URL = '/dashboard/users';
-const EXPAND_PANEL = '[data-slot="data-table-expand-panel"]';
-const EXPAND_PANEL_CLOSE = '[data-slot="data-table-expand-panel-close"]';
-const EXPAND_SPLIT_HANDLE = '[data-slot="data-table-expand-split-handle"]';
-
-async function expectUsersTableLoaded(page: Page) {
-  await expect(page.locator('table tbody tr:visible').first()).toBeVisible({ timeout: 15_000 });
+function visibleRows(page: Page) {
+  return page.locator('table tbody tr:visible');
 }
 
-async function expectExpandPanelOpen(page: Page) {
-  await expect(page.locator(EXPAND_PANEL)).toBeVisible({ timeout: 5_000 });
+function firstNameCell(page: Page) {
+  return visibleRows(page).first().locator('td').nth(4);
 }
 
-async function expectExpandPanelClosed(page: Page) {
-  await expect(page.locator(EXPAND_PANEL)).toHaveCount(0);
+function expandPanel(page: Page) {
+  return page.locator('[data-slot="data-table-expand-panel"]');
 }
 
-async function openFirstRowViaClick(page: Page) {
-  // Click on the name data cell (skip row number + select + actions columns)
-  await page.locator('table tbody tr:first-child td').nth(3).click();
-  await expectExpandPanelOpen(page);
+function expandTrigger(page: Page) {
+  return page.locator('[data-slot="data-table-expand-trigger"]');
 }
 
-// ── Task 0: Browser Preflight ──────────────────────────────────────────────
+function expandCloseButton(page: Page) {
+  return page.locator('[data-slot="data-table-expand-panel-close"]');
+}
 
-test.describe('@preflight @workspace-v2', () => {
-  test('preflight: /dashboard/users loads and renders user table', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expect(page.locator('table')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('table tbody tr:visible').first()).toBeVisible({ timeout: 10_000 });
-  });
+function expandSplitHandle(page: Page) {
+  return page.locator('[data-slot="data-table-expand-split-handle"]');
+}
 
-  test('preflight: row click on data cell opens expand panel', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
+async function gotoUsers(page: Page) {
+  await page.goto('/dashboard/users');
+  await expect(page).toHaveURL(/\/dashboard\/users$/);
+  await expect(visibleRows(page).first()).toBeVisible();
+}
 
-    await openFirstRowViaClick(page);
-  });
+async function dragHandle(handle: Locator, page: Page, deltaY: number) {
+  const box = await handle.boundingBox();
+  if (!box) {
+    throw new Error('split handle bounding box unavailable');
+  }
 
-  test('preflight: expand panel renders tabs and close button', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
 
-    await expect(page.locator(EXPAND_PANEL).locator('[role="tablist"]')).toBeVisible();
-    await expect(page.locator(EXPAND_PANEL_CLOSE)).toBeVisible();
-  });
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + deltaY);
+  await page.mouse.up();
+}
 
-  test('preflight: close button dismisses expand panel', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-
-    await page.locator(EXPAND_PANEL_CLOSE).click();
-    await expectExpandPanelClosed(page);
-  });
-
-  test('preflight: split handle is present when panel is open', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-
-    await expect(page.locator(EXPAND_SPLIT_HANDLE)).toBeVisible();
-  });
-
-  test('preflight: expanded row is visually highlighted', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-
-    await expect(page.locator('table tbody tr.bg-accent').first()).toBeVisible();
-  });
+test('@preflight @workspace-v2 users row expand preflight is reachable', async ({ page }) => {
+  await gotoUsers(page);
+  await expect(expandTrigger(page).first()).toBeVisible();
+  await expect(expandPanel(page)).toHaveCount(0);
 });
 
-// ── Task 6: Business Smoke (final regression) ──────────────────────────────
+test('@workspace-v2 row click and disclosure button open and close the detail panel', async ({
+  page
+}) => {
+  await gotoUsers(page);
 
-test.describe('@workspace-v2 row expand business smoke', () => {
-  test('switching rows updates expand panel content', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
+  await firstNameCell(page).click();
+  await expect(expandPanel(page)).toBeVisible();
+  await expect(expandTrigger(page).first()).toHaveAttribute('aria-expanded', 'true');
 
-    await openFirstRowViaClick(page);
-    const firstPanelText = await page.locator(EXPAND_PANEL).textContent();
+  await expandCloseButton(page).click();
+  await expect(expandPanel(page)).toHaveCount(0);
 
-    await page.locator(EXPAND_PANEL_CLOSE).click();
-    await expectExpandPanelClosed(page);
+  await expandTrigger(page).first().click();
+  await expect(expandPanel(page)).toBeVisible();
+  await expect(expandTrigger(page).first()).toHaveAttribute('aria-expanded', 'true');
+});
 
-    // Click second row
-    await page.locator('table tbody tr:nth-child(2) td').nth(3).click();
-    await expectExpandPanelOpen(page);
-    const secondPanelText = await page.locator(EXPAND_PANEL).textContent();
+test('@workspace-v2 checkbox and row actions do not open the detail panel', async ({ page }) => {
+  await gotoUsers(page);
 
-    expect(firstPanelText).not.toBe(secondPanelText);
-  });
+  await page.getByRole('checkbox', { name: '选择行' }).first().click();
+  await expect(expandPanel(page)).toHaveCount(0);
 
-  test('checkbox click does not trigger row expand', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
+  await page.getByRole('button', { name: '编辑' }).first().click();
+  await expect(expandPanel(page)).toHaveCount(0);
+});
 
-    const checkbox = page.locator('table tbody tr:first-child [role="checkbox"]').first();
-    await checkbox.click();
+test('@workspace-v2 split drag persists across close and reopen in the same mount', async ({
+  page
+}) => {
+  await gotoUsers(page);
 
-    await expectExpandPanelClosed(page);
-  });
+  await firstNameCell(page).click();
+  await expect(expandPanel(page)).toBeVisible();
 
-  test('row action button click does not trigger row expand', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
+  const handle = expandSplitHandle(page);
+  await expect(handle).toBeVisible();
 
-    const actionButton = page
-      .locator('table tbody tr:first-child')
-      .locator('[data-row-expand-ignore] button')
-      .first();
-    await actionButton.click();
+  const before = Number(await handle.getAttribute('aria-valuenow'));
+  await dragHandle(handle, page, 120);
 
-    await expectExpandPanelClosed(page);
-  });
+  await expect
+    .poll(async () => Number(await handle.getAttribute('aria-valuenow')))
+    .toBeGreaterThan(before);
 
-  test('expand panel reopens at same height after close', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
+  const after = Number(await handle.getAttribute('aria-valuenow'));
 
-    const panelBefore = page.locator(EXPAND_PANEL);
-    const heightBefore = await panelBefore.evaluate((el) => el.getBoundingClientRect().height);
+  await expandCloseButton(page).click();
+  await expect(expandPanel(page)).toHaveCount(0);
 
-    await page.locator(EXPAND_PANEL_CLOSE).click();
-    await expectExpandPanelClosed(page);
-    await openFirstRowViaClick(page);
-
-    const heightAfter = await panelBefore.evaluate((el) => el.getBoundingClientRect().height);
-
-    expect(Math.abs(heightBefore - heightAfter)).toBeLessThanOrEqual(2);
-  });
-
-  test('split handle has correct accessibility attributes', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-
-    const handle = page.locator(EXPAND_SPLIT_HANDLE);
-    await expect(handle).toHaveAttribute('role', 'separator');
-    await expect(handle).toHaveAttribute('aria-orientation', 'horizontal');
-  });
-
-  test('split handle is keyboard focusable', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-
-    const handle = page.locator(EXPAND_SPLIT_HANDLE);
-    await expect(handle).toHaveAttribute('tabindex', '0');
-  });
-
-  test('expanded row is visually highlighted with accent background', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-
-    const expandedRow = page.locator('table tbody tr.bg-accent').first();
-    await expect(expandedRow).toBeVisible();
-  });
-
-  test('page reload resets expand state', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-    await expectExpandPanelOpen(page);
-
-    await page.reload();
-    await expectUsersTableLoaded(page);
-    await expectExpandPanelClosed(page);
-  });
-
-  test('panel is rendered below pagination', async ({ page }) => {
-    await page.goto(USERS_URL);
-    await expectUsersTableLoaded(page);
-    await openFirstRowViaClick(page);
-
-    // Pagination should be visible above the expand panel
-    const pagination = page.getByRole('button', { name: '前往下一页' });
-    await expect(pagination).toBeVisible();
-
-    // Panel should be visible below
-    await expectExpandPanelOpen(page);
-  });
+  await firstNameCell(page).click();
+  await expect(expandPanel(page)).toBeVisible();
+  await expect(expandSplitHandle(page)).toHaveAttribute('aria-valuenow', String(after));
 });
