@@ -4,7 +4,7 @@ import SearchInput from '../search-input';
 import { ThemeSelector } from '../themes/theme-selector';
 import { ThemeModeToggle } from '../themes/theme-mode-toggle';
 import { NotificationCenter } from '@/features/notifications/components/notification-center';
-import TagsBar from './tags-bar';
+import TagsBar from './tags-bar/index';
 
 export default function Header() {
   return (

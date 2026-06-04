@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TagsBar from './tags-bar';
 import { useWorkspaceTabStore } from '@/features/workspace-tabs/utils/store';
+
+const headerSource = readFileSync(join(process.cwd(), 'src/components/layout/header.tsx'), 'utf8');
 
 vi.mock('@dnd-kit/core', async () => {
   const actual = await vi.importActual<typeof import('@dnd-kit/core')>('@dnd-kit/core');
@@ -189,6 +193,10 @@ describe('TagsBar', () => {
     render(<TagsBar />);
     expect(screen.getByRole('tab', { name: /仪表盘/ })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Chat/ })).toBeInTheDocument();
+  });
+
+  it('imports the explicit tags-bar directory entry from Header to avoid stale single-file resolution', () => {
+    expect(headerSource).toContain("import TagsBar from './tags-bar/index';");
   });
 
   it('marks active tab with aria-selected', () => {
