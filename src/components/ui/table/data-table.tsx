@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table/data-table-expand-panel';
 import {
   DATA_TABLE_EXPAND_KEYBOARD_STEP_PX,
+  DATA_TABLE_EXPAND_SPLIT_HANDLE_PX,
   clampExpandSplitTop,
   resolveExpandSplitLayout
 } from '@/lib/data-table-expand-split';
@@ -85,7 +86,15 @@ export function DataTable<TData>({
   const scrollViewportRef = React.useRef<HTMLDivElement>(null);
   const headerRowRef = React.useRef<HTMLTableRowElement>(null);
   const expandHostRef = React.useRef<HTMLDivElement>(null);
-  const dragStateRef = React.useRef<{ startY: number; startTopPx: number } | null>(null);
+  const topPanelRef = React.useRef<HTMLDivElement>(null);
+  const bottomPanelRef = React.useRef<HTMLDivElement>(null);
+  const dragStateRef = React.useRef<{
+    startY: number;
+    startTopPx: number;
+    effectiveHeight: number;
+    topPanel: HTMLDivElement;
+    bottomPanel: HTMLDivElement;
+  } | null>(null);
   const paginationRef = React.useRef<HTMLDivElement>(null);
   const [requestedSplitTopPx, setRequestedSplitTopPx] = React.useState<number | null>(null);
   const [activeExpandTab, setActiveExpandTab] = React.useState<string | null>(null);
@@ -210,15 +219,26 @@ export function DataTable<TData>({
       }
 
       const deltaY = event.clientY - dragState.startY;
-      setRequestedSplitTopPx(
-        clampExpandSplitTop({
-          hostHeight: expandHostHeight,
-          topPx: dragState.startTopPx + deltaY
-        })
+      const clampedTopPx = clampExpandSplitTop({
+        hostHeight: dragState.effectiveHeight,
+        topPx: dragState.startTopPx + deltaY
+      });
+      const bottomPx = Math.max(
+        0,
+        dragState.effectiveHeight - DATA_TABLE_EXPAND_SPLIT_HANDLE_PX - clampedTopPx
       );
+
+      // Direct DOM update — instant, no React reconciliation
+      dragState.topPanel.style.height = `${clampedTopPx}px`;
+      dragState.bottomPanel.style.height = `${bottomPx}px`;
     };
 
     const handlePointerUp = () => {
+      const dragState = dragStateRef.current;
+      if (dragState) {
+        // Commit final position to React state
+        setRequestedSplitTopPx(parseInt(dragState.topPanel.style.height, 10));
+      }
       dragStateRef.current = null;
     };
 
@@ -229,7 +249,7 @@ export function DataTable<TData>({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [expandHostHeight, expandSplitLayout]);
+  }, [expandSplitLayout]);
 
   const handleExpandPanelClose = React.useCallback(() => {
     onExpandedRowKeyChange?.(null);
@@ -365,7 +385,7 @@ export function DataTable<TData>({
       )}
       {isExpanded && expandSplitLayout && activeExpandTab && expandConfig && expandedRow && expandPanelId ? (
         <div ref={expandHostRef} className='flex flex-1 min-h-0 flex-col'>
-          <div className='relative min-h-0' style={{ height: `${expandSplitLayout.topPx}px` }}>
+          <div ref={topPanelRef} className='relative min-h-0' style={{ height: `${expandSplitLayout.topPx}px` }}>
             {tableViewport}
           </div>
           <div ref={paginationRef} className='flex flex-col gap-2.5'>
@@ -390,9 +410,16 @@ export function DataTable<TData>({
 
               event.preventDefault();
               event.stopPropagation();
+              const topEl = topPanelRef.current;
+              const bottomEl = bottomPanelRef.current;
+              if (!topEl || !bottomEl) return;
+
               dragStateRef.current = {
                 startY: event.clientY,
-                startTopPx: expandSplitLayout.topPx
+                startTopPx: expandSplitLayout.topPx,
+                effectiveHeight: expandHostHeight - expandOverheadPx,
+                topPanel: topEl,
+                bottomPanel: bottomEl
               };
             }}
           >
@@ -406,8 +433,12 @@ export function DataTable<TData>({
             </span>
           </div>
           <div
-            className='min-h-0 flex-1'
-            style={{ boxShadow: 'inset 0 6px 10px -6px hsl(var(--border))' }}
+            ref={bottomPanelRef}
+            className='min-h-0'
+            style={{
+              height: `${expandSplitLayout.bottomPx}px`,
+              boxShadow: 'inset 0 6px 10px -6px hsl(var(--border))'
+            }}
           >
             <DataTableExpandPanel
               panelId={expandPanelId}

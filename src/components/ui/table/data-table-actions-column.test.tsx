@@ -66,6 +66,7 @@ const DATA: TestRow[] = [
   { id: 1, name: 'Alice' },
   { id: 2, name: 'Bob' }
 ];
+const EXPAND_COLUMN_ID = '__rowExpand';
 
 const COLUMNS: ColumnDef<TestRow>[] = [
   { accessorKey: 'id', header: 'ID', size: 80 },
