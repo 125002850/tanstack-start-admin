@@ -23,10 +23,7 @@ export function ThemeSelector() {
         主题
       </Label>
       <Select value={activeTheme} onValueChange={setActiveTheme}>
-        <SelectTrigger
-          id='theme-selector'
-          className='justify-start *:data-[slot=select-value]:w-16'
-        >
+        <SelectTrigger id='theme-selector' className='justify-start *:data-[slot=select-value]:w-8'>
           <span className='text-muted-foreground hidden sm:block'>
             <Icons.palette />
           </span>
