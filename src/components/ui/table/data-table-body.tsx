@@ -39,6 +39,20 @@ function measureHeaderWidths(headerRow: HTMLTableRowElement): number[] {
   return Array.from(headerRow.querySelectorAll('th')).map((th) => th.offsetWidth);
 }
 
+function areColumnWidthsEqual(current: number[], next: number[]): boolean {
+  if (current.length !== next.length) {
+    return false;
+  }
+
+  for (let index = 0; index < current.length; index += 1) {
+    if (current[index] !== next[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function DataTableBody<TData>({
   table,
   emptyMessage,
@@ -84,7 +98,12 @@ export function DataTableBody<TData>({
     const headerRow = headerRowRef.current;
     if (!headerRow) return;
 
-    const measure = () => setColumnWidths(measureHeaderWidths(headerRow));
+    const measure = () => {
+      const nextWidths = measureHeaderWidths(headerRow);
+      setColumnWidths((currentWidths) =>
+        areColumnWidthsEqual(currentWidths, nextWidths) ? currentWidths : nextWidths
+      );
+    };
 
     measure();
 

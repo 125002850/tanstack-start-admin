@@ -1,0 +1,910 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "track-bench API 文档",
+    "description": "track-bench 项目接口文档",
+    "contact": {
+      "name": "track-bench"
+    },
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "全局字典",
+      "description": "平台级全局字典维护与查询相关接口"
+    },
+    {
+      "name": "文件存储",
+      "description": "文件上传、删除、临时访问地址与直传凭证相关接口"
+    }
+  ],
+  "paths": {
+    "/api/mdm/dict/global/types/list": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "查询全局字典列表",
+        "description": "查询平台级全局字典类型列表",
+        "operationId": "listGlobalTypes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPageResultGlobalDictTypeRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/type/update": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "修改全局字典类型",
+        "description": "修改平台级全局字典类型并同步字典项类型编码",
+        "operationId": "updateGlobalType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeUpdateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/type/delete": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "删除全局字典类型",
+        "description": "删除平台级全局空字典类型",
+        "operationId": "deleteGlobalType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeDeleteReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/type/create": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "新增全局字典类型",
+        "description": "新增平台级全局字典类型",
+        "operationId": "createGlobalType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeCreateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/items/by-type": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "按字典类型查询全局字典项",
+        "description": "根据全局字典类型编码返回平台级字典项列表",
+        "operationId": "listGlobalItemsByType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListDictItemRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/item/update": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "修改全局字典项",
+        "description": "修改平台级全局字典项，可切换所属字典类型",
+        "operationId": "updateGlobalItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemUpdateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/item/delete": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "删除全局字典项",
+        "description": "删除平台级全局字典项",
+        "operationId": "deleteGlobalItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemDeleteReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/item/create": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "新增全局字典项",
+        "description": "新增平台级全局字典项",
+        "operationId": "createGlobalItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemCreateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/object/upload": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "上传文件对象",
+        "description": "上传文件到当前启用的文件存储 provider",
+        "operationId": "upload",
+        "parameters": [
+          {
+            "name": "bizPath",
+            "in": "query",
+            "description": "业务路径",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "avatar/user"
+          },
+          {
+            "name": "objectKey",
+            "in": "query",
+            "description": "对象键，可选",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "avatar/user/custom-key.png"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RStoredFileRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/object/temp-url/fetch": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "获取文件临时访问地址",
+        "description": "根据对象键获取临时访问地址",
+        "operationId": "fetchTempUrl",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchTempUrlReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RFetchTempUrlRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/object/delete": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "删除文件对象",
+        "description": "根据对象键删除文件",
+        "operationId": "delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteFileReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/direct-upload/credential/fetch": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "获取直传凭证",
+        "description": "获取客户端直传所需的凭证与对象信息",
+        "operationId": "fetchDirectUploadCredential",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchDirectUploadCredentialReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RFetchDirectUploadCredentialRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GlobalDictTypeListReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "keyword": {
+            "type": "string",
+            "description": "关键字，按字典类型编码或名称模糊查询",
+            "example": "status"
+          }
+        },
+        "description": "全局字典列表查询请求"
+      },
+      "GlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          }
+        },
+        "description": "全局字典类型响应"
+      },
+      "PageResultGlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
+            }
+          }
+        }
+      },
+      "RPageResultGlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultGlobalDictTypeRspDTO"
+          }
+        }
+      },
+      "GlobalDictTypeUpdateReqDTO": {
+        "required": [
+          "dictTypeCode",
+          "dictTypeName",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          }
+        },
+        "description": "全局字典类型修改请求"
+      },
+      "RVoid": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "GlobalDictTypeDeleteReqDTO": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "全局字典类型删除请求"
+      },
+      "GlobalDictTypeCreateReqDTO": {
+        "required": [
+          "dictTypeCode",
+          "dictTypeName"
+        ],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          }
+        },
+        "description": "全局字典类型创建请求"
+      },
+      "GlobalDictListReqDTO": {
+        "required": [
+          "dictTypeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          }
+        },
+        "description": "全局字典项查询请求"
+      },
+      "DictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 101
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          }
+        },
+        "description": "字典项响应"
+      },
+      "RListDictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictItemRspDTO"
+            }
+          }
+        }
+      },
+      "GlobalDictItemUpdateReqDTO": {
+        "required": [
+          "dictItemCode",
+          "dictItemName",
+          "dictTypeCode",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          }
+        },
+        "description": "全局字典项修改请求"
+      },
+      "GlobalDictItemDeleteReqDTO": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "全局字典项删除请求"
+      },
+      "GlobalDictItemCreateReqDTO": {
+        "required": [
+          "dictItemCode",
+          "dictItemName",
+          "dictTypeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          }
+        },
+        "description": "全局字典项创建请求"
+      },
+      "RStoredFileRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/StoredFileRspDTO"
+          }
+        }
+      },
+      "StoredFileRspDTO": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          },
+          "originUrl": {
+            "type": "string",
+            "description": "原始访问地址",
+            "example": "/local-files/avatar/user/2026/05/19/example.png"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "原始文件名",
+            "example": "avatar.png"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "文件内容类型",
+            "example": "image/png"
+          },
+          "size": {
+            "type": "integer",
+            "description": "文件大小，单位字节",
+            "format": "int64",
+            "example": 1024
+          }
+        },
+        "description": "已存储文件响应"
+      },
+      "FetchTempUrlReqDTO": {
+        "required": [
+          "objectKey"
+        ],
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "获取文件临时访问地址请求"
+      },
+      "FetchTempUrlRspDTO": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          },
+          "tempUrl": {
+            "type": "string",
+            "description": "临时访问地址",
+            "example": "/local-files/avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "文件临时访问地址响应"
+      },
+      "RFetchTempUrlRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FetchTempUrlRspDTO"
+          }
+        }
+      },
+      "DeleteFileReqDTO": {
+        "required": [
+          "objectKey"
+        ],
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "删除文件请求"
+      },
+      "FetchDirectUploadCredentialReqDTO": {
+        "required": [
+          "bizPath"
+        ],
+        "type": "object",
+        "properties": {
+          "bizPath": {
+            "pattern": "^[A-Za-z0-9/_-]+$",
+            "type": "string",
+            "description": "业务路径",
+            "example": "avatar/user"
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "对象键，可选",
+            "example": "avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "获取直传凭证请求"
+      },
+      "FetchDirectUploadCredentialRspDTO": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "provider 标识",
+            "example": "qiniu"
+          },
+          "credential": {
+            "type": "string",
+            "description": "直传凭证",
+            "example": "stub-credential"
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          },
+          "originUrl": {
+            "type": "string",
+            "description": "原始访问地址",
+            "example": "/local-files/avatar/user/2026/05/19/example.png"
+          },
+          "uploadHost": {
+            "type": "string",
+            "description": "上传域名",
+            "example": "https://upload.qiniup.com"
+          }
+        },
+        "description": "直传凭证响应"
+      },
+      "RFetchDirectUploadCredentialRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FetchDirectUploadCredentialRspDTO"
+          }
+        }
+      }
+    }
+  },
+  "x-openapi": {
+    "x-setting": null,
+    "x-markdownFiles": []
+  }
+}

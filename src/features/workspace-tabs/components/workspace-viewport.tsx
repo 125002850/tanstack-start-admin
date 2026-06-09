@@ -87,12 +87,13 @@ function DefaultWorkspaceFallback() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        width: '100%',
         height: '100%',
         minHeight: 200,
         color: 'var(--muted-foreground)',
         fontSize: 14
       }
     },
-    'Something went wrong'
+    '糟糕，页面找不到了'
   );
 }

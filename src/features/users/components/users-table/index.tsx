@@ -80,6 +80,13 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
     }
   });
 
+  const handleDeleteUser = React.useCallback(
+    (row: User) => {
+      deleteMutation.mutate(row.id);
+    },
+    [deleteMutation]
+  );
+
   const rowActions = React.useMemo<DataTableRowAction<User>[]>(
     () => [
       {
@@ -103,12 +110,10 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
           description: (row) =>
             `确定要删除用户 ${row.first_name} ${row.last_name} 吗？此操作不可撤销。`
         },
-        onClick: (row) => {
-          deleteMutation.mutate(row.id);
-        }
+        onClick: handleDeleteUser
       }
     ],
-    [deleteMutation]
+    [handleDeleteUser]
   );
 
   const { table, expandConfig, expandedRow, expandedRowKey, setExpandedRowKey, expandPanelId } =

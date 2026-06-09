@@ -215,6 +215,9 @@ export const Route = createFileRoute('/dashboard/users')({
 ### 约束
 
 - dashboard 路由新增菜单页时，必须补 `nav.visible/group/order`。
+- dashboard 业务页面默认接入 workspace tabs。除重定向页、纯容器页或明确说明的不托管页面外，不要显式设置 `workspace.tagEnabled: false`。
+- 新增实际内容页时，应默认按 workspace 页面接入；若页面需要参与多页签管理，route 侧保持默认 `workspace` 配置，并使用 `WorkspacePageBoundary` 托管页面实例。
+- 只有明确不需要标签页承载时，才允许关闭 tab；关闭时必须在对应 route 文件旁用注释或实现结构说明原因，避免把业务页面误排除在页签体系外。
 - 如果页面需要浏览器标题和页面头部标题不同，使用顶层 `title` 与 `page.title` 分离声明。
 - 外部链接按钮不要使用 TanStack Router `Link`；应使用普通 `<a href>`。
 - `defineRouteMeta()` 适用于“静态 route metadata + 默认 head”场景。若页面需要特殊 `head()` 逻辑，应在 route 文件中显式扩展，而不是反向修改消费端。

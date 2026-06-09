@@ -1,0 +1,2118 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "track-bench API 文档",
+    "description": "track-bench 项目接口文档",
+    "contact": {
+      "name": "track-bench"
+    },
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "tags": [
+    {
+      "name": "全局字典",
+      "description": "平台级全局字典维护与查询相关接口"
+    },
+    {
+      "name": "导出中心",
+      "description": "统一导出提交、查询、下载相关接口"
+    },
+    {
+      "name": "文件存储",
+      "description": "文件上传、删除、临时访问地址与直传凭证相关接口"
+    }
+  ],
+  "paths": {
+    "/api/mdm/export/submit": {
+      "post": {
+        "tags": [
+          "导出中心"
+        ],
+        "summary": "提交导出任务",
+        "description": "按导出场景编码提交一次同步导出",
+        "operationId": "submit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportSubmitReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RExportRecordRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/export/my/page": {
+      "post": {
+        "tags": [
+          "导出中心"
+        ],
+        "summary": "分页查询我的导出记录",
+        "description": "按当前登录人返回其导出记录列表",
+        "operationId": "pageMyExports",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRecordDynamicPageReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPageResultExportRecordRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/export/download": {
+      "post": {
+        "tags": [
+          "导出中心"
+        ],
+        "summary": "获取导出下载地址",
+        "description": "校验导出记录后返回临时下载地址",
+        "operationId": "download",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRecordIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RExportDownloadRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/export/detail": {
+      "post": {
+        "tags": [
+          "导出中心"
+        ],
+        "summary": "查询导出记录详情",
+        "description": "按导出记录ID查询详情",
+        "operationId": "detail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRecordIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RExportRecordRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/export/delete": {
+      "post": {
+        "tags": [
+          "导出中心"
+        ],
+        "summary": "删除导出记录",
+        "description": "逻辑删除指定导出记录",
+        "operationId": "delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRecordIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/types/list": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "查询全局字典列表",
+        "description": "查询平台级全局字典类型列表",
+        "operationId": "listGlobalTypes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeDynamicListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPageResultGlobalDictTypeRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/types/list-all": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "查询全部全局字典类型",
+        "description": "查询平台级全局字典类型全部列表（不分页）",
+        "operationId": "listAllGlobalTypes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListGlobalDictTypeRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/type/update": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "修改全局字典类型",
+        "description": "修改平台级全局字典类型并同步字典项类型编码",
+        "operationId": "updateGlobalType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeUpdateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/type/delete": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "删除全局字典类型",
+        "description": "删除平台级全局空字典类型",
+        "operationId": "deleteGlobalType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeDeleteReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/type/create": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "新增全局字典类型",
+        "description": "新增平台级全局字典类型",
+        "operationId": "createGlobalType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeCreateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/items/by-type": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "按字典类型查询全局字典项",
+        "description": "根据全局字典类型编码返回平台级字典项列表",
+        "operationId": "listGlobalItemsByType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListDictItemRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/item/update": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "修改全局字典项",
+        "description": "修改平台级全局字典项，可切换所属字典类型",
+        "operationId": "updateGlobalItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemUpdateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/item/delete": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "删除全局字典项",
+        "description": "删除平台级全局字典项",
+        "operationId": "deleteGlobalItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemDeleteReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mdm/dict/global/item/create": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "新增全局字典项",
+        "description": "新增平台级全局字典项",
+        "operationId": "createGlobalItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemCreateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/object/upload": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "上传文件对象",
+        "description": "上传文件到当前启用的文件存储 provider",
+        "operationId": "upload",
+        "parameters": [
+          {
+            "name": "bizPath",
+            "in": "query",
+            "description": "业务路径",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "avatar/user"
+          },
+          {
+            "name": "objectKey",
+            "in": "query",
+            "description": "对象键，可选",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "avatar/user/custom-key.png"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RStoredFileRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/object/temp-url/fetch": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "获取文件临时访问地址",
+        "description": "根据对象键获取临时访问地址",
+        "operationId": "fetchTempUrl",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchTempUrlReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RFetchTempUrlRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/object/delete": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "删除文件对象",
+        "description": "根据对象键删除文件",
+        "operationId": "delete_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteFileReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/file/storage/direct-upload/credential/fetch": {
+      "post": {
+        "tags": [
+          "文件存储"
+        ],
+        "summary": "获取直传凭证",
+        "description": "获取客户端直传所需的凭证与对象信息",
+        "operationId": "fetchDirectUploadCredential",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchDirectUploadCredentialReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RFetchDirectUploadCredentialRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ExportSubmitReqDTO": {
+        "required": [
+          "sceneCode"
+        ],
+        "type": "object",
+        "properties": {
+          "sceneCode": {
+            "type": "string",
+            "description": "导出场景编码",
+            "example": "mdm.global.dict.type.list"
+          },
+          "query": {
+            "$ref": "#/components/schemas/JsonNode"
+          }
+        },
+        "description": "导出提交请求"
+      },
+      "JsonNode": {
+        "type": "object",
+        "description": "导出查询参数，结构由具体场景定义"
+      },
+      "ExportRecordRspDTO": {
+        "type": "object",
+        "properties": {
+          "recordId": {
+            "type": "integer",
+            "description": "记录ID",
+            "format": "int64",
+            "example": 1
+          },
+          "exportBizCode": {
+            "type": "string",
+            "description": "导出场景编码",
+            "example": "mdm.global.dict.type.list"
+          },
+          "exportBizName": {
+            "type": "string",
+            "description": "导出场景名称",
+            "example": "全局字典类型列表导出"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "文件名",
+            "example": "global-dict-types-2026-06-05.csv"
+          },
+          "fileType": {
+            "type": "string",
+            "description": "文件类型",
+            "example": "csv"
+          },
+          "status": {
+            "type": "integer",
+            "description": "状态码",
+            "format": "int32",
+            "example": 2
+          },
+          "statusName": {
+            "type": "string",
+            "description": "状态名",
+            "example": "SUCCESS"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "内容类型",
+            "example": "text/csv;charset=UTF-8"
+          },
+          "fileSize": {
+            "type": "integer",
+            "description": "文件大小",
+            "format": "int64",
+            "example": 1024
+          },
+          "downloadCount": {
+            "type": "integer",
+            "description": "下载次数",
+            "format": "int32",
+            "example": 1
+          },
+          "querySnapshotSummary": {
+            "type": "string",
+            "description": "查询快照摘要",
+            "example": "keyword=status"
+          },
+          "finishedTime": {
+            "type": "string",
+            "description": "完成时间",
+            "format": "date-time"
+          },
+          "expireTime": {
+            "type": "string",
+            "description": "过期时间",
+            "format": "date-time"
+          },
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "downloadable": {
+            "type": "boolean",
+            "description": "是否可下载",
+            "example": true
+          }
+        },
+        "description": "导出记录响应"
+      },
+      "RExportRecordRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExportRecordRspDTO"
+          }
+        }
+      },
+      "ExportRecordConditionNode": {
+        "required": [
+          "nodeType"
+        ],
+        "type": "object",
+        "properties": {
+          "nodeType": {
+            "type": "string",
+            "description": "节点类型",
+            "enum": [
+              "dateTime",
+              "text",
+              "compose",
+              "enum"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "description": "时间字段；文本字段；枚举字段",
+            "enum": [
+              "CREATE_TIME",
+              "FINISHED_TIME",
+              "EXPIRE_TIME",
+              "EXPORT_BIZ_CODE",
+              "EXPORT_BIZ_NAME",
+              "FILE_NAME",
+              "STATUS"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "时间操作符；文本操作符；枚举操作符",
+            "enum": [
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN",
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN"
+            ]
+          },
+          "value": {
+            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用；单值操作符使用"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "description": "不同节点类型的数组元素类型可能不同"
+            }
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/ExportRecordConditionNode"
+            }
+          }
+        },
+        "description": "导出记录动态查询节点",
+        "discriminator": {
+          "propertyName": "nodeType",
+          "mapping": {
+            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
+            "text": "#/components/schemas/ExportRecordTextCondition",
+            "compose": "#/components/schemas/ExportRecordGroupCondition",
+            "enum": "#/components/schemas/ExportRecordEnumCondition"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ExportRecordGroupCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ExportRecordTextCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ExportRecordDateTimeCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ExportRecordEnumCondition"
+          }
+        ]
+      },
+      "ExportRecordDateTimeCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "导出记录时间条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExportRecordConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "时间字段",
+                "enum": [
+                  "CREATE_TIME",
+                  "FINISHED_TIME",
+                  "EXPIRE_TIME"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "时间操作符",
+                "enum": [
+                  "GT",
+                  "GTE",
+                  "LT",
+                  "LTE",
+                  "BETWEEN"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "start": {
+                "type": "string",
+                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "end": {
+                "type": "string",
+                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "dateTime"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ExportRecordDynamicPageReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "dslVersion": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "动态查询协议版本",
+            "format": "int32",
+            "example": 1
+          },
+          "condition": {
+            "$ref": "#/components/schemas/ExportRecordConditionNode"
+          },
+          "sort": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "排序项",
+            "items": {
+              "$ref": "#/components/schemas/ExportRecordSortItem"
+            }
+          }
+        },
+        "description": "导出记录动态分页查询请求"
+      },
+      "ExportRecordEnumCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "导出记录枚举条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExportRecordConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "枚举字段",
+                "enum": [
+                  "STATUS"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "枚举操作符",
+                "enum": [
+                  "EQ",
+                  "IN"
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "description": "单值操作符使用",
+                "format": "int32"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "integer",
+                  "description": "IN 操作符使用",
+                  "format": "int32"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "enum"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ExportRecordGroupCondition": {
+        "required": [
+          "children",
+          "logic"
+        ],
+        "type": "object",
+        "description": "导出记录逻辑分组",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExportRecordConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "logic": {
+                "type": "string",
+                "description": "分组逻辑",
+                "enum": [
+                  "AND",
+                  "OR"
+                ]
+              },
+              "children": {
+                "type": "array",
+                "description": "子节点列表",
+                "items": {
+                  "$ref": "#/components/schemas/ExportRecordConditionNode"
+                }
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "compose"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ExportRecordSortItem": {
+        "required": [
+          "direction",
+          "field"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "排序字段",
+            "enum": [
+              "CREATE_TIME",
+              "FINISHED_TIME",
+              "EXPIRE_TIME",
+              "DOWNLOAD_COUNT"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "description": "排序方向",
+            "enum": [
+              "ASC",
+              "DESC"
+            ]
+          }
+        },
+        "description": "导出记录排序项"
+      },
+      "ExportRecordTextCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "导出记录文本条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExportRecordConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "文本字段",
+                "enum": [
+                  "EXPORT_BIZ_CODE",
+                  "EXPORT_BIZ_NAME",
+                  "FILE_NAME"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "文本操作符",
+                "enum": [
+                  "EQ",
+                  "CONTAINS",
+                  "STARTS_WITH",
+                  "ENDS_WITH",
+                  "IN"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "text"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "PageResultExportRecordRspDTO": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportRecordRspDTO"
+            }
+          }
+        }
+      },
+      "RPageResultExportRecordRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultExportRecordRspDTO"
+          }
+        }
+      },
+      "ExportRecordIdReqDTO": {
+        "required": [
+          "recordId"
+        ],
+        "type": "object",
+        "properties": {
+          "recordId": {
+            "type": "integer",
+            "description": "导出记录ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "导出记录ID请求"
+      },
+      "ExportDownloadRspDTO": {
+        "type": "object",
+        "properties": {
+          "recordId": {
+            "type": "integer",
+            "description": "导出记录ID",
+            "format": "int64",
+            "example": 1
+          },
+          "fileName": {
+            "type": "string",
+            "description": "文件名",
+            "example": "global-dict-types-2026-06-05.csv"
+          },
+          "downloadUrl": {
+            "type": "string",
+            "description": "临时下载地址",
+            "example": "https://example.com/download/export.csv"
+          }
+        },
+        "description": "导出下载响应"
+      },
+      "RExportDownloadRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExportDownloadRspDTO"
+          }
+        }
+      },
+      "RVoid": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "GlobalDictTypeConditionNode": {
+        "required": [
+          "nodeType"
+        ],
+        "type": "object",
+        "properties": {
+          "nodeType": {
+            "type": "string",
+            "description": "节点类型",
+            "enum": [
+              "dateTime",
+              "text",
+              "compose"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "description": "时间字段；文本字段",
+            "enum": [
+              "CREATE_TIME",
+              "DICT_TYPE_CODE",
+              "DICT_TYPE_NAME"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "时间操作符；文本操作符",
+            "enum": [
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN",
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+            }
+          }
+        },
+        "description": "全局字典类型动态查询节点",
+        "discriminator": {
+          "propertyName": "nodeType",
+          "mapping": {
+            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition",
+            "text": "#/components/schemas/GlobalDictTypeTextCondition",
+            "compose": "#/components/schemas/GlobalDictTypeGroupCondition"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeGroupCondition"
+          },
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeTextCondition"
+          },
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeDateTimeCondition"
+          }
+        ]
+      },
+      "GlobalDictTypeDateTimeCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "全局字典类型时间条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "时间字段",
+                "enum": [
+                  "CREATE_TIME"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "时间操作符",
+                "enum": [
+                  "GT",
+                  "GTE",
+                  "LT",
+                  "LTE",
+                  "BETWEEN"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "start": {
+                "type": "string",
+                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "end": {
+                "type": "string",
+                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "dateTime"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictTypeDynamicListReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "dslVersion": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "动态查询协议版本",
+            "format": "int32",
+            "example": 1
+          },
+          "condition": {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          "sort": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "排序项",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeSortItem"
+            }
+          }
+        },
+        "description": "全局字典类型动态分页查询请求"
+      },
+      "GlobalDictTypeGroupCondition": {
+        "required": [
+          "children",
+          "logic"
+        ],
+        "type": "object",
+        "description": "全局字典类型逻辑分组",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "logic": {
+                "type": "string",
+                "description": "分组逻辑",
+                "enum": [
+                  "AND",
+                  "OR"
+                ]
+              },
+              "children": {
+                "type": "array",
+                "description": "子节点列表",
+                "items": {
+                  "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+                }
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "compose"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictTypeSortItem": {
+        "required": [
+          "direction",
+          "field"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "排序字段",
+            "enum": [
+              "ID",
+              "CREATE_TIME"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "description": "排序方向",
+            "enum": [
+              "ASC",
+              "DESC"
+            ]
+          }
+        },
+        "description": "全局字典类型排序项"
+      },
+      "GlobalDictTypeTextCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "全局字典类型文本条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "文本字段",
+                "enum": [
+                  "DICT_TYPE_CODE",
+                  "DICT_TYPE_NAME"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "文本操作符",
+                "enum": [
+                  "EQ",
+                  "CONTAINS",
+                  "STARTS_WITH",
+                  "ENDS_WITH",
+                  "IN"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "text"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createBy": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64"
+          },
+          "updateBy": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64"
+          },
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": [
+              "ENABLE",
+              "DISABLE"
+            ]
+          }
+        },
+        "description": "全局字典类型响应"
+      },
+      "PageResultGlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
+            }
+          }
+        }
+      },
+      "RPageResultGlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultGlobalDictTypeRspDTO"
+          }
+        }
+      },
+      "GlobalDictTypeListReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "keyword": {
+            "type": "string",
+            "description": "关键字，按字典类型编码或名称模糊查询",
+            "example": "status"
+          }
+        },
+        "description": "全局字典列表查询请求"
+      },
+      "RListGlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
+            }
+          }
+        }
+      },
+      "GlobalDictTypeUpdateReqDTO": {
+        "required": [
+          "dictTypeCode",
+          "dictTypeName",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          }
+        },
+        "description": "全局字典类型修改请求"
+      },
+      "GlobalDictTypeDeleteReqDTO": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "全局字典类型删除请求"
+      },
+      "GlobalDictTypeCreateReqDTO": {
+        "required": [
+          "dictTypeCode",
+          "dictTypeName"
+        ],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          }
+        },
+        "description": "全局字典类型创建请求"
+      },
+      "GlobalDictListReqDTO": {
+        "required": [
+          "dictTypeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          }
+        },
+        "description": "全局字典项查询请求"
+      },
+      "DictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createBy": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64"
+          },
+          "updateBy": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64"
+          },
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 101
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注"
+          }
+        },
+        "description": "字典项响应"
+      },
+      "RListDictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictItemRspDTO"
+            }
+          }
+        }
+      },
+      "GlobalDictItemUpdateReqDTO": {
+        "required": [
+          "dictItemCode",
+          "dictItemName",
+          "dictTypeCode",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          }
+        },
+        "description": "全局字典项修改请求"
+      },
+      "GlobalDictItemDeleteReqDTO": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "全局字典项删除请求"
+      },
+      "GlobalDictItemCreateReqDTO": {
+        "required": [
+          "dictItemCode",
+          "dictItemName",
+          "dictTypeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          }
+        },
+        "description": "全局字典项创建请求"
+      },
+      "RStoredFileRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/StoredFileRspDTO"
+          }
+        }
+      },
+      "StoredFileRspDTO": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          },
+          "originUrl": {
+            "type": "string",
+            "description": "原始访问地址",
+            "example": "/local-files/avatar/user/2026/05/19/example.png"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "原始文件名",
+            "example": "avatar.png"
+          },
+          "contentType": {
+            "type": "string",
+            "description": "文件内容类型",
+            "example": "image/png"
+          },
+          "size": {
+            "type": "integer",
+            "description": "文件大小，单位字节",
+            "format": "int64",
+            "example": 1024
+          }
+        },
+        "description": "已存储文件响应"
+      },
+      "FetchTempUrlReqDTO": {
+        "required": [
+          "objectKey"
+        ],
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "获取文件临时访问地址请求"
+      },
+      "FetchTempUrlRspDTO": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          },
+          "tempUrl": {
+            "type": "string",
+            "description": "临时访问地址",
+            "example": "/local-files/avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "文件临时访问地址响应"
+      },
+      "RFetchTempUrlRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FetchTempUrlRspDTO"
+          }
+        }
+      },
+      "DeleteFileReqDTO": {
+        "required": [
+          "objectKey"
+        ],
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "删除文件请求"
+      },
+      "FetchDirectUploadCredentialReqDTO": {
+        "required": [
+          "bizPath"
+        ],
+        "type": "object",
+        "properties": {
+          "bizPath": {
+            "pattern": "^[A-Za-z0-9/_-]+$",
+            "type": "string",
+            "description": "业务路径",
+            "example": "avatar/user"
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "对象键，可选",
+            "example": "avatar/user/2026/05/19/example.png"
+          }
+        },
+        "description": "获取直传凭证请求"
+      },
+      "FetchDirectUploadCredentialRspDTO": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "description": "provider 标识",
+            "example": "qiniu"
+          },
+          "credential": {
+            "type": "string",
+            "description": "直传凭证",
+            "example": "stub-credential"
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "对象键",
+            "example": "avatar/user/2026/05/19/example.png"
+          },
+          "originUrl": {
+            "type": "string",
+            "description": "原始访问地址",
+            "example": "/local-files/avatar/user/2026/05/19/example.png"
+          },
+          "uploadHost": {
+            "type": "string",
+            "description": "上传域名",
+            "example": "https://upload.qiniup.com"
+          }
+        },
+        "description": "直传凭证响应"
+      },
+      "RFetchDirectUploadCredentialRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FetchDirectUploadCredentialRspDTO"
+          }
+        }
+      }
+    }
+  },
+  "x-openapi": {
+    "x-setting": null,
+    "x-markdownFiles": []
+  }
+}

@@ -65,6 +65,24 @@ const mockRoutesByPath: Record<string, unknown> = {
         workspace: { tagEnabled: true, keepAlive: false }
       }
     }
+  },
+  '/dashboard/system-management': {
+    options: {
+      staticData: {
+        label: '系统管理',
+        title: '系统管理',
+        workspace: { tagEnabled: false, keepAlive: false }
+      }
+    }
+  },
+  '/dashboard/system-management/dictionaries': {
+    options: {
+      staticData: {
+        label: '字典管理',
+        title: '字典管理',
+        workspace: { tagEnabled: true, keepAlive: true }
+      }
+    }
   }
 };
 
@@ -127,6 +145,23 @@ function V2RoutingHarness({
     render: () => React.createElement('div', { 'data-testid': testId }, title),
     errorFallback: React.createElement('div', { 'data-testid': `fallback-${testId}` }, 'Error')
   });
+}
+
+function NonWorkspaceRouteHarness({
+  pathname,
+  testId,
+  title
+}: {
+  pathname: string;
+  testId: string;
+  title: string;
+}) {
+  mockPathname = pathname;
+  mockSearch = '';
+
+  useDashboardRouteTagSync(isWorkspaceTabsEnabled());
+
+  return React.createElement('div', { 'data-testid': testId }, title);
 }
 
 function resetStore() {
@@ -249,6 +284,41 @@ describe('Workspace Routing Integration', () => {
       const productsEl = getByTestId('v2-products');
       expect(productsEl).toBeDefined();
       expect(productsEl).toHaveStyle({ display: 'none' });
+    });
+
+    it('hides the cached workspace page after navigating to a tag-disabled route', () => {
+      const { rerender, getByTestId } = render(
+        React.createElement(React.Fragment, null, [
+          React.createElement(V2RoutingHarness, {
+            key: 'route-products',
+            pathname: '/dashboard/products',
+            title: 'Products',
+            keepAlive: true,
+            testId: 'v2-products'
+          }),
+          React.createElement(WorkspaceViewport, { key: 'viewport' })
+        ])
+      );
+
+      const productsEl = getByTestId('v2-products');
+      expect(productsEl.style.display).not.toBe('none');
+      expect(useWorkspaceTabStore.getState().activeId).toBe('/dashboard/products');
+
+      rerender(
+        React.createElement(React.Fragment, null, [
+          React.createElement(NonWorkspaceRouteHarness, {
+            key: 'route-system-management',
+            pathname: '/dashboard/system-management',
+            title: 'System Management',
+            testId: 'non-workspace-route'
+          }),
+          React.createElement(WorkspaceViewport, { key: 'viewport' })
+        ])
+      );
+
+      expect(getByTestId('non-workspace-route')).toBeDefined();
+      expect(getByTestId('v2-products')).toHaveStyle({ display: 'none' });
+      expect(useWorkspaceTabStore.getState().activeId).toBeNull();
     });
 
     it('route unmount does NOT cleanup page descriptor', () => {

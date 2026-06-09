@@ -127,15 +127,26 @@ export function useDashboardRouteTagSync(enabled = true) {
     const normalizedPathname = normalizeRoutePath(pathname);
     const searchStr = location.searchStr || '';
     const fullHref = normalizedPathname + searchStr;
+    const clearActiveWorkspaceRoute = () => {
+      if (useWorkspaceTabStore.getState().activeId !== null) {
+        useWorkspaceTabStore.setState({ activeId: null });
+      }
+    };
 
     if (fullHref === prevHref.current) return;
     prevHref.current = fullHref;
 
     // Only track dashboard sub-routes
-    if (!normalizedPathname.startsWith('/dashboard')) return;
+    if (!normalizedPathname.startsWith('/dashboard')) {
+      clearActiveWorkspaceRoute();
+      return;
+    }
 
     // Skip the layout route itself
-    if (normalizedPathname === '/dashboard') return;
+    if (normalizedPathname === '/dashboard') {
+      clearActiveWorkspaceRoute();
+      return;
+    }
 
     const match = findDeepestRouteMatch(
       normalizedPathname,
@@ -143,7 +154,10 @@ export function useDashboardRouteTagSync(enabled = true) {
     );
 
     const wsConfig = resolveRouteWorkspaceConfig(normalizedPathname, match?.staticData);
-    if (!wsConfig.tagEnabled) return;
+    if (!wsConfig.tagEnabled) {
+      clearActiveWorkspaceRoute();
+      return;
+    }
 
     const title = resolveRouteTagTitle(match?.staticData, normalizedPathname);
     const id = tagIdFromPathname(normalizedPathname);

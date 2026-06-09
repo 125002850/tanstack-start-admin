@@ -25,7 +25,6 @@ export function getCommonPinningStyles<TData>({
       left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
       right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
       position: 'sticky',
-      background: 'var(--background)',
       width: column.getSize(),
       zIndex: 1
     };

@@ -79,14 +79,26 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
     }
   });
 
+  const handleEditProduct = React.useCallback(
+    (row: Product) => {
+      router.navigate({ to: `/dashboard/product/${row.id}` });
+    },
+    [router]
+  );
+
+  const handleDeleteProduct = React.useCallback(
+    (row: Product) => {
+      deleteMutation.mutate(row.id);
+    },
+    [deleteMutation]
+  );
+
   const rowActions = React.useMemo<DataTableRowAction<Product>[]>(
     () => [
       {
         label: '编辑',
         icon: <Icons.edit className='size-4' />,
-        onClick: (row) => {
-          router.navigate({ to: `/dashboard/product/${row.id}` });
-        }
+        onClick: handleEditProduct
       },
       {
         label: '删除',
@@ -95,12 +107,10 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
           title: '确认删除产品？',
           description: () => '删除后将无法恢复，请谨慎操作。'
         },
-        onClick: (row) => {
-          deleteMutation.mutate(row.id);
-        }
+        onClick: handleDeleteProduct
       }
     ],
-    [router, deleteMutation]
+    [handleDeleteProduct, handleEditProduct]
   );
 
   const { table } = useDataTable({

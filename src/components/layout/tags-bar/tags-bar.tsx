@@ -99,8 +99,13 @@ export default function TagsBar() {
     const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
     const hasOverflow = maxScrollLeft > 1;
 
-    setShowLeftFade(hasOverflow && viewport.scrollLeft > 1);
-    setShowRightFade(hasOverflow && viewport.scrollLeft < maxScrollLeft - 1);
+    const nextShowLeftFade = hasOverflow && viewport.scrollLeft > 1;
+    const nextShowRightFade = hasOverflow && viewport.scrollLeft < maxScrollLeft - 1;
+
+    setShowLeftFade((current) => (current === nextShowLeftFade ? current : nextShowLeftFade));
+    setShowRightFade((current) =>
+      current === nextShowRightFade ? current : nextShowRightFade
+    );
   }, []);
 
   // 每个标签按钮的 DOM 节点都会登记到 Map 中，后续用于聚焦与 scrollIntoView。
@@ -219,25 +224,11 @@ export default function TagsBar() {
     };
 
     viewport.addEventListener('scroll', handleViewportChange, { passive: true });
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const resizeObserver = new ResizeObserver(handleViewportChange);
-      resizeObserver.observe(viewport);
-
-      const content = viewport.firstElementChild;
-      if (content instanceof HTMLElement) {
-        resizeObserver.observe(content);
-      }
-
-      return () => {
-        viewport.removeEventListener('scroll', handleViewportChange);
-        resizeObserver.disconnect();
-      };
-    }
-
     window.addEventListener('resize', handleViewportChange);
+    const frameId = window.requestAnimationFrame(handleViewportChange);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       viewport.removeEventListener('scroll', handleViewportChange);
       window.removeEventListener('resize', handleViewportChange);
     };
@@ -570,10 +561,10 @@ export default function TagsBar() {
             {homeState ? (
               <PinnedHomeTag
                 id={HOME_ID}
-                title={homeState.title}
-                dirty={homeState.dirty}
-                closable={homeState.closable}
-                isActive={homeState.isActive}
+                title={homeState!.title}
+                dirty={homeState!.dirty}
+                closable={homeState!.closable}
+                isActive={homeState!.isActive}
                 registerTabRef={registerTabRef}
                 activate={activate}
                 handleKeyDown={handleKeyDown}
@@ -623,10 +614,10 @@ export default function TagsBar() {
                 <DragOverlay dropAnimation={dropAnimation}>
                   {dragSnapshot ? (
                     <OverlayTag
-                      title={dragSnapshot.title}
-                      dirty={dragSnapshot.dirty}
-                      closable={dragSnapshot.closable}
-                      isActive={dragSnapshot.isActive}
+                      title={dragSnapshot!.title}
+                      dirty={dragSnapshot!.dirty}
+                      closable={dragSnapshot!.closable}
+                      isActive={dragSnapshot!.isActive}
                       metrics={overlayMetrics}
                     />
                   ) : null}

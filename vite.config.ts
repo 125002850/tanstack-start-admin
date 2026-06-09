@@ -1,12 +1,14 @@
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
-import { defineConfig, type PluginOption } from 'vite';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { nitro } from 'nitro/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+
   const plugins: PluginOption[] = [
     tsconfigPaths(),
     tailwindcss(),
@@ -22,7 +24,24 @@ export default defineConfig(() => {
   }
 
   return {
-    server: { port: 3000 },
+    server: {
+      host: '0.0.0.0',
+      port: 3000,
+      proxy: {
+        [env.APP_GATEWAY]: {
+          target: env.PROXY_URL,
+          changeOrigin: true,
+          headers: {
+            'x-proxy-target': env.PROXY_URL
+          },
+          configure: (proxy) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.setHeader('x-proxy-target', env.PROXY_URL);
+            });
+          }
+        }
+      }
+    },
     plugins
   };
 });
