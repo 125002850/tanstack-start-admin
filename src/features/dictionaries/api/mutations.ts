@@ -2,6 +2,7 @@ import { mutationOptions } from '@tanstack/react-query';
 
 import {
   createGlobalItem,
+  createGlobalType,
   deleteGlobalItem,
   updateGlobalItem,
   updateGlobalType
@@ -13,6 +14,14 @@ import type {
   DictionaryItemMutationPayload,
   DictionaryTypeMutationPayload
 } from './types';
+
+export const createDictionaryTypeMutation = mutationOptions({
+  mutationFn: async (payload: DictionaryTypeMutationPayload) =>
+    createGlobalType(payload as never),
+  onSuccess: () => {
+    getQueryClient().invalidateQueries({ queryKey: dictionaryTypeKeys.all });
+  }
+});
 
 export const updateDictionaryTypeMutation = mutationOptions({
   mutationFn: async (payload: DictionaryTypeMutationPayload) =>

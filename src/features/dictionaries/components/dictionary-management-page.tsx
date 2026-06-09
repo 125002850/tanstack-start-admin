@@ -9,6 +9,7 @@ import { useConfirmAction } from '@/hooks/use-confirm-action';
 import {
   bulkDeleteDictionaryItemsMutation,
   createDictionaryItemMutation,
+  createDictionaryTypeMutation,
   deleteDictionaryItemMutation,
   updateDictionaryItemMutation,
   updateDictionaryTypeMutation
@@ -23,6 +24,7 @@ import type {
 import { DictionaryItemsPanel } from './dictionary-items-panel';
 import { DictionaryTypeDetails } from './dictionary-type-details';
 import { DictionaryTypeList } from './dictionary-type-list';
+import { DictionaryTypeSheet } from './dictionary-type-sheet';
 
 const EMPTY_DICTIONARY_TYPES: DictionaryTypeRecord[] = [];
 
@@ -40,8 +42,11 @@ function DictionaryManagementContent() {
   );
   const [keyword, setKeyword] = React.useState('');
   const [requestedTypeCode, setRequestedTypeCode] = React.useState<string | null>(null);
-  const [isEditingType, setIsEditingType] = React.useState(false);
-  const [typeDraft, setTypeDraft] = React.useState<DictionaryTypeMutationPayload | null>(null);
+
+  // Sheet state: null = closed, { type: record } = editing, { type: null } = creating
+  const [sheetState, setSheetState] = React.useState<{
+    type?: DictionaryTypeRecord | null;
+  } | null>(null);
 
   const { withConfirm, confirmDialog } = useConfirmAction<[DictionaryItemRecord]>();
   const dictionaryTypes = dictionaryTypeResult?.list ?? EMPTY_DICTIONARY_TYPES;
@@ -70,23 +75,23 @@ function DictionaryManagementContent() {
     enabled: Boolean(selectedType)
   });
   const items = itemsQuery.data ?? [];
-  const detailDraft =
-    typeDraft ??
-    (selectedType
-      ? {
-          id: selectedType.id,
-          dictTypeCode: selectedType.dictTypeCode,
-          dictTypeName: selectedType.dictTypeName,
-          status: selectedType.status ?? 'ENABLED'
-        }
-      : null);
+
+  const createTypeMutation = useMutation({
+    ...createDictionaryTypeMutation,
+    onSuccess: () => {
+      toast.success('字典类型已创建');
+      setSheetState(null);
+    },
+    onError: () => {
+      toast.error('字典类型创建失败');
+    }
+  });
 
   const updateTypeMutation = useMutation({
     ...updateDictionaryTypeMutation,
     onSuccess: () => {
       toast.success('字典类型已更新');
-      setIsEditingType(false);
-      setTypeDraft(null);
+      setSheetState(null);
     },
     onError: () => {
       toast.error('字典类型更新失败');
@@ -133,18 +138,17 @@ function DictionaryManagementContent() {
     }
   });
 
-  const handleTypeSave = async () => {
-    if (!typeDraft) {
-      return;
-    }
-
-    if (!typeDraft.dictTypeName.trim()) {
-      toast.error('字典名称不能为空');
-      return;
-    }
-
-    await updateTypeMutation.mutateAsync(typeDraft);
-  };
+  const handleTypeSubmit = React.useCallback(
+    async (payload: DictionaryTypeMutationPayload) => {
+      if (payload.id === 0) {
+        // Create mode
+        await createTypeMutation.mutateAsync(payload);
+      } else {
+        await updateTypeMutation.mutateAsync(payload);
+      }
+    },
+    [createTypeMutation, updateTypeMutation]
+  );
 
   const handleItemSubmit = React.useCallback(
     async (payload: DictionaryItemMutationPayload) => {
@@ -195,6 +199,14 @@ function DictionaryManagementContent() {
   return (
     <>
       {confirmDialog}
+      <DictionaryTypeSheet
+        open={sheetState !== null}
+        onOpenChange={(open) => {
+          if (!open) setSheetState(null);
+        }}
+        type={sheetState?.type ?? null}
+        onSubmit={handleTypeSubmit}
+      />
       {typesLoading && dictionaryTypes.length === 0 ? (
         <DictionaryManagementFallback />
       ) : (
@@ -206,38 +218,14 @@ function DictionaryManagementContent() {
             onKeywordChange={setKeyword}
             onSelect={(dictTypeCode) => {
               setRequestedTypeCode(dictTypeCode);
-              setIsEditingType(false);
-              setTypeDraft(null);
             }}
+            onAddType={() => setSheetState({ type: null })}
           />
 
           <div className='min-w-0 space-y-4'>
             <DictionaryTypeDetails
               record={selectedType}
-              isEditing={isEditingType}
-              draft={detailDraft}
-              pending={updateTypeMutation.isPending}
-              onStartEdit={() => {
-                if (!selectedType) {
-                  return;
-                }
-
-                setTypeDraft({
-                  id: selectedType.id,
-                  dictTypeCode: selectedType.dictTypeCode,
-                  dictTypeName: selectedType.dictTypeName,
-                  status: selectedType.status ?? 'ENABLED'
-                });
-                setIsEditingType(true);
-              }}
-              onCancelEdit={() => {
-                setIsEditingType(false);
-                setTypeDraft(null);
-              }}
-              onSave={handleTypeSave}
-              onDraftChange={(updater) =>
-                setTypeDraft((current) => (current ? updater(current) : current))
-              }
+              onEdit={() => setSheetState({ type: selectedType })}
             />
 
             <DictionaryItemsPanel

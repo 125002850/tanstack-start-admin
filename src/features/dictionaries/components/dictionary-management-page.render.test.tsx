@@ -35,6 +35,7 @@ vi.mock('@/lib/api/clients/dict', () => ({
     }
   ]),
   updateGlobalType: vi.fn(),
+  createGlobalType: vi.fn(),
   createGlobalItem: vi.fn(),
   updateGlobalItem: vi.fn(),
   deleteGlobalItem: vi.fn()

@@ -64,6 +64,7 @@ vi.mock('../api/queries', () => ({
 }));
 
 vi.mock('../api/mutations', () => ({
+  createDictionaryTypeMutation: { mutationFn: vi.fn() },
   updateDictionaryTypeMutation: { mutationFn: vi.fn() },
   createDictionaryItemMutation: { mutationFn: vi.fn() },
   updateDictionaryItemMutation: { mutationFn: vi.fn() },
@@ -202,7 +203,7 @@ describe('DictionaryManagementPage', () => {
     render(<DictionaryManagementPage />);
 
     await waitFor(() => {
-      expect(mockUseMutation).toHaveBeenCalledTimes(5);
+      expect(mockUseMutation).toHaveBeenCalledTimes(6);
     });
   });
 

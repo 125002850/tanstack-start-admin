@@ -1,6 +1,8 @@
 import * as React from 'react';
 
+import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -13,6 +15,7 @@ interface DictionaryTypeListProps {
   keyword: string;
   onKeywordChange: (value: string) => void;
   onSelect: (dictTypeCode: string) => void;
+  onAddType: () => void;
 }
 
 export function DictionaryTypeList({
@@ -20,21 +23,29 @@ export function DictionaryTypeList({
   selectedTypeCode,
   keyword,
   onKeywordChange,
-  onSelect
+  onSelect,
+  onAddType
 }: DictionaryTypeListProps) {
   return (
     <Card className='xl:sticky xl:top-0'>
-      <CardHeader className='border-b'>
+      <CardHeader>
         <CardTitle>字典类型</CardTitle>
         <CardDescription>按字典编码或名称筛选字典类型列表</CardDescription>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <Input
-          aria-label='搜索字典类型'
-          placeholder='搜索 编码 / 名称'
-          value={keyword}
-          onChange={(event) => onKeywordChange(event.target.value)}
-        />
+        <div className='flex gap-2'>
+          <Input
+            aria-label='搜索字典类型'
+            placeholder='搜索 编码 / 名称'
+            value={keyword}
+            onChange={(event) => onKeywordChange(event.target.value)}
+            className='flex-1'
+          />
+          <Button variant='outline' size='icon' onClick={onAddType}>
+            <Icons.add className='size-4' />
+            <span className='sr-only'>新增字典类型</span>
+          </Button>
+        </div>
 
         <div className='max-h-[56vh] overflow-y-auto pr-2'>
           <div className='space-y-2'>
