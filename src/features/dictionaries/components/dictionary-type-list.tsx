@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -23,12 +23,12 @@ export function DictionaryTypeList({
   onSelect
 }: DictionaryTypeListProps) {
   return (
-    <div className='rounded-xl border bg-card xl:sticky xl:top-0'>
-      <CardHeader className='border-b px-4 py-4'>
+    <Card className='xl:sticky xl:top-0'>
+      <CardHeader className='border-b'>
         <CardTitle>字典类型</CardTitle>
-        <CardDescription>按编码或名称筛选左侧类型列表</CardDescription>
+        <CardDescription>按字典编码或名称筛选字典类型列表</CardDescription>
       </CardHeader>
-      <CardContent className='space-y-4 px-4 py-4'>
+      <CardContent className='space-y-4'>
         <Input
           aria-label='搜索字典类型'
           placeholder='搜索 编码 / 名称'
@@ -57,9 +57,7 @@ export function DictionaryTypeList({
                   >
                     <div className='flex items-start justify-between gap-3'>
                       <div className='min-w-0'>
-                        <div className='truncate text-sm font-medium'>
-                          {record.dictTypeName}
-                        </div>
+                        <div className='truncate text-sm font-medium'>{record.dictTypeName}</div>
                         <div className='text-muted-foreground truncate text-xs uppercase tracking-[0.18em]'>
                           {record.dictTypeCode}
                         </div>
@@ -79,6 +77,6 @@ export function DictionaryTypeList({
           </div>
         </div>
       </CardContent>
-    </div>
+    </Card>
   );
 }

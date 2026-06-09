@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -45,23 +45,23 @@ export function DictionaryTypeDetails({
 }: DictionaryTypeDetailsProps) {
   if (!record || !draft) {
     return (
-      <>
+      <Card>
         <CardHeader>
           <CardTitle>请选择字典类型</CardTitle>
           <CardDescription>左侧选择后可查看并维护当前字典类型。</CardDescription>
         </CardHeader>
-        <CardContent className='py-10'>
+        <CardContent>
           <div className='text-muted-foreground rounded-xl border border-dashed px-4 py-10 text-center text-sm'>
             暂无可展示的字典类型详情
           </div>
         </CardContent>
-      </>
+      </Card>
     );
   }
 
   return (
-    <>
-      <CardHeader className='gap-3'>
+    <Card>
+      <CardHeader>
         <div className='flex flex-wrap items-start justify-between gap-3'>
           <div className='space-y-1'>
             <CardTitle>{record.dictTypeName}</CardTitle>
@@ -141,7 +141,7 @@ export function DictionaryTypeDetails({
         <DetailField label='更新人' value={record.updatedBy} />
         <DetailField label='更新时间' value={record.updatedAt} />
       </CardContent>
-    </>
+    </Card>
   );
 }
 

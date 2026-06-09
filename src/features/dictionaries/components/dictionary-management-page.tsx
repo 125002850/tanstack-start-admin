@@ -28,7 +28,7 @@ const EMPTY_DICTIONARY_TYPES: DictionaryTypeRecord[] = [];
 
 export default function DictionaryManagementPage() {
   return (
-    <PageContainer pageTitle='字典管理'>
+    <PageContainer>
       <DictionaryManagementContent />
     </PageContainer>
   );
@@ -212,47 +212,43 @@ function DictionaryManagementContent() {
           />
 
           <div className='min-w-0 space-y-4'>
-            <div className='rounded-xl border bg-card'>
-              <DictionaryTypeDetails
-                record={selectedType}
-                isEditing={isEditingType}
-                draft={detailDraft}
-                pending={updateTypeMutation.isPending}
-                onStartEdit={() => {
-                  if (!selectedType) {
-                    return;
-                  }
-
-                  setTypeDraft({
-                    id: selectedType.id,
-                    dictTypeCode: selectedType.dictTypeCode,
-                    dictTypeName: selectedType.dictTypeName,
-                    status: selectedType.status ?? 'ENABLED'
-                  });
-                  setIsEditingType(true);
-                }}
-                onCancelEdit={() => {
-                  setIsEditingType(false);
-                  setTypeDraft(null);
-                }}
-                onSave={handleTypeSave}
-                onDraftChange={(updater) =>
-                  setTypeDraft((current) => (current ? updater(current) : current))
+            <DictionaryTypeDetails
+              record={selectedType}
+              isEditing={isEditingType}
+              draft={detailDraft}
+              pending={updateTypeMutation.isPending}
+              onStartEdit={() => {
+                if (!selectedType) {
+                  return;
                 }
-              />
-            </div>
 
-            <div className='rounded-xl border bg-card'>
-              <DictionaryItemsPanel
-                record={selectedType}
-                items={items}
-                isRefreshing={itemsQuery.isFetching}
-                onItemSubmit={handleItemSubmit}
-                onRefresh={handleRefresh}
-                onDelete={handleDelete}
-                onBulkDelete={handleBulkDelete}
-              />
-            </div>
+                setTypeDraft({
+                  id: selectedType.id,
+                  dictTypeCode: selectedType.dictTypeCode,
+                  dictTypeName: selectedType.dictTypeName,
+                  status: selectedType.status ?? 'ENABLED'
+                });
+                setIsEditingType(true);
+              }}
+              onCancelEdit={() => {
+                setIsEditingType(false);
+                setTypeDraft(null);
+              }}
+              onSave={handleTypeSave}
+              onDraftChange={(updater) =>
+                setTypeDraft((current) => (current ? updater(current) : current))
+              }
+            />
+
+            <DictionaryItemsPanel
+              record={selectedType}
+              items={items}
+              isRefreshing={itemsQuery.isFetching}
+              onItemSubmit={handleItemSubmit}
+              onRefresh={handleRefresh}
+              onDelete={handleDelete}
+              onBulkDelete={handleBulkDelete}
+            />
           </div>
         </div>
       )}

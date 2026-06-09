@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import { Icons } from '@/components/icons';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { DataTable } from '@/components/ui/table/data-table';
 import type {
@@ -129,7 +129,7 @@ export function DictionaryItemsPanel({
   );
 
   return (
-    <>
+    <Card>
       {batchConfirmDialog}
       {record && (
         <DictionaryItemSheet
@@ -140,7 +140,7 @@ export function DictionaryItemsPanel({
           onSubmit={onItemSubmit}
         />
       )}
-      <CardHeader className='gap-3'>
+      <CardHeader>
         <div className='space-y-1'>
           <CardTitle>字典项列表</CardTitle>
           <CardDescription>
@@ -158,6 +158,6 @@ export function DictionaryItemsPanel({
           emptyMessage={record ? '当前字典类型暂无字典项' : '请先从左侧选择字典类型'}
         />
       </CardContent>
-    </>
+    </Card>
   );
 }
