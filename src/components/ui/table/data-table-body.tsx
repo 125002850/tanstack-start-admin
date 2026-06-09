@@ -139,7 +139,7 @@ export function DataTableBody<TData>({
   const getRowClassName = useCallback(
     (row: Row<TData>) =>
       cn(
-        expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey && 'bg-accent',
+        expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey && '!bg-accent',
         onRowClick && 'cursor-pointer'
       ),
     [expandedRowKey, getExpandRowKey, onRowClick]
@@ -223,7 +223,6 @@ export function DataTableBody<TData>({
             return (
               <TableRow
                 key={row.id}
-                data-state={row.getIsSelected() && 'selected'}
                 data-index={virtualRow.index}
                 aria-rowindex={virtualRow.index + 2}
                 className={getRowClassName(row)}
@@ -288,7 +287,6 @@ export function DataTableBody<TData>({
       {rows.map((row, index) => (
         <TableRow
           key={row.id}
-          data-state={row.getIsSelected() && 'selected'}
           data-row-index={index}
           className={getRowClassName(row)}
           onClick={(event) => handleRowClick(event, row)}
