@@ -1,5 +1,5 @@
 import { useRouter, useRouterState } from '@tanstack/react-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { getAppRouteStaticData, type AppRouteStaticData } from '@/lib/router/app-route-meta';
 import { resolveDashboardHomeHref, isDashboardHomeHref } from '@/lib/router/dashboard-home';
 import { resolveRouteWorkspaceConfig, resolveRouteTagTitle } from '../lib/route-workspace';
@@ -102,9 +102,11 @@ export function useDashboardRouteTagSync(enabled = true) {
   const router = useRouter();
   const location = useRouterState({ select: (s) => s.location });
   const prevHref = useRef<string | null>(null);
+  const useIsomorphicLayoutEffect =
+    typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
   // Seed the home tag once on mount (idempotent via store check)
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!enabled) return;
 
     const homeHref = resolveDashboardHomeHref();
@@ -120,7 +122,7 @@ export function useDashboardRouteTagSync(enabled = true) {
     }
   }, [enabled]);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!enabled) return;
 
     const pathname = location.pathname;

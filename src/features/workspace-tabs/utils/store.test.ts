@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useWorkspaceTabStore } from './store';
+import { useWorkspacePageRegistryStore } from './page-registry';
 import type { WorkspaceTabOpenInput, WorkspacePageDescriptor } from '../types';
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import { MAX_KEEPALIVE_TABS } from '@/config/workspace-tabs';
@@ -28,15 +29,55 @@ function makeDescriptor(overrides: Partial<WorkspacePageDescriptor> = {}): Works
   };
 }
 
+function openTab(
+  overrides: Partial<WorkspaceTabOpenInput> & Pick<WorkspaceTabOpenInput, 'id'>
+) {
+  const tab = makeTab({
+    id: overrides.id,
+    href: overrides.href ?? `/${overrides.id}`,
+    title: overrides.title ?? overrides.id,
+    closable: overrides.closable ?? true,
+    keepAlive: overrides.keepAlive ?? false
+  });
+  useWorkspaceTabStore.getState().openOrActivate(tab);
+  return tab;
+}
+
+function openRegisteredPage(
+  tabId: string,
+  descriptorOverrides: Partial<WorkspacePageDescriptor> = {},
+  tabOverrides: Partial<WorkspaceTabOpenInput> = {}
+) {
+  const descriptor = makeDescriptor({
+    tabId,
+    initialTitle: descriptorOverrides.initialTitle ?? tabOverrides.title ?? tabId,
+    ...descriptorOverrides
+  });
+
+  openTab({
+    id: tabId,
+    href: tabOverrides.href ?? tabId,
+    title: tabOverrides.title ?? descriptor.initialTitle,
+    closable: tabOverrides.closable ?? descriptor.closable,
+    keepAlive: tabOverrides.keepAlive ?? descriptor.keepAlive
+  });
+  useWorkspaceTabStore.getState().registerPageDescriptor(tabId, descriptor);
+  return descriptor;
+}
+
 function resetStore() {
   useWorkspaceTabStore.setState({
     tabs: {},
     activeId: null,
     openedOrder: [],
     disabledKeepAliveIds: new Set(),
-    pageDescriptors: {},
     lifecycleSnapshots: {}
   });
+  useWorkspacePageRegistryStore.getState().resetDescriptors();
+}
+
+function getDescriptors() {
+  return useWorkspacePageRegistryStore.getState().descriptors;
 }
 
 describe('workspace-tags store', () => {
@@ -150,14 +191,14 @@ describe('workspace-tags store', () => {
     });
 
     it('cleans up page descriptor and lifecycle on close', () => {
-      getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
+      openRegisteredPage('tab-1');
       getState().updateLifecycle('tab-1', { dirty: true, title: 'Dirty' });
-      expect(getState().pageDescriptors['tab-1']).toBeDefined();
+      expect(getDescriptors()['tab-1']).toBeDefined();
       expect(getState().lifecycleSnapshots['tab-1']?.dirty).toBe(true);
 
       getState().close('tab-1');
       const state = useWorkspaceTabStore.getState();
-      expect(state.pageDescriptors['tab-1']).toBeUndefined();
+      expect(getDescriptors()['tab-1']).toBeUndefined();
       expect(state.lifecycleSnapshots['tab-1']).toBeUndefined();
     });
 
@@ -203,24 +244,21 @@ describe('workspace-tags store', () => {
 
     it('cleans up descriptors and lifecycles of closed tabs', () => {
       const store = useWorkspaceTabStore.getState();
-      store.registerPageDescriptor(
-        HOME_ID,
-        makeDescriptor({
-          tabId: HOME_ID,
-          initialTitle: '仪表盘',
-          closable: false
-        })
-      );
-      store.registerPageDescriptor('a', makeDescriptor({ tabId: 'a' }));
-      store.registerPageDescriptor('b', makeDescriptor({ tabId: 'b' }));
+      openRegisteredPage(HOME_ID, { initialTitle: '仪表盘', closable: false }, {
+        href: HOME_ID,
+        title: '仪表盘',
+        closable: false
+      });
+      openRegisteredPage('a');
+      openRegisteredPage('b');
       store.updateLifecycle('a', { dirty: true });
       store.updateLifecycle('b', { dirty: true });
 
       store.closeOther('a');
       const state = useWorkspaceTabStore.getState();
-      expect(state.pageDescriptors[HOME_ID]).toBeDefined();
-      expect(state.pageDescriptors['a']).toBeDefined();
-      expect(state.pageDescriptors['b']).toBeUndefined();
+      expect(getDescriptors()[HOME_ID]).toBeDefined();
+      expect(getDescriptors()['a']).toBeDefined();
+      expect(getDescriptors()['b']).toBeUndefined();
       expect(state.lifecycleSnapshots[HOME_ID]).toBeDefined();
       expect(state.lifecycleSnapshots['a']).toBeDefined();
       expect(state.lifecycleSnapshots['b']).toBeUndefined();
@@ -260,20 +298,16 @@ describe('workspace-tags store', () => {
 
     it('cleans up all descriptors and lifecycles except home', () => {
       const store = useWorkspaceTabStore.getState();
-      store.registerPageDescriptor(
-        HOME_ID,
-        makeDescriptor({
-          tabId: HOME_ID,
-          initialTitle: 'Home',
-          closable: false
-        })
-      );
-      store.registerPageDescriptor('a', makeDescriptor({ tabId: 'a' }));
+      openRegisteredPage(HOME_ID, { initialTitle: 'Home', closable: false }, {
+        href: HOME_ID,
+        title: 'Home',
+        closable: false
+      });
+      openRegisteredPage('a');
 
       store.closeAll();
-      const state = useWorkspaceTabStore.getState();
-      expect(state.pageDescriptors[HOME_ID]).toBeDefined();
-      expect(state.pageDescriptors['a']).toBeUndefined();
+      expect(getDescriptors()[HOME_ID]).toBeDefined();
+      expect(getDescriptors()['a']).toBeUndefined();
     });
   });
 
@@ -340,24 +374,21 @@ describe('workspace-tags store', () => {
         'tab-1',
         makeDescriptor({ tabId: 'tab-1', initialTitle: 'Test' })
       );
-      expect(getState().pageDescriptors['tab-1']).toBeDefined();
-      expect(getState().pageDescriptors['tab-1']?.initialTitle).toBe('Test');
+      expect(getDescriptors()['tab-1']).toBeDefined();
+      expect(getDescriptors()['tab-1']?.initialTitle).toBe('Test');
     });
 
-    it('creates a tab for the registered descriptor', () => {
+    it('does not create a tab for the registered descriptor', () => {
       getState().registerPageDescriptor(
         'tab-1',
         makeDescriptor({ tabId: 'tab-1', keepAlive: true })
       );
-      const tab = getState().tabs['tab-1'];
-      expect(tab).toBeDefined();
-      expect(tab?.keepAlive).toBe(true);
-      expect(tab?.closable).toBe(true);
+      expect(getState().tabs['tab-1']).toBeUndefined();
     });
 
-    it('sets the registered tab as active', () => {
+    it('does not change the active tab', () => {
       getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
-      expect(getState().activeId).toBe('tab-1');
+      expect(getState().activeId).toBeNull();
     });
 
     it('creates a default lifecycle snapshot', () => {
@@ -400,25 +431,17 @@ describe('workspace-tags store', () => {
     });
 
     it('preserves the existing href when re-registering an open tab', () => {
-      const store = getState();
-      store.openOrActivate(
-        makeTab({
-          id: 'tab-1',
-          href: '/dashboard/product?page=2',
-          title: 'Products'
-        })
-      );
-
-      store.registerPageDescriptor(
+      openRegisteredPage(
         'tab-1',
-        makeDescriptor({ tabId: 'tab-1', initialTitle: 'Products' })
+        { initialTitle: 'Products' },
+        { href: '/dashboard/product?page=2', title: 'Products' }
       );
 
       expect(getState().tabs['tab-1']?.href).toBe('/dashboard/product?page=2');
     });
 
-    it('does not duplicate tab in openedOrder when re-registered', () => {
-      getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
+    it('does not duplicate tab in openedOrder when an open tab is re-registered', () => {
+      openRegisteredPage('tab-1');
       getState().registerPageDescriptor(
         'tab-1',
         makeDescriptor({ tabId: 'tab-1', initialTitle: 'Changed' })
@@ -427,21 +450,19 @@ describe('workspace-tags store', () => {
       expect(entries).toHaveLength(1);
     });
 
-    it('keeps home tab first when it is registered after other pages', () => {
-      getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
-      getState().registerPageDescriptor(
-        HOME_ID,
-        makeDescriptor({
-          tabId: HOME_ID,
-          initialTitle: '仪表盘',
-          closable: false
-        })
-      );
+    it('does not change openedOrder when registering descriptors', () => {
+      openRegisteredPage('tab-1');
+      openRegisteredPage(HOME_ID, { initialTitle: '仪表盘', closable: false }, {
+        href: HOME_ID,
+        title: '仪表盘',
+        closable: false
+      });
 
       expect(getState().openedOrder).toEqual([HOME_ID, 'tab-1']);
     });
 
     it('works when called during render (idempotent)', () => {
+      openTab({ id: 'tab-1', href: 'tab-1', title: 'tab-1' });
       getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
       getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
       getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
@@ -452,23 +473,24 @@ describe('workspace-tags store', () => {
 
   describe('unregisterPageDescriptor', () => {
     it('removes descriptor and lifecycle without closing tab', () => {
-      getState().registerPageDescriptor('tab-1', makeDescriptor({ tabId: 'tab-1' }));
+      openRegisteredPage('tab-1');
       getState().unregisterPageDescriptor('tab-1');
-      expect(getState().pageDescriptors['tab-1']).toBeUndefined();
+      expect(getDescriptors()['tab-1']).toBeUndefined();
       expect(getState().lifecycleSnapshots['tab-1']).toBeUndefined();
       expect(getState().tabs['tab-1']).toBeDefined();
     });
   });
 
   describe('updateLifecycle', () => {
-    it('updates title and syncs to tab', () => {
-      getState().registerPageDescriptor(
+    it('updates title without mutating the tab structure state', () => {
+      openRegisteredPage(
         'tab-1',
-        makeDescriptor({ tabId: 'tab-1', initialTitle: 'Initial' })
+        { initialTitle: 'Initial' },
+        { title: 'Initial', href: 'tab-1' }
       );
       getState().updateLifecycle('tab-1', { title: 'New Title' });
       expect(getState().lifecycleSnapshots['tab-1']?.title).toBe('New Title');
-      expect(getState().tabs['tab-1']?.title).toBe('New Title');
+      expect(getState().tabs['tab-1']?.title).toBe('Initial');
     });
 
     it('updates dirty flag', () => {
@@ -513,7 +535,7 @@ describe('workspace-tags store', () => {
       expect(Object.keys(state.tabs)).toEqual([HOME_ID]);
       expect(state.activeId).toBe(HOME_ID);
       expect(state.openedOrder).toEqual([HOME_ID]);
-      expect(Object.keys(state.pageDescriptors)).toHaveLength(0);
+      expect(Object.keys(getDescriptors())).toHaveLength(0);
       expect(Object.keys(state.lifecycleSnapshots)).toHaveLength(0);
     });
   });
@@ -564,7 +586,6 @@ describe('workspace-tags store', () => {
         openedOrder: order,
         activeId: `keep-${MAX_KEEPALIVE_TABS - 1}`,
         disabledKeepAliveIds: new Set(),
-        pageDescriptors: {},
         lifecycleSnapshots: {}
       });
 
@@ -589,16 +610,13 @@ describe('workspace-tags store', () => {
     it('preserves dirty keep-alive tabs during eviction', () => {
       const store = getState();
 
-      // Register MAX_KEEPALIVE_TABS keep-alive page descriptors
+      // Open and register MAX_KEEPALIVE_TABS keep-alive page descriptors
       for (let i = 0; i < MAX_KEEPALIVE_TABS; i++) {
-        store.registerPageDescriptor(
-          `keep-${i}`,
-          makeDescriptor({
-            tabId: `keep-${i}`,
-            keepAlive: true,
-            initialTitle: `Keep ${i}`
-          })
-        );
+        openRegisteredPage(`keep-${i}`, {
+          tabId: `keep-${i}`,
+          keepAlive: true,
+          initialTitle: `Keep ${i}`
+        });
       }
 
       // Mark the first two (oldest) as dirty
@@ -731,7 +749,6 @@ describe('workspace-tags store', () => {
         openedOrder: order,
         activeId: `normal-${normalCount - 1}`,
         disabledKeepAliveIds: new Set(),
-        pageDescriptors: {},
         lifecycleSnapshots: {}
       });
 

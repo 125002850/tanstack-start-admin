@@ -2,6 +2,7 @@ import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import { useWorkspaceTabStore } from '../utils/store';
+import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { useWorkspacePage, WorkspacePageContext } from './use-workspace-page';
 import type { WorkspacePageDescriptor, WorkspacePageLifecyclePatch } from '../types';
 
@@ -21,9 +22,9 @@ function resetStore() {
     activeId: null,
     openedOrder: [],
     disabledKeepAliveIds: new Set(),
-    pageDescriptors: {},
     lifecycleSnapshots: {}
   });
+  useWorkspacePageRegistryStore.getState().resetDescriptors();
 }
 
 function TestHarness() {
@@ -116,6 +117,13 @@ describe('useWorkspacePage', () => {
 
   it('updateLifecycle updates title in store', () => {
     const store = useWorkspaceTabStore.getState();
+    store.openOrActivate({
+      id: '/dashboard/test-page',
+      href: '/dashboard/test-page',
+      title: 'Base Title',
+      closable: true,
+      keepAlive: true
+    });
     store.registerPageDescriptor('/dashboard/test-page', makeDescriptor('/dashboard/test-page'));
 
     const { getByTestId } = renderWithProvider('/dashboard/test-page');
@@ -125,9 +133,7 @@ describe('useWorkspacePage', () => {
 
     const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/test-page'];
     expect(lifecycle?.title).toBe('Updated Title');
-    expect(useWorkspaceTabStore.getState().tabs['/dashboard/test-page']?.title).toBe(
-      'Updated Title'
-    );
+    expect(useWorkspaceTabStore.getState().tabs['/dashboard/test-page']?.title).toBe('Base Title');
   });
 
   it('updateLifecycle updates dirty flag in store', () => {

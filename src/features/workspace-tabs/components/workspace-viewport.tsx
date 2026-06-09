@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { WorkspacePageDescriptor, WorkspacePageLifecyclePatch } from '../types';
 import { useWorkspaceTabStore } from '../utils/store';
+import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { WorkspacePageContext } from '../hooks/use-workspace-page';
 import { Activity } from './activity';
 import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary';
@@ -17,7 +18,7 @@ import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary';
 export function WorkspaceViewport() {
   const tabs = useWorkspaceTabStore((s) => s.tabs);
   const activeId = useWorkspaceTabStore((s) => s.activeId);
-  const pageDescriptors = useWorkspaceTabStore((s) => s.pageDescriptors);
+  const pageDescriptors = useWorkspacePageRegistryStore((s) => s.descriptors);
   const disabledKeepAliveIds = useWorkspaceTabStore((s) => s.disabledKeepAliveIds);
 
   const entries = React.useMemo(() => {

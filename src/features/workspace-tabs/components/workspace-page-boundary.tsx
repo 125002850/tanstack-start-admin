@@ -80,16 +80,20 @@ function WorkspacePageBoundaryRegistration({
   render: () => React.ReactNode;
   errorFallback?: React.ReactNode;
 }) {
+  const renderRef = React.useRef(render);
+  renderRef.current = render;
+
+  const stableRender = React.useCallback(() => renderRef.current(), []);
   const descriptor = React.useMemo<WorkspacePageDescriptor>(
     () => ({
       tabId,
       initialTitle,
       keepAlive,
       closable,
-      render,
+      render: stableRender,
       errorFallback
     }),
-    [closable, errorFallback, initialTitle, keepAlive, render, tabId]
+    [closable, errorFallback, initialTitle, keepAlive, stableRender, tabId]
   );
 
   const useIsomorphicLayoutEffect =

@@ -42,7 +42,6 @@ export function useWorkspaceTags() {
 
   const openOrActivate = useCallback(
     (tab: WorkspaceTab) => {
-      useWorkspaceTabStore.getState().openOrActivate(tab);
       navigate(tab.href);
     },
     [navigate]

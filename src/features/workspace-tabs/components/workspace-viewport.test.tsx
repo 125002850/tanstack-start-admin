@@ -2,6 +2,7 @@ import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { useWorkspaceTabStore } from '../utils/store';
+import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { WorkspaceViewport } from './workspace-viewport';
 import type { WorkspacePageDescriptor, WorkspacePageLifecycle, WorkspaceTab } from '../types';
 
@@ -27,9 +28,9 @@ function setStoreState(
     activeId,
     openedOrder: Object.keys(normalizedTabs),
     disabledKeepAliveIds: new Set(disabledIds),
-    pageDescriptors: extra.pageDescriptors ?? {},
     lifecycleSnapshots: extra.lifecycleSnapshots ?? {}
   });
+  useWorkspacePageRegistryStore.setState({ descriptors: extra.pageDescriptors ?? {} });
 }
 
 function makePageDescriptor(
@@ -51,9 +52,9 @@ function resetStore() {
     activeId: null,
     openedOrder: [],
     disabledKeepAliveIds: new Set(),
-    pageDescriptors: {},
     lifecycleSnapshots: {}
   });
+  useWorkspacePageRegistryStore.getState().resetDescriptors();
 }
 
 describe('WorkspaceViewport', () => {

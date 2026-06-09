@@ -2,6 +2,7 @@ import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
 import { useWorkspaceTabStore } from '../utils/store';
+import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { useDashboardRouteTagSync } from '../hooks/use-dashboard-route-tag-sync';
 import { useWorkspaceTags } from '../hooks/use-workspace-tags';
 import { WorkspacePageBoundary } from './workspace-page-boundary';
@@ -170,9 +171,44 @@ function resetStore() {
     activeId: null,
     openedOrder: [],
     disabledKeepAliveIds: new Set(),
-    pageDescriptors: {},
     lifecycleSnapshots: {}
   });
+  useWorkspacePageRegistryStore.getState().resetDescriptors();
+}
+
+function openRegisteredPage(
+  id: string,
+  options?: {
+    title?: string;
+    closable?: boolean;
+    keepAlive?: boolean;
+    href?: string;
+    render?: () => React.ReactNode;
+  }
+) {
+  const title = options?.title ?? id;
+  const href = options?.href ?? id;
+  const closable = options?.closable ?? true;
+  const keepAlive = options?.keepAlive ?? true;
+
+  useWorkspaceTabStore.getState().openOrActivate({
+    id,
+    href,
+    title,
+    closable,
+    keepAlive
+  });
+  useWorkspaceTabStore.getState().registerPageDescriptor(id, {
+    tabId: id,
+    initialTitle: title,
+    keepAlive,
+    closable,
+    render: options?.render ?? (() => null)
+  });
+}
+
+function getDescriptors() {
+  return useWorkspacePageRegistryStore.getState().descriptors;
 }
 
 describe('Workspace Routing Integration', () => {
@@ -221,7 +257,7 @@ describe('Workspace Routing Integration', () => {
       );
 
       const state = useWorkspaceTabStore.getState();
-      expect(state.pageDescriptors['/dashboard/users']).toBeDefined();
+      expect(getDescriptors()['/dashboard/users']).toBeDefined();
       expect(state.tabs['/dashboard/users']).toBeDefined();
       expect(state.activeId).toBe('/dashboard/users');
     });
@@ -240,8 +276,8 @@ describe('Workspace Routing Integration', () => {
       );
 
       const state = useWorkspaceTabStore.getState();
-      expect(state.pageDescriptors['/dashboard/users']).toBeDefined();
-      expect(state.pageDescriptors['/dashboard/users']?.tabId).toBe('/dashboard/users');
+      expect(getDescriptors()['/dashboard/users']).toBeDefined();
+      expect(getDescriptors()['/dashboard/users']?.tabId).toBe('/dashboard/users');
       expect(state.tabs['/dashboard/users']).toBeDefined();
     });
 
@@ -334,52 +370,34 @@ describe('Workspace Routing Integration', () => {
       );
 
       // Descriptor is registered
-      expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toBeDefined();
+      expect(getDescriptors()['/dashboard/users']).toBeDefined();
 
       // Unmount the boundary (simulating route navigation away)
       unmount();
 
       // Descriptor should STILL be registered (shell store owns it now)
-      expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toBeDefined();
+      expect(getDescriptors()['/dashboard/users']).toBeDefined();
     });
 
     it('tab close cleans up descriptor and lifecycle', () => {
       const store = useWorkspaceTabStore.getState();
-      store.registerPageDescriptor('/dashboard/users', {
-        tabId: '/dashboard/users',
-        initialTitle: 'Users',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
+      openRegisteredPage('/dashboard/users', { title: 'Users' });
       store.updateLifecycle('/dashboard/users', { dirty: true });
 
       store.close('/dashboard/users');
 
-      expect(store.pageDescriptors['/dashboard/users']).toBeUndefined();
+      expect(getDescriptors()['/dashboard/users']).toBeUndefined();
       expect(store.lifecycleSnapshots['/dashboard/users']).toBeUndefined();
     });
 
     it('shell resetAll cleans up all descriptors', () => {
       const store = useWorkspaceTabStore.getState();
-      store.registerPageDescriptor('/dashboard/users', {
-        tabId: '/dashboard/users',
-        initialTitle: 'Users',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
-      store.registerPageDescriptor('/dashboard/products', {
-        tabId: '/dashboard/products',
-        initialTitle: 'Products',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
+      openRegisteredPage('/dashboard/users', { title: 'Users' });
+      openRegisteredPage('/dashboard/products', { title: 'Products' });
 
       store.resetAll();
 
-      expect(Object.keys(store.pageDescriptors)).toHaveLength(0);
+      expect(Object.keys(getDescriptors())).toHaveLength(0);
       expect(Object.keys(store.lifecycleSnapshots)).toHaveLength(0);
     });
   });
@@ -392,17 +410,11 @@ describe('Workspace Routing Integration', () => {
     }
 
     it('title can be updated via updateLifecycle', () => {
-      getState().registerPageDescriptor('/dashboard/users', {
-        tabId: '/dashboard/users',
-        initialTitle: 'Users',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
+      openRegisteredPage('/dashboard/users', { title: 'Users' });
 
       getState().updateLifecycle('/dashboard/users', { title: 'Users (99)' });
       expect(getState().lifecycleSnapshots['/dashboard/users']?.title).toBe('Users (99)');
-      expect(getState().tabs['/dashboard/users']?.title).toBe('Users (99)');
+      expect(getState().tabs['/dashboard/users']?.title).toBe('Users');
     });
 
     it('dirty flag can be toggled', () => {
@@ -452,25 +464,21 @@ describe('Workspace Routing Integration', () => {
         render: () => null
       });
 
-      expect(getState().pageDescriptors['/dashboard/settings']).toBeDefined();
+      expect(getDescriptors()['/dashboard/settings']).toBeDefined();
     });
 
     it('inactive non-keep-alive page is NOT rendered by viewport', () => {
       // Register products first (will be active), then settings (makes settings active, products inactive)
       // We want products(keepAlive=true) active + settings(keepAlive=false) inactive
       // So: register products, then explicitly set activeId back to products
-      getState().registerPageDescriptor('/dashboard/products', {
-        tabId: '/dashboard/products',
-        initialTitle: 'Products',
+      openRegisteredPage('/dashboard/products', {
+        title: 'Products',
         keepAlive: true,
-        closable: true,
         render: () => React.createElement('div', { 'data-testid': 'v2-products' }, 'Products')
       });
-      getState().registerPageDescriptor('/dashboard/settings', {
-        tabId: '/dashboard/settings',
-        initialTitle: 'Settings',
+      openRegisteredPage('/dashboard/settings', {
+        title: 'Settings',
         keepAlive: false,
-        closable: true,
         render: () => React.createElement('div', { 'data-testid': 'v2-settings' }, 'Settings')
       });
 
@@ -514,13 +522,8 @@ describe('Workspace Routing Integration', () => {
     });
 
     it('viewport renders non-null content for first-opened tag', () => {
-      const store = useWorkspaceTabStore.getState();
-      // Pre-register a descriptor (simulating first tag open)
-      store.registerPageDescriptor('/dashboard/products', {
-        tabId: '/dashboard/products',
-        initialTitle: 'Products',
-        keepAlive: true,
-        closable: true,
+      openRegisteredPage('/dashboard/products', {
+        title: 'Products',
         render: () =>
           React.createElement('div', { 'data-testid': 'first-tag' }, 'First Tag Content')
       });
@@ -597,7 +600,7 @@ describe('Workspace Routing Integration', () => {
       );
 
       // No descriptor registered, no tab created
-      expect(getState().pageDescriptors['/dashboard/users']).toBeUndefined();
+      expect(getDescriptors()['/dashboard/users']).toBeUndefined();
       expect(getState().tabs['/dashboard/users']).toBeUndefined();
     });
 
@@ -616,7 +619,7 @@ describe('Workspace Routing Integration', () => {
 
       // Store should be completely untouched
       const state = getState();
-      expect(Object.keys(state.pageDescriptors)).toHaveLength(0);
+      expect(Object.keys(getDescriptors())).toHaveLength(0);
       expect(Object.keys(state.tabs)).toHaveLength(0);
       expect(Object.keys(state.lifecycleSnapshots)).toHaveLength(0);
       expect(state.activeId).toBeNull();
@@ -649,20 +652,8 @@ describe('Workspace Routing Integration', () => {
 
     it('creates separate tags for different detail page instances', () => {
       // Simulate navigating to product/123, then product/456
-      getState().registerPageDescriptor('/dashboard/product/123', {
-        tabId: '/dashboard/product/123',
-        initialTitle: '产品 #123',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
-      getState().registerPageDescriptor('/dashboard/product/456', {
-        tabId: '/dashboard/product/456',
-        initialTitle: '产品 #456',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
+      openRegisteredPage('/dashboard/product/123', { title: '产品 #123' });
+      openRegisteredPage('/dashboard/product/456', { title: '产品 #456' });
 
       const state = getState();
       expect(state.tabs['/dashboard/product/123']).toBeDefined();
@@ -673,20 +664,8 @@ describe('Workspace Routing Integration', () => {
     });
 
     it('route instances appear in opened order', () => {
-      getState().registerPageDescriptor('/dashboard/product/123', {
-        tabId: '/dashboard/product/123',
-        initialTitle: '123',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
-      getState().registerPageDescriptor('/dashboard/product/456', {
-        tabId: '/dashboard/product/456',
-        initialTitle: '456',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
+      openRegisteredPage('/dashboard/product/123', { title: '123' });
+      openRegisteredPage('/dashboard/product/456', { title: '456' });
 
       const order = getState().openedOrder;
       expect(order).toContain('/dashboard/product/123');
@@ -694,20 +673,8 @@ describe('Workspace Routing Integration', () => {
     });
 
     it('"new" route instance creates its own tag separate from list', () => {
-      getState().registerPageDescriptor('/dashboard/product', {
-        tabId: '/dashboard/product',
-        initialTitle: '产品',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
-      getState().registerPageDescriptor('/dashboard/product/new', {
-        tabId: '/dashboard/product/new',
-        initialTitle: '新增产品',
-        keepAlive: true,
-        closable: true,
-        render: () => null
-      });
+      openRegisteredPage('/dashboard/product', { title: '产品' });
+      openRegisteredPage('/dashboard/product/new', { title: '新增产品' });
 
       const state = getState();
       expect(state.tabs['/dashboard/product']).toBeDefined();
@@ -730,12 +697,10 @@ describe('Workspace Routing Integration', () => {
       title: string,
       opts?: { closable?: boolean; keepAlive?: boolean }
     ) {
-      getState().registerPageDescriptor(id, {
-        tabId: id,
-        initialTitle: title,
+      openRegisteredPage(id, {
+        title,
         keepAlive: opts?.keepAlive ?? true,
-        closable: opts?.closable ?? true,
-        render: () => null
+        closable: opts?.closable ?? true
       });
     }
 

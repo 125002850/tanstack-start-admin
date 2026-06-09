@@ -3,6 +3,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useWorkspaceTabStore } from '../utils/store';
+import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { WorkspacePageBoundary } from './workspace-page-boundary';
 
 const mockUseRouterState = vi.fn();
@@ -14,7 +15,8 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 vi.mock('@/config/workspace-tabs', () => ({
-  isWorkspaceTabsEnabled: vi.fn()
+  isWorkspaceTabsEnabled: vi.fn(),
+  MAX_KEEPALIVE_TABS: 15
 }));
 
 function resetStore() {
@@ -23,9 +25,13 @@ function resetStore() {
     activeId: null,
     openedOrder: [],
     disabledKeepAliveIds: new Set(),
-    pageDescriptors: {},
     lifecycleSnapshots: {}
   });
+  useWorkspacePageRegistryStore.getState().resetDescriptors();
+}
+
+function getDescriptors() {
+  return useWorkspacePageRegistryStore.getState().descriptors;
 }
 
 describe('WorkspacePageBoundary', () => {
@@ -59,7 +65,7 @@ describe('WorkspacePageBoundary', () => {
     const { container } = render(<WorkspacePageBoundary render={() => <div>Users</div>} />);
 
     expect(container.innerHTML).toBe('');
-    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toMatchObject({
+    expect(getDescriptors()['/dashboard/users']).toMatchObject({
       tabId: '/dashboard/users',
       initialTitle: '用户'
     });
@@ -84,7 +90,7 @@ describe('WorkspacePageBoundary', () => {
       />
     );
 
-    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/product/new']).toMatchObject(
+    expect(getDescriptors()['/dashboard/product/new']).toMatchObject(
       {
         tabId: '/dashboard/product/new',
         initialTitle: '新增产品',
@@ -106,11 +112,18 @@ describe('WorkspacePageBoundary', () => {
       <WorkspacePageBoundary tabId='/dashboard/users' render={() => <div>Users</div>} />
     );
 
-    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toMatchObject({
+    expect(getDescriptors()['/dashboard/users']).toMatchObject({
       tabId: '/dashboard/users',
       initialTitle: '用户'
     });
 
+    useWorkspaceTabStore.getState().openOrActivate({
+      id: '/dashboard/users',
+      href: '/dashboard/users',
+      title: '用户',
+      closable: true,
+      keepAlive: true
+    });
     useWorkspaceTabStore.getState().close('/dashboard/users');
 
     pathname = '/dashboard/overview';
@@ -118,7 +131,7 @@ describe('WorkspacePageBoundary', () => {
 
     rerender(<WorkspacePageBoundary tabId='/dashboard/users' render={() => <div>Users</div>} />);
 
-    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/users']).toBeUndefined();
+    expect(getDescriptors()['/dashboard/users']).toBeUndefined();
     expect(useWorkspaceTabStore.getState().tabs['/dashboard/users']).toBeUndefined();
   });
 
@@ -134,11 +147,11 @@ describe('WorkspacePageBoundary', () => {
 
     render(<WorkspacePageBoundary render={() => <div>Products</div>} />);
 
-    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/product']).toMatchObject({
+    expect(getDescriptors()['/dashboard/product']).toMatchObject({
       tabId: '/dashboard/product',
       initialTitle: '产品'
     });
-    expect(useWorkspaceTabStore.getState().pageDescriptors['/dashboard/product/']).toBeUndefined();
+    expect(getDescriptors()['/dashboard/product/']).toBeUndefined();
   });
 
   it('renders content directly when workspace tabs are disabled', () => {
@@ -149,7 +162,7 @@ describe('WorkspacePageBoundary', () => {
     );
 
     expect(getByText('Inline Content')).toBeTruthy();
-    expect(useWorkspaceTabStore.getState().pageDescriptors).toEqual({});
+    expect(getDescriptors()).toEqual({});
   });
 
   it('prefers renderWhenDisabled when workspace tabs are disabled', () => {
@@ -164,6 +177,6 @@ describe('WorkspacePageBoundary', () => {
 
     expect(getByText('Inline Disabled Content')).toBeTruthy();
     expect(queryByText('Workspace Content')).toBeNull();
-    expect(useWorkspaceTabStore.getState().pageDescriptors).toEqual({});
+    expect(getDescriptors()).toEqual({});
   });
 });

@@ -10,6 +10,7 @@ import type {
 } from '../types';
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import { MAX_KEEPALIVE_TABS } from '@/config/workspace-tabs';
+import { useWorkspacePageRegistryStore } from './page-registry';
 
 const HOME_ID = resolveDashboardHomeHref();
 const HOME_TITLE = '仪表盘';
@@ -19,7 +20,6 @@ interface WorkspaceTabState {
   activeId: WorkspaceTabId | null;
   openedOrder: WorkspaceTabId[];
   disabledKeepAliveIds: Set<WorkspaceTabId>;
-  pageDescriptors: Record<WorkspaceTabId, WorkspacePageDescriptor>;
   lifecycleSnapshots: Record<WorkspaceTabId, WorkspacePageLifecycle>;
 
   openOrActivate: (tab: WorkspaceTabOpenInput) => void;
@@ -48,7 +48,6 @@ function createBaseState(): Pick<
   | 'activeId'
   | 'openedOrder'
   | 'disabledKeepAliveIds'
-  | 'pageDescriptors'
   | 'lifecycleSnapshots'
 > {
   const homeTab = createHomeTab();
@@ -57,7 +56,6 @@ function createBaseState(): Pick<
     activeId: HOME_ID,
     openedOrder: [HOME_ID],
     disabledKeepAliveIds: new Set(),
-    pageDescriptors: {},
     lifecycleSnapshots: {}
   };
 }
@@ -65,13 +63,14 @@ function createBaseState(): Pick<
 export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
   ...createBaseState(),
 
-  openOrActivate: (tab) =>
+  openOrActivate: (tab) => {
+    let evictedIds: WorkspaceTabId[] = [];
+
     set((state) => {
       const existing = state.tabs[tab.id];
 
       // Step 1: Build the base next state (open or activate the tab)
       let nextTabs: Record<WorkspaceTabId, WorkspaceTab>;
-      let nextPageDescriptors: Record<WorkspaceTabId, WorkspacePageDescriptor>;
       let nextLifecycleSnapshots: Record<WorkspaceTabId, WorkspacePageLifecycle>;
       let nextActiveId: WorkspaceTabId;
       let nextOpenedOrder: WorkspaceTabId[];
@@ -82,7 +81,6 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
           [tab.id]: { ...existing, href: tab.href, title: tab.title, lastVisitedAt: Date.now() }
         };
         nextActiveId = tab.id;
-        nextPageDescriptors = state.pageDescriptors;
         nextLifecycleSnapshots = state.lifecycleSnapshots;
         nextOpenedOrder = state.openedOrder;
       } else {
@@ -96,7 +94,6 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
         };
         nextTabs = { ...state.tabs, [tab.id]: nextTab };
         nextActiveId = tab.id;
-        nextPageDescriptors = state.pageDescriptors;
         nextLifecycleSnapshots = state.lifecycleSnapshots;
         nextOpenedOrder = normalizeOpenedOrder(
           state.openedOrder.includes(tab.id) ? state.openedOrder : [...state.openedOrder, tab.id]
@@ -125,21 +122,19 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
         if (toEvict.size > 0) {
           // Prune evicted tabs from all state slices to prevent unbounded growth
           const kept: Record<string, WorkspaceTab> = {};
-          const keptDescriptors: Record<string, WorkspacePageDescriptor> = {};
           const keptLifecycles: Record<string, WorkspacePageLifecycle> = {};
           for (const id of Object.keys(nextTabs)) {
             if (!toEvict.has(id) || isHomeId(id)) {
               kept[id] = nextTabs[id];
-              if (nextPageDescriptors[id]) keptDescriptors[id] = nextPageDescriptors[id];
               if (nextLifecycleSnapshots[id]) keptLifecycles[id] = nextLifecycleSnapshots[id];
             }
           }
           nextTabs = ensureHomeTab(kept);
-          nextPageDescriptors = keptDescriptors;
           nextLifecycleSnapshots = keptLifecycles;
           nextOpenedOrder = normalizeOpenedOrder(
             nextOpenedOrder.filter((id) => !toEvict.has(id) || isHomeId(id))
           );
+          evictedIds = [...toEvict];
         }
       }
 
@@ -147,19 +142,28 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
         tabs: nextTabs,
         activeId: nextActiveId,
         openedOrder: nextOpenedOrder,
-        pageDescriptors: nextPageDescriptors,
         lifecycleSnapshots: nextLifecycleSnapshots
       };
-    }),
+    });
 
-  close: (id) =>
+    if (evictedIds.length > 0) {
+      const registry = useWorkspacePageRegistryStore.getState();
+      for (const id of evictedIds) {
+        registry.unregisterDescriptor(id);
+      }
+    }
+  },
+
+  close: (id) => {
+    let shouldUnregister = false;
+
     set((state) => {
       if (isHomeId(id)) return state;
       const existingTab = state.tabs[id];
       if (!existingTab) return state;
+      shouldUnregister = true;
 
       const { [id]: _removed, ...restTabs } = state.tabs;
-      const { [id]: _removedDesc, ...restDesc } = state.pageDescriptors;
       const { [id]: _removedLife, ...restLife } = state.lifecycleSnapshots;
       const nextTabs = ensureHomeTab(restTabs);
       const order = normalizeOpenedOrder(state.openedOrder.filter((oid) => oid !== id));
@@ -174,13 +178,19 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
         tabs: nextTabs,
         activeId: nextActive,
         openedOrder: order,
-        pageDescriptors: restDesc,
         lifecycleSnapshots: restLife,
         disabledKeepAliveIds: nextDisabled
       };
-    }),
+    });
 
-  closeOther: (id) =>
+    if (shouldUnregister) {
+      useWorkspacePageRegistryStore.getState().unregisterDescriptor(id);
+    }
+  },
+
+  closeOther: (id) => {
+    let keepIds: WorkspaceTabId[] | null = null;
+
     set((state) => {
       const keptTab = state.tabs[id];
       if (!keptTab) return state;
@@ -194,13 +204,9 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
           }
         : { [HOME_ID]: homeTab ?? createHomeTab() };
 
-      const keptDescriptors: Record<string, WorkspacePageDescriptor> = {};
       const keptLifecycles: Record<string, WorkspacePageLifecycle> = {};
-      if (keepHome && state.pageDescriptors[HOME_ID])
-        keptDescriptors[HOME_ID] = state.pageDescriptors[HOME_ID];
       if (keepHome && state.lifecycleSnapshots[HOME_ID])
         keptLifecycles[HOME_ID] = state.lifecycleSnapshots[HOME_ID];
-      if (state.pageDescriptors[id]) keptDescriptors[id] = state.pageDescriptors[id];
       if (state.lifecycleSnapshots[id]) keptLifecycles[id] = state.lifecycleSnapshots[id];
 
       const nextDisabled = new Set(state.disabledKeepAliveIds);
@@ -209,24 +215,26 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
       }
 
       const activeId = id;
+      keepIds = keepHome ? [HOME_ID, id] : [HOME_ID];
       return {
         tabs: keptTabs,
         activeId,
         openedOrder: normalizeOpenedOrder(keepHome ? [HOME_ID, id] : [HOME_ID]),
-        pageDescriptors: keptDescriptors,
         lifecycleSnapshots: keptLifecycles,
         disabledKeepAliveIds: nextDisabled
       };
-    }),
+    });
 
-  closeAll: () =>
+    if (keepIds) {
+      useWorkspacePageRegistryStore.getState().retainDescriptors(keepIds);
+    }
+  },
+
+  closeAll: () => {
     set((state) => {
       const homeTab = state.tabs[HOME_ID];
       if (homeTab) {
-        const keptDescriptors: Record<string, WorkspacePageDescriptor> = {};
         const keptLifecycles: Record<string, WorkspacePageLifecycle> = {};
-        if (state.pageDescriptors[HOME_ID])
-          keptDescriptors[HOME_ID] = state.pageDescriptors[HOME_ID];
         if (state.lifecycleSnapshots[HOME_ID])
           keptLifecycles[HOME_ID] = state.lifecycleSnapshots[HOME_ID];
 
@@ -234,7 +242,6 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
           tabs: { [HOME_ID]: homeTab },
           activeId: HOME_ID,
           openedOrder: normalizeOpenedOrder([HOME_ID]),
-          pageDescriptors: keptDescriptors,
           lifecycleSnapshots: keptLifecycles,
           disabledKeepAliveIds: new Set()
         };
@@ -244,11 +251,13 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
         tabs: { [HOME_ID]: nextHomeTab },
         activeId: HOME_ID,
         openedOrder: normalizeOpenedOrder([HOME_ID]),
-        pageDescriptors: {},
         lifecycleSnapshots: {},
         disabledKeepAliveIds: new Set()
       };
-    }),
+    });
+
+    useWorkspacePageRegistryStore.getState().retainDescriptors([HOME_ID]);
+  },
 
   touch: (id) =>
     set((state) => {
@@ -257,20 +266,26 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
       return { tabs: { ...state.tabs, [id]: { ...tab, lastVisitedAt: Date.now() } } };
     }),
 
-  evictInactive: (keepAliveIds) =>
+  evictInactive: (keepAliveIds) => {
+    let keepIds: WorkspaceTabId[] = [];
+
     set((state) => {
       const kept: Record<string, WorkspaceTab> = {};
       for (const id of Object.keys(state.tabs)) {
         if (keepAliveIds.has(id) || isHomeId(id)) kept[id] = state.tabs[id];
       }
       const tabs = ensureHomeTab(kept);
+      keepIds = Object.keys(tabs);
       return {
         tabs,
         openedOrder: normalizeOpenedOrder(
           state.openedOrder.filter((id) => keepAliveIds.has(id) || isHomeId(id))
         )
       };
-    }),
+    });
+
+    useWorkspacePageRegistryStore.getState().retainDescriptors(keepIds);
+  },
 
   disableKeepAlive: (id) =>
     set((state) => {
@@ -293,77 +308,35 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
 
   // ─── V2 page descriptor lifecycle ───
 
-  registerPageDescriptor: (tabId, descriptor) =>
-    set((state) => {
-      const existingDescriptor = state.pageDescriptors[tabId];
-      const existingTab = state.tabs[tabId];
-      const existingLifecycle = state.lifecycleSnapshots[tabId];
+  registerPageDescriptor: (tabId, descriptor) => {
+    useWorkspacePageRegistryStore.getState().registerDescriptor(tabId, descriptor);
 
-      const pageDescriptors = existingDescriptor
-        ? state.pageDescriptors
-        : { ...state.pageDescriptors, [tabId]: descriptor };
+    set((state) => {
+      const existingLifecycle = state.lifecycleSnapshots[tabId];
 
       const nextLifecycle = existingLifecycle ?? makeDefaultLifecycle(descriptor.initialTitle);
       const lifecycleSnapshots = existingLifecycle
         ? state.lifecycleSnapshots
         : { ...state.lifecycleSnapshots, [tabId]: nextLifecycle };
 
-      const nextTab: WorkspaceTab = existingTab
-        ? existingTab.title === nextLifecycle.title &&
-          existingTab.closable === descriptor.closable &&
-          existingTab.keepAlive === descriptor.keepAlive
-          ? existingTab
-          : {
-              ...existingTab,
-              title: nextLifecycle.title,
-              closable: descriptor.closable,
-              keepAlive: descriptor.keepAlive
-            }
-        : {
-            id: tabId,
-            href: tabId,
-            title: nextLifecycle.title,
-            closable: descriptor.closable,
-            keepAlive: descriptor.keepAlive,
-            lastVisitedAt: Date.now()
-          };
-
-      const tabs = existingTab
-        ? nextTab === existingTab
-          ? state.tabs
-          : { ...state.tabs, [tabId]: nextTab }
-        : { ...state.tabs, [tabId]: nextTab };
-
-      const activeId = state.activeId === tabId ? state.activeId : tabId;
-      const openedOrder = normalizeOpenedOrder(
-        state.openedOrder.includes(tabId) ? state.openedOrder : [...state.openedOrder, tabId]
-      );
-
-      if (
-        pageDescriptors === state.pageDescriptors &&
-        lifecycleSnapshots === state.lifecycleSnapshots &&
-        tabs === state.tabs &&
-        activeId === state.activeId &&
-        openedOrder === state.openedOrder
-      ) {
+      if (lifecycleSnapshots === state.lifecycleSnapshots) {
         return state;
       }
 
       return {
-        pageDescriptors,
-        lifecycleSnapshots,
-        tabs,
-        activeId,
-        openedOrder
+        lifecycleSnapshots
       };
-    }),
+    });
+  },
 
-  unregisterPageDescriptor: (tabId) =>
+  unregisterPageDescriptor: (tabId) => {
+    useWorkspacePageRegistryStore.getState().unregisterDescriptor(tabId);
+
     set((state) => {
-      const { [tabId]: _desc, ...restDesc } = state.pageDescriptors;
       const { [tabId]: _life, ...restLife } = state.lifecycleSnapshots;
-      return { pageDescriptors: restDesc, lifecycleSnapshots: restLife };
-    }),
+      return { lifecycleSnapshots: restLife };
+    });
+  },
 
   updateLifecycle: (tabId, patch) =>
     set((state) => {
@@ -374,18 +347,15 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
         closeGuard: patch.closeGuard !== undefined ? patch.closeGuard : existing?.closeGuard
       };
 
-      const tab = state.tabs[tabId];
-      const nextTabs = tab
-        ? { ...state.tabs, [tabId]: { ...tab, title: nextLife.title } }
-        : state.tabs;
-
       return {
-        lifecycleSnapshots: { ...state.lifecycleSnapshots, [tabId]: nextLife },
-        tabs: nextTabs
+        lifecycleSnapshots: { ...state.lifecycleSnapshots, [tabId]: nextLife }
       };
     }),
 
-  resetAll: () => set(createBaseState())
+  resetAll: () => {
+    set(createBaseState());
+    useWorkspacePageRegistryStore.getState().resetDescriptors();
+  }
 }));
 
 function findFallback(
