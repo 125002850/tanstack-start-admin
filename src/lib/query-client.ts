@@ -10,7 +10,15 @@ export function getQueryClient() {
     queryClient = new QueryClient({
       defaultOptions: {
         queries: {
-          staleTime: 60 * 1000
+          staleTime: 60 * 1000,
+          // oxlint-disable-next-line typescript/no-explicit-any
+          retry(failureCount, error: any) {
+            if (error?.response?.status === 404 || error?.status === 404) {
+              return false;
+            }
+
+            return failureCount < 3;
+          }
         }
       }
     });

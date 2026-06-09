@@ -117,6 +117,95 @@ src/
 └── types/                         # TypeScript 类型定义
 ```
 
+## UI 组件开发规范
+
+### Card 组件设计规范
+
+**padding 职责分配：**
+
+- **`<Card>`** 负责 **外层统一 padding**（`p-6`），所有四边间距一律由 Card 自身控制
+- **`<CardHeader>`**、**`<CardContent>`**、**`<CardFooter>`** 不再自带 `px-6`，不负责横向 padding
+- 子元素间距由 Card 的 **`flex flex-col gap-6`** 控制，通过 `gap` 实现 header/content/footer 之间的间距
+
+**设计原则：**
+
+- 盒子级的外 padding 统一收敛到最外层 `<Card>`，避免 padding 在多层级组件间分散导致视觉不一致
+- 子组件只负责自身内部布局（如 CardHeader 的 `@container` grid 布局），不介入 Card 级别的间距
+- 特殊需求（如全宽表格需要 `px-0`）通过子组件自身的 className 覆盖处理
+
+**正确用法：**
+
+```tsx
+// 标准卡片
+<Card>
+  <CardHeader>
+    <CardTitle>标题</CardTitle>
+    <CardDescription>描述文本</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* 内容 */}
+  </CardContent>
+</Card>
+
+// 全宽内容（如 DataTable）
+<Card>
+  <CardHeader>
+    <CardTitle>标题</CardTitle>
+  </CardHeader>
+  <Separator />
+  <CardContent className='px-0'>
+    <DataTable table={table} />
+  </CardContent>
+</Card>
+
+// 统计卡片（只用 Header + Footer）
+<Card className='@container/card'>
+  <CardHeader>
+    <CardDescription>总收入</CardDescription>
+    <CardTitle>$1,250.00</CardTitle>
+    <CardAction>
+      <Badge>+12.5%</Badge>
+    </CardAction>
+  </CardHeader>
+  <CardFooter className='flex-col items-start gap-1.5 text-sm'>
+    <div className='font-medium'>本月持续增长</div>
+    <div className='text-muted-foreground'>过去 6 个月访客趋势</div>
+  </CardFooter>
+</Card>
+```
+
+**反例（不应出现）：**
+
+```tsx
+// ❌ 不用 Card 包裹，直接渲染 Header/Content 为兄弟节点
+<>
+  <CardHeader className='px-4 py-4'>...</CardHeader>
+  <CardContent className='px-4'>...</CardContent>
+</>
+
+// ❌ 手动 div 模拟 Card 样式
+<div className='rounded-xl border bg-card'>
+  <CardHeader>...</CardHeader>
+  <CardContent>...</CardContent>
+</div>
+
+// ❌ 在 Header/Content 上写 px/py 覆盖 padding
+<CardHeader className='px-4 py-4'>...</CardHeader>
+<CardContent className='px-4 py-4'>...</CardContent>
+```
+
+### 图标使用规范
+
+- 统一使用 `@/components/icons` 中的 `Icons` 对象引用图标
+- 图标尺寸必须显式声明 `className='size-4'` 等尺寸类
+- 禁止在组件内部直接 import 或使用其他图标库
+
+### 布局容器规范
+
+- 页面必须使用 `PageContainer` 作为最外层容器
+- Dashboard 页面内嵌子区域尽量使用 `Card` 组件包裹，保持视觉一致性
+- 表格页面使用 `DataTable` + `Card`，表头和内容由 Card 统一管理间距
+
 ## 路由元数据规范
 
 当前项目采用“**route 文件本地定义元数据，运行时统一派生导航与页面头部**”的模式。每个 dashboard 路由应通过 `defineRouteMeta()` 同时声明：
