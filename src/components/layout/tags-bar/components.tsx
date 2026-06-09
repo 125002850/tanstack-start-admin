@@ -61,7 +61,7 @@ interface TagContentProps {
   onClosePointerDown?: (event: React.SyntheticEvent) => void;
 }
 
-// TagContent 只负责“标签内部内容”，不关心它是按钮、占位还是 overlay。
+// TagContent 只负责"标签内部内容"，不关心它是按钮、占位还是 overlay。
 // 这样可以让真实标签、placeholder、overlay 共享同一套标题 / 脏状态 / 关闭图标渲染。
 function TagContent(props: TagContentProps) {
   const {
@@ -101,7 +101,7 @@ function TagContent(props: TagContentProps) {
             'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
           )}
         >
-          {/* 关闭按钮会阻断 pointerDown，避免长按时把“关闭”误识别成拖拽起点。 */}
+          {/* 关闭按钮会阻断 pointerDown，避免长按时把"关闭"误识别成拖拽起点。 */}
           <Icons.close className='size-3 cursor-pointer' />
         </span>
       ) : null}
@@ -296,13 +296,6 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
     closeAll
   } = props;
 
-  const handleTabRef = React.useCallback(
-    (node: HTMLButtonElement | null) => {
-      registerTabRef(id, node);
-    },
-    [id, registerTabRef]
-  );
-
   return (
     <TagContextMenu
       id={id}
@@ -320,7 +313,7 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
           closable={closable}
           isActive={isActive}
           dataPinned='home'
-          tabRef={handleTabRef}
+          tabRef={(node) => registerTabRef(id, node)}
           onActivate={(event) => activate(event, id)}
           onKeyDown={(event) => handleKeyDown(event, id)}
           onClose={(event) => handleClose(event, id)}
@@ -366,17 +359,6 @@ export function SortableTagItem(props: SortableTagItemProps) {
   const { listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
-  const setNodeRefRef = React.useRef(setNodeRef);
-  const setActivatorNodeRefRef = React.useRef(setActivatorNodeRef);
-
-  React.useEffect(() => {
-    setNodeRefRef.current = setNodeRef;
-  }, [setNodeRef]);
-
-  React.useEffect(() => {
-    setActivatorNodeRefRef.current = setActivatorNodeRef;
-  }, [setActivatorNodeRef]);
-
   // transform / transition 完全由 dnd-kit 驱动，这里只做最薄的样式映射。
   const style = React.useMemo<React.CSSProperties>(
     () => ({
@@ -389,17 +371,10 @@ export function SortableTagItem(props: SortableTagItemProps) {
   // button 既是焦点目标，也是拖拽激活器，所以同时注册给 sortable 和外层 refs。
   const setButtonRef = React.useCallback(
     (node: HTMLButtonElement | null) => {
-      setActivatorNodeRefRef.current(node);
+      setActivatorNodeRef(node);
       registerTabRef(id, node);
     },
-    [id, registerTabRef]
-  );
-
-  const setContainerRef = React.useCallback(
-    (node: HTMLDivElement | null) => {
-      setNodeRefRef.current(node);
-    },
-    []
+    [id, registerTabRef, setActivatorNodeRef]
   );
 
   return (
@@ -411,7 +386,7 @@ export function SortableTagItem(props: SortableTagItemProps) {
       closeOther={closeOther}
       closeAll={closeAll}
     >
-      <div ref={setContainerRef} style={style} className='shrink-0'>
+      <div ref={setNodeRef} style={style} className='shrink-0'>
         {/* 拖拽激活后，原位置切换为 placeholder，真实内容转由 DragOverlay 承载。 */}
         {isDragging ? (
           <PlaceholderTag
