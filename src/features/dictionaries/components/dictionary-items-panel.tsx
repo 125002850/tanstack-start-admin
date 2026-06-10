@@ -57,14 +57,14 @@ export function DictionaryItemsPanel({
           open: boolean;
           onOpenChange: (open: boolean) => void;
         }) => (
-             <DictionaryItemSheet
-                open={open}
-                onOpenChange={onOpenChange}
-                dictTypeCode={item.dictTypeCode}
-                item={item}
-                onSubmit={onItemSubmit}
-                onDelete={onDelete}
-              />
+          <DictionaryItemSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            dictTypeCode={item.dictTypeCode}
+            item={item}
+            onSubmit={onItemSubmit}
+            onDelete={onDelete}
+          />
         )
       },
       {
@@ -161,7 +161,7 @@ export function DictionaryItemsPanel({
           getStatusConfig={() => {
             if (!record) {
               return {
-                type: 'empty',
+                type: 'onboarding',
                 title: '请先选择字典类型',
                 description: '左侧选择后可查看并维护当前字典类型'
               };

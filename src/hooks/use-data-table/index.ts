@@ -9,6 +9,7 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table';
+import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
 import * as React from 'react';
 
 import { dataTableConfig } from '@/config/data-table';
@@ -22,7 +23,7 @@ import {
   DEBOUNCE_MS
 } from './constants';
 import { findExpandedRow, getStableExpandPanelId } from './expand';
-import type { UseDataTableProps } from './types';
+import type { ApiFilters, UseDataTableProps } from './types';
 import {
   hasActionsColumn,
   normalizeActionColumn,
@@ -34,6 +35,46 @@ import { createRowNumberColumn } from './columns/row-number-column';
 import { createSelectColumn } from './columns/select-column';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
 import { useTableState } from './use-table-state';
+
+/**
+ * 构建 API 查询参数的工厂函数。自动将 {@link ColumnFiltersState} 映射为后端接受的键值对。
+ *
+ * @param columnKeyMap - 列 ID 到 API 参数名的映射，例如 `{ name: 'search', role: 'roles' }`。
+ *   未在映射中出现的列 ID 原样使用。
+ * @returns 一个签名为 `(pagination, sorting, columnFilters) => ApiFilters` 的函数，
+ *   可直接传给 {@link UseDataTableProps.apiFiltersBuilder}。
+ *
+ * @example
+ * ```ts
+ * useDataTable({
+ *   apiFiltersBuilder: makeApiFilters({ name: 'search', category: 'categories' }),
+ *   // ...
+ * })
+ * ```
+ */
+export function makeApiFilters(columnKeyMap: Record<string, string> = {}) {
+  return (
+    pagination: PaginationState,
+    sorting: SortingState,
+    columnFilters: ColumnFiltersState
+  ): ApiFilters => {
+    const result: ApiFilters = {
+      page: pagination.pageIndex + 1,
+      limit: pagination.pageSize
+    };
+    for (const f of columnFilters) {
+      const v = f.value;
+      if (v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0))
+        continue;
+      const key = columnKeyMap[f.id] ?? f.id;
+      result[key] = Array.isArray(v) ? v.join(',') : String(v);
+    }
+    if (sorting.length > 0) {
+      result.sort = JSON.stringify(sorting);
+    }
+    return result;
+  };
+}
 
 /**
  * 管理 data table 的内部状态，并拼装工具列、展开态、列宽持久化等通用能力。

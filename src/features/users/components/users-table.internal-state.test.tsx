@@ -1,40 +1,28 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import type { SortingState, ColumnFiltersState, PaginationState } from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
 
-// ── Pure function: mirrors the filter derivation in users-table/index.tsx ────
-
-function buildApiFilters(p: PaginationState, s: SortingState, f: ColumnFiltersState) {
-  const nameFilter = f.find((flt) => flt.id === 'name');
-  const roleFilter = f.find((flt) => flt.id === 'role');
-  return {
-    page: p.pageIndex + 1,
-    limit: p.pageSize,
-    ...(nameFilter?.value ? { search: String(nameFilter.value) } : {}),
-    ...(roleFilter && Array.isArray(roleFilter.value) && roleFilter.value.length > 0
-      ? { roles: roleFilter.value.join(',') }
-      : {}),
-    ...(s.length > 0 ? { sort: JSON.stringify(s) } : {})
-  };
-}
+import { makeApiFilters } from '@/hooks/use-data-table';
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('UsersTable — internal state', () => {
-  describe('buildApiFilters', () => {
+  describe('makeApiFilters', () => {
+    const builder = makeApiFilters({ name: 'search', role: 'roles' });
+
     it('defaults to page 1 with the given page size', () => {
-      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, [], []);
+      const filters = builder({ pageIndex: 0, pageSize: 10 }, [], []);
       expect(filters).toMatchObject({ page: 1, limit: 10 });
     });
 
     it('maps pageIndex to page + 1', () => {
-      const filters = buildApiFilters({ pageIndex: 3, pageSize: 50 }, [], []);
+      const filters = builder({ pageIndex: 3, pageSize: 50 }, [], []);
       expect(filters.page).toBe(4);
       expect(filters.limit).toBe(50);
     });
 
     it('maps name column filter to search param', () => {
-      const filters = buildApiFilters(
+      const filters = builder(
         { pageIndex: 0, pageSize: 10 },
         [],
         [{ id: 'name', value: 'testuser' }]
@@ -43,7 +31,7 @@ describe('UsersTable — internal state', () => {
     });
 
     it('omits search when name filter value is empty string', () => {
-      const filters = buildApiFilters(
+      const filters = builder(
         { pageIndex: 0, pageSize: 10 },
         [],
         [{ id: 'name', value: '' }]
@@ -52,7 +40,7 @@ describe('UsersTable — internal state', () => {
     });
 
     it('maps role multiSelect to comma-joined roles', () => {
-      const filters = buildApiFilters(
+      const filters = builder(
         { pageIndex: 0, pageSize: 25 },
         [],
         [{ id: 'role', value: ['Developer', 'Manager'] }]
@@ -61,7 +49,7 @@ describe('UsersTable — internal state', () => {
     });
 
     it('omits roles when role filter value is empty array', () => {
-      const filters = buildApiFilters(
+      const filters = builder(
         { pageIndex: 0, pageSize: 10 },
         [],
         [{ id: 'role', value: [] }]
@@ -71,18 +59,18 @@ describe('UsersTable — internal state', () => {
 
     it('includes serialized sort when sorting is non-empty', () => {
       const sort: SortingState = [{ id: 'name', desc: false }];
-      const filters = buildApiFilters({ pageIndex: 1, pageSize: 10 }, sort, []);
+      const filters = builder({ pageIndex: 1, pageSize: 10 }, sort, []);
       expect(filters.sort).toBe(JSON.stringify(sort));
     });
 
     it('omits sort key when sorting is empty', () => {
-      const filters = buildApiFilters({ pageIndex: 0, pageSize: 10 }, [], []);
+      const filters = builder({ pageIndex: 0, pageSize: 10 }, [], []);
       expect(filters).not.toHaveProperty('sort');
     });
 
     it('handles multiple filters simultaneously', () => {
       const sort: SortingState = [{ id: 'name', desc: true }];
-      const filters = buildApiFilters({ pageIndex: 2, pageSize: 100 }, sort, [
+      const filters = builder({ pageIndex: 2, pageSize: 100 }, sort, [
         { id: 'name', value: 'john' },
         { id: 'role', value: ['QA', 'DevOps'] }
       ]);

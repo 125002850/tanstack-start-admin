@@ -22,12 +22,8 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 
+import { STATUS_OPTIONS } from '@/constants/enums';
 import type { DictionaryItemMutationPayload, DictionaryItemRecord } from '../api/types';
-
-const STATUS_OPTIONS = [
-  { value: 'ENABLED', label: '启用' },
-  { value: 'DISABLED', label: '停用' }
-];
 
 const dictionaryItemSchema = z.object({
   dictItemCode: z.string().trim().min(1, '请输入字典项编码'),

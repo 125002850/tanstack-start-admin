@@ -14,8 +14,7 @@ import {
   FormFieldError,
   createFormField
 } from '@/components/ui/form-context';
-
-type Option = { value: string; label: string };
+import { Option } from '@/types';
 
 interface SelectFieldProps {
   label: string;

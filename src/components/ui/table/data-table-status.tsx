@@ -1,4 +1,3 @@
-import { IconFilePlus } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Icons } from '@/components/icons';
@@ -50,7 +49,7 @@ const STATUS_DEFAULTS: Record<
   { icon: React.ReactNode; title: string; description: string }
 > = {
   onboarding: {
-    icon: <IconFilePlus className='h-7 w-7' />,
+    icon: <Icons.sparkle className='h-7 w-7' />,
     title: '暂无数据',
     description: '当前模块暂未添加任何数据，创建第一条记录开始使用。'
   },

@@ -4,10 +4,9 @@ import type {
   DataTableActionContext
 } from '@/components/ui/table/data-table-actions-bar';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
-import { useDataTable } from '@/hooks/use-data-table';
+import { useDataTable, makeApiFilters } from '@/hooks/use-data-table';
 import { useDataTablePageSize } from '@/lib/data-table-page-size';
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query';
-import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
 import { usersQueryOptions } from '../../api/queries';
 import { deleteUserMutation } from '../../api/mutations';
 import { columns } from './columns';
@@ -37,37 +36,7 @@ type UsersTableContentProps = {
   onPageSizePrefChange: (pageSize: number) => void;
 };
 
-function buildApiFilters(
-  pagination: PaginationState,
-  sorting: SortingState,
-  columnFilters: ColumnFiltersState
-) {
-  const nameFilter = columnFilters.find((f) => f.id === 'name');
-  const roleFilter = columnFilters.find((f) => f.id === 'role');
-
-  return {
-    page: pagination.pageIndex + 1,
-    limit: pagination.pageSize,
-    ...(nameFilter?.value ? { search: String(nameFilter.value) } : {}),
-    ...(roleFilter && Array.isArray(roleFilter.value) && roleFilter.value.length > 0
-      ? { roles: roleFilter.value.join(',') }
-      : {}),
-    ...(sorting.length > 0 ? { sort: JSON.stringify(sorting) } : {})
-  };
-}
-
-const EMPTY_SORTING: SortingState = [];
-const EMPTY_FILTERS: ColumnFiltersState = [];
-
 function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableContentProps) {
-  const [apiFilters, setApiFilters] = React.useState(() =>
-    buildApiFilters({ pageIndex: 0, pageSize: seedPageSize }, EMPTY_SORTING, EMPTY_FILTERS)
-  );
-
-  const deferredApiFilters = React.useDeferredValue(apiFilters);
-  const { data } = useSuspenseQuery(usersQueryOptions(deferredApiFilters));
-
-  const pageCount = Math.ceil(data.total_users / deferredApiFilters.limit);
   const { withConfirm, confirmDialog } = useConfirmAction<[DataTableActionContext<User>]>();
 
   const deleteMutation = useMutation({
@@ -116,6 +85,15 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
     [handleDeleteUser]
   );
 
+  const builder = React.useMemo(() => makeApiFilters({ name: 'search', role: 'roles' }), []);
+
+  const [apiFilters, setApiFilters] = React.useState(() =>
+    builder({ pageIndex: 0, pageSize: seedPageSize }, [], [])
+  );
+  const deferredApiFilters = React.useDeferredValue(apiFilters);
+  const { data } = useSuspenseQuery(usersQueryOptions(deferredApiFilters));
+  const pageCount = Math.ceil(data.total_users / deferredApiFilters.limit);
+
   const { table, expandConfig, expandedRow, expandedRowKey, setExpandedRowKey, expandPanelId } =
     useDataTable({
     data: data.users,
@@ -126,9 +104,6 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
     onPageSizeChange: (newSize) => {
       onPageSizePrefChange(newSize);
     },
-    initialState: {
-      pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit }
-    },
     rowActions,
     actionColumnPin: 'left',
     tableId: USERS_TABLE_ID,
@@ -136,28 +111,9 @@ function UsersTableContent({ seedPageSize, onPageSizePrefChange }: UsersTableCon
   });
 
   const { pagination, sorting, columnFilters } = table.getState();
-
-  const prevRef = React.useRef({ pageIndex: 0, pageSize: seedPageSize, sorting: '', filters: '' });
-
   React.useEffect(() => {
-    const sortingKey = JSON.stringify(sorting);
-    const filtersKey = JSON.stringify(columnFilters);
-
-    if (
-      pagination.pageIndex !== prevRef.current.pageIndex ||
-      pagination.pageSize !== prevRef.current.pageSize ||
-      sortingKey !== prevRef.current.sorting ||
-      filtersKey !== prevRef.current.filters
-    ) {
-      prevRef.current = {
-        pageIndex: pagination.pageIndex,
-        pageSize: pagination.pageSize,
-        sorting: sortingKey,
-        filters: filtersKey
-      };
-      setApiFilters(buildApiFilters(pagination, sorting, columnFilters));
-    }
-  }, [pagination, sorting, columnFilters]);
+    setApiFilters(builder(pagination, sorting, columnFilters));
+  }, [builder, pagination, sorting, columnFilters]);
 
   const actions = React.useMemo<DataTableAction<User>[]>(
     () => [

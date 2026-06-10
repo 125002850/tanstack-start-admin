@@ -62,7 +62,6 @@ import {
   IconPhoto,
   IconPizza,
   IconPlus,
-
   IconRosetteDiscountCheck,
   IconSearch,
   IconSelector,
@@ -87,9 +86,9 @@ import {
   IconUsers,
   IconVideo,
   IconCrown,
-  IconX
+  IconX,
+  IconSparkleHighlight
 } from '@tabler/icons-react';
-
 
 export const Icons = {
   // General
@@ -218,5 +217,6 @@ export const Icons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
-  moreHorizontal: IconDots
+  moreHorizontal: IconDots,
+  sparkle: IconSparkleHighlight
 };

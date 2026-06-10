@@ -1,9 +1,8 @@
 import { useSuspenseQuery, useMutation } from '@tanstack/react-query';
-import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
 
 import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
-import { useDataTable } from '@/hooks/use-data-table';
+import { useDataTable, makeApiFilters } from '@/hooks/use-data-table';
 import { useDataTablePageSize } from '@/lib/data-table-page-size';
 import { isProductTableVirtualizationEnabled } from '@/config/data-table';
 import { emitDataTableVirtualEvent } from '@/components/ui/table/data-table-virtual-events';
@@ -36,37 +35,7 @@ type ProductTableContentProps = {
   onPageSizePrefChange: (pageSize: number) => void;
 };
 
-function buildApiFilters(
-  pagination: PaginationState,
-  sorting: SortingState,
-  columnFilters: ColumnFiltersState
-) {
-  const nameFilter = columnFilters.find((f) => f.id === 'name');
-  const categoryFilter = columnFilters.find((f) => f.id === 'category');
-
-  return {
-    page: pagination.pageIndex + 1,
-    limit: pagination.pageSize,
-    ...(nameFilter?.value ? { search: String(nameFilter.value) } : {}),
-    ...(categoryFilter && Array.isArray(categoryFilter.value) && categoryFilter.value.length > 0
-      ? { categories: categoryFilter.value.join(',') }
-      : {}),
-    ...(sorting.length > 0 ? { sort: JSON.stringify(sorting) } : {})
-  };
-}
-
-const EMPTY_SORTING: SortingState = [];
-const EMPTY_FILTERS: ColumnFiltersState = [];
-
 function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTableContentProps) {
-  const [apiFilters, setApiFilters] = React.useState(() =>
-    buildApiFilters({ pageIndex: 0, pageSize: seedPageSize }, EMPTY_SORTING, EMPTY_FILTERS)
-  );
-
-  const deferredApiFilters = React.useDeferredValue(apiFilters);
-  const { data } = useSuspenseQuery(productsQueryOptions(deferredApiFilters));
-  const pageCount = Math.ceil(data.total_products / deferredApiFilters.limit);
-
   const router = useRouter();
 
   const deleteMutation = useMutation({
@@ -113,6 +82,18 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
     [handleDeleteProduct, handleEditProduct]
   );
 
+  const builder = React.useMemo(
+    () => makeApiFilters({ name: 'search', category: 'categories' }),
+    []
+  );
+
+  const [apiFilters, setApiFilters] = React.useState(() =>
+    builder({ pageIndex: 0, pageSize: seedPageSize }, [], [])
+  );
+  const deferredApiFilters = React.useDeferredValue(apiFilters);
+  const { data } = useSuspenseQuery(productsQueryOptions(deferredApiFilters));
+  const pageCount = Math.ceil(data.total_products / deferredApiFilters.limit);
+
   const { table } = useDataTable({
     tableId: PRODUCT_TABLE_ID,
     data: data.products,
@@ -123,35 +104,13 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
     onPageSizeChange: (newSize) => {
       onPageSizePrefChange(newSize);
     },
-    initialState: {
-      pagination: { pageIndex: apiFilters.page - 1, pageSize: apiFilters.limit }
-    },
     rowActions
   });
 
   const { pagination, sorting, columnFilters } = table.getState();
-
-  const prevRef = React.useRef({ pageIndex: 0, pageSize: seedPageSize, sorting: '', filters: '' });
-
   React.useEffect(() => {
-    const sortingKey = JSON.stringify(sorting);
-    const filtersKey = JSON.stringify(columnFilters);
-
-    if (
-      pagination.pageIndex !== prevRef.current.pageIndex ||
-      pagination.pageSize !== prevRef.current.pageSize ||
-      sortingKey !== prevRef.current.sorting ||
-      filtersKey !== prevRef.current.filters
-    ) {
-      prevRef.current = {
-        pageIndex: pagination.pageIndex,
-        pageSize: pagination.pageSize,
-        sorting: sortingKey,
-        filters: filtersKey
-      };
-      setApiFilters(buildApiFilters(pagination, sorting, columnFilters));
-    }
-  }, [pagination, sorting, columnFilters]);
+    setApiFilters(builder(pagination, sorting, columnFilters));
+  }, [builder, pagination, sorting, columnFilters]);
 
   const virtConfig = React.useMemo(() => {
     const enabled = isProductTableVirtualizationEnabled();

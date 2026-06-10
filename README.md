@@ -1,22 +1,20 @@
-# tanstack-admin
+# 业务跟进工作台
 
 ## 项目概览
 
-这是一个基于 **TanStack Start、Shadcn UI、TypeScript 与 Tailwind CSS** 构建的 **后台管理系统**。
+这是一个基于 **TanStack Router、Shadcn UI、TypeScript 与 Tailwind CSS** 构建的 **纯 SPA 业务跟进工作台**。
 
-它提供了一套可直接用于生产环境的 **后台界面基础设施**，包含图表、表格、表单，以及按业务拆分的目录结构，适合用于 **SaaS 产品、内部工具和管理后台**。
+它提供了一套可直接用于生产环境的 **后台界面基础设施**，包含图表、表格、表单、字典管理、看板、聊天，以及按业务拆分的目录结构，适合用于 **SaaS 产品、内部工具和管理后台**。
 
 ### 技术栈
 
 | 类别          | 技术                                                                                                  |
 | ------------- | ----------------------------------------------------------------------------------------------------- |
-| 框架          | [TanStack Start](https://tanstack.com/start)                                                          |
+| 框架          | [TanStack Router](https://tanstack.com/router)（基于文件、类型安全）                                  |
 | 语言          | [TypeScript](https://www.typescriptlang.org)                                                          |
 | 构建工具      | [Vite 7](https://vite.dev)                                                                            |
-| 部署层        | [Nitro](https://nitro.build)（Vercel、Cloudflare、Node.js）                                           |
 | 样式方案      | [Tailwind CSS v4](https://tailwindcss.com)                                                            |
 | 组件体系      | [Shadcn-ui](https://ui.shadcn.com)                                                                    |
-| 路由          | [TanStack Router](https://tanstack.com/router)（基于文件、类型安全）                                  |
 | 数据获取      | [TanStack React Query](https://tanstack.com/query)                                                    |
 | 表格          | [TanStack Table](https://tanstack.com/table)                                                          |
 | 表单          | [TanStack Form](https://tanstack.com/form) + [Zod](https://zod.dev)                                   |
@@ -36,7 +34,7 @@
 
 - **类型安全的文件路由**，基于 TanStack Router 自动生成路由树
 
-- **服务端函数**，通过 `createServerFn()` 编写服务端逻辑
+- **纯 SPA 架构**，前端路由，无服务端渲染依赖
 
 - **Infobar 组件**，用于在页面中展示提示、状态信息和上下文说明
 
@@ -52,9 +50,15 @@
 
 - **通知中心**，包含铃铛徽标、弹层预览和完整页面视图
 
+- **字典管理**，支持字典类型管理、字典项增删改查，采用 Sheet 抽屉交互
+
+- **工作区页签系统**，支持多页签打开、拖拽排序、LRU 淘汰、页面注册表
+
+- **系统管理导航**，提供系统管理和基础设置入口
+
 - **命令面板**（Cmd+K），用于快速导航
 
-- **多平台部署能力**，可通过 Nitro preset 部署到 Vercel、Cloudflare、Node.js 等环境
+- **多平台部署能力**，构建产物为静态文件，可部署到任意静态服务器
 
 ## 页面说明
 
@@ -67,9 +71,11 @@
 | [React Query 示例](/dashboard/react-query) | 以 Pokemon API 为例，演示 route loader + `useSuspenseQuery` + 客户端缓存模式                   |
 | [Kanban 看板](/dashboard/kanban)           | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                                 |
 | [聊天](/dashboard/chat)                    | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                                       |
-| [通知中心](/dashboard/notifications)       | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                                     |
-| [表单示例](/dashboard/forms/basic)         | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                                      |
-| [未找到页面](/notfound)                    | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面                         |
+| [通知中心](/dashboard/notifications)                 | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                                     |
+| [字典管理](/dashboard/system-management/dictionaries) | 字典类型管理 + 字典项增删改查，支持 Sheet 抽屉交互和搜索筛选                                 |
+| [系统管理](/dashboard/system-management)            | 系统管理导航页面，提供字典管理、基础设置等模块入口                                              |
+| [表单示例](/dashboard/forms/basic)                   | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                                      |
+| [未找到页面](/notfound)                              | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面                         |
 
 ## 按功能划分的目录结构
 
@@ -89,7 +95,8 @@ src/
 │       ├── chat.tsx               # 聊天页面
 │       ├── notifications.tsx      # 通知页面
 │       ├── forms/                 # 表单示例
-│       └── elements/              # UI 展示页
+│       ├── elements/              # UI 展示页
+│       └── system-management/     # 系统管理（字典管理、基础设置）
 │
 ├── components/                    # 共享组件
 │   ├── ui/                        # UI 基础组件（button、input、kanban 等）
@@ -105,6 +112,8 @@ src/
 │   ├── kanban/                    # 拖拽任务看板
 │   ├── chat/                      # 聊天模块（会话、气泡、输入框）
 │   ├── notifications/             # 通知中心与状态存储
+│   ├── dictionaries/              # 字典管理（类型 + 字典项 CRUD）
+│   ├── workspace-tabs/            # 工作区页签系统（注册表、LRU 淘汰、拖拽排序）
 │   ├── auth/                      # 认证相关组件
 │   └── forms/                     # 表单展示模块
 │
@@ -311,16 +320,97 @@ export const Route = createFileRoute('/dashboard/users')({
 - 外部链接按钮不要使用 TanStack Router `Link`；应使用普通 `<a href>`。
 - `defineRouteMeta()` 适用于“静态 route metadata + 默认 head”场景。若页面需要特殊 `head()` 逻辑，应在 route 文件中显式扩展，而不是反向修改消费端。
 
+## 配置中心规范
+
+### 架构
+
+```
+src/config/
+├── index.ts           # barrel：统一导出所有配置
+├── env.ts             # ★ 唯一读取 import.meta.env.VITE_* 的地方
+├── data-table.ts      # 特性配置（表格操作符、虚拟滚动等）
+└── workspace-tabs.ts  # 特性配置（页签保活上限、开关等）
+```
+
+### 核心原则
+
+1. **`env.ts` 是环境变量的唯一入口** — 禁止其他文件直接读取 `import.meta.env.VITE_*`
+2. **特性配置从 `env.ts` 取值** — 不自己绕开 env 层访问环境变量
+3. **`index.ts` 为对外唯一导出** — 消费者统一 `import { ... } from '@/config'`
+4. **每个环境变量必须在 `env.example.txt` 中有文档** — 含用途说明和默认值
+
+### 与 vite.config.ts 的边界
+
+`vite.config.ts` 和 `src/config/env.ts` 服务于不同层面，互不替代：
+
+|                  | `vite.config.ts`                       | `src/config/env.ts`                     |
+| ---------------- | -------------------------------------- | --------------------------------------- |
+| 运行环境         | Node.js（构建时 / dev server）         | 浏览器（应用运行时）                    |
+| 读取方式         | `loadEnv()` 读 `.env`                 | `import.meta.env.VITE_*`（Vite 静态替换） |
+| 管辖变量         | `APP_GATEWAY`、`PROXY_URL`、`ANALYZE`  | `VITE_ENABLE_WORKSPACE_TABS` 等         |
+| 用途             | dev server 代理、构建工具开关          | 客户端特性开关                          |
+
+`vite.config.ts` 是构建工具自身配置，不属于应用配置层，不纳入 `src/config/` 管辖。
+
+### env.ts 写入规范
+
+```ts
+// src/config/env.ts
+import { env } from '@/config';
+
+// 新增环境变量开关只需在 env 对象加一行：
+export const env = {
+  // ... 已有变量 ...
+  /** 是否启用 XXX 功能（默认关闭） */
+  xxxEnabled: getEnvBool('VITE_ENABLE_XXX', false),
+} as const;
+```
+
+辅助函数：
+- `getEnvVar(name, defaultValue)` — 读取字符串型环境变量
+- `getEnvBool(name, defaultValue)` — 读取布尔型环境变量（`'1'` / `'true'` 为 true）
+
+### 特性配置规范
+
+特性配置分为两类：
+
+**A. 纯常量**（不依赖环境变量）— 直接定义即可：
+
+```ts
+// src/config/workspace-tabs.ts
+export const MAX_KEEPALIVE_TABS = 15;
+```
+
+**B. 依赖开关的派生值** — 从 `env.ts` import：
+
+```ts
+// src/config/data-table.ts
+import { env } from './env';
+
+export function isProductTableVirtualizationEnabled(): boolean {
+  if (!env.productTableVirtualization) return false;
+  return isBrowserSupportedForVirtualization(); // 额外的运行时检测
+}
+```
+
+### 约束
+
+- 新增 `VITE_*` 环境变量时，必须先在 `env.ts` 注册，再在 `env.example.txt` 补文档
+- 特性 config 文件只 import `./env`（相对路径），不 import `@/config/env`（避免循环）
+- 消费者统一 `import { env } from '@/config'`，禁止绕过 barrel 直接 import 特性 config 内部文件
+- `env.ts` 内不做业务逻辑判断，只负责"读取 + 默认值"
+- 编译时不可变：纯 SPA 下 `VITE_*` 在构建时静态替换，不可运行时修改
+
 ## 快速开始
 
 > [!NOTE]
-> 这个后台管理模板基于 **TanStack Start**、**React 19**、**Vite 7** 和 **Shadcn UI** 构建。可按以下步骤在本地运行：
+> 这个业务跟进工作台基于 **TanStack Router**、**React 19**、**Vite 7** 和 **Shadcn UI** 构建，采用纯 SPA 架构。可按以下步骤在本地运行：
 
 克隆仓库：
 
 ```bash
-git clone https://github.com/Kiranism/tanstack-start-dashboard.git
-cd tanstack-start-dashboard
+git clone https://github.com/125002850/tanstack-start-admin.git
+cd tanstack-start-admin
 ```
 
 安装依赖并启动：
@@ -339,55 +429,29 @@ pnpm dev
 
 ## 部署
 
-当前仓库默认使用 **Nitro `node-server`** 作为部署目标，适合以 **Docker + Nginx** 的方式自建 SSR 服务。
+本项目为纯 SPA 架构，构建产物为静态文件，可部署到任意静态文件服务器。
 
-### 当前推荐方式：自建 SSR
-
-当前部署链路为：
-
-- Docker 构建镜像
-- 容器内运行 `node .output/server/index.mjs`
-- Nginx 反向代理到容器端口
-
-详细部署步骤见：
-
-- [docs/ssr-docker-nginx-deployment.md](docs/ssr-docker-nginx-deployment.md)
-
-本地或服务器可使用以下命令验证构建与启动：
+### 构建与启动
 
 ```bash
 pnpm build
-pnpm start
+pnpm preview   # 本地预览构建产物
 ```
 
-### 如果要部署到其他平台
+`dist/` 目录为构建输出，包含 `index.html` 与 `assets/` 静态资源。
 
-可根据目标平台修改 `vite.config.ts` 中的 Nitro preset：
+### 部署方式
 
-```ts
-// Node.js server
-nitro({ preset: 'node-server' });
-
-// Vercel
-nitro({ preset: 'vercel' });
-
-// Cloudflare Pages
-nitro({ preset: 'cloudflare-pages' });
-
-// Netlify
-nitro({ preset: 'netlify' });
-```
-
-如果要重新切回 Vercel，需要先把 preset 改回 `vercel`，再按对应平台方式部署。
+`dist/` 目录为构建输出，可部署到任意静态文件服务器（Nginx、Vercel、Netlify、Cloudflare Pages 等）。
 
 ## 与 Next.js 版本的主要区别
 
-| 概念       | Next.js                                 | TanStack Start                                   |
+| 概念       | Next.js                                 | 本项目（TanStack Router SPA）                    |
 | ---------- | --------------------------------------- | ------------------------------------------------ |
-| 路由       | App Router (`app/`)                     | 基于文件的路由（`routes/`），并带有类型安全参数  |
-| 数据获取   | Server Components + `HydrationBoundary` | Route `loader` + `useSuspenseQuery`              |
+| 架构       | SSR / RSC                               | 纯 SPA（客户端路由）                             |
+| 路由       | App Router (`app/`)                     | 基于文件的路由（`routes/`），类型安全参数        |
+| 数据获取   | Server Components + `HydrationBoundary` | `useSuspenseQuery` + React Query                 |
 | 布局       | `layout.tsx` 嵌套                       | 基于 `<Outlet />` 的布局路由                     |
-| 服务端代码 | `'use server'` actions                  | `createServerFn()`                               |
 | 构建工具   | Webpack/Turbopack                       | Vite                                             |
-| 部署       | `next start`                            | Nitro（可部署到多种平台）                        |
+| 部署       | `next start`（Node 服务端）             | 静态文件（`dist/`），部署到任意静态服务器        |
 | URL 状态   | nuqs                                    | TanStack Router `useSearch()` + `validateSearch` |

@@ -13,12 +13,8 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 
+import { STATUS_OPTIONS } from '@/constants/enums';
 import type { DictionaryTypeMutationPayload, DictionaryTypeRecord } from '../api/types';
-
-const STATUS_OPTIONS = [
-  { value: 'ENABLED', label: '启用' },
-  { value: 'DISABLED', label: '停用' }
-];
 
 const createSchema = z.object({
   dictTypeCode: z

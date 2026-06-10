@@ -1,3 +1,5 @@
+import { env } from './env';
+
 export type DataTableConfig = typeof dataTableConfig;
 
 // ── Virtual scroll shared preset ──────────────────────────────────────
@@ -14,15 +16,7 @@ export function isBrowserSupportedForVirtualization(): boolean {
 }
 
 export function isProductTableVirtualizationEnabled(): boolean {
-  try {
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-      const env = import.meta.env as Record<string, unknown>;
-      const flag = env.VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION;
-      if (flag === 'false' || flag === '0' || flag === false) return false;
-    }
-  } catch {
-    // import.meta unavailable — fall through to default
-  }
+  if (!env.productTableVirtualization) return false;
   return isBrowserSupportedForVirtualization();
 }
 

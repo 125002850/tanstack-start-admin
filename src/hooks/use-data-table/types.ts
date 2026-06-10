@@ -8,6 +8,14 @@ import type {
 } from '@/types/data-table';
 import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
 
+/** 服务端查询参数，与 `apiFiltersBuilder` 的返回值类型一致。 */
+export interface ApiFilters {
+  page: number;
+  limit: number;
+  sort?: string;
+  [k: string]: string | number | undefined;
+}
+
 export type DataTablePinnedSide = 'left' | 'right';
 
 export interface UseDataTableProps<TData>

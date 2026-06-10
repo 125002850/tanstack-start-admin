@@ -23,3 +23,4 @@ export interface NavItemWithOptionalChildren extends NavItem {
   items?: NavItemWithChildren[];
 }
 
+export type Option = { value: string; label: string };
