@@ -236,6 +236,7 @@ export function DataTableBody<TData>({
                 key={row.id}
                 data-index={virtualRow.index}
                 aria-rowindex={virtualRow.index + 2}
+                data-state={row.getIsSelected() ? 'selected' : undefined}
                 className={getRowClassName(row)}
                 onClick={(event) => handleRowClick(event, row)}
                 style={{
@@ -264,6 +265,7 @@ export function DataTableBody<TData>({
                   return (
                     <TableCell
                       key={cell.id}
+                      className={cell.column.getIsPinned() ? 'bg-background' : undefined}
                       style={{
                         display: 'block',
                         ...pinningStyles,
@@ -274,7 +276,6 @@ export function DataTableBody<TData>({
                           (pinningStyles.width as number | undefined) ??
                           cell.column.getSize()
                       }}
-                      {...(cell.column.getIsPinned() ? { 'data-pinned': cell.column.getIsPinned() } : {})}
                     >
                       <DataTableCellContent cell={cell}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -300,14 +301,15 @@ export function DataTableBody<TData>({
         <TableRow
           key={row.id}
           data-row-index={index}
+          data-state={row.getIsSelected() ? 'selected' : undefined}
           className={getRowClassName(row)}
           onClick={(event) => handleRowClick(event, row)}
         >
           {row.getVisibleCells().map((cell) => (
             <TableCell
               key={cell.id}
+              className={cell.column.getIsPinned() ? 'bg-background' : undefined}
               style={getCommonPinningStyles({ column: cell.column })}
-              {...(cell.column.getIsPinned() ? { 'data-pinned': cell.column.getIsPinned() } : {})}
             >
               <DataTableCellContent cell={cell}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
