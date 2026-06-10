@@ -57,13 +57,14 @@ export function DictionaryItemsPanel({
           open: boolean;
           onOpenChange: (open: boolean) => void;
         }) => (
-          <DictionaryItemSheet
-            open={open}
-            onOpenChange={onOpenChange}
-            dictTypeCode={item.dictTypeCode}
-            item={item}
-            onSubmit={onItemSubmit}
-          />
+             <DictionaryItemSheet
+                open={open}
+                onOpenChange={onOpenChange}
+                dictTypeCode={item.dictTypeCode}
+                item={item}
+                onSubmit={onItemSubmit}
+                onDelete={onDelete}
+              />
         )
       },
       {
@@ -81,11 +82,12 @@ export function DictionaryItemsPanel({
     [onItemSubmit, onDelete]
   );
 
-  const { table } = useDataTable({
+  const { table, clearSelectedRows, getSelectedRows } = useDataTable({
     data: items,
     columns: dictionaryItemColumns,
     pageCount: 1,
     showRowNumberColumn: false,
+    showSelectColumn: true,
     rowActions,
     tableId: record ? `dictionary-items-${record.dictTypeCode}` : 'dictionary-items-empty'
   });
@@ -120,12 +122,12 @@ export function DictionaryItemsPanel({
             if (!record) return;
             const ids = ctx.selectedRows.map((row) => row.id);
             await onBulkDelete({ dictTypeCode: record.dictTypeCode, ids });
-            table.toggleAllPageRowsSelected(false);
+            clearSelectedRows();
           }
         })
       }
     ],
-    [isRefreshing, onRefresh, record, onBulkDelete, withBatchConfirm, table]
+    [clearSelectedRows, isRefreshing, onRefresh, record, onBulkDelete, withBatchConfirm]
   );
 
   return (
@@ -155,7 +157,20 @@ export function DictionaryItemsPanel({
         <DataTable
           table={table}
           tableActions={actions}
-          emptyMessage={record ? '当前字典类型暂无字典项' : '请先从左侧选择字典类型'}
+          getSelectedRows={getSelectedRows}
+          getStatusConfig={() => {
+            if (!record) {
+              return {
+                type: 'empty',
+                title: '请先选择字典类型',
+                description: '左侧选择后可查看并维护当前字典类型'
+              };
+            }
+            if (!items.length) {
+              return { type: 'empty', title: '当前字典类型暂无字典项', description: '' };
+            }
+          }}
+          statusDeps={[record, items.length]}
         />
       </CardContent>
     </Card>

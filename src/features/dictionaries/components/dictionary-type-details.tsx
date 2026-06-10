@@ -10,9 +10,10 @@ import type { DictionaryTypeRecord } from '../api/types';
 interface DictionaryTypeDetailsProps {
   record: DictionaryTypeRecord | null;
   onEdit: () => void;
+  onDelete?: () => void;
 }
 
-export function DictionaryTypeDetails({ record, onEdit }: DictionaryTypeDetailsProps) {
+export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTypeDetailsProps) {
   if (!record) {
     return (
       <Card>
@@ -39,13 +40,16 @@ export function DictionaryTypeDetails({ record, onEdit }: DictionaryTypeDetailsP
           </div>
 
           <div className='flex items-center gap-2'>
-            <Badge variant={record.status === 'DISABLED' ? 'secondary' : 'default'}>
-              {record.status === 'DISABLED' ? '停用' : '启用'}
-            </Badge>
             <Button variant='outline' size='sm' onClick={onEdit}>
               <Icons.edit className='size-4' />
               编辑
             </Button>
+            {onDelete && (
+              <Button variant='destructive' size='sm' onClick={onDelete}>
+                <Icons.trash className='size-4' />
+                删除
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>

@@ -28,19 +28,6 @@ const columns: ColumnDef<TestRow>[] = [
   { id: 'name', header: 'Name', accessorKey: 'name', enableColumnFilter: true }
 ];
 
-const selectableColumns: ColumnDef<TestRow>[] = [
-  {
-    id: SELECT_COLUMN_ID,
-    header: 'Select',
-    cell: () => null,
-    size: FIXED_COLUMN_WIDTH,
-    minSize: FIXED_COLUMN_WIDTH,
-    maxSize: FIXED_COLUMN_WIDTH,
-    enableResizing: false
-  },
-  ...columns
-];
-
 const rowActions: DataTableRowAction<TestRow>[] = [
   {
     label: '编辑',
@@ -205,9 +192,10 @@ function FixedColumnSizingInspector({
   };
 }) {
   const { table } = useDataTable({
-    columns: selectableColumns,
+    columns,
     data,
     pageCount: 1,
+    showSelectColumn: true,
     rowActions,
     initialState
   });
@@ -238,14 +226,16 @@ function FixedColumnSizingInspector({
 
 function ExpandStateInspector({
   rows = data,
-  columns: tableColumns = selectableColumns,
+  columns: tableColumns = columns,
   showRowNumberColumn = true,
+  showSelectColumn = true,
   actionColumnPin = 'left',
   tableId = 'users'
 }: {
   rows?: TestRow[];
   columns?: ColumnDef<TestRow>[];
   showRowNumberColumn?: boolean;
+  showSelectColumn?: boolean;
   actionColumnPin?: 'left' | 'right';
   tableId?: string;
 }) {
@@ -254,6 +244,7 @@ function ExpandStateInspector({
     data: rows,
     pageCount: 1,
     showRowNumberColumn,
+    showSelectColumn,
     actionColumnPin,
     rowActions,
     tableId,
@@ -313,6 +304,46 @@ function ExpandStateInspector({
         onClick: () => setExpandedRowKey?.('2')
       },
       'Expand second'
+    )
+  ]);
+}
+
+function SelectedRowsInspector() {
+  const { table, selectedRows, getSelectedRows, clearSelectedRows } = useDataTable({
+    columns,
+    data,
+    pageCount: 1,
+    showSelectColumn: true
+  });
+
+  return React.createElement('div', null, [
+    React.createElement(
+      'span',
+      { key: 'selected-rows', 'data-testid': 'selected-rows' },
+      JSON.stringify(selectedRows.map((row) => row.id))
+    ),
+    React.createElement(
+      'span',
+      { key: 'selected-rows-method', 'data-testid': 'selected-rows-method' },
+      JSON.stringify(getSelectedRows().map((row) => row.id))
+    ),
+    React.createElement(
+      'button',
+      {
+        key: 'select-all',
+        'data-testid': 'select-all',
+        onClick: () => table.toggleAllPageRowsSelected(true)
+      },
+      'Select all'
+    ),
+    React.createElement(
+      'button',
+      {
+        key: 'clear-selected',
+        'data-testid': 'clear-selected',
+        onClick: () => clearSelectedRows()
+      },
+      'Clear selected'
     )
   ]);
 }
@@ -546,6 +577,35 @@ describe('useDataTable — internal-state mode (default)', () => {
     expect(screen.getByTestId('actions-size').textContent).toBe('116');
   });
 
+  it('injects a select column when showSelectColumn is enabled', () => {
+    render(React.createElement(ExpandStateInspector, { showRowNumberColumn: false }));
+
+    expect(screen.getByTestId('expand-leaf-columns').textContent).toBe(
+      JSON.stringify([SELECT_COLUMN_ID, 'id', 'name', 'actions'])
+    );
+  });
+
+  it('exposes selected row data and a clear-selection helper', () => {
+    render(React.createElement(SelectedRowsInspector));
+
+    expect(screen.getByTestId('selected-rows').textContent).toBe('[]');
+    expect(screen.getByTestId('selected-rows-method').textContent).toBe('[]');
+
+    act(() => {
+      screen.getByTestId('select-all').click();
+    });
+
+    expect(screen.getByTestId('selected-rows').textContent).toBe('[1,2,3,4]');
+    expect(screen.getByTestId('selected-rows-method').textContent).toBe('[1,2,3,4]');
+
+    act(() => {
+      screen.getByTestId('clear-selected').click();
+    });
+
+    expect(screen.getByTestId('selected-rows').textContent).toBe('[]');
+    expect(screen.getByTestId('selected-rows-method').textContent).toBe('[]');
+  });
+
   it('adds row-key based expand state and derives the panel id from tableId', () => {
     render(React.createElement(ExpandStateInspector));
 
@@ -563,10 +623,11 @@ describe('useDataTable — internal-state mode (default)', () => {
   it('normalizes initialState.columnOrder with leading utility columns', () => {
     function ExpandColumnOrderInspector() {
       const { table } = useDataTable({
-        columns: selectableColumns,
+        columns,
         data,
         pageCount: 1,
         showRowNumberColumn: true,
+        showSelectColumn: true,
         actionColumnPin: 'left',
         rowActions,
         expandConfig: {

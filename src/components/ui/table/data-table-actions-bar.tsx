@@ -36,6 +36,7 @@ export interface DataTableActionsBarProps<TData> {
   table: Table<TData>;
   actions: DataTableAction<TData>[];
   className?: string;
+  getSelectedRows?: () => TData[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -96,11 +97,14 @@ function shouldRenderActionSeparator<TData>(
 export function DataTableActionsBar<TData>({
   table,
   actions,
-  className
+  className,
+  getSelectedRows
 }: DataTableActionsBarProps<TData>) {
   const ctx: DataTableActionContext<TData> = {
     table,
-    selectedRows: table.getFilteredSelectedRowModel().rows.map((r) => r.original)
+    selectedRows: getSelectedRows
+      ? getSelectedRows()
+      : table.getFilteredSelectedRowModel().rows.map((r) => r.original)
   };
 
   const visibleActions = actions.filter(

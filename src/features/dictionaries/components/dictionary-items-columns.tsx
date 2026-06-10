@@ -1,55 +1,9 @@
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import type { DictionaryItemRecord } from '../api/types';
 import { ColumnDef, Column } from '@tanstack/react-table';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 
 export const dictionaryItemColumns: ColumnDef<DictionaryItemRecord>[] = [
-  {
-    id: 'select',
-    size: 40,
-    minSize: 40,
-    maxSize: 40,
-    enableResizing: false,
-    enableSorting: false,
-    header: ({ table }) => (
-      <div
-        className='flex h-full w-full items-center justify-center'
-        data-row-expand-ignore
-      >
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
-          }
-          aria-label='全选'
-          onCheckedChange={(checked) => {
-            table.toggleAllPageRowsSelected(checked === true);
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-          }}
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div
-        className='flex h-full w-full items-center justify-center'
-        data-row-expand-ignore
-      >
-        <Checkbox
-          checked={row.getIsSelected()}
-          aria-label='选择行'
-          onCheckedChange={(checked) => {
-            row.toggleSelected(checked === true);
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-          }}
-        />
-      </div>
-    )
-  },
   {
     accessorKey: 'dictItemCode',
     header: ({ column }: { column: Column<DictionaryItemRecord, unknown> }) => (

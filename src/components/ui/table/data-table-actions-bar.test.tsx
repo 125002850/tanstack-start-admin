@@ -14,14 +14,20 @@ type TestRow = { id: number; name: string };
 const DATA: TestRow[] = [{ id: 1, name: 'Alice' }];
 const COLUMNS: ColumnDef<TestRow>[] = [{ accessorKey: 'name', header: 'Name' }];
 
-function ActionsBarHarness({ actions }: { actions: DataTableAction<TestRow>[] }) {
+function ActionsBarHarness({
+  actions,
+  getSelectedRows
+}: {
+  actions: DataTableAction<TestRow>[];
+  getSelectedRows?: () => TestRow[];
+}) {
   const table = useReactTable({
     data: DATA,
     columns: COLUMNS,
     getCoreRowModel: getCoreRowModel()
   });
 
-  return <DataTableActionsBar table={table} actions={actions} />;
+  return <DataTableActionsBar table={table} actions={actions} getSelectedRows={getSelectedRows} />;
 }
 
 afterEach(cleanup);
@@ -127,5 +133,22 @@ describe('DataTableActionsBar', () => {
     expect(
       (await screen.findByRole('menuitem', { name: '危险导出' })).getAttribute('data-variant')
     ).toBe('destructive');
+  });
+
+  it('prefers explicit selected rows from the caller over deriving from table state', () => {
+    render(
+      <ActionsBarHarness
+        actions={[
+          {
+            label: '导出选中',
+            hidden: (ctx) => ctx.selectedRows.length === 0,
+            callback: vi.fn()
+          }
+        ]}
+        getSelectedRows={() => DATA}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /导出选中/ })).toBeInTheDocument();
   });
 });

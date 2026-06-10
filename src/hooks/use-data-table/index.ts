@@ -31,6 +31,7 @@ import {
 } from './columns/layout';
 import { createRowActionsColumn } from './columns/row-actions-column';
 import { createRowNumberColumn } from './columns/row-number-column';
+import { createSelectColumn } from './columns/select-column';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
 import { useTableState } from './use-table-state';
 
@@ -47,6 +48,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     pageSize: controlledPageSize,
     onPageSizeChange,
     showRowNumberColumn = true,
+    showSelectColumn = false,
     actionColumnPin = 'right',
     rowActions,
     expandConfig,
@@ -71,19 +73,34 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       ),
     [hasGeneratedRowActionsColumn, normalizedColumns]
   );
+  const hasManualSelectColumn = React.useMemo(
+    () => baseColumns.some((column) => column.id === DATA_TABLE_SELECT_COLUMN_ID),
+    [baseColumns]
+  );
 
   const resolvedColumns = React.useMemo<Array<ColumnDef<TData>>>(
     () => {
+      const columnsWithSelection =
+        showSelectColumn && !hasManualSelectColumn
+          ? [createSelectColumn<TData>(), ...baseColumns]
+          : baseColumns;
       const columnsWithActions = hasGeneratedRowActionsColumn
-        ? [...baseColumns, createRowActionsColumn(rowActions)]
-        : baseColumns;
+        ? [...columnsWithSelection, createRowActionsColumn(rowActions)]
+        : columnsWithSelection;
 
       // 展开态只通过行点击和背景高亮表达，不再额外插入展开图标列。
       return showRowNumberColumn
         ? [createRowNumberColumn<TData>(), ...columnsWithActions]
         : columnsWithActions;
     },
-    [baseColumns, hasGeneratedRowActionsColumn, rowActions, showRowNumberColumn]
+    [
+      baseColumns,
+      hasGeneratedRowActionsColumn,
+      hasManualSelectColumn,
+      rowActions,
+      showRowNumberColumn,
+      showSelectColumn
+    ]
   );
 
   const fixedWidthColumnSizing = React.useMemo(
@@ -96,8 +113,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     [baseColumns, hasGeneratedRowActionsColumn]
   );
   const hasSelectColumn = React.useMemo(
-    () => baseColumns.some((column) => column.id === DATA_TABLE_SELECT_COLUMN_ID),
-    [baseColumns]
+    () => showSelectColumn || hasManualSelectColumn,
+    [hasManualSelectColumn, showSelectColumn]
   );
 
   const resolvedInitialState = React.useMemo(() => {
@@ -239,8 +256,19 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     setColumnSizing
   });
 
+  const getSelectedRows = React.useCallback(
+    () => table.getFilteredSelectedRowModel().rows.map((row) => row.original),
+    [table]
+  );
+  const clearSelectedRows = React.useCallback(() => {
+    setRowSelection({});
+  }, [setRowSelection]);
+
   return {
     table,
+    selectedRows: getSelectedRows(),
+    getSelectedRows,
+    clearSelectedRows,
     debounceMs,
     throttleMs: tableProps.throttleMs,
     resetColumnSizing,

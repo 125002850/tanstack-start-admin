@@ -11,6 +11,16 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 
 import type { DictionaryItemMutationPayload, DictionaryItemRecord } from '../api/types';
 
@@ -35,6 +45,7 @@ type DictionaryItemSheetProps = {
   dictTypeCode: string;
   item?: DictionaryItemRecord | null;
   onSubmit: (payload: DictionaryItemMutationPayload) => Promise<void>;
+  onDelete?: (item: DictionaryItemRecord) => void;
 };
 
 export function DictionaryItemSheet({
@@ -42,9 +53,11 @@ export function DictionaryItemSheet({
   onOpenChange,
   dictTypeCode,
   item,
-  onSubmit
+  onSubmit,
+  onDelete
 }: DictionaryItemSheetProps) {
   const isEdit = !!item;
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const form = useAppForm({
     defaultValues: {
@@ -130,15 +143,44 @@ export function DictionaryItemSheet({
           </form.AppForm>
         </div>
 
-        <SheetFooter className='flex-row justify-end'>
+        <SheetFooter className='flex-row justify-end gap-2'>
           <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
             取消
           </Button>
+          {isEdit && onDelete && (
+            <Button type='button' variant='destructive' onClick={() => setDeleteDialogOpen(true)}>
+              删除
+            </Button>
+          )}
           <Button type='submit' form='dictionary-item-sheet-form'>
             {isEdit ? '保存修改' : '新增字典项'}
           </Button>
         </SheetFooter>
       </SheetContent>
+
+      {isEdit && item && onDelete && (
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认删除</AlertDialogTitle>
+              <AlertDialogDescription>
+                确定要删除字典项「{item.dictItemName}」吗？删除后不可恢复。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  onDelete(item);
+                  onOpenChange(false);
+                }}
+              >
+                删除
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Sheet>
   );
 }

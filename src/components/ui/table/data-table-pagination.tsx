@@ -26,12 +26,14 @@ export interface DataTablePaginationLabels {
 
 interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
+  getSelectedRows?: () => TData[];
   pageSizeOptions?: readonly number[];
   labels?: DataTablePaginationLabels;
 }
 
 export function DataTablePagination<TData>({
   table,
+  getSelectedRows,
   pageSizeOptions = DATA_TABLE_PAGE_SIZE_OPTIONS,
   labels,
   className,
@@ -44,6 +46,10 @@ export function DataTablePagination<TData>({
     labels?.totalRowsText ?? ((totalCount: number) => `共 ${totalCount} 条数据`);
   const pageText =
     labels?.pageText ?? ((page: number, totalPages: number) => `第 ${page} / ${totalPages} 页`);
+  const selectedRowCount = getSelectedRows
+    ? getSelectedRows().length
+    : table.getFilteredSelectedRowModel().rows.length;
+  const totalRowCount = table.getFilteredRowModel().rows.length;
 
   return (
     <div
@@ -54,15 +60,10 @@ export function DataTablePagination<TData>({
       {...props}
     >
       <div className='text-muted-foreground flex-1 text-sm whitespace-nowrap'>
-        {table.getFilteredSelectedRowModel().rows.length > 0 ? (
-          <>
-            {selectedRowsText(
-              table.getFilteredSelectedRowModel().rows.length,
-              table.getFilteredRowModel().rows.length
-            )}
-          </>
+        {selectedRowCount > 0 ? (
+          <>{selectedRowsText(selectedRowCount, totalRowCount)}</>
         ) : (
-          <>{totalRowsText(table.getFilteredRowModel().rows.length)}</>
+          <>{totalRowsText(totalRowCount)}</>
         )}
       </div>
       <div className='flex flex-col-reverse items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8'>

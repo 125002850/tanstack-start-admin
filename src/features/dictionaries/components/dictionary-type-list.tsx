@@ -69,7 +69,7 @@ export function DictionaryTypeList({
                     <div className='flex items-start justify-between gap-3'>
                       <div className='min-w-0'>
                         <div className='truncate text-sm font-medium'>{record.dictTypeName}</div>
-                        <div className='text-muted-foreground truncate text-xs uppercase tracking-[0.18em]'>
+                        <div className='text-muted-foreground truncate text-xs tracking-[0.18em]'>
                           {record.dictTypeCode}
                         </div>
                       </div>

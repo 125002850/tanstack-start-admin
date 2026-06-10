@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { Button } from '@/components/ui/button';
 import {
@@ -170,18 +169,5 @@ export function UserFormSheet({ user, open, onOpenChange }: UserFormSheetProps) 
         </SheetFooter>
       </SheetContent>
     </Sheet>
-  );
-}
-
-export function UserFormSheetTrigger() {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <Button onClick={() => setOpen(true)}>
-        <Icons.add className='mr-2 h-4 w-4' /> Add User
-      </Button>
-      <UserFormSheet open={open} onOpenChange={setOpen} />
-    </>
   );
 }

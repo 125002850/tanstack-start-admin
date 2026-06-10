@@ -11,6 +11,7 @@ import {
   createDictionaryItemMutation,
   createDictionaryTypeMutation,
   deleteDictionaryItemMutation,
+  deleteDictionaryTypeMutation,
   updateDictionaryItemMutation,
   updateDictionaryTypeMutation
 } from '../api/mutations';
@@ -48,7 +49,6 @@ function DictionaryManagementContent() {
     type?: DictionaryTypeRecord | null;
   } | null>(null);
 
-  const { withConfirm, confirmDialog } = useConfirmAction<[DictionaryItemRecord]>();
   const dictionaryTypes = dictionaryTypeResult?.list ?? EMPTY_DICTIONARY_TYPES;
 
   const filteredTypes = React.useMemo(() => {
@@ -138,6 +138,16 @@ function DictionaryManagementContent() {
     }
   });
 
+  const deleteTypeMutation = useMutation({
+    ...deleteDictionaryTypeMutation,
+    onSuccess: () => {
+      toast.success('字典类型已删除');
+    },
+    onError: () => {
+      toast.error('字典类型删除失败');
+    }
+  });
+
   const handleTypeSubmit = React.useCallback(
     async (payload: DictionaryTypeMutationPayload) => {
       if (payload.id === 0) {
@@ -162,21 +172,14 @@ function DictionaryManagementContent() {
     [createItemMutation, updateItemMutation]
   );
 
-  const handleDelete = React.useMemo(
-    () =>
-      withConfirm({
-        title: (item) => `删除字典项「${item.dictItemName}」？`,
-        description: '删除后不可恢复。',
-        confirmText: '删除',
-        cancelText: '取消',
-        run: async (item) => {
-          await deleteItemMutation.mutateAsync({
-            dictTypeCode: item.dictTypeCode,
-            id: item.id
-          });
-        }
-      }),
-    [deleteItemMutation, withConfirm]
+  const handleDelete = React.useCallback(
+    async (item: DictionaryItemRecord) => {
+      await deleteItemMutation.mutateAsync({
+        dictTypeCode: item.dictTypeCode,
+        id: item.id
+      });
+    },
+    [deleteItemMutation]
   );
 
   const handleBulkDelete = React.useCallback(
@@ -185,6 +188,26 @@ function DictionaryManagementContent() {
     },
     [bulkDeleteMutation]
   );
+
+  const { withConfirm: withTypeDeleteConfirm, confirmDialog: typeDeleteConfirmDialog } =
+    useConfirmAction<[]>();
+
+  const handleDeleteTypeClick = React.useCallback(() => {
+    if (!selectedType) return;
+    if (items.length > 0) {
+      toast.warning(`请先删除「${selectedType.dictTypeName}」下的所有字典项`);
+      return;
+    }
+    void withTypeDeleteConfirm({
+      title: `删除字典类型「${selectedType.dictTypeName}」？`,
+      description: '删除后不可恢复。',
+      confirmText: '删除',
+      cancelText: '取消',
+      run: async () => {
+        await deleteTypeMutation.mutateAsync({ id: selectedType.id });
+      }
+    })();
+  }, [selectedType, items.length, deleteTypeMutation, withTypeDeleteConfirm]);
 
   const handleRefresh = React.useCallback(async () => {
     const result = await itemsQuery.refetch();
@@ -198,7 +221,7 @@ function DictionaryManagementContent() {
 
   return (
     <>
-      {confirmDialog}
+      {typeDeleteConfirmDialog}
       <DictionaryTypeSheet
         open={sheetState !== null}
         onOpenChange={(open) => {
@@ -226,6 +249,7 @@ function DictionaryManagementContent() {
             <DictionaryTypeDetails
               record={selectedType}
               onEdit={() => setSheetState({ type: selectedType })}
+              onDelete={selectedType ? handleDeleteTypeClick : undefined}
             />
 
             <DictionaryItemsPanel

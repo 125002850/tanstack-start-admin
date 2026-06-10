@@ -62,7 +62,7 @@ import {
   IconPhoto,
   IconPizza,
   IconPlus,
-  IconProps,
+
   IconRosetteDiscountCheck,
   IconSearch,
   IconSelector,
@@ -90,7 +90,6 @@ import {
   IconX
 } from '@tabler/icons-react';
 
-export type Icon = React.ComponentType<IconProps>;
 
 export const Icons = {
   // General

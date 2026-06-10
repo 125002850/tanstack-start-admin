@@ -163,6 +163,24 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
   return (
     <DataTable
       table={table}
+      statusTotalCount={data.total_products}
+      getStatusConfig={({ rows, totalCount, hasFilters }) => {
+        if (!rows.length) {
+          if (totalCount === 0 && !hasFilters) {
+            return {
+              type: 'onboarding',
+              title: '暂无产品数据',
+              description: '添加第一个产品开始管理产品目录。',
+              primaryAction: { label: '新增产品', onClick: () => router.navigate({ to: '/dashboard/product/new' }) }
+            };
+          }
+          return {
+            type: 'empty',
+            title: '未找到匹配产品',
+            description: '尝试调整搜索关键词或分类筛选条件。'
+          };
+        }
+      }}
       scrollTargetId={PRODUCT_TABLE_SCROLL_TARGET_ID}
       virtualization={virtConfig}
     >

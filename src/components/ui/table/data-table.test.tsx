@@ -142,15 +142,19 @@ function SizedHarness({ rows }: { rows: TestRow[] }) {
 
 function ControlsHarness({
   toolbar,
-  actions
+  actions,
+  getSelectedRows,
+  actionBar
 }: {
   toolbar?: React.ReactNode;
   actions?: DataTableAction<TestRow>[];
+  getSelectedRows?: () => TestRow[];
+  actionBar?: React.ReactNode;
 }) {
   const table = useHarnessTable(makeRows(5), 5);
 
   return (
-    <DataTable table={table} tableActions={actions}>
+    <DataTable table={table} tableActions={actions} getSelectedRows={getSelectedRows} actionBar={actionBar}>
       {toolbar}
     </DataTable>
   );
@@ -225,6 +229,18 @@ function ExpandHarness({
       />
     </div>
   );
+}
+
+function SelectableHarness({ rows }: { rows: TestRow[] }) {
+  const { table } = useDataTable({
+    data: rows,
+    columns: COLUMNS,
+    pageCount: 1,
+    showRowNumberColumn: false,
+    showSelectColumn: true
+  });
+
+  return <DataTable table={table} />;
 }
 
 afterEach(cleanup);
@@ -314,6 +330,66 @@ describe('DataTable body', () => {
 
     expect(document.querySelector('[data-slot="separator"]')).toBeNull();
     expect(screen.getByTestId('view-options-button')).toBeInTheDocument();
+  });
+
+  it('passes explicit selected-row accessors down to the actions bar', () => {
+    render(
+      <ControlsHarness
+        actions={[
+          {
+            label: '导出选中',
+            hidden: (ctx) => ctx.selectedRows.length === 0,
+            callback: vi.fn()
+          }
+        ]}
+        getSelectedRows={() => makeRows(1)}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /导出选中/ })).toBeInTheDocument();
+  });
+
+  it('uses explicit selected rows to control custom actionBar visibility', () => {
+    const { rerender } = render(
+      <ControlsHarness getSelectedRows={() => []} actionBar={<div data-testid='selection-bar'>选中操作</div>} />
+    );
+
+    expect(screen.queryByTestId('selection-bar')).toBeNull();
+
+    rerender(
+      <ControlsHarness
+        getSelectedRows={() => makeRows(1)}
+        actionBar={<div data-testid='selection-bar'>选中操作</div>}
+      />
+    );
+
+    expect(screen.getByTestId('selection-bar')).toBeInTheDocument();
+  });
+
+  it('uses explicit selected rows for pagination summary text', () => {
+    const { rerender } = render(<ControlsHarness getSelectedRows={() => []} />);
+
+    expect(screen.getByText('共 5 条数据')).toBeInTheDocument();
+
+    rerender(<ControlsHarness getSelectedRows={() => makeRows(2)} />);
+
+    expect(screen.getByText('已选择 2 / 5 行')).toBeInTheDocument();
+  });
+
+  it('expands the select-column click target to the full table cell', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SelectableHarness rows={makeRows(2)} />);
+
+    const hitboxes = container.querySelectorAll('[data-slot="data-table-select-hitbox"]');
+    const firstRowHitbox = hitboxes.item(1);
+
+    if (!(firstRowHitbox instanceof HTMLElement)) {
+      throw new Error('first row select hitbox missing');
+    }
+
+    await user.click(firstRowHitbox);
+
+    expect(screen.getByText('已选择 1 / 2 行')).toBeInTheDocument();
   });
 
   it('renders all rows when virtualization is disabled', () => {

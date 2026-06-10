@@ -24,16 +24,6 @@ export function reconcileVisualOrder(
   return hasHome ? [HOME_ID, ...kept, ...appended] : [...kept, ...appended];
 }
 
-// 拖拽上下文只允许普通标签参与排序，首页标签必须被排除。
-export function getNonHomeVisualOrder(order: WorkspaceTabId[]) {
-  return order.filter((id) => !isHomeTag(id));
-}
-
-// a11y 播报统一使用这个位置文案，避免各处各写一份中文描述。
-export function getPositionLabel(position: number, total: number) {
-  return `第 ${position} / ${total} 个位置`;
-}
-
 // 普通标签按钮的视觉样式。
 // active 态和 inactive 态都集中在这里，避免组件层散落条件判断。
 export function getTagButtonClassName(isActive: boolean) {

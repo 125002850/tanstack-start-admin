@@ -42,6 +42,17 @@
     @apply bg-background text-foreground;
   }
 
+  /* 固定列背景色，适配 tr:hover 和 tr[data-state=selected] */
+  td[data-pinned] {
+    background: var(--background);
+  }
+  tr:hover td[data-pinned] {
+    background: color-mix(in oklab, var(--muted) 50%, transparent);
+  }
+  tr[data-state=selected] td[data-pinned] {
+    background: var(--accent);
+  }
+
   /* Global scrollbar styling to match ScrollArea */
   * {
     scrollbar-width: thin;

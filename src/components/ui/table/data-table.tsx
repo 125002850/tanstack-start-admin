@@ -28,13 +28,22 @@ import {
   clampExpandSplitTop,
   resolveExpandSplitLayout
 } from '@/lib/data-table-expand-split';
+import {
+  DataTableStatus,
+  type DataTableStatusConfig,
+  type DataTableStatusFactory
+} from '@/components/ui/table/data-table-status';
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   tableActions?: DataTableAction<TData>[];
   actionBar?: React.ReactNode;
+  getSelectedRows?: () => TData[];
   scrollTargetId?: string;
-  emptyMessage?: string;
+  emptyMessage?: React.ReactNode;
+  statusTotalCount?: number;
+  getStatusConfig?: DataTableStatusFactory;
+  statusDeps?: unknown[];
   paginationLabels?: DataTablePaginationLabels;
   virtualization?: DataTableVirtualizationOptions | boolean;
   expandConfig?: ExpandConfigEdge<TData>;
@@ -73,8 +82,12 @@ export function DataTable<TData>({
   tableActions,
   actionBar,
   children,
+  getSelectedRows,
   scrollTargetId,
   emptyMessage = '暂无数据',
+  statusTotalCount,
+  getStatusConfig,
+  statusDeps,
   paginationLabels,
   virtualization,
   expandConfig,
@@ -101,6 +114,27 @@ export function DataTable<TData>({
   const [expandHostHeight, setExpandHostHeight] = React.useState(FALLBACK_EXPAND_HOST_HEIGHT);
   const [expandOverheadPx, setExpandOverheadPx] = React.useState(0);
   const [isDragging, setIsDragging] = React.useState(false);
+
+  const statusEffectRef = React.useRef(getStatusConfig);
+  statusEffectRef.current = getStatusConfig;
+
+  const resolvedStatus = React.useMemo((): DataTableStatusConfig | undefined => {
+    if (!statusEffectRef.current) return undefined;
+    const rows = table.getRowModel().rows;
+    const columnFilters = table.getState().columnFilters;
+    const hasFilters = columnFilters.some((f) => {
+      const v = f.value;
+      if (v === '' || v === null || v === undefined) return false;
+      if (Array.isArray(v)) return v.length > 0;
+      return true;
+    });
+    return statusEffectRef.current({
+      rows,
+      totalCount: statusTotalCount ?? 0,
+      hasFilters
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusTotalCount, table, ...(statusDeps ?? [])]);
 
   const virtConfig: DataTableVirtualizationOptions | undefined =
     virtualization === true
@@ -131,6 +165,9 @@ export function DataTable<TData>({
   const hasViewOptions = table
     .getAllColumns()
     .some((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide());
+  const selectedRowCount = getSelectedRows
+    ? getSelectedRows().length
+    : table.getFilteredSelectedRowModel().rows.length;
   const isExpanded = !!(expandConfig && expandedRow && expandPanelId);
   const expandSplitLayout = React.useMemo(
     () =>
@@ -186,7 +223,9 @@ export function DataTable<TData>({
       const paginationEl = paginationRef.current;
       if (paginationEl) {
         const paginationHeight = Math.round(paginationEl.getBoundingClientRect().height);
-        setExpandOverheadPx((current) => (current === paginationHeight ? current : paginationHeight));
+        setExpandOverheadPx((current) =>
+          current === paginationHeight ? current : paginationHeight
+        );
       }
     };
 
@@ -301,12 +340,10 @@ export function DataTable<TData>({
   const tableViewport = (
     <div
       data-table-resize-overlay-root
-      className={
-        isExpanded ? 'flex h-full overflow-hidden rounded-lg' : 'absolute inset-0 flex overflow-hidden rounded-lg'
-      }
+      className={isExpanded ? 'h-full rounded-lg' : 'absolute inset-0 rounded-lg'}
     >
       <ScrollArea
-        className='h-full'
+        className='h-full w-full'
         viewportRef={scrollViewportRef}
         viewportProps={
           scrollTargetId
@@ -345,6 +382,7 @@ export function DataTable<TData>({
           <DataTableBody
             table={table}
             emptyMessage={emptyMessage}
+            status={resolvedStatus}
             virtualization={virtConfig}
             scrollViewportRef={scrollViewportRef}
             headerRowRef={headerRowRef}
@@ -369,103 +407,132 @@ export function DataTable<TData>({
 
   return (
     <div className='flex flex-1 flex-col space-y-3'>
-      {(children || tableActions || hasViewOptions) && (
-        <div className='flex flex-col'>
-          {children && <div>{children}</div>}
-          {children && (tableActions || hasViewOptions) && (
-            <Separator className='my-2 ml-[calc(var(--page-container-padding-x,0rem)*-1)] data-[orientation=horizontal]:!w-[calc(100%+var(--page-container-padding-x,0rem)*2)]' />
-          )}
-          {(tableActions || hasViewOptions) && (
-            <div className='flex items-center gap-2 px-1'>
-              {tableActions && <DataTableActionsBar table={table} actions={tableActions} />}
-              {hasViewOptions && (
-                <DataTableViewOptions table={table} iconOnly className='ml-auto' />
+      {resolvedStatus?.type === 'onboarding' ? (
+        <DataTableStatus status={resolvedStatus} className='flex-1' />
+      ) : (
+        <>
+          {(children || tableActions || hasViewOptions) && (
+            <div className='flex flex-col'>
+              {children && <div>{children}</div>}
+              {children && (tableActions || hasViewOptions) && (
+                <Separator className='my-2 ml-[calc(var(--page-container-padding-x,0rem)*-1)] data-[orientation=horizontal]:!w-[calc(100%+var(--page-container-padding-x,0rem)*2)]' />
+              )}
+              {(tableActions || hasViewOptions) && (
+                <div className='flex items-center gap-2 px-1'>
+                  {tableActions && (
+                    <DataTableActionsBar
+                      table={table}
+                      actions={tableActions}
+                      getSelectedRows={getSelectedRows}
+                    />
+                  )}
+                  {hasViewOptions && (
+                    <DataTableViewOptions table={table} iconOnly className='ml-auto' />
+                  )}
+                </div>
               )}
             </div>
           )}
-        </div>
-      )}
-      {isExpanded && expandSplitLayout && activeExpandTab && expandConfig && expandedRow && expandPanelId ? (
-        <div ref={expandHostRef} className='flex flex-1 min-h-0 flex-col'>
-          <div ref={topPanelRef} className='relative min-h-0' style={{ height: `${expandSplitLayout.topPx}px` }}>
-            {tableViewport}
-          </div>
-          <div ref={paginationRef} className='flex flex-col gap-2.5'>
-            <DataTablePagination table={table} labels={paginationLabels} />
-            {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
-          </div>
-          <div
-            role='separator'
-            tabIndex={0}
-            aria-orientation='horizontal'
-            aria-valuemin={expandSplitLayout.minTopPx}
-            aria-valuemax={expandSplitLayout.maxTopPx}
-            aria-valuenow={expandSplitLayout.topPx}
-            aria-disabled={expandSplitLayout.dragEnabled ? undefined : true}
-            data-slot='data-table-expand-split-handle'
-            className='group relative flex h-2 shrink-0 cursor-row-resize items-center justify-center outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
-            onKeyDown={handleSplitKeyDown}
-            onPointerDown={(event) => {
-              if (!expandSplitLayout.dragEnabled) {
-                return;
-              }
+          {isExpanded &&
+          expandSplitLayout &&
+          activeExpandTab &&
+          expandConfig &&
+          expandedRow &&
+          expandPanelId ? (
+            <div ref={expandHostRef} className='flex flex-1 min-h-0 flex-col'>
+              <div
+                ref={topPanelRef}
+                className='relative min-h-0'
+                style={{ height: `${expandSplitLayout.topPx}px` }}
+              >
+                {tableViewport}
+              </div>
+              <div ref={paginationRef} className='flex flex-col gap-2.5'>
+                <DataTablePagination
+                  table={table}
+                  labels={paginationLabels}
+                  getSelectedRows={getSelectedRows}
+                />
+                {actionBar && selectedRowCount > 0 && actionBar}
+              </div>
+              <div
+                role='separator'
+                tabIndex={0}
+                aria-orientation='horizontal'
+                aria-valuemin={expandSplitLayout.minTopPx}
+                aria-valuemax={expandSplitLayout.maxTopPx}
+                aria-valuenow={expandSplitLayout.topPx}
+                aria-disabled={expandSplitLayout.dragEnabled ? undefined : true}
+                data-slot='data-table-expand-split-handle'
+                className='group relative flex h-2 shrink-0 cursor-row-resize items-center justify-center outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+                onKeyDown={handleSplitKeyDown}
+                onPointerDown={(event) => {
+                  if (!expandSplitLayout.dragEnabled) {
+                    return;
+                  }
 
-              event.preventDefault();
-              event.stopPropagation();
-              const topEl = topPanelRef.current;
-              const bottomEl = bottomPanelRef.current;
-              if (!topEl || !bottomEl) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const topEl = topPanelRef.current;
+                  const bottomEl = bottomPanelRef.current;
+                  if (!topEl || !bottomEl) return;
 
-              setIsDragging(true);
-              dragStateRef.current = {
-                startY: event.clientY,
-                startTopPx: expandSplitLayout.topPx,
-                effectiveHeight: expandHostHeight - expandOverheadPx,
-                topPanel: topEl,
-                bottomPanel: bottomEl
-              };
-            }}
-          >
-            {/* Pill handle with grip dots — visible on hover, focus, and during active drag */}
-            <span
-              className={
-                isDragging
-                  ? 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/40 opacity-100'
-                  : 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/0 opacity-0 transition-all duration-200 group-hover:bg-border/40 group-hover:opacity-100 group-focus-visible:bg-border/40 group-focus-visible:opacity-100'
-              }
-            >
-              <span className='inline-flex gap-px'>
-                <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
-                <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
-                <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
-              </span>
-            </span>
-          </div>
-          <div
-            ref={bottomPanelRef}
-            className='min-h-0'
-            style={{
-              height: `${expandSplitLayout.bottomPx}px`,
-              boxShadow: 'inset 0 6px 10px -6px hsl(var(--border))'
-            }}
-          >
-            <DataTableExpandPanel
-              panelId={expandPanelId}
-              row={expandedRow}
-              expandConfig={expandConfig}
-              activeTab={activeExpandTab}
-              onActiveTabChange={setActiveExpandTab}
-              onClose={handleExpandPanelClose}
-            />
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className='relative flex flex-1 min-h-0'>{tableViewport}</div>
-          <div className='flex flex-col gap-2.5'>
-            <DataTablePagination table={table} labels={paginationLabels} />
-            {actionBar && table.getFilteredSelectedRowModel().rows.length > 0 && actionBar}
-          </div>
+                  setIsDragging(true);
+                  dragStateRef.current = {
+                    startY: event.clientY,
+                    startTopPx: expandSplitLayout.topPx,
+                    effectiveHeight: expandHostHeight - expandOverheadPx,
+                    topPanel: topEl,
+                    bottomPanel: bottomEl
+                  };
+                }}
+              >
+                {/* Pill handle with grip dots — visible on hover, focus, and during active drag */}
+                <span
+                  className={
+                    isDragging
+                      ? 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/40 opacity-100'
+                      : 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/0 opacity-0 transition-all duration-200 group-hover:bg-border/40 group-hover:opacity-100 group-focus-visible:bg-border/40 group-focus-visible:opacity-100'
+                  }
+                >
+                  <span className='inline-flex gap-px'>
+                    <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
+                    <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
+                    <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
+                  </span>
+                </span>
+              </div>
+              <div
+                ref={bottomPanelRef}
+                className='min-h-0'
+                style={{
+                  height: `${expandSplitLayout.bottomPx}px`,
+                  boxShadow: 'inset 0 6px 10px -6px hsl(var(--border))'
+                }}
+              >
+                <DataTableExpandPanel
+                  panelId={expandPanelId}
+                  row={expandedRow}
+                  expandConfig={expandConfig}
+                  activeTab={activeExpandTab}
+                  onActiveTabChange={setActiveExpandTab}
+                  onClose={handleExpandPanelClose}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className='relative flex flex-1 min-h-[280px]'>{tableViewport}</div>
+              <div className='flex flex-col gap-2.5'>
+                <DataTablePagination
+                  table={table}
+                  labels={paginationLabels}
+                  getSelectedRows={getSelectedRows}
+                />
+                {actionBar && selectedRowCount > 0 && actionBar}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

@@ -63,6 +63,8 @@ export interface UseDataTableProps<TData>
   onColumnResizeEnd?: (columnKey: string, width: number) => void;
   /** 是否在表格首列显示行号列。默认 `true`。 */
   showRowNumberColumn?: boolean;
+  /** 是否自动注入多选列。默认 `false`。 */
+  showSelectColumn?: boolean;
   /** 操作列的固定方向。默认 `'right'`。 */
   actionColumnPin?: DataTablePinnedSide;
   /** 行操作配置列表。传入后自动在表格末尾生成操作列。 */

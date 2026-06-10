@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import type { User } from '../../api/types';
 import { Column, ColumnDef } from '@tanstack/react-table';
@@ -16,39 +15,6 @@ function translateStatus(status: string) {
 }
 
 export const columns: ColumnDef<User>[] = [
-  {
-    id: 'select',
-    size: 40,
-    minSize: 40,
-    maxSize: 40,
-    enableResizing: false,
-    header: ({ table }) => (
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- inner Checkbox provides full a11y
-      <div
-        className='flex items-center justify-center w-full h-full cursor-pointer'
-        data-row-expand-ignore
-        onClick={(event) => {
-          event.stopPropagation();
-          table.toggleAllPageRowsSelected(!table.getIsAllPageRowsSelected());
-        }}
-      >
-        <Checkbox checked={table.getIsAllPageRowsSelected()} aria-label='全选' />
-      </div>
-    ),
-    cell: ({ row }) => (
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- inner Checkbox provides full a11y
-      <div
-        className='flex items-center justify-center w-full h-full cursor-pointer'
-        data-row-expand-ignore
-        onClick={(event) => {
-          event.stopPropagation();
-          row.toggleSelected(!row.getIsSelected());
-        }}
-      >
-        <Checkbox checked={row.getIsSelected()} aria-label='选择行' />
-      </div>
-    )
-  },
   {
     id: 'name',
     accessorFn: (row) => `${row.first_name} ${row.last_name}`,

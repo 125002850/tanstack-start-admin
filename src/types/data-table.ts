@@ -24,7 +24,7 @@ export interface Option {
 
 export type FilterOperator = DataTableConfig['operators'][number];
 export type FilterVariant = DataTableConfig['filterVariants'][number];
-export type JoinOperator = DataTableConfig['joinOperators'][number];
+
 
 export interface ExtendedColumnSort<TData> extends Omit<ColumnSort, 'id'> {
   id: Extract<keyof TData, string>;

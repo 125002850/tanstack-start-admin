@@ -4,6 +4,7 @@ import {
   createGlobalItem,
   createGlobalType,
   deleteGlobalItem,
+  deleteGlobalType,
   updateGlobalItem,
   updateGlobalType
 } from '@/lib/api/clients/dict';
@@ -68,5 +69,13 @@ export const bulkDeleteDictionaryItemsMutation = mutationOptions({
     getQueryClient().invalidateQueries({
       queryKey: dictionaryItemKeys.list(payload.dictTypeCode)
     });
+  }
+});
+
+export const deleteDictionaryTypeMutation = mutationOptions({
+  mutationFn: async (payload: { id: number }) =>
+    deleteGlobalType(payload as never),
+  onSuccess: () => {
+    getQueryClient().invalidateQueries({ queryKey: dictionaryTypeKeys.all });
   }
 });

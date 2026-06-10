@@ -8,10 +8,13 @@ import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
 import { emitDataTableVirtualEvent } from '@/components/ui/table/data-table-virtual-events';
 import { cn } from '@/lib/utils';
 import { DataTableCellContent } from '@/components/ui/table/data-table-cell-content';
+import { Icons } from '@/components/icons';
+import { DataTableStatus, type DataTableStatusConfig } from '@/components/ui/table/data-table-status';
 
 interface DataTableBodyProps<TData> {
   table: TanstackTable<TData>;
-  emptyMessage: string;
+  emptyMessage: React.ReactNode;
+  status?: DataTableStatusConfig;
   virtualization?: DataTableVirtualizationOptions;
   scrollViewportRef: React.RefObject<HTMLDivElement | null>;
   headerRowRef: React.RefObject<HTMLTableRowElement | null>;
@@ -56,6 +59,7 @@ function areColumnWidthsEqual(current: number[], next: number[]): boolean {
 export function DataTableBody<TData>({
   table,
   emptyMessage,
+  status,
   virtualization,
   scrollViewportRef,
   headerRowRef,
@@ -183,12 +187,19 @@ export function DataTableBody<TData>({
   // Emit enabled event on first virtual render
   const enabledEmittedRef = useRef(false);
 
+  if (status) {
+    return <DataTableStatus status={status} colSpan={table.getAllColumns().length} />;
+  }
+
   if (!rows.length) {
     return (
       <TableBody>
         <TableRow>
-          <TableCell colSpan={table.getAllColumns().length} className='h-24 text-center'>
-            {emptyMessage}
+          <TableCell colSpan={table.getAllColumns().length}>
+            <div className='flex flex-col items-center justify-center py-16 text-center'>
+              <Icons.search className='text-muted-foreground/30 mb-4 h-12 w-12' />
+              <p className='text-muted-foreground text-sm font-medium'>{emptyMessage}</p>
+            </div>
           </TableCell>
         </TableRow>
       </TableBody>
@@ -263,6 +274,7 @@ export function DataTableBody<TData>({
                           (pinningStyles.width as number | undefined) ??
                           cell.column.getSize()
                       }}
+                      {...(cell.column.getIsPinned() ? { 'data-pinned': cell.column.getIsPinned() } : {})}
                     >
                       <DataTableCellContent cell={cell}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -292,7 +304,11 @@ export function DataTableBody<TData>({
           onClick={(event) => handleRowClick(event, row)}
         >
           {row.getVisibleCells().map((cell) => (
-            <TableCell key={cell.id} style={getCommonPinningStyles({ column: cell.column })}>
+            <TableCell
+              key={cell.id}
+              style={getCommonPinningStyles({ column: cell.column })}
+              {...(cell.column.getIsPinned() ? { 'data-pinned': cell.column.getIsPinned() } : {})}
+            >
               <DataTableCellContent cell={cell}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
               </DataTableCellContent>

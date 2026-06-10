@@ -3,7 +3,6 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { getQueryClient } from '@/lib/query-client';
 import { routeTree } from './routeTree.gen';
 
-export { getAppRouteStaticData } from '@/lib/router/app-route-meta';
 
 export const getRouter = createRouter;
 
