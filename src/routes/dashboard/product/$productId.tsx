@@ -14,11 +14,6 @@ const meta = defineRouteMeta({
 
 export const Route = createFileRoute('/dashboard/product/$productId')({
   ...meta,
-  loader: async ({ context: { queryClient }, params }) => {
-    if (params.productId !== 'new') {
-      await queryClient.ensureQueryData(productByIdOptions(Number(params.productId)));
-    }
-  },
   component: ProductDetailPage
 });
 

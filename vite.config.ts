@@ -1,27 +1,12 @@
 import tailwindcss from '@tailwindcss/vite';
-import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
-import { defineConfig, loadEnv, type PluginOption } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
-import { nitro } from 'nitro/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-
-  const plugins: PluginOption[] = [
-    tsconfigPaths(),
-    tailwindcss(),
-    tanstackStart(),
-    nitro({ preset: 'node-server' }),
-    viteReact()
-  ];
-
-  if (process.env.ANALYZE === 'true') {
-    plugins.push(
-      visualizer({ emitFile: true, filename: 'stats.html', gzipSize: true, brotliSize: true })
-    );
-  }
 
   return {
     server: {
@@ -31,17 +16,17 @@ export default defineConfig(({ mode }) => {
         [env.APP_GATEWAY]: {
           target: env.PROXY_URL,
           changeOrigin: true,
-          headers: {
-            'x-proxy-target': env.PROXY_URL
-          },
-          configure: (proxy) => {
-            proxy.on('proxyReq', (proxyReq) => {
-              proxyReq.setHeader('x-proxy-target', env.PROXY_URL);
-            });
-          }
-        }
-      }
+        },
+      },
     },
-    plugins
+    plugins: [
+      tsconfigPaths(),
+      tailwindcss(),
+      tanstackRouter({ target: 'react' }),
+      viteReact(),
+      ...(process.env.ANALYZE === 'true'
+        ? [visualizer({ emitFile: true, filename: 'stats.html', gzipSize: true, brotliSize: true })]
+        : []),
+    ],
   };
 });

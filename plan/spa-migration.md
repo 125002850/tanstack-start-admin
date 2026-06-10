@@ -132,3 +132,39 @@ root.render(<RouterProvider router={router} />);
 5. 切换主题 — dark/light 正常，无白屏闪烁
 6. `curl http://localhost:3000/api/mdm/dict/global/types/list` — 代理到后端正常
 7. `pnpm build` + `pnpm preview` — 生产构建正常（静态文件，nginx 部署）
+
+---
+
+## Review (2026-06-09)
+
+### 完成项与差异
+
+- 所有 10 项变更按计划执行完成，无差异
+- `routeTree.gen.ts` 由 `@tanstack/router-plugin/vite` 自动重新生成，`ssr: true` 和 `startInstance` 类型已移除
+- `@tanstack/react-start` (1.167.65) 和 `nitro` (3.0.260603-beta) 已从依赖中移除，减少 60 个包
+- `query-client.ts` 注释未修改（低优先级，非阻塞）
+
+### 验证结果
+
+| 测试项 | 状态 |
+|--------|------|
+| 首页 / 重定向到 dashboard | 通过 |
+| 仪表盘概览（图表、卡片） | 通过 |
+| React Query 页面（useSuspenseQuery） | 通过 |
+| 产品管理页（表格、分页） | 通过 |
+| API 代理 /api → 后端 | 通过（后端返回 405 Method Not Allowed，GET 需改用 POST） |
+| 主题切换 | 通过 |
+| 路由导航 | 通过 |
+| Dev server 启动 | 通过（319ms） |
+
+### 已删除文件
+
+- `src/server.ts`
+- `src/start.ts`
+- `nitro.config.ts`
+
+### Action Items
+
+- **P2**: React Query 页面文案 "Prefetched on server, hydrated on client" 已过时，建议更新
+- **P2**: `src/lib/query-client.ts` 注释中仍有 "In TanStack Start" 字样，可清理
+- **P2**: 构建产物产到 `dist/` 目录（Vite SPA 默认），确认 nginx 配置指向 `dist/`

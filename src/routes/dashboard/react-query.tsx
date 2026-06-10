@@ -27,9 +27,6 @@ const meta = defineRouteMeta({
 
 export const Route = createFileRoute('/dashboard/react-query')({
   ...meta,
-  loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureQueryData(pokemonOptions(25));
-  },
   component: ReactQueryPage
 });
 
