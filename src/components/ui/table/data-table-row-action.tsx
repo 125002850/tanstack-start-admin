@@ -64,7 +64,29 @@ export function DataTableRowActions<TData>({
   maxVisible = DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE
 }: DataTableRowActionsProps<TData>) {
   const [sheetAction, setSheetAction] = React.useState<DataTableRowAction<TData> | null>(null);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
   const { withConfirm, confirmDialog } = useConfirmAction<[DataTableRowAction<TData>, TData]>();
+
+  // When sheet closes, wait for the CSS exit animation to finish before unmounting.
+  // This avoids a hardcoded setTimeout and stays in sync with any animation duration changes.
+  React.useEffect(() => {
+    if (!sheetOpen && sheetAction) {
+      const handleAnimationEnd = (e: AnimationEvent) => {
+        const el = e.target as HTMLElement;
+        if (el.dataset.state === 'closed') {
+          setSheetAction(null);
+        }
+      };
+      document.addEventListener('animationend', handleAnimationEnd);
+      return () => document.removeEventListener('animationend', handleAnimationEnd);
+    }
+  }, [sheetOpen, sheetAction]);
+
+  const handleSheetOpenChange = React.useCallback((open: boolean) => {
+    if (!open) {
+      setSheetOpen(false);
+    }
+  }, []);
 
   const handleClick = React.useCallback(
     async (action: DataTableRowAction<TData>) => {
@@ -83,6 +105,7 @@ export function DataTableRowActions<TData>({
       }
       if (action.Sheet) {
         setSheetAction(action);
+        setSheetOpen(true);
         return;
       }
       await action.onClick?.(row);
@@ -99,10 +122,8 @@ export function DataTableRowActions<TData>({
       {sheetAction?.Sheet && (
         <sheetAction.Sheet
           data={row}
-          open={!!sheetAction}
-          onOpenChange={(open) => {
-            if (!open) setSheetAction(null);
-          }}
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
         />
       )}
       <div className='flex items-center gap-0.5' data-row-expand-ignore>

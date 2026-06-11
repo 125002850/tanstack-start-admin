@@ -9,13 +9,13 @@ const ITEM: DictionaryItemRecord = {
   dictTypeCode: 'color',
   dictItemCode: 'red',
   dictItemName: '红色',
-  status: 'ENABLED',
+  status: 'ENABLE',
   sort: 10,
   remark: 'warm',
-  createdBy: 'System',
-  createdAt: '2026-06-08 10:05:00',
-  updatedBy: 'System',
-  updatedAt: '2026-06-08 10:05:00'
+  createBy: 1,
+  createTime: '2026-06-08 10:05:00',
+  updateBy: 1,
+  updateTime: '2026-06-08 10:05:00'
 };
 
 describe('DictionaryItemSheet', () => {

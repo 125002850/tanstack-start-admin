@@ -6,10 +6,14 @@ const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
 const mockUseDataTable = vi.fn();
 
-const mockDictionaryTypesQueryOptions = vi.fn(() => ({ queryKey: ['dictionary-types', 'list'] }));
-const mockDictionaryItemsQueryOptions = vi.fn((dictTypeCode: string) => ({
-  queryKey: ['dictionary-items', dictTypeCode]
+const mockListGlobalTypesQueryOptions = vi.fn(() => ({
+  queryKey: ['dictionary-types', 'list']
 }));
+const mockListGlobalItemsByTypeQueryOptions = vi.fn(
+  (req: { dictTypeCode: string }) => ({
+    queryKey: ['dictionary-items', req.dictTypeCode]
+  })
+);
 
 vi.mock('@tanstack/react-query', () => ({
   useSuspenseQuery: (...args: unknown[]) => mockUseSuspenseQuery(...args),
@@ -54,22 +58,19 @@ vi.mock('@/components/ui/table/data-table', () => ({
   )
 }));
 
-vi.mock('../api/queries', () => ({
-  dictionaryTypesQueryOptions: (
-    ...args: Parameters<typeof mockDictionaryTypesQueryOptions>
-  ) => mockDictionaryTypesQueryOptions(...args),
-  dictionaryItemsQueryOptions: (
-    ...args: Parameters<typeof mockDictionaryItemsQueryOptions>
-  ) => mockDictionaryItemsQueryOptions(...args)
-}));
-
-vi.mock('../api/mutations', () => ({
-  createDictionaryTypeMutation: { mutationFn: vi.fn() },
-  updateDictionaryTypeMutation: { mutationFn: vi.fn() },
-  createDictionaryItemMutation: { mutationFn: vi.fn() },
-  updateDictionaryItemMutation: { mutationFn: vi.fn() },
-  deleteDictionaryItemMutation: { mutationFn: vi.fn() },
-  bulkDeleteDictionaryItemsMutation: { mutationFn: vi.fn() }
+vi.mock('@/lib/api/clients/dict', () => ({
+  listGlobalTypesQueryOptions: (
+    ...args: Parameters<typeof mockListGlobalTypesQueryOptions>
+  ) => mockListGlobalTypesQueryOptions(...args),
+  listGlobalItemsByTypeQueryOptions: (
+    ...args: Parameters<typeof mockListGlobalItemsByTypeQueryOptions>
+  ) => mockListGlobalItemsByTypeQueryOptions(...args),
+  createGlobalTypeMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  updateGlobalTypeMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  createGlobalItemPreciseInvalidationMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  updateGlobalItemPreciseInvalidationMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  deleteGlobalItemMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  deleteGlobalTypeMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() }))
 }));
 
 vi.mock('./dictionary-item-sheet', () => ({
@@ -99,7 +100,7 @@ vi.mock('./dictionary-item-sheet', () => ({
             dictTypeCode,
             dictItemCode: 'pending-review',
             dictItemName: '待审核',
-            status: 'ENABLED',
+            status: 'ENABLE',
             sort: undefined,
             remark: undefined
           })
@@ -125,8 +126,8 @@ describe('DictionaryManagementPage', () => {
     mockUseQuery.mockReset();
     mockUseMutation.mockReset();
     mockUseDataTable.mockReset();
-    mockDictionaryTypesQueryOptions.mockClear();
-    mockDictionaryItemsQueryOptions.mockClear();
+    mockListGlobalTypesQueryOptions.mockClear();
+    mockListGlobalItemsByTypeQueryOptions.mockClear();
 
     mockUseDataTable.mockImplementation(({ data }) => ({
       table: {
@@ -149,11 +150,11 @@ describe('DictionaryManagementPage', () => {
                 id: 101,
                 dictTypeCode: 'payment',
                 dictTypeName: '付款状态',
-                status: 'ENABLED',
-                createdBy: 'System',
-                createdAt: '2026-06-09 09:00:00',
-                updatedBy: 'System',
-                updatedAt: '2026-06-09 09:00:00'
+                status: 'ENABLE',
+                createBy: 1,
+                createTime: '2026-06-09 09:00:00',
+                updateBy: 1,
+                updateTime: '2026-06-09 09:00:00'
               }
             ]
           },
@@ -168,13 +169,13 @@ describe('DictionaryManagementPage', () => {
             dictTypeCode: 'payment',
             dictItemCode: 'paid',
             dictItemName: '已支付',
-            status: 'ENABLED',
+            status: 'ENABLE',
             sort: 10,
             remark: '真实接口返回',
-            createdBy: 'System',
-            createdAt: '2026-06-09 09:05:00',
-            updatedBy: 'System',
-            updatedAt: '2026-06-09 09:05:00'
+            createBy: 'System',
+            createTime: '2026-06-09 09:05:00',
+            updateBy: 1,
+            updateTime: '2026-06-09 09:05:00'
           }
         ],
         isFetching: false,
@@ -188,8 +189,8 @@ describe('DictionaryManagementPage', () => {
   it('renders dictionary types and items from query data instead of local mock data', () => {
     render(<DictionaryManagementPage />);
 
-    expect(mockDictionaryTypesQueryOptions).toHaveBeenCalledTimes(1);
-    expect(mockDictionaryItemsQueryOptions).toHaveBeenCalledWith('payment');
+    expect(mockListGlobalTypesQueryOptions).toHaveBeenCalledTimes(1);
+    expect(mockListGlobalItemsByTypeQueryOptions).toHaveBeenCalledWith({ dictTypeCode: 'payment' });
     expect(screen.getByRole('button', { name: /付款状态 payment/i })).toHaveAttribute(
       'data-state',
       'active'

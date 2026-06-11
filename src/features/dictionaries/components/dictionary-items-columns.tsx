@@ -9,9 +9,7 @@ export const dictionaryItemColumns: ColumnDef<DictionaryItemRecord>[] = [
     header: ({ column }: { column: Column<DictionaryItemRecord, unknown> }) => (
       <DataTableColumnHeader column={column} title='字典项编码' />
     ),
-    cell: ({ row }) => (
-      <span className='font-medium'>{row.original.dictItemCode}</span>
-    )
+    cell: ({ row }) => <span className='font-medium'>{row.original.dictItemCode}</span>
   },
   {
     accessorKey: 'dictItemName',
@@ -25,8 +23,8 @@ export const dictionaryItemColumns: ColumnDef<DictionaryItemRecord>[] = [
     cell: ({ row }) => {
       const status = row.original.status;
       return (
-        <Badge variant={status === 'DISABLED' ? 'secondary' : 'default'}>
-          {status === 'DISABLED' ? '停用' : '启用'}
+        <Badge variant={status === 'DISABLE' ? 'secondary' : 'default'}>
+          {status === 'DISABLE' ? '停用' : '启用'}
         </Badge>
       );
     }
@@ -50,8 +48,12 @@ export const dictionaryItemColumns: ColumnDef<DictionaryItemRecord>[] = [
     header: '审计',
     cell: ({ row }) => (
       <div className='space-y-1 whitespace-normal'>
-        <div className='text-xs font-medium'>{row.original.updatedBy || row.original.createdBy || '-'}</div>
-        <div className='text-muted-foreground text-xs'>{row.original.updatedAt || row.original.createdAt || '-'}</div>
+        <div className='text-xs font-medium'>
+          {row.original.updateBy || row.original.createBy || '-'}
+        </div>
+        <div className='text-muted-foreground text-xs'>
+          {row.original.updateTime || row.original.createTime || '-'}
+        </div>
       </div>
     )
   }

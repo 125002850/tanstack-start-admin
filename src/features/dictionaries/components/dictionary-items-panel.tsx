@@ -27,7 +27,7 @@ interface DictionaryItemsPanelProps {
   onItemSubmit: (payload: DictionaryItemMutationPayload) => Promise<void>;
   onRefresh: () => Promise<void>;
   onDelete: (item: DictionaryItemRecord) => void;
-  onBulkDelete: (payload: { dictTypeCode: string; ids: number[] }) => Promise<void>;
+  onBulkDelete: (payload: { ids: number[] }) => Promise<void>;
 }
 
 export function DictionaryItemsPanel({
@@ -60,7 +60,7 @@ export function DictionaryItemsPanel({
           <DictionaryItemSheet
             open={open}
             onOpenChange={onOpenChange}
-            dictTypeCode={item.dictTypeCode}
+            dictTypeCode={item.dictTypeCode!}
             item={item}
             onSubmit={onItemSubmit}
             onDelete={onDelete}
@@ -120,8 +120,8 @@ export function DictionaryItemsPanel({
           cancelText: '取消',
           run: async (ctx) => {
             if (!record) return;
-            const ids = ctx.selectedRows.map((row) => row.id);
-            await onBulkDelete({ dictTypeCode: record.dictTypeCode, ids });
+            const ids = ctx.selectedRows.map((row) => row.id!).filter(Boolean);
+            await onBulkDelete({ ids });
             clearSelectedRows();
           }
         })
@@ -137,7 +137,7 @@ export function DictionaryItemsPanel({
         <DictionaryItemSheet
           open={addSheetOpen}
           onOpenChange={setAddSheetOpen}
-          dictTypeCode={record.dictTypeCode}
+          dictTypeCode={record.dictTypeCode!}
           item={null}
           onSubmit={onItemSubmit}
         />

@@ -7,15 +7,21 @@ import PageContainer from '@/components/layout/page-container';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 
 import {
-  bulkDeleteDictionaryItemsMutation,
-  createDictionaryItemMutation,
-  createDictionaryTypeMutation,
-  deleteDictionaryItemMutation,
-  deleteDictionaryTypeMutation,
-  updateDictionaryItemMutation,
-  updateDictionaryTypeMutation
-} from '../api/mutations';
-import { dictionaryItemsQueryOptions, dictionaryTypesQueryOptions } from '../api/queries';
+  createGlobalItemPreciseInvalidationMutationOptions,
+  createGlobalTypeMutationOptions,
+  deleteGlobalItemMutationOptions,
+  deleteGlobalTypeMutationOptions,
+  listGlobalTypesQueryOptions,
+  listGlobalItemsByTypeQueryOptions,
+  updateGlobalItemPreciseInvalidationMutationOptions,
+  updateGlobalTypeMutationOptions,
+  type CreateGlobalItemRequest,
+  type CreateGlobalTypeRequest,
+  type DeleteGlobalItemRequest,
+  type DeleteGlobalTypeRequest,
+  type UpdateGlobalItemRequest,
+  type UpdateGlobalTypeRequest
+} from '@/lib/api/clients/dict';
 import type {
   DictionaryItemMutationPayload,
   DictionaryItemRecord,
@@ -39,7 +45,7 @@ export default function DictionaryManagementPage() {
 
 function DictionaryManagementContent() {
   const { data: dictionaryTypeResult, isLoading: typesLoading } = useQuery(
-    dictionaryTypesQueryOptions()
+    listGlobalTypesQueryOptions({ pageNo: 1, pageSize: 200 })
   );
   const [keyword, setKeyword] = React.useState('');
   const [requestedTypeCode, setRequestedTypeCode] = React.useState<string | null>(null);
@@ -59,8 +65,8 @@ function DictionaryManagementContent() {
 
     return dictionaryTypes.filter((record) => {
       return (
-        record.dictTypeCode.toLowerCase().includes(normalized) ||
-        record.dictTypeName.toLowerCase().includes(normalized)
+        record.dictTypeCode!.toLowerCase().includes(normalized) ||
+        record.dictTypeName!.toLowerCase().includes(normalized)
       );
     });
   }, [dictionaryTypes, keyword]);
@@ -71,90 +77,31 @@ function DictionaryManagementContent() {
     null;
 
   const itemsQuery = useQuery({
-    ...dictionaryItemsQueryOptions(selectedType?.dictTypeCode ?? ''),
+    ...listGlobalItemsByTypeQueryOptions({ dictTypeCode: selectedType?.dictTypeCode ?? '' }),
     enabled: Boolean(selectedType)
   });
   const items = itemsQuery.data ?? [];
 
-  const createTypeMutation = useMutation({
-    ...createDictionaryTypeMutation,
-    onSuccess: () => {
-      toast.success('字典类型已创建');
-      setSheetState(null);
-    },
-    onError: () => {
-      toast.error('字典类型创建失败');
-    }
-  });
-
-  const updateTypeMutation = useMutation({
-    ...updateDictionaryTypeMutation,
-    onSuccess: () => {
-      toast.success('字典类型已更新');
-      setSheetState(null);
-    },
-    onError: () => {
-      toast.error('字典类型更新失败');
-    }
-  });
-
-  const createItemMutation = useMutation({
-    ...createDictionaryItemMutation,
-    onSuccess: () => {
-      toast.success('字典项已新增');
-    },
-    onError: () => {
-      toast.error('字典项新增失败');
-    }
-  });
-
-  const updateItemMutation = useMutation({
-    ...updateDictionaryItemMutation,
-    onSuccess: () => {
-      toast.success('字典项已更新');
-    },
-    onError: () => {
-      toast.error('字典项更新失败');
-    }
-  });
-
-  const deleteItemMutation = useMutation({
-    ...deleteDictionaryItemMutation,
-    onSuccess: () => {
-      toast.success('字典项已删除');
-    },
-    onError: () => {
-      toast.error('字典项删除失败');
-    }
-  });
-
-  const bulkDeleteMutation = useMutation({
-    ...bulkDeleteDictionaryItemsMutation,
-    onSuccess: () => {
-      toast.success('已批量删除字典项');
-    },
-    onError: () => {
-      toast.error('批量删除字典项失败');
-    }
-  });
-
-  const deleteTypeMutation = useMutation({
-    ...deleteDictionaryTypeMutation,
-    onSuccess: () => {
-      toast.success('字典类型已删除');
-    },
-    onError: () => {
-      toast.error('字典类型删除失败');
-    }
-  });
+  const createTypeMutation = useMutation(createGlobalTypeMutationOptions());
+  const updateTypeMutation = useMutation(updateGlobalTypeMutationOptions());
+  const createItemMutation = useMutation(createGlobalItemPreciseInvalidationMutationOptions());
+  const updateItemMutation = useMutation(updateGlobalItemPreciseInvalidationMutationOptions());
+  const deleteItemMutation = useMutation(deleteGlobalItemMutationOptions());
+  const deleteTypeMutation = useMutation(deleteGlobalTypeMutationOptions());
 
   const handleTypeSubmit = React.useCallback(
     async (payload: DictionaryTypeMutationPayload) => {
-      if (payload.id === 0) {
-        // Create mode
-        await createTypeMutation.mutateAsync(payload);
-      } else {
-        await updateTypeMutation.mutateAsync(payload);
+      try {
+        if (payload.id === 0) {
+          await createTypeMutation.mutateAsync(payload as CreateGlobalTypeRequest);
+          toast.success('字典类型已创建');
+        } else {
+          await updateTypeMutation.mutateAsync(payload as UpdateGlobalTypeRequest);
+          toast.success('字典类型已更新');
+        }
+        setSheetState(null);
+      } catch {
+        toast.error(payload.id === 0 ? '字典类型创建失败' : '字典类型更新失败');
       }
     },
     [createTypeMutation, updateTypeMutation]
@@ -162,31 +109,45 @@ function DictionaryManagementContent() {
 
   const handleItemSubmit = React.useCallback(
     async (payload: DictionaryItemMutationPayload) => {
-      if (payload.id) {
-        await updateItemMutation.mutateAsync(payload);
-        return;
-      }
+      try {
+        if (payload.id) {
+          await updateItemMutation.mutateAsync(payload as UpdateGlobalItemRequest);
+          toast.success('字典项已更新');
+          return;
+        }
 
-      await createItemMutation.mutateAsync(payload);
+        await createItemMutation.mutateAsync(payload as CreateGlobalItemRequest);
+        toast.success('字典项已新增');
+      } catch {
+        toast.error(payload.id ? '字典项更新失败' : '字典项新增失败');
+      }
     },
     [createItemMutation, updateItemMutation]
   );
 
   const handleDelete = React.useCallback(
     async (item: DictionaryItemRecord) => {
-      await deleteItemMutation.mutateAsync({
-        dictTypeCode: item.dictTypeCode,
-        id: item.id
-      });
+      try {
+        await deleteItemMutation.mutateAsync({ ids: [item.id] } as DeleteGlobalItemRequest);
+        toast.success('字典项已删除');
+      } catch {
+        toast.error('字典项删除失败');
+      }
     },
     [deleteItemMutation]
   );
 
   const handleBulkDelete = React.useCallback(
-    async (payload: { dictTypeCode: string; ids: number[] }) => {
-      await bulkDeleteMutation.mutateAsync(payload);
+    async (payload: { ids: number[] }) => {
+      try {
+        await deleteItemMutation.mutateAsync(payload as DeleteGlobalItemRequest);
+        toast.success('已批量删除字典项');
+      } catch (error) {
+        toast.error('批量删除字典项失败');
+        throw error;
+      }
     },
-    [bulkDeleteMutation]
+    [deleteItemMutation]
   );
 
   const { withConfirm: withTypeDeleteConfirm, confirmDialog: typeDeleteConfirmDialog } =
@@ -204,7 +165,13 @@ function DictionaryManagementContent() {
       confirmText: '删除',
       cancelText: '取消',
       run: async () => {
-        await deleteTypeMutation.mutateAsync({ id: selectedType.id });
+        try {
+          await deleteTypeMutation.mutateAsync({ id: selectedType.id } as DeleteGlobalTypeRequest);
+          toast.success('字典类型已删除');
+        } catch (error) {
+          toast.error('字典类型删除失败');
+          throw error;
+        }
       }
     })();
   }, [selectedType, items.length, deleteTypeMutation, withTypeDeleteConfirm]);

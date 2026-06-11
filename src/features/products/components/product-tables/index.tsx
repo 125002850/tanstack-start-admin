@@ -50,7 +50,10 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
 
   const handleEditProduct = React.useCallback(
     (row: Product) => {
-      router.navigate({ to: `/dashboard/product/${row.id}` });
+      router.navigate({
+        to: '/dashboard/product/$productId',
+        params: { productId: String(row.id) }
+      });
     },
     [router]
   );
@@ -130,7 +133,14 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
               type: 'onboarding',
               title: '暂无产品数据',
               description: '添加第一个产品开始管理产品目录。',
-              primaryAction: { label: '新增产品', onClick: () => router.navigate({ to: '/dashboard/product/new' }) }
+              primaryAction: {
+                label: '新增产品',
+                onClick: () =>
+                  router.navigate({
+                    to: '/dashboard/product/$productId',
+                    params: { productId: 'new' }
+                  })
+              }
             };
           }
           return {

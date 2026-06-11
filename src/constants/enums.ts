@@ -1,11 +1,11 @@
 import { Option } from '@/types';
 
 export enum DictStatus {
-  ENABLED = 'ENABLED',
-  DISABLED = 'DISABLED'
+  ENABLE = 'ENABLE',
+  DISABLE = 'DISABLE'
 }
 
 export const STATUS_OPTIONS: Option[] = [
-  { value: DictStatus.ENABLED, label: '启用' },
-  { value: DictStatus.DISABLED, label: '停用' }
+  { value: DictStatus.ENABLE, label: '启用' },
+  { value: DictStatus.DISABLE, label: '停用' }
 ];

@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { pokemonOptions } from '@/features/react-query-demo/api/queries';
 import { PokemonInfo } from '@/features/react-query-demo/components/pokemon-info';
 import PageContainer from '@/components/layout/page-container';
 import { Suspense } from 'react';

@@ -64,7 +64,7 @@ export function DictionaryTypeList({
                         ? 'border-primary bg-primary/8 shadow-xs'
                         : 'bg-background hover:bg-muted/60'
                     )}
-                    onClick={() => onSelect(record.dictTypeCode)}
+                    onClick={() => onSelect(record.dictTypeCode!)}
                   >
                     <div className='flex items-start justify-between gap-3'>
                       <div className='min-w-0'>
@@ -74,7 +74,7 @@ export function DictionaryTypeList({
                         </div>
                       </div>
                       <Badge variant={isActive ? 'default' : 'outline'}>
-                        {record.status === 'DISABLED' ? '停用' : '启用'}
+                        {record.status === 'DISABLE' ? '停用' : '启用'}
                       </Badge>
                     </div>
                   </button>

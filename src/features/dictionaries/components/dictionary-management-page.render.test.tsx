@@ -4,41 +4,50 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/api/clients/dict', () => ({
-  listGlobalTypes: vi.fn().mockResolvedValue({
-    total: 1,
-    list: [
+  listGlobalTypesQueryOptions: vi.fn(() => ({
+    queryKey: ['dictionary-types', 'list'],
+    queryFn: vi.fn().mockResolvedValue({
+      total: 1,
+      list: [
+        {
+          id: 101,
+          dictTypeCode: 'payment',
+          dictTypeName: '付款状态',
+          status: 'ENABLE',
+          createBy: 1,
+          createTime: '2026-06-09 09:00:00',
+          updateBy: 1,
+          updateTime: '2026-06-09 09:00:00'
+        }
+      ]
+    }),
+    select: (data: unknown) => data
+  })),
+  listGlobalItemsByTypeQueryOptions: vi.fn(() => ({
+    queryKey: ['dictionary-items', 'payment'],
+    queryFn: vi.fn().mockResolvedValue([
       {
-        id: 101,
+        id: 201,
         dictTypeCode: 'payment',
-        dictTypeName: '付款状态',
-        status: 'ENABLED',
-        createdBy: 'System',
-        createdAt: '2026-06-09 09:00:00',
-        updatedBy: 'System',
-        updatedAt: '2026-06-09 09:00:00'
+        dictItemCode: 'paid',
+        dictItemName: '已支付',
+        status: 'ENABLE',
+        sort: 10,
+        remark: '真实接口返回',
+        createBy: 1,
+        createTime: '2026-06-09 09:05:00',
+        updateBy: 1,
+        updateTime: '2026-06-09 09:05:00'
       }
-    ]
-  }),
-  listGlobalItemsByType: vi.fn().mockResolvedValue([
-    {
-      id: 201,
-      dictTypeCode: 'payment',
-      dictItemCode: 'paid',
-      dictItemName: '已支付',
-      status: 'ENABLED',
-      sort: 10,
-      remark: '真实接口返回',
-      createdBy: 'System',
-      createdAt: '2026-06-09 09:05:00',
-      updatedBy: 'System',
-      updatedAt: '2026-06-09 09:05:00'
-    }
-  ]),
-  updateGlobalType: vi.fn(),
-  createGlobalType: vi.fn(),
-  createGlobalItem: vi.fn(),
-  updateGlobalItem: vi.fn(),
-  deleteGlobalItem: vi.fn()
+    ]),
+    select: (data: unknown) => data
+  })),
+  createGlobalTypeMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  updateGlobalTypeMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  createGlobalItemPreciseInvalidationMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  updateGlobalItemPreciseInvalidationMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  deleteGlobalItemMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() })),
+  deleteGlobalTypeMutationOptions: vi.fn(() => ({ mutationFn: vi.fn() }))
 }));
 
 import DictionaryManagementPage from './dictionary-management-page';

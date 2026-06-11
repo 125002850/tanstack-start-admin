@@ -32,6 +32,7 @@ import {
   SidebarRail,
   useSidebar
 } from '@/components/ui/sidebar';
+import { baseConfig } from '@/config';
 
 function normalizePath(path: string): string {
   if (path === '/') return path;
@@ -320,7 +321,7 @@ export default function AppSidebar() {
                   <Icons.logo className='size-4' />
                 </div>
                 <div className='grid flex-1 text-left text-sm leading-tight'>
-                  <span className='truncate font-semibold'>管理系统</span>
+                  <span className='truncate font-semibold'>{baseConfig.projectName}</span>
                   <span className='text-muted-foreground truncate text-xs'>控制台</span>
                 </div>
               </Link>

@@ -1,7 +1,6 @@
 import * as React from 'react';
 
 import { Icons } from '@/components/icons';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -55,18 +54,18 @@ export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTy
       </CardHeader>
       <CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
         <DetailField label='名称' value={record.dictTypeName} />
-        <DetailField label='状态' value={record.status === 'DISABLED' ? '停用' : '启用'} />
+        <DetailField label='状态' value={record.status === 'DISABLE' ? '停用' : '启用'} />
         <DetailField label='编码' value={record.dictTypeCode} />
-        <DetailField label='创建人' value={record.createdBy} />
-        <DetailField label='创建时间' value={record.createdAt} />
-        <DetailField label='更新人' value={record.updatedBy} />
-        <DetailField label='更新时间' value={record.updatedAt} />
+        <DetailField label='创建人' value={record.createBy} />
+        <DetailField label='创建时间' value={record.createTime} />
+        <DetailField label='更新人' value={record.updateBy} />
+        <DetailField label='更新时间' value={record.updateTime} />
       </CardContent>
     </Card>
   );
 }
 
-function DetailField({ label, value }: { label: string; value?: string }) {
+function DetailField({ label, value }: { label: string; value?: string | number }) {
   return (
     <div className='space-y-1 rounded-lg border bg-muted/20 px-4 py-3'>
       <div className='text-muted-foreground text-xs tracking-[0.18em]'>{label}</div>

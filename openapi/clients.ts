@@ -25,16 +25,68 @@ export default defineClientManifests([
       wrapper: 'data',
       successCode: 200
     },
+    normalizationProfiles: {
+      dictionaryTypesPage: {
+        fieldAliases: {
+          createBy: 'createdBy',
+          createTime: 'createdAt',
+          updateBy: 'updatedBy',
+          updateTime: 'updatedAt'
+        },
+        enumAliases: {
+          status: {
+            ENABLE: 'ENABLED',
+            DISABLE: 'DISABLED'
+          }
+        },
+        scalarCoercions: {
+          createdBy: 'number-to-string',
+          updatedBy: 'number-to-string'
+        },
+        projection: 'page-item'
+      },
+      dictionaryItemsList: {
+        fieldAliases: {
+          createBy: 'createdBy',
+          createTime: 'createdAt',
+          updateBy: 'updatedBy',
+          updateTime: 'updatedAt'
+        },
+        enumAliases: {
+          status: {
+            ENABLE: 'ENABLED',
+            DISABLE: 'DISABLED'
+          }
+        },
+        scalarCoercions: {
+          createdBy: 'number-to-string',
+          updatedBy: 'number-to-string'
+        },
+        projection: 'list'
+      }
+    },
     overrides: {
       listGlobalTypes: {
         kind: 'query',
         suspense: true,
-        queryKeySegments: ['global-types', 'list']
+        queryKeySegments: ['global-types', 'list'],
+        orchestration: {
+          defaultRequest: {
+            pageNo: 1,
+            pageSize: 200
+          },
+          normalizationProfile: 'dictionaryTypesPage',
+          exportAs: 'dictionaryTypesBase'
+        }
       },
       listGlobalItemsByType: {
         kind: 'query',
         suspense: true,
-        queryKeySegments: ['global-items', 'by-type']
+        queryKeySegments: ['global-items', 'by-type'],
+        orchestration: {
+          normalizationProfile: 'dictionaryItemsList',
+          exportAs: 'dictionaryItemsBase'
+        }
       },
       createGlobalType: {
         kind: 'mutation',
@@ -54,12 +106,26 @@ export default defineClientManifests([
       createGlobalItem: {
         kind: 'mutation',
         queryKeySegments: ['global-items', 'create'],
-        invalidate: [{ target: ['dict', 'global-items', 'by-type'], scope: 'prefix' }]
+        invalidate: [
+          { target: ['dict', 'global-items', 'by-type'], scope: 'prefix' },
+          {
+            target: ['dict', 'global-items', 'by-type'],
+            scope: 'exact',
+            fromParams: ['dictTypeCode']
+          }
+        ]
       },
       updateGlobalItem: {
         kind: 'mutation',
         queryKeySegments: ['global-items', 'update'],
-        invalidate: [{ target: ['dict', 'global-items', 'by-type'], scope: 'prefix' }]
+        invalidate: [
+          { target: ['dict', 'global-items', 'by-type'], scope: 'prefix' },
+          {
+            target: ['dict', 'global-items', 'by-type'],
+            scope: 'exact',
+            fromParams: ['dictTypeCode']
+          }
+        ]
       },
       deleteGlobalItem: {
         kind: 'mutation',

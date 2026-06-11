@@ -75,14 +75,14 @@ export function DictionaryTypeSheet({
   const editForm = useAppForm({
     defaultValues: {
       dictTypeName: type?.dictTypeName ?? '',
-      status: type?.status ?? 'ENABLED'
+      status: type?.status ?? 'ENABLE'
     } as EditFormValues,
     validators: { onSubmit: editSchema },
     onSubmit: async ({ value }) => {
       if (!type) return;
       await onSubmit({
-        id: type.id,
-        dictTypeCode: type.dictTypeCode,
+        id: type.id!,
+        dictTypeCode: type.dictTypeCode!,
         dictTypeName: value.dictTypeName,
         status: value.status
       });
@@ -156,9 +156,6 @@ export function DictionaryTypeSheet({
         </div>
 
         <SheetFooter className='flex-row justify-end'>
-          <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
-            取消
-          </Button>
           <Button type='submit' form={formId}>
             {isEdit ? '保存修改' : '创建字典类型'}
           </Button>

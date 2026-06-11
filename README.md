@@ -401,6 +401,38 @@ export function isProductTableVirtualizationEnabled(): boolean {
 - `env.ts` 内不做业务逻辑判断，只负责"读取 + 默认值"
 - 编译时不可变：纯 SPA 下 `VITE_*` 在构建时静态替换，不可运行时修改
 
+### 请求头注入
+
+认证相关的环境值仍由 `env.ts` 提供，但请求头组装和 API 中间件统一放在 `src/lib/api/interceptors/`：
+
+```ts
+// src/lib/api/interceptors/set-header.ts
+export function setHeader(headers?: HeadersInit): Headers {
+  const merged = new Headers(headers);
+
+  if (env.ssoServiceID) {
+    merged.set('service-id', env.ssoServiceID);
+  }
+
+  if (env.ssoClientID) {
+    merged.set('client-id', env.ssoClientID);
+  };
+
+  if (env.ssoServiceCode) {
+    merged.set('service-code', env.ssoServiceCode);
+  }
+
+  return merged;
+}
+```
+
+所有 HTTP 请求都复用项目自维护的共享 transport：
+
+- `apiRequestMiddleware`：调用 `setHeader()` 注入认证头
+- `apiResponseMiddleware`：集中处理响应头扩展点
+
+`registerApiClientMiddlewares()` 在 `src/lib/api/transport/create-api-client-custom-instance.ts` 中只执行一次。`pnpm codegen` 结束后会自动执行 `scripts/apply-api-client-middlewares.mjs`，把 `openapi/.generated/*-orval-mutator.ts` 改写成对共享 transport 工厂的转发层，而不是在 generated 文件里直接注册 middleware。
+
 ## 快速开始
 
 > [!NOTE]

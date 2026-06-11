@@ -2707,20 +2707,20 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "dateTime",
               "enum",
-              "compose",
-              "text"
+              "dateTime",
+              "text",
+              "compose"
             ]
           },
           "field": {
             "type": "string",
-            "description": "时间字段；枚举字段；文本字段",
+            "description": "枚举字段；时间字段；文本字段",
             "enum": [
+              "STATUS",
               "CREATE_TIME",
               "FINISHED_TIME",
               "EXPIRE_TIME",
-              "STATUS",
               "EXPORT_BIZ_CODE",
               "EXPORT_BIZ_NAME",
               "FILE_NAME"
@@ -2728,22 +2728,32 @@
           },
           "op": {
             "type": "string",
-            "description": "时间操作符；枚举操作符；文本操作符",
+            "description": "枚举操作符；时间操作符；文本操作符",
             "enum": [
+              "EQ",
+              "IN",
               "GT",
               "GTE",
               "LT",
               "LTE",
               "BETWEEN",
-              "EQ",
-              "IN",
               "CONTAINS",
               "STARTS_WITH",
               "ENDS_WITH"
             ]
           },
           "value": {
-            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用；单值操作符使用"
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "description": "不同节点类型的数组元素类型可能不同"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
           },
           "start": {
             "type": "string",
@@ -2752,16 +2762,6 @@
           "end": {
             "type": "string",
             "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "payloadValid": {
-            "type": "boolean"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "description": "不同节点类型的数组元素类型可能不同"
-            }
           },
           "logic": {
             "type": "string",
@@ -2783,10 +2783,10 @@
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
             "enum": "#/components/schemas/ExportRecordEnumCondition",
-            "compose": "#/components/schemas/ExportRecordGroupCondition",
-            "text": "#/components/schemas/ExportRecordTextCondition"
+            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
+            "text": "#/components/schemas/ExportRecordTextCondition",
+            "compose": "#/components/schemas/ExportRecordGroupCondition"
           }
         },
         "oneOf": [
@@ -3193,8 +3193,8 @@
             "description": "节点类型",
             "enum": [
               "compose",
-              "text",
-              "dateTime"
+              "dateTime",
+              "text"
             ]
           },
           "logic": {
@@ -3214,43 +3214,32 @@
           },
           "field": {
             "type": "string",
-            "description": "文本字段；时间字段",
+            "description": "时间字段；文本字段",
             "enum": [
+              "createTime",
               "dictTypeCode",
-              "dictTypeName",
-              "createTime"
+              "dictTypeName"
             ]
           },
           "op": {
             "type": "string",
-            "description": "文本操作符；时间操作符",
+            "description": "时间操作符；文本操作符",
             "enum": [
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN",
               "GT",
               "GTE",
               "LT",
               "LTE",
-              "BETWEEN"
+              "BETWEEN",
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN"
             ]
           },
           "value": {
             "type": "string",
-            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
-          },
-          "payloadValid": {
-            "type": "boolean"
+            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
           },
           "start": {
             "type": "string",
@@ -3259,6 +3248,17 @@
           "end": {
             "type": "string",
             "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
           }
         },
         "description": "全局字典类型动态查询节点",
@@ -3266,8 +3266,8 @@
           "propertyName": "nodeType",
           "mapping": {
             "compose": "#/components/schemas/GlobalDictTypeGroupCondition",
-            "text": "#/components/schemas/GlobalDictTypeTextCondition",
-            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition"
+            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition",
+            "text": "#/components/schemas/GlobalDictTypeTextCondition"
           }
         },
         "oneOf": [

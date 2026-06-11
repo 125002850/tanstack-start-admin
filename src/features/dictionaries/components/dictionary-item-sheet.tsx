@@ -59,7 +59,7 @@ export function DictionaryItemSheet({
     defaultValues: {
       dictItemCode: item?.dictItemCode ?? '',
       dictItemName: item?.dictItemName ?? '',
-      status: item?.status ?? 'ENABLED',
+      status: item?.status ?? 'ENABLE',
       sort: item?.sort ?? '',
       remark: item?.remark ?? ''
     } as DictionaryItemFormValues,
@@ -140,9 +140,6 @@ export function DictionaryItemSheet({
         </div>
 
         <SheetFooter className='flex-row justify-end gap-2'>
-          <Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
-            取消
-          </Button>
           {isEdit && onDelete && (
             <Button type='button' variant='destructive' onClick={() => setDeleteDialogOpen(true)}>
               删除

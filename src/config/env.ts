@@ -22,7 +22,8 @@ export const env = {
 
   /** 是否启用产品表格虚拟滚动（默认开启） */
   productTableVirtualization: getEnvBool('VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION', true),
+
   ssoClientID: getEnvVar('APP_SSO_CLIENT_ID'),
   ssoServiceID: getEnvVar('APP_SSO_SERVICE_ID'),
-  ssoServiceCode: getEnvVar('APP_SSO_SERVICE_CODE')
+  ssoServiceCode: getEnvVar('APP_SSO_APP_CODE')
 } as const;
