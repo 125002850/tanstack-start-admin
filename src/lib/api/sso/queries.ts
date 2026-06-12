@@ -18,7 +18,11 @@ export const getLoginInfoQueryOptions = () =>
       );
 
       if (!resp.ok) {
-        throw new Error(`Failed to fetch login info: ${resp.status}`);
+        const error = Object.assign(
+          new Error(`Failed to fetch login info: ${resp.status}`),
+          { status: resp.status }
+        );
+        throw error;
       }
 
       const json: LoginUserRsp = await resp.json();
