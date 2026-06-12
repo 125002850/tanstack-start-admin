@@ -1,11 +1,24 @@
+// @vitest-environment node
+
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 function readProjectFile(path: string) {
   return readFileSync(resolve(process.cwd(), path), 'utf8');
 }
+
+const originalAppGateway = process.env.APP_GATEWAY;
+
+afterEach(() => {
+  if (originalAppGateway === undefined) {
+    delete process.env.APP_GATEWAY;
+  } else {
+    process.env.APP_GATEWAY = originalAppGateway;
+  }
+});
 
 describe('OpenAPI package adoption contract', () => {
   it('drives generation through the published openapi-client CLI', () => {
@@ -27,6 +40,17 @@ describe('OpenAPI package adoption contract', () => {
     expect(manifestSource).toContain(
       "import { defineClientManifests } from '@oig/react-query-generator/codegen';"
     );
+  });
+
+  it('maps APP_GATEWAY into manifest transportProfile.basePath', async () => {
+    process.env.APP_GATEWAY = '/__test_gateway__';
+    vi.resetModules();
+
+    const manifestModule = await import(
+      `${pathToFileURL(resolve(process.cwd(), 'openapi/clients.ts')).href}?t=${Date.now()}`
+    );
+
+    expect(manifestModule.default[0]?.transportProfile?.basePath).toBe('/__test_gateway__');
   });
 
   it('imports generated runtime helpers from @oig/react-query-generator/core', () => {

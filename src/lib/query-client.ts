@@ -5,6 +5,7 @@ import { setQueryClient as setCoreQueryClient } from '@oig/react-query-generator
 // In TanStack Start, the primary queryClient lives in the router context,
 // but mutations defined outside components need a reference too.
 let queryClient: QueryClient | undefined;
+const nonRetryableStatusCodes = [401, 404];
 
 export function getQueryClient() {
   if (!queryClient) {
@@ -14,7 +15,9 @@ export function getQueryClient() {
           staleTime: 60 * 1000,
           // oxlint-disable-next-line typescript/no-explicit-any
           retry(failureCount, error: any) {
-            if (error?.response?.status === 404 || error?.status === 404) {
+            const status = error?.response?.status ?? error?.status;
+
+            if (nonRetryableStatusCodes.includes(status)) {
               return false;
             }
 
@@ -26,9 +29,4 @@ export function getQueryClient() {
     setCoreQueryClient(queryClient);
   }
   return queryClient;
-}
-
-export function setQueryClient(client: QueryClient) {
-  queryClient = client;
-  setCoreQueryClient(client);
 }
