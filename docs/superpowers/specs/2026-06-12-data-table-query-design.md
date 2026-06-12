@@ -37,6 +37,18 @@
 
 在这个前提下，前端不需要再维护 `field` 映射，也不需要为不同响应结构编写 `select` 归一化逻辑。
 
+### 分页 DSL 时间字段前提
+
+若 V1 需要自动支持 `date` / `dateRange`，则后端必须接受**带显式时区偏移的 ISO 8601 datetime 字符串**。  
+例如：
+
+```ts
+2026-06-12T00:00:00+08:00
+2026-06-12T23:59:59+08:00
+```
+
+若后端当前只接受无时区的本地时间字符串（如 `2026-06-12 00:00:00`），则 V1 不自动支持 `date` / `dateRange` 进入默认 DSL 规则，直到后端契约收敛完成。
+
 ## 目标
 
 引入一个面向消费层的共享 hook：`useDataTableQuery`，把分页 DSL 组装、请求触发、响应回填和分页计算全部内聚到内部，实现以下目标：
@@ -128,6 +140,39 @@ export const columns = [
 
 ## `useDataTableQuery` 输入与输出边界
 
+### 类型契约
+
+共享 hook 需要锁定的是分页 DSL request 的**下界**，而不是把所有 endpoint 的 request 类型强行锁死成一个完全相同的精确结构。
+
+```ts
+interface PaginatedResponse<TData> {
+  list: TData[]
+  total: number
+}
+
+interface DataTableDslPageRequestBase {
+  pageNo: number
+  pageSize: number
+  dslVersion: number
+  condition?: DslCondition
+  sort?: DslSortItem[]
+}
+
+type QueryOptionsFactory<
+  TData,
+  TRequest extends DataTableDslPageRequestBase,
+> = (
+  request: TRequest,
+) => TanStackQueryOptionsLike<PaginatedResponse<TData>>
+```
+
+V1 额外约束：
+
+- `queryOptions` 必须是“输入满足 `DataTableDslPageRequestBase` 下界”的 factory
+- `queryOptions` 产出的查询结果必须是统一分页响应 `{ list, total }`
+- V1 只支持**没有额外必填 request 字段**的分页 DSL endpoint
+- 若某个 endpoint 还要求其它必填字段，不进入共享主路径，应由 feature-local 薄封装先补齐后再接入
+
 ### 输入
 
 V1 只保留以下必需输入：
@@ -155,6 +200,7 @@ V1 只返回：
 - `table`：直接喂给现有 `DataTable`
 - `total`：给分页总数与空态判断使用
 - `query`：原样暴露 React Query 结果，页面如需 `isFetching / error / refetch` 可直接取用
+- `query.data`：保持原始统一分页响应，即 `{ list, total }`；`total` 只是从 `query.data.total` 中额外解构出的便利用值
 
 ## 内部默认行为
 
@@ -165,6 +211,41 @@ V1 只返回：
 - `dslVersion` 由 hook 内部固定补齐
 - 页长偏好根据 `tableId` 自动读取和持久化
 - 消费层不再传 `pageSize`、`seedPageSize`、`onPageSizeChange`
+
+#### pageSize 来源优先级
+
+`pageSize` 的默认来源按以下优先级解析：
+
+1. 客户端持久化的 `tableId` 对应页长偏好
+2. 共享 hook / 共享表格配置中的 `defaultPageSize`
+3. 内置兜底常量
+
+`queryOptions` 不参与 `pageSize` 默认值决策；它只负责数据源注入，不承担 UI 分页偏好配置。
+
+#### SSR 降级策略
+
+在 SSR 阶段，浏览器存储不可用，因此只使用：
+
+1. `defaultPageSize`
+2. 内置兜底常量
+
+hydration 后若读取到持久化页长且与 SSR 默认值不同，允许触发一次客户端请求升级，以切换到用户上次的真实分页偏好。
+
+### 竞态与请求去重
+
+快速连续的分页、排序、筛选变更会产生多个 in-flight request。  
+在 TanStack Query 下，当前 observer 只消费当前 `queryKey` 对应的结果，不会出现“旧 key 的响应覆盖新 key 订阅结果”的错写问题；真正需要避免的是切 key 过程中的 UI 闪烁。
+
+V1 约束如下：
+
+- `queryOptions(request)` 生成的 `queryKey` 必须包含完整 request 语义：
+  - `pageNo`
+  - `pageSize`
+  - `dslVersion`
+  - `condition`
+  - `sort`
+- `useDataTableQuery` 在消费 `queryOptions(request)` 时，默认叠加 `placeholderData: keepPreviousData`
+- 这样在切页或变更筛选时，旧数据会保留到新请求完成，避免表格区域短暂清空
 
 ### 排序
 
@@ -195,9 +276,31 @@ condition: {
 
 没有任何筛选时省略 `condition`。
 
+#### 空值归一化规则
+
+V1 对“空筛选”的判断必须是确定性的，而不是由各页面自行解释。
+
+- `text`
+  - `undefined` / `null` 视为空
+  - `trim()` 后为空字符串视为空
+- `select`
+  - `undefined` / `null` 视为空
+  - 归一化后无有效值视为空
+- `multiSelect`
+  - 空数组视为空
+  - 过滤空串、`null`、`undefined` 后若结果为空，视为空
+- `date`
+  - `undefined` / `null` / 无法解析的日期视为空
+- `dateRange`
+  - `from` 和 `to` 都不存在时视为空
+  - 只有 `from` -> `GTE`
+  - 只有 `to` -> `LTE`
+  - `from` 与 `to` 同时存在 -> `BETWEEN`
+  - 用户清空选择后恢复为“无条件”
+
 ## `meta.variant` 到 DSL 的默认映射
 
-V1 默认只自动支持以下 5 类：
+V1 默认只自动支持以下 3 类，另有 2 类为**条件支持**：
 
 ### `text`
 
@@ -226,6 +329,7 @@ V1 默认只自动支持以下 5 类：
 ### `date`
 
 - 单日筛选 -> `BETWEEN`
+- 仅在后端接受**带显式时区偏移的 ISO 8601** 时启用
 - 自动展开为当天开始与结束时间，避免错误翻译为精确时刻
 
 ```ts
@@ -233,8 +337,8 @@ V1 默认只自动支持以下 5 类：
   nodeType: 'dateTime',
   field: 'createTime',
   op: 'BETWEEN',
-  start: '2026-06-12 00:00:00',
-  end: '2026-06-12 23:59:59',
+  start: '2026-06-12T00:00:00+08:00',
+  end: '2026-06-12T23:59:59+08:00',
 }
 ```
 
@@ -243,14 +347,20 @@ V1 默认只自动支持以下 5 类：
 - `from + to` -> `BETWEEN`
 - 只有 `from` -> `GTE`
 - 只有 `to` -> `LTE`
+- 仅在后端接受**带显式时区偏移的 ISO 8601** 时启用
 
 ## V1 刻意不自动支持的类型
 
-以下 `variant` 在 V1 不做自动 DSL 生成：
+以下 `variant` 在 V1 不做默认自动 DSL 生成：
 
 - `number`
 - `range`
 - `boolean`
+
+以下 `variant` 在 V1 属于**条件支持**：
+
+- `date`
+- `dateRange`
 
 原因：
 
@@ -259,8 +369,9 @@ V1 默认只自动支持以下 5 类：
 
 策略：
 
-- V1 先不自动支持
-- 有真实页面需要时，再按统一 DSL 协议增量补充
+- `number` / `range` / `boolean` 在 V1 先不自动支持
+- `date` / `dateRange` 仅在 offset-aware datetime 契约成立时启用
+- 其余类型等有真实页面需要时，再按统一 DSL 协议增量补充
 
 ## 最小扩展点
 
@@ -327,6 +438,7 @@ V1 默认只自动支持以下 5 类：
 - `useDataTable` 保持现有职责边界
 - `DataTable` 保持现有渲染 API
 - `DataTableToolbar` 保持现有基于 `meta.variant` 的筛选 UI 渲染方式
+- 开发期对“`accessorFn` + 参与筛选/排序但缺少 `id`”输出明确告警，而不是静默忽略
 
 ### 对消费页的影响
 
@@ -385,6 +497,8 @@ V1 至少覆盖以下行为：
 6. 统一响应 `{ list, total }` 能正确驱动 `data` 与 `pageCount`
 7. `tableId` 对应的页长偏好能正确读取与回写
 8. `accessorFn` 且未声明 `id` 的列不会进入 DSL
+9. 使用 `placeholderData: keepPreviousData` 时，切换请求参数不会造成表格数据瞬时清空
+10. `date` / `dateRange` 仅在 offset-aware datetime 契约成立时启用
 
 ## 风险与约束
 
@@ -395,6 +509,7 @@ V1 至少覆盖以下行为：
 约束：
 
 - 凡需要参与 DSL 的 `accessorFn` 列，必须显式提供 `id`
+- 开发期对“可排序/可筛选但缺少 `id`”输出警告，避免出现“UI 有筛选但 DSL 不生效”的静默错误
 
 ### 风险 2：日期序列化不一致
 
@@ -403,6 +518,7 @@ V1 至少覆盖以下行为：
 约束：
 
 - `date` / `dateRange` 的时间展开与格式化必须统一由共享 hook 负责
+- 没有显式时区偏移的 datetime 字符串不进入 V1 默认协议
 
 ### 风险 3：扩展口膨胀
 
@@ -412,6 +528,18 @@ V1 至少覆盖以下行为：
 
 - V1 只保留 `baseCondition`、`defaultSort`、列级少量 override
 
+### 风险 4：`tableId` 冲突
+
+`tableId` 同时用于页长偏好等持久化 key。若不同页面复用同一个 `tableId`，会出现用户偏好串扰。
+
+约束：
+
+- `tableId` 在持久化作用域内必须唯一，除非业务上明确希望共享分页偏好
+- 命名建议使用稳定、小写、ASCII、具业务语义的 kebab-case，例如：
+  - `global-types`
+  - `track-records`
+  - `dictionary-items-payment`
+
 ## 验收标准
 
 当以下条件全部满足时，认为该设计达标：
@@ -419,6 +547,7 @@ V1 至少覆盖以下行为：
 1. 页面层调用面只保留 `tableId`、`columns`、`queryOptions`
 2. 消费层不再自行处理分页、DSL request 组装和 `pageCount`
 3. 默认 DSL 规则可覆盖 `text/select/multiSelect/date/dateRange`
+   - 其中 `date/dateRange` 仅在 offset-aware datetime 契约成立时启用
 4. 不需要 `field` 映射
 5. 不需要响应 `select`
 6. 不引入全局注册表或隐式数据源绑定
