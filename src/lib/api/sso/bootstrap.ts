@@ -29,14 +29,12 @@ async function extractLogoutUrlFromBody(response: Response): Promise<string | nu
   }
 }
 
-export async function bootstrapRequest(
-  url: string,
-  init?: RequestInit
-): Promise<Response> {
+export async function bootstrapRequest(url: string, init?: RequestInit): Promise<Response> {
+  debugger;
   const headers = setHeader(init?.headers);
   const token = getAuthHeader();
   if (token) {
-    headers.set('Authorization', token);
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   const response = await fetch(url, {

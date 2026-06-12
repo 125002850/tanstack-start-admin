@@ -38,7 +38,7 @@ describe('bootstrap', () => {
   });
 
   it('injects auth header from session', async () => {
-    mockSession.getAuthHeader.mockReturnValue('Bearer bootstrap-token');
+    mockSession.getAuthHeader.mockReturnValue('jwt-bootstrap-token');
 
     let capturedHeaders: Headers | undefined;
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
@@ -49,7 +49,7 @@ describe('bootstrap', () => {
     const { bootstrapRequest } = await import('./bootstrap');
     await bootstrapRequest('/api/getLoginInfo');
 
-    expect(capturedHeaders?.get('Authorization')).toBe('Bearer bootstrap-token');
+    expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-bootstrap-token');
   });
 
   it('refreshes token from response', async () => {

@@ -30,7 +30,7 @@ transport.registerMiddleware(async (context, next) => {
   const headers = setHeader(context.options.headers);
   const token = getAuthHeader();
   if (token) {
-    headers.set('Authorization', token);
+    headers.set('Authorization', `Bearer ${token}`);
   }
   return next({
     ...context,

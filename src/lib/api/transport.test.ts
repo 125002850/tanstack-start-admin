@@ -38,7 +38,7 @@ describe('transport auth pipeline', () => {
       const headers = new Headers(context.options.headers);
       const token = mockSession.getAuthHeader();
       if (token) {
-        headers.set('Authorization', token);
+        headers.set('Authorization', `Bearer ${token}`);
       }
       return next({
         ...context,
@@ -66,7 +66,7 @@ describe('transport auth pipeline', () => {
   }
 
   it('injects auth header from session into requests', async () => {
-    mockSession.getAuthHeader.mockReturnValue('Bearer test-token');
+    mockSession.getAuthHeader.mockReturnValue('jwt-token-value');
 
     let capturedHeaders: Headers | undefined;
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
@@ -78,7 +78,7 @@ describe('transport auth pipeline', () => {
     await transport.customInstance('http://test/api', { method: 'GET' });
 
     expect(mockSession.getAuthHeader).toHaveBeenCalled();
-    expect(capturedHeaders?.get('Authorization')).toBe('Bearer test-token');
+    expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-token-value');
   });
 
   it('skips auth header injection when no token stored', async () => {
@@ -151,7 +151,7 @@ describe('production transport module integration', () => {
   let capturedHeaders: Headers | undefined;
 
   it('exports a working factory that injects token from session', async () => {
-    mockSession.getAuthHeader.mockReturnValue('Bearer from-production-transport');
+    mockSession.getAuthHeader.mockReturnValue('jwt-from-production');
 
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
       capturedHeaders = new Headers((init as RequestInit)?.headers);
@@ -163,7 +163,7 @@ describe('production transport module integration', () => {
 
     await client('/api/endpoint');
 
-    expect(capturedHeaders?.get('Authorization')).toBe('Bearer from-production-transport');
+    expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-from-production');
   });
 });
 

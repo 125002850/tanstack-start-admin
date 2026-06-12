@@ -10,9 +10,9 @@ function normalizeToken(raw: string): string {
   if (trimmed.length === 0) return '';
   const lowered = trimmed.toLowerCase();
   if (lowered.startsWith('bearer ')) {
-    return `Bearer ${trimmed.slice(7)}`;
+    return trimmed.slice(7);
   }
-  return `Bearer ${trimmed}`;
+  return trimmed;
 }
 
 export function hydrateFromUrl() {

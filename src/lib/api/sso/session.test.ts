@@ -82,8 +82,8 @@ describe('session', () => {
 
       hydrateFromUrl();
 
-      expect(getAuthHeader()).toBe('Bearer raw-token-value');
-      expect(store['sso_token']).toBe('Bearer raw-token-value');
+      expect(getAuthHeader()).toBe('raw-token-value');
+      expect(store['sso_token']).toBe('raw-token-value');
     });
 
     it('preserves Bearer prefix if already present', async () => {
@@ -92,7 +92,7 @@ describe('session', () => {
 
       hydrateFromUrl();
 
-      expect(getAuthHeader()).toBe('Bearer existing-token');
+      expect(getAuthHeader()).toBe('existing-token');
     });
 
     it('cleans token param from URL after hydration', async () => {
@@ -130,8 +130,8 @@ describe('session', () => {
 
       setAuthHeader('Bearer my-token');
 
-      expect(getAuthHeader()).toBe('Bearer my-token');
-      expect(store['sso_token']).toBe('Bearer my-token');
+      expect(getAuthHeader()).toBe('my-token');
+      expect(store['sso_token']).toBe('my-token');
     });
 
     it('normalizes bare token by adding Bearer prefix', async () => {
@@ -140,8 +140,8 @@ describe('session', () => {
 
       setAuthHeader('bare-token');
 
-      expect(getAuthHeader()).toBe('Bearer bare-token');
-      expect(store['sso_token']).toBe('Bearer bare-token');
+      expect(getAuthHeader()).toBe('bare-token');
+      expect(store['sso_token']).toBe('bare-token');
     });
 
     it('normalizes lowercase bearer prefix', async () => {
@@ -150,8 +150,8 @@ describe('session', () => {
 
       setAuthHeader('bearer lowercase-token');
 
-      expect(getAuthHeader()).toBe('Bearer lowercase-token');
-      expect(store['sso_token']).toBe('Bearer lowercase-token');
+      expect(getAuthHeader()).toBe('lowercase-token');
+      expect(store['sso_token']).toBe('lowercase-token');
     });
 
     it('rejects empty string', async () => {
