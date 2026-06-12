@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { setQueryClient as setCoreQueryClient } from '@oig/react-query-generator/core';
 
 // Singleton query client for use in mutation options and other non-component code.
 // In TanStack Start, the primary queryClient lives in the router context,
@@ -22,10 +23,12 @@ export function getQueryClient() {
         }
       }
     });
+    setCoreQueryClient(queryClient);
   }
   return queryClient;
 }
 
 export function setQueryClient(client: QueryClient) {
   queryClient = client;
+  setCoreQueryClient(client);
 }

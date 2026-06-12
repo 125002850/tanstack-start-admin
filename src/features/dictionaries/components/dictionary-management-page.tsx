@@ -21,7 +21,7 @@ import {
   type DeleteGlobalTypeRequest,
   type UpdateGlobalItemRequest,
   type UpdateGlobalTypeRequest
-} from '@/lib/api/clients/dict';
+} from '@/lib/api/clients/service';
 import type {
   DictionaryItemMutationPayload,
   DictionaryItemRecord,

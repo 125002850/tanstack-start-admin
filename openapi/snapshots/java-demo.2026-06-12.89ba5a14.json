@@ -2708,42 +2708,42 @@
             "description": "节点类型",
             "enum": [
               "enum",
-              "dateTime",
+              "compose",
               "text",
-              "compose"
+              "dateTime"
             ]
           },
           "field": {
             "type": "string",
-            "description": "枚举字段；时间字段；文本字段",
+            "description": "枚举字段；文本字段；时间字段",
             "enum": [
               "STATUS",
-              "CREATE_TIME",
-              "FINISHED_TIME",
-              "EXPIRE_TIME",
               "EXPORT_BIZ_CODE",
               "EXPORT_BIZ_NAME",
-              "FILE_NAME"
+              "FILE_NAME",
+              "CREATE_TIME",
+              "FINISHED_TIME",
+              "EXPIRE_TIME"
             ]
           },
           "op": {
             "type": "string",
-            "description": "枚举操作符；时间操作符；文本操作符",
+            "description": "枚举操作符；文本操作符；时间操作符",
             "enum": [
               "EQ",
               "IN",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
               "GT",
               "GTE",
               "LT",
               "LTE",
-              "BETWEEN",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH"
+              "BETWEEN"
             ]
           },
           "value": {
-            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
           },
           "values": {
             "type": "array",
@@ -2754,14 +2754,6 @@
           },
           "payloadValid": {
             "type": "boolean"
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           },
           "logic": {
             "type": "string",
@@ -2777,6 +2769,14 @@
             "items": {
               "$ref": "#/components/schemas/ExportRecordConditionNode"
             }
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           }
         },
         "description": "导出记录动态查询节点",
@@ -2784,9 +2784,9 @@
           "propertyName": "nodeType",
           "mapping": {
             "enum": "#/components/schemas/ExportRecordEnumCondition",
-            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
+            "compose": "#/components/schemas/ExportRecordGroupCondition",
             "text": "#/components/schemas/ExportRecordTextCondition",
-            "compose": "#/components/schemas/ExportRecordGroupCondition"
+            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition"
           }
         },
         "oneOf": [
@@ -3193,8 +3193,8 @@
             "description": "节点类型",
             "enum": [
               "compose",
-              "dateTime",
-              "text"
+              "text",
+              "dateTime"
             ]
           },
           "logic": {
@@ -3214,43 +3214,32 @@
           },
           "field": {
             "type": "string",
-            "description": "时间字段；文本字段",
+            "description": "文本字段；时间字段",
             "enum": [
-              "createTime",
-              "dictTypeCode",
-              "dictTypeName"
+              "DICT_TYPE_CODE",
+              "DICT_TYPE_NAME",
+              "CREATE_TIME"
             ]
           },
           "op": {
             "type": "string",
-            "description": "时间操作符；文本操作符",
+            "description": "文本操作符；时间操作符",
             "enum": [
-              "GT",
-              "GTE",
-              "LT",
-              "LTE",
-              "BETWEEN",
               "EQ",
               "CONTAINS",
               "STARTS_WITH",
               "ENDS_WITH",
-              "IN"
+              "IN",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
             ]
           },
           "value": {
             "type": "string",
-            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "payloadValid": {
-            "type": "boolean"
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
           },
           "values": {
             "type": "array",
@@ -3259,6 +3248,17 @@
               "type": "string",
               "description": "IN 操作符使用"
             }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           }
         },
         "description": "全局字典类型动态查询节点",
@@ -3266,8 +3266,8 @@
           "propertyName": "nodeType",
           "mapping": {
             "compose": "#/components/schemas/GlobalDictTypeGroupCondition",
-            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition",
-            "text": "#/components/schemas/GlobalDictTypeTextCondition"
+            "text": "#/components/schemas/GlobalDictTypeTextCondition",
+            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition"
           }
         },
         "oneOf": [
@@ -3303,7 +3303,7 @@
                 "type": "string",
                 "description": "时间字段",
                 "enum": [
-                  "createTime"
+                  "CREATE_TIME"
                 ]
               },
               "op": {
@@ -3436,8 +3436,8 @@
             "type": "string",
             "description": "排序字段",
             "enum": [
-              "id",
-              "createTime"
+              "ID",
+              "CREATE_TIME"
             ]
           },
           "direction": {
@@ -3472,8 +3472,8 @@
                 "type": "string",
                 "description": "文本字段",
                 "enum": [
-                  "dictTypeCode",
-                  "dictTypeName"
+                  "DICT_TYPE_CODE",
+                  "DICT_TYPE_NAME"
                 ]
               },
               "op": {
@@ -3558,8 +3558,7 @@
           },
           "status": {
             "type": "string",
-            "description": "状态：enable-启用，disable-禁用",
-            "example": "enable",
+            "description": "状态",
             "enum": [
               "ENABLE",
               "DISABLE"
@@ -3601,27 +3600,13 @@
       "GlobalDictTypeListReqDTO": {
         "type": "object",
         "properties": {
-          "pageNo": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "页码，从1开始",
-            "format": "int64",
-            "example": 1
-          },
-          "pageSize": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "每页条数",
-            "format": "int64",
-            "example": 20
-          },
           "keyword": {
             "type": "string",
             "description": "关键字，按字典类型编码或名称模糊查询",
             "example": "status"
           }
         },
-        "description": "全局字典列表查询请求"
+        "description": "全局字典类型全量查询请求（不分页）"
       },
       "RListGlobalDictTypeRspDTO": {
         "type": "object",
@@ -3761,6 +3746,12 @@
             "description": "字典项名称",
             "example": "男"
           },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号",
+            "format": "int32",
+            "example": 1
+          },
           "remark": {
             "type": "string",
             "description": "备注"
@@ -3771,7 +3762,9 @@
             "example": "enable",
             "enum": [
               "ENABLE",
-              "DISABLE"
+              "DISABLE",
+              "enable",
+              "disable"
             ]
           }
         },
@@ -3824,6 +3817,28 @@
             "type": "string",
             "description": "字典项名称",
             "example": "男"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号，升序排列",
+            "format": "int32",
+            "example": 1
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "性别标识"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": [
+              "ENABLE",
+              "DISABLE",
+              "enable",
+              "disable"
+            ]
           }
         },
         "description": "全局字典项修改请求"
@@ -3873,6 +3888,28 @@
             "type": "string",
             "description": "字典项名称",
             "example": "男"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号，升序排列",
+            "format": "int32",
+            "example": 1
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "性别标识"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": [
+              "ENABLE",
+              "DISABLE",
+              "enable",
+              "disable"
+            ]
           }
         },
         "description": "全局字典项创建请求"
@@ -4046,6 +4083,19 @@
           },
           "data": {
             "$ref": "#/components/schemas/FetchDirectUploadCredentialRspDTO"
+          }
+        }
+      },
+      "EnumVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "编码"
+          },
+          "desc": {
+            "type": "string",
+            "description": "描述"
           }
         }
       }

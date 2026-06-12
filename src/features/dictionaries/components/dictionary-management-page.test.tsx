@@ -58,7 +58,7 @@ vi.mock('@/components/ui/table/data-table', () => ({
   )
 }));
 
-vi.mock('@/lib/api/clients/dict', () => ({
+vi.mock('@/lib/api/clients/service', () => ({
   listGlobalTypesQueryOptions: (
     ...args: Parameters<typeof mockListGlobalTypesQueryOptions>
   ) => mockListGlobalTypesQueryOptions(...args),

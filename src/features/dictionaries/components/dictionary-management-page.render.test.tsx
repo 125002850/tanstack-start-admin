@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/lib/api/clients/dict', () => ({
+vi.mock('@/lib/api/clients/service', () => ({
   listGlobalTypesQueryOptions: vi.fn(() => ({
     queryKey: ['dictionary-types', 'list'],
     queryFn: vi.fn().mockResolvedValue({

@@ -30,9 +30,9 @@ describe('OpenAPI package adoption contract', () => {
   });
 
   it('imports generated runtime helpers from @oig/react-query-generator/core', () => {
-    const sdkSource = readProjectFile('src/lib/api/clients/dict/generated/sdk.ts');
-    const queriesSource = readProjectFile('src/lib/api/clients/dict/generated/queries.ts');
-    const mutationsSource = readProjectFile('src/lib/api/clients/dict/generated/mutations.ts');
+    const sdkSource = readProjectFile('src/lib/api/clients/service/generated/sdk.ts');
+    const queriesSource = readProjectFile('src/lib/api/clients/service/generated/queries.ts');
+    const mutationsSource = readProjectFile('src/lib/api/clients/service/generated/mutations.ts');
 
     expect(sdkSource).toContain("@oig/react-query-generator/core");
     expect(queriesSource).toContain("@oig/react-query-generator/core");
