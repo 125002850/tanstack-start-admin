@@ -14,8 +14,12 @@ import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
 import { Link } from '@tanstack/react-router';
 import { useLocation, useRouter } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import { Icons } from '../icons';
+import { SsoAvatarSkeleton, SsoTextSkeleton } from '@/components/ui/sso-skeleton';
+import { getLoginInfoQueryOptions } from '@/lib/api/sso/queries';
+import { handleUnauthorized } from '@/lib/api/sso/session';
 import {
   Sidebar,
   SidebarContent,
@@ -309,6 +313,11 @@ export default function AppSidebar() {
     [router.routesById]
   );
   const filteredGroups = useFilteredNavGroups(navGroups);
+  const { data: loginUser, isLoading } = useQuery(getLoginInfoQueryOptions());
+
+  const handleLogout = () => {
+    handleUnauthorized();
+  };
 
   return (
     <Sidebar variant='inset' collapsible='icon'>
@@ -350,13 +359,29 @@ export default function AppSidebar() {
                   size='lg'
                   className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 >
-                  <div className='bg-muted flex aspect-square size-8 shrink-0 items-center justify-center rounded-full'>
-                    <Icons.account className='size-4' />
-                  </div>
-                  <div className='grid flex-1 text-left text-sm leading-tight'>
-                    <span className='truncate font-medium'>用户</span>
-                    <span className='text-muted-foreground truncate text-xs'>user@example.com</span>
-                  </div>
+                    {isLoading ? (
+                      <>
+                        <SsoAvatarSkeleton size={32} />
+                        <div className='grid flex-1 gap-1'>
+                          <SsoTextSkeleton width='60%' className='h-3' />
+                          <SsoTextSkeleton width='80%' className='h-2.5' />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className='bg-muted flex aspect-square size-8 shrink-0 items-center justify-center rounded-full'>
+                          <Icons.account className='size-4' />
+                        </div>
+                        <div className='grid flex-1 text-left text-sm leading-tight'>
+                          <span className='truncate font-medium'>
+                            {loginUser?.realName || loginUser?.userName || '用户'}
+                          </span>
+                          <span className='text-muted-foreground truncate text-xs'>
+                            {loginUser?.phone || '-'}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   <Icons.chevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
@@ -375,7 +400,7 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <Icons.logout className='mr-2 h-4 w-4' />
                   退出登录
                 </DropdownMenuItem>
