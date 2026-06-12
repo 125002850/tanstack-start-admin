@@ -4,6 +4,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { bootstrapRequest } from './bootstrap';
 import { setLogoutUrl } from './session';
 import type { LoginUserData, LoginUserRsp } from './type';
+import { transportProfile } from '../clients/service/generated/runtime';
 
 export const getLoginInfoQueryKey = ['sso', 'login-info'] as const;
 
@@ -11,7 +12,10 @@ export const getLoginInfoQueryOptions = () =>
   queryOptions<LoginUserData>({
     queryKey: getLoginInfoQueryKey,
     queryFn: async ({ signal }) => {
-      const resp = await bootstrapRequest('/api/getLoginInfo', { signal });
+      const resp = await bootstrapRequest(
+        `${transportProfile.basePath}/api/getLoginInfo`,
+        { signal }
+      );
 
       if (!resp.ok) {
         throw new Error(`Failed to fetch login info: ${resp.status}`);
