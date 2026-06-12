@@ -1,5 +1,5 @@
 import { setHeader } from './set-headers';
-import { getAuthHeader, setAuthHeader } from './session';
+import { clearAuth, getAuthHeader, setAuthHeader } from './session';
 
 export async function bootstrapRequest(
   url: string,
@@ -15,6 +15,10 @@ export async function bootstrapRequest(
     ...init,
     headers
   });
+
+  if (response.status === 401) {
+    clearAuth();
+  }
 
   const newToken = response.headers.get('authorization');
   if (newToken) {

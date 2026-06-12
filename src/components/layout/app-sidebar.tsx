@@ -19,7 +19,7 @@ import * as React from 'react';
 import { Icons } from '../icons';
 import { SsoAvatarSkeleton, SsoTextSkeleton } from '@/components/ui/sso-skeleton';
 import { getLoginInfoQueryOptions } from '@/lib/api/sso/queries';
-import { handleUnauthorized } from '@/lib/api/sso/session';
+import { logout } from '@/lib/api/sso/session';
 import {
   Sidebar,
   SidebarContent,
@@ -316,7 +316,7 @@ export default function AppSidebar() {
   const { data: loginUser, isLoading } = useQuery(getLoginInfoQueryOptions());
 
   const handleLogout = () => {
-    handleUnauthorized();
+    logout();
   };
 
   return (

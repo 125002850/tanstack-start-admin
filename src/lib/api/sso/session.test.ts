@@ -144,11 +144,69 @@ describe('session', () => {
       expect(store['sso_token']).toBe('Bearer bare-token');
     });
 
+    it('normalizes lowercase bearer prefix', async () => {
+      const store = setupBrowserMocks();
+      const { setAuthHeader, getAuthHeader } = await import('./session');
+
+      setAuthHeader('bearer lowercase-token');
+
+      expect(getAuthHeader()).toBe('Bearer lowercase-token');
+      expect(store['sso_token']).toBe('Bearer lowercase-token');
+    });
+
+    it('rejects empty string', async () => {
+      const store = setupBrowserMocks();
+      const { setAuthHeader, getAuthHeader } = await import('./session');
+
+      setAuthHeader('');
+
+      expect(getAuthHeader()).toBeNull();
+      expect(store['sso_token']).toBeUndefined();
+    });
+
+    it('rejects whitespace-only string', async () => {
+      const store = setupBrowserMocks();
+      const { setAuthHeader, getAuthHeader } = await import('./session');
+
+      setAuthHeader('   ');
+
+      expect(getAuthHeader()).toBeNull();
+      expect(store['sso_token']).toBeUndefined();
+    });
+
     it('returns null when no token stored', async () => {
       setupBrowserMocks();
       const { getAuthHeader } = await import('./session');
 
       expect(getAuthHeader()).toBeNull();
+    });
+  });
+
+  describe('logout', () => {
+    it('clears auth and redirects to logout url when available', async () => {
+      setupBrowserMocks();
+      const { setAuthHeader, setLogoutUrl, logout, getAuthHeader, getLogoutUrl } =
+        await import('./session');
+
+      setAuthHeader('Bearer token');
+      setLogoutUrl('https://sso/logout');
+
+      logout();
+
+      expect(getAuthHeader()).toBeNull();
+      expect(getLogoutUrl()).toBeNull();
+      expect(window.location.href).toBe('https://sso/logout');
+    });
+
+    it('clears auth and redirects to origin when logout url is unavailable', async () => {
+      setupBrowserMocks();
+      const { logout, getAuthHeader, getLogoutUrl } = await import('./session');
+
+      logout();
+
+      expect(getAuthHeader()).toBeNull();
+      expect(getLogoutUrl()).toBeNull();
+      expect(window.location.href).toBe('https://example.com');
     });
   });
 

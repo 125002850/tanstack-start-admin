@@ -147,6 +147,26 @@ describe('transport auth pipeline', () => {
   });
 });
 
+describe('production transport module integration', () => {
+  let capturedHeaders: Headers | undefined;
+
+  it('exports a working factory that injects token from session', async () => {
+    mockSession.getAuthHeader.mockReturnValue('Bearer from-production-transport');
+
+    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
+      capturedHeaders = new Headers((init as RequestInit)?.headers);
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+
+    const { createApiClientCustomInstance } = await import('./transport');
+    const client = createApiClientCustomInstance('/test-base', { credentials: 'same-origin' });
+
+    await client('/api/endpoint');
+
+    expect(capturedHeaders?.get('Authorization')).toBe('Bearer from-production-transport');
+  });
+});
+
   function extractAuthHeader(response: unknown): string | null {
     const headers = (response as Record<string, unknown>)?.headers;
     if (!headers) return null;

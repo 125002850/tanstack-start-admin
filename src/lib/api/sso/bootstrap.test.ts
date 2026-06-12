@@ -5,13 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mockSession = {
   getAuthHeader: vi.fn<() => string | null>(),
   setAuthHeader: vi.fn<(token: string) => void>(),
-  setLogoutUrl: vi.fn<(url: string) => void>()
+  setLogoutUrl: vi.fn<(url: string) => void>(),
+  clearAuth: vi.fn<() => void>()
 };
 
 vi.mock('./session', () => ({
   getAuthHeader: () => mockSession.getAuthHeader(),
   setAuthHeader: (token: string) => mockSession.setAuthHeader(token),
-  setLogoutUrl: (url: string) => mockSession.setLogoutUrl(url)
+  setLogoutUrl: (url: string) => mockSession.setLogoutUrl(url),
+  clearAuth: () => mockSession.clearAuth()
 }));
 
 vi.mock('./set-headers', () => ({
@@ -61,7 +63,7 @@ describe('bootstrap', () => {
     expect(mockSession.setAuthHeader).toHaveBeenCalledWith('Bearer refreshed-from-bootstrap');
   });
 
-  it('does not redirect on 401 (returns response as-is)', async () => {
+  it('clears stale token on 401 before returning response', async () => {
     mockSession.getAuthHeader.mockReturnValue('Bearer expired');
 
     globalThis.fetch = vi.fn().mockResolvedValue(
@@ -72,5 +74,6 @@ describe('bootstrap', () => {
     const resp = await bootstrapRequest('/api/getLoginInfo');
 
     expect(resp.status).toBe(401);
+    expect(mockSession.clearAuth).toHaveBeenCalledOnce();
   });
 });

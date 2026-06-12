@@ -7,7 +7,11 @@ function isBrowser() {
 
 function normalizeToken(raw: string): string {
   const trimmed = raw.trim();
-  if (trimmed.startsWith('Bearer ')) return trimmed;
+  if (trimmed.length === 0) return '';
+  const lowered = trimmed.toLowerCase();
+  if (lowered.startsWith('bearer ')) {
+    return `Bearer ${trimmed.slice(7)}`;
+  }
   return `Bearer ${trimmed}`;
 }
 
@@ -35,8 +39,10 @@ export function getAuthHeader(): string | null {
 
 export function setAuthHeader(value: string) {
   if (!isBrowser()) return;
+  const normalized = normalizeToken(value);
+  if (!normalized) return;
   try {
-    localStorage.setItem(TOKEN_KEY, normalizeToken(value));
+    localStorage.setItem(TOKEN_KEY, normalized);
   } catch {}
 }
 
@@ -70,4 +76,10 @@ export function handleUnauthorized() {
   if (logoutUrl) {
     window.location.href = logoutUrl;
   }
+}
+
+export function logout() {
+  const url = getLogoutUrl();
+  clearAuth();
+  window.location.href = url || window.location.origin;
 }
