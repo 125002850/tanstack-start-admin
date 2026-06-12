@@ -1,5 +1,13 @@
 import { setHeader } from './set-headers';
-import { clearAuth, getAuthHeader, setAuthHeader } from './session';
+import { clearAuth, getAuthHeader, getLogoutUrl, setAuthHeader } from './session';
+
+const TOKEN_KEY = 'sso_token';
+
+function removeToken() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {}
+}
 
 export async function bootstrapRequest(
   url: string,
@@ -17,7 +25,12 @@ export async function bootstrapRequest(
   });
 
   if (response.status === 401) {
-    clearAuth();
+    removeToken();
+    const logoutUrl = getLogoutUrl();
+    if (logoutUrl) {
+      window.location.href = logoutUrl;
+    }
+    return response;
   }
 
   const newToken = response.headers.get('authorization');
