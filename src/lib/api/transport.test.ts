@@ -3,70 +3,160 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTransport, HttpError } from '@oig/react-query-generator/core';
 
-describe('transport 401 behavior characterization', () => {
+const mockSession = {
+  getAuthHeader: vi.fn<() => string | null>(),
+  setAuthHeader: vi.fn<(token: string) => void>(),
+  handleUnauthorized: vi.fn<() => void>()
+};
+
+vi.mock('./sso/session', () => ({
+  getAuthHeader: () => mockSession.getAuthHeader(),
+  setAuthHeader: (token: string) => mockSession.setAuthHeader(token),
+  handleUnauthorized: () => mockSession.handleUnauthorized()
+}));
+
+vi.mock('./sso/set-headers', () => ({
+  setHeader: (headers?: HeadersInit) => new Headers(headers)
+}));
+
+describe('transport auth pipeline', () => {
   let originalFetch: typeof fetch;
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });
 
-  it('characterizes current 401 middleware behavior', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('{"error":"Unauthorized"}', {
-        status: 401,
-        statusText: 'Unauthorized',
-        headers: { 'Content-Type': 'application/json' }
-      })
-    );
-
+  function createAuthTransport() {
     const transport = createTransport();
-    let postNextCodeRan = false;
-    let caughtError: unknown = null;
 
-    transport.registerMiddleware(async (_context, next) => {
+    transport.registerMiddleware(async (context, next) => {
+      const headers = new Headers(context.options.headers);
+      const token = mockSession.getAuthHeader();
+      if (token) {
+        headers.set('Authorization', token);
+      }
+      return next({
+        ...context,
+        options: { ...context.options, headers }
+      });
+    });
+
+    transport.registerMiddleware(async (context, next) => {
       try {
-        const result = await next();
-        postNextCodeRan = true;
-        return result;
+        const response = await next(context);
+        const newToken = extractAuthHeader(response);
+        if (newToken) {
+          mockSession.setAuthHeader(newToken);
+        }
+        return response;
       } catch (error) {
-        caughtError = error;
+        if (error instanceof HttpError && error.status === 401) {
+          mockSession.handleUnauthorized();
+        }
         throw error;
       }
     });
 
-    await expect(
-      transport.customInstance('http://test/api', { method: 'GET' })
-    ).rejects.toThrow();
+    return transport;
+  }
 
-    expect(postNextCodeRan).toBe(false);
-    expect(caughtError).toBeInstanceOf(HttpError);
-    expect((caughtError as HttpError).status).toBe(401);
+  it('injects auth header from session into requests', async () => {
+    mockSession.getAuthHeader.mockReturnValue('Bearer test-token');
+
+    let capturedHeaders: Headers | undefined;
+    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
+      capturedHeaders = new Headers((init as RequestInit)?.headers);
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+
+    const transport = createAuthTransport();
+    await transport.customInstance('http://test/api', { method: 'GET' });
+
+    expect(mockSession.getAuthHeader).toHaveBeenCalled();
+    expect(capturedHeaders?.get('Authorization')).toBe('Bearer test-token');
   });
 
-  it('2xx response does reach post-next middleware code', async () => {
+  it('skips auth header injection when no token stored', async () => {
+    mockSession.getAuthHeader.mockReturnValue(null);
+
+    let capturedHeaders: Headers | undefined;
+    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
+      capturedHeaders = new Headers((init as RequestInit)?.headers);
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+
+    const transport = createAuthTransport();
+    await transport.customInstance('http://test/api', { method: 'GET' });
+
+    expect(capturedHeaders?.has('Authorization')).toBe(false);
+  });
+
+  it('refreshes auth header from successful response', async () => {
+    mockSession.getAuthHeader.mockReturnValue(null);
+
     globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('{"ok":true}', {
+      new Response('{}', {
         status: 200,
-        statusText: 'OK',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { Authorization: 'Bearer refreshed-token' }
       })
     );
 
-    const transport = createTransport();
-    let postNextCodeRan = false;
-
-    transport.registerMiddleware(async (_context, next) => {
-      const result = await next();
-      postNextCodeRan = true;
-      return result;
-    });
-
+    const transport = createAuthTransport();
     await transport.customInstance('http://test/api', { method: 'GET' });
 
-    expect(postNextCodeRan).toBe(true);
+    expect(mockSession.setAuthHeader).toHaveBeenCalledWith('Bearer refreshed-token');
+  });
+
+  it('calls handleUnauthorized on 401 and re-throws', async () => {
+    mockSession.getAuthHeader.mockReturnValue('Bearer expired-token');
+
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response('Unauthorized', { status: 401, statusText: 'Unauthorized' })
+    );
+
+    const transport = createAuthTransport();
+
+    const error = await transport.customInstance('http://test/api', { method: 'GET' })
+      .then(() => null, (e) => e);
+
+    expect(error).toBeInstanceOf(HttpError);
+    expect((error as HttpError).status).toBe(401);
+    expect(mockSession.handleUnauthorized).toHaveBeenCalledOnce();
+  });
+
+  it('re-throws non-401 errors without calling handleUnauthorized', async () => {
+    mockSession.getAuthHeader.mockReturnValue('Bearer valid-token');
+
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
+    );
+
+    const transport = createAuthTransport();
+
+    const error = await transport.customInstance('http://test/api', { method: 'GET' })
+      .then(() => null, (e) => e);
+
+    expect(error).toBeInstanceOf(HttpError);
+    expect((error as HttpError).status).toBe(500);
+    expect(mockSession.handleUnauthorized).not.toHaveBeenCalled();
   });
 });
+
+  function extractAuthHeader(response: unknown): string | null {
+    const headers = (response as Record<string, unknown>)?.headers;
+    if (!headers) return null;
+    if (typeof (headers as Headers).get === 'function') {
+      return (headers as Headers).get('authorization');
+    }
+    const obj = headers as Record<string, string>;
+    for (const key of Object.keys(obj)) {
+      if (key.toLowerCase() === 'authorization') return obj[key];
+    }
+    return null;
+  }
+
