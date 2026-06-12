@@ -361,7 +361,16 @@
 - URL callback: 若 `?token=` 参数值为裸 token（不含 `Bearer ` 前缀），hydration 时自动补 `Bearer ` 前缀
 - 响应头: 以 `Authorization` header 值为准，直接覆盖本地存储
 
+### Task 1-5 完成摘要
+
+- [x] **Task 1**: `session.ts` 建立显式 SSO 会话边界 — `hydrateFromUrl()`, `getAuthHeader()`, `setAuthHeader()`, `clearAuth()`, `getLogoutUrl()`, `setLogoutUrl()`, `handleUnauthorized()`。13 个单测全绿。
+- [x] **Task 2**: Transport 鉴权链路重写 — middleware 改用 `try/catch HttpError`，401 在异常分支被收口，调用 `session.handleUnauthorized()` 后 re-throw。传输层只依赖 `session` API。5 个单测全绿。
+- [x] **Task 3**: Bootstrap — `bootstrap.ts` 提供 `bootstrapRequest()` 共享 header/token 但跳转 401 跳转；`queries.ts` 移除模块单例，改用 `session.setLogoutUrl()`；`router.tsx` 初始化时调 `hydrateFromUrl()`；`dashboard` loader 通过 `ensureSsoLoginInfo()` prefetch 登录信息。7 个单测全绿。
+- [x] **Task 4**: Sidebar — 消费 `getLoginInfo` query 展示真实用户信息，pending 时渲染 skeleton，退出登录调 `handleUnauthorized()`。
+- [x] **Task 5**: 清理 — 删除死代码 `token.ts`（无 consumer），所有 import 链路收束到 session。
+
 ### 后续行动项
 
 - [ ] **TODO (P1)**: 确认后端 `?token=` 回调参数的实际格式（是否为完整 Authorization 值）
-- [ ] Task 1 就绪，可以开始
+- [ ] **TODO (P2)**: 为 `app-sidebar.tsx` auth footer 补充组件测试
+- [ ] **TODO (P2)**: 考虑将 `sso` 模块提升为独立 feature 目录（当前在 `lib/api/sso` 下）
