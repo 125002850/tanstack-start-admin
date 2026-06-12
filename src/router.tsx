@@ -1,12 +1,15 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { getQueryClient } from '@/lib/query-client';
+import { hydrateFromUrl } from '@/lib/api/sso/session';
 import { routeTree } from './routeTree.gen';
 
 
 export const getRouter = createRouter;
 
 export function createRouter() {
+  hydrateFromUrl();
+
   const queryClient = getQueryClient();
 
   const router = createTanStackRouter({

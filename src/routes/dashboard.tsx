@@ -11,6 +11,7 @@ import { WorkspaceViewport } from '@/features/workspace-tabs/components/workspac
 import { useWorkspaceDevtools } from '@/features/workspace-tabs/lib/workspace-devtools';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useDashboardRouteTagSync } from '@/features/workspace-tabs/hooks/use-dashboard-route-tag-sync';
+import { ensureSsoLoginInfo } from '@/lib/api/sso/queries';
 
 const meta = defineRouteMeta({
   label: '控制台',
@@ -30,6 +31,7 @@ export const Route = createFileRoute('/dashboard')({
       { name: 'robots', content: 'noindex, nofollow' }
     ]
   }),
+  loader: ({ context }) => ensureSsoLoginInfo(context.queryClient),
   component: DashboardLayout
 });
 
