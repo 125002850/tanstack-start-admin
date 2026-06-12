@@ -15,9 +15,9 @@ export default defineConfig(({ mode }) => {
       proxy: {
         [env.APP_GATEWAY]: {
           target: env.PROXY_URL,
-          changeOrigin: true,
-        },
-      },
+          changeOrigin: true
+        }
+      }
     },
     plugins: [
       tsconfigPaths(),
@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
       viteReact(),
       ...(process.env.ANALYZE === 'true'
         ? [visualizer({ emitFile: true, filename: 'stats.html', gzipSize: true, brotliSize: true })]
-        : []),
-    ],
+        : [])
+    ]
   };
 });

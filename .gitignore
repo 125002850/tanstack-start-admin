@@ -19,7 +19,6 @@ src/lib/api/clients/*/generated/
 openapi/.generated/
 
 # Environment variables
-.env
 .env*.local
 
 # IDEs and editors
