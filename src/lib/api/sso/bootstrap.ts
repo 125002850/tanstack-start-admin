@@ -1,5 +1,5 @@
-import { setHeader } from './set-headers';
-import { getAuthHeader, getLogoutUrl, setAuthHeader, setLogoutUrl } from './session';
+import { createAuthHeaders, refreshTokenFromResponse } from './set-headers';
+import { getLogoutUrl, setLogoutUrl } from './session';
 
 const TOKEN_KEY = 'sso_token';
 
@@ -29,17 +29,13 @@ async function extractLogoutUrlFromBody(response: Response): Promise<string | nu
   }
 }
 
-export async function bootstrapRequest(url: string, init?: RequestInit): Promise<Response> {
-  debugger;
-  const headers = setHeader(init?.headers);
-  const token = getAuthHeader();
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
+export async function bootstrapRequest(
+  url: string,
+  init?: RequestInit
+): Promise<Response> {
   const response = await fetch(url, {
     ...init,
-    headers
+    headers: createAuthHeaders(init?.headers)
   });
 
   if (response.status === 401) {
@@ -61,10 +57,6 @@ export async function bootstrapRequest(url: string, init?: RequestInit): Promise
     return response;
   }
 
-  const newToken = response.headers.get('authorization');
-  if (newToken) {
-    setAuthHeader(newToken);
-  }
-
+  refreshTokenFromResponse(response);
   return response;
 }

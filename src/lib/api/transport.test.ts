@@ -16,7 +16,21 @@ vi.mock('./sso/session', () => ({
 }));
 
 vi.mock('./sso/set-headers', () => ({
-  setHeader: (headers?: HeadersInit) => new Headers(headers)
+  createAuthHeaders: (init?: HeadersInit) => {
+    const headers = new Headers(init);
+    const token = mockSession.getAuthHeader();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return headers;
+  },
+  refreshTokenFromResponse: (response: unknown) => {
+    const h = (response as Record<string, unknown>)?.headers;
+    if (h && typeof (h as Headers).get === 'function') {
+      const newToken = (h as Headers).get('authorization');
+      if (newToken) mockSession.setAuthHeader(newToken);
+    }
+  }
 }));
 
 describe('transport auth pipeline', () => {
@@ -35,23 +49,22 @@ describe('transport auth pipeline', () => {
     const transport = createTransport();
 
     transport.registerMiddleware(async (context, next) => {
-      const headers = new Headers(context.options.headers);
-      const token = mockSession.getAuthHeader();
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
+      const { createAuthHeaders } = await import('./sso/set-headers');
       return next({
         ...context,
-        options: { ...context.options, headers }
+        options: {
+          ...context.options,
+          headers: createAuthHeaders(context.options.headers)
+        }
       });
     });
 
     transport.registerMiddleware(async (context, next) => {
       try {
         const response = await next(context);
-        const newToken = extractAuthHeader(response);
-        if (newToken) {
-          mockSession.setAuthHeader(newToken);
+        const token = extractAuthHeader(response);
+        if (token) {
+          mockSession.setAuthHeader(token);
         }
         return response;
       } catch (error) {

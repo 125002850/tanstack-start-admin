@@ -18,7 +18,8 @@ vi.mock('./session', () => ({
 }));
 
 vi.mock('./set-headers', () => ({
-  setHeader: (headers?: HeadersInit) => new Headers(headers)
+  createAuthHeaders: (init?: HeadersInit) => new Headers(init),
+  refreshTokenFromResponse: () => {}
 }));
 
 describe('login info query', () => {

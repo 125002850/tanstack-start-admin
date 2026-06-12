@@ -17,7 +17,21 @@ vi.mock('./session', () => ({
 }));
 
 vi.mock('./set-headers', () => ({
-  setHeader: (headers?: HeadersInit) => new Headers(headers)
+  createAuthHeaders: (init?: HeadersInit) => {
+    const headers = new Headers(init);
+    const token = mockSession.getAuthHeader();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return headers;
+  },
+  refreshTokenFromResponse: (response: unknown) => {
+    const h = (response as Record<string, unknown>)?.headers;
+    if (h && typeof (h as Headers).get === 'function') {
+      const newToken = (h as Headers).get('authorization');
+      if (newToken) mockSession.setAuthHeader(newToken);
+    }
+  }
 }));
 
 const mockLocation = { href: '' };
