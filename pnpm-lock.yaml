@@ -56,8 +56,8 @@ importers:
         specifier: ^5.0.20
         version: 5.2.9
       '@oig/react-query-generator':
-        specifier: 1.2.0
-        version: 1.2.0(@faker-js/faker@10.4.0)(@tanstack/react-query@5.100.10(react@19.2.6))(prettier@3.8.3)(typescript@5.9.3)
+        specifier: 3.1.0
+        version: 3.1.0(@faker-js/faker@10.4.0)(@tanstack/react-query@5.100.10(react@19.2.6))(prettier@3.8.3)(typescript@5.9.3)
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -866,8 +866,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@oig/react-query-generator@1.2.0':
-    resolution: {integrity: sha512-swFkHc+LyPqmqX+o5PYjUOH8w1/a0H8Ad67sQ0XDW3tiDJa6M2M96iAQ13562HuIUFAxwFKLtl6p6Kt+myYAiQ==}
+  '@oig/react-query-generator@3.1.0':
+    resolution: {integrity: sha512-+/4Lm0wQhYuGgLH+n5ije9ZGxkMVrQ+5JWNmPBuNR+/ald4Q4fyBJZG8e0yvm71bpjvFxATQsB7CKGcOnR5+/Q==}
     hasBin: true
     peerDependencies:
       '@tanstack/react-query': ^5.95.2
@@ -4492,7 +4492,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@oig/react-query-generator@1.2.0(@faker-js/faker@10.4.0)(@tanstack/react-query@5.100.10(react@19.2.6))(prettier@3.8.3)(typescript@5.9.3)':
+  '@oig/react-query-generator@3.1.0(@faker-js/faker@10.4.0)(@tanstack/react-query@5.100.10(react@19.2.6))(prettier@3.8.3)(typescript@5.9.3)':
     dependencies:
       '@tanstack/react-query': 5.100.10(react@19.2.6)
       jiti: 2.7.0
