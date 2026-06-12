@@ -83,7 +83,25 @@ describe('bootstrap', () => {
     expect(mockLocation.href).toBe('https://sso/logout');
   });
 
-  it('skips redirect on 401 when logoutUrl is not cached', async () => {
+  it('extracts logoutUrl from response body when not cached', async () => {
+    mockSession.getAuthHeader.mockReturnValue('Bearer expired');
+    mockSession.getLogoutUrl.mockReturnValue(null);
+
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: { logoutUrl: 'https://sso/from-body' } }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const { bootstrapRequest } = await import('./bootstrap');
+    const resp = await bootstrapRequest('/api/getLoginInfo');
+
+    expect(resp.status).toBe(401);
+    expect(mockLocation.href).toBe('https://sso/from-body');
+  });
+
+  it('skips redirect on 401 when no logoutUrl available anywhere', async () => {
     mockSession.getAuthHeader.mockReturnValue('Bearer expired');
     mockSession.getLogoutUrl.mockReturnValue(null);
 
