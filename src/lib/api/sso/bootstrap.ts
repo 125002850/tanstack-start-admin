@@ -29,10 +29,7 @@ async function extractLogoutUrlFromBody(response: Response): Promise<string | nu
   }
 }
 
-export async function bootstrapRequest(
-  url: string,
-  init?: RequestInit
-): Promise<Response> {
+export async function bootstrapRequest(url: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(url, {
     ...init,
     headers: createAuthHeaders(init?.headers)

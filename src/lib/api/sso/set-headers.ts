@@ -31,7 +31,7 @@ export function createAuthHeaders(init?: HeadersInit): Headers {
   const headers = buildHeaders(init);
   const token = getAuthHeader();
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Authorization', token);
   }
   return headers;
 }
