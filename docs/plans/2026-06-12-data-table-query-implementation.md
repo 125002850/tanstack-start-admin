@@ -302,3 +302,11 @@
 - Verification: `pnpm exec vitest run src/features/dictionaries/components/dictionary-management-page.test.tsx src/features/dictionaries/components/dictionary-management-page.render.test.tsx` -> PASS
 - Verification: `pnpm exec tsc --noEmit` -> PASS
 - Notes: 将字典项列表 `tableId` 收敛为稳定的 `dictionary-items`，消除切换字典类型时的开发期 `tableId changed` 告警，并避免列宽持久化读写 key 在运行时漂移。补回 `dictionary-management-page.render.test.tsx`，防止 render 回归保护丢失。
+
+### Update (2026-06-15)
+
+- 实现状态：左侧字典类别主列表已按最新产品决策切换为非分页模式，不再走分页 DSL；查询改为 `/api/mdm/dict/global/types/list-all` 对应的 `listAllGlobalTypesQueryOptions`，请求仅保留 `keyword`。
+- 实现状态：`DictionaryTypeList` 已移除分页控件，保留单个 `keyword` 输入，并与“新增字典类型”按钮保持同一行。
+- 实现状态：字典类别 `keyword` 查询切换为保留上一帧数据的策略，避免每次输入触发新 query 时整页退回 `DictionaryManagementFallback` 造成闪烁。
+- 实现状态：`useDataTable` 新增 `rowSelectionScopeKey`，当数据上下文 key 变化时自动清空当前选中；字典项表格已将该 key 绑定到当前 `dictTypeCode`，并显式使用 `row.id` 作为稳定行标识。
+- 验证状态：`pnpm exec vitest run src/features/dictionaries/components/dictionary-management-page.test.tsx`、`pnpm exec tsc --noEmit`、`pnpm run build` 均已通过。
