@@ -86,9 +86,11 @@ export function DictionaryItemsPanel({
   const { table, clearSelectedRows, getSelectedRows } = useDataTable({
     data: items,
     columns: dictionaryItemColumns,
+    getRowId: (row) => String(row.id),
     pageCount: 1,
     showRowNumberColumn: false,
     showSelectColumn: true,
+    rowSelectionScopeKey: record?.dictTypeCode ?? null,
     rowActions,
     tableId
   });

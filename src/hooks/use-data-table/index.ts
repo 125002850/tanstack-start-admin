@@ -227,6 +227,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     onPageSizeChange,
     enableAdvancedFilter,
     tableId: props.tableId,
+    rowSelectionScopeKey: props.rowSelectionScopeKey,
     resolvedStorageMode,
     fixedWidthColumnSizing
   });

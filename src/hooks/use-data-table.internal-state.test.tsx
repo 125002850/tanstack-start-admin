@@ -348,6 +348,37 @@ function SelectedRowsInspector() {
   ]);
 }
 
+function ScopedSelectedRowsInspector({
+  scopeKey
+}: {
+  scopeKey: string | null;
+}) {
+  const { table, selectedRows } = useDataTable({
+    columns,
+    data,
+    pageCount: 1,
+    showSelectColumn: true,
+    rowSelectionScopeKey: scopeKey
+  });
+
+  return React.createElement('div', null, [
+    React.createElement(
+      'span',
+      { key: 'scoped-selected-rows', 'data-testid': 'scoped-selected-rows' },
+      JSON.stringify(selectedRows.map((row) => row.id))
+    ),
+    React.createElement(
+      'button',
+      {
+        key: 'scoped-select-all',
+        'data-testid': 'scoped-select-all',
+        onClick: () => table.toggleAllPageRowsSelected(true)
+      },
+      'Select all'
+    )
+  ]);
+}
+
 afterEach(cleanup);
 
 describe('useDataTable — internal-state mode (default)', () => {
@@ -604,6 +635,22 @@ describe('useDataTable — internal-state mode (default)', () => {
 
     expect(screen.getByTestId('selected-rows').textContent).toBe('[]');
     expect(screen.getByTestId('selected-rows-method').textContent).toBe('[]');
+  });
+
+  it('clears row selection when rowSelectionScopeKey changes', () => {
+    const { rerender } = render(
+      React.createElement(ScopedSelectedRowsInspector, { scopeKey: 'payment' })
+    );
+
+    act(() => {
+      screen.getByTestId('scoped-select-all').click();
+    });
+
+    expect(screen.getByTestId('scoped-selected-rows').textContent).toBe('[1,2,3,4]');
+
+    rerender(React.createElement(ScopedSelectedRowsInspector, { scopeKey: 'invoice' }));
+
+    expect(screen.getByTestId('scoped-selected-rows').textContent).toBe('[]');
   });
 
   it('adds row-key based expand state and derives the panel id from tableId', () => {

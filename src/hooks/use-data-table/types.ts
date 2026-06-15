@@ -73,6 +73,8 @@ export interface UseDataTableProps<TData>
   showRowNumberColumn?: boolean;
   /** 是否自动注入多选列。默认 `false`。 */
   showSelectColumn?: boolean;
+  /** 行选中态所属的数据上下文 key；变化时会自动清空当前选中。 */
+  rowSelectionScopeKey?: string | number | null;
   /** 操作列的固定方向。默认 `'right'`。 */
   actionColumnPin?: DataTablePinnedSide;
   /** 行操作配置列表。传入后自动在表格末尾生成操作列。 */

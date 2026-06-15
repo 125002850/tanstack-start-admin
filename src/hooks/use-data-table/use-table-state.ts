@@ -24,6 +24,7 @@ export function useTableState<TData>({
   onPageSizeChange,
   enableAdvancedFilter,
   tableId,
+  rowSelectionScopeKey,
   resolvedStorageMode,
   fixedWidthColumnSizing
 }: {
@@ -32,6 +33,7 @@ export function useTableState<TData>({
   onPageSizeChange: ((pageSize: number) => void) | undefined;
   enableAdvancedFilter: boolean;
   tableId: string | undefined;
+  rowSelectionScopeKey: UseDataTableProps<TData>['rowSelectionScopeKey'];
   resolvedStorageMode: ColumnResizeStorageMode;
   fixedWidthColumnSizing: ColumnSizingState;
 }) {
@@ -102,6 +104,17 @@ export function useTableState<TData>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     resolvedInitialState?.columnFilters ?? []
   );
+
+  const previousRowSelectionScopeKeyRef = React.useRef(rowSelectionScopeKey);
+
+  React.useEffect(() => {
+    if (previousRowSelectionScopeKeyRef.current === rowSelectionScopeKey) {
+      return;
+    }
+
+    previousRowSelectionScopeKeyRef.current = rowSelectionScopeKey;
+    setRowSelection({});
+  }, [rowSelectionScopeKey]);
 
   const onColumnFiltersChange = React.useCallback(
     (updaterOrValue: Updater<ColumnFiltersState>) => {
