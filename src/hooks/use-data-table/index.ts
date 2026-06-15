@@ -120,30 +120,27 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     [baseColumns]
   );
 
-  const resolvedColumns = React.useMemo<Array<ColumnDef<TData>>>(
-    () => {
-      const columnsWithSelection =
-        showSelectColumn && !hasManualSelectColumn
-          ? [createSelectColumn<TData>(), ...baseColumns]
-          : baseColumns;
-      const columnsWithActions = hasGeneratedRowActionsColumn
-        ? [...columnsWithSelection, createRowActionsColumn(rowActions)]
-        : columnsWithSelection;
+  const resolvedColumns = React.useMemo<Array<ColumnDef<TData>>>(() => {
+    const columnsWithSelection =
+      showSelectColumn && !hasManualSelectColumn
+        ? [createSelectColumn<TData>(), ...baseColumns]
+        : baseColumns;
+    const columnsWithActions = hasGeneratedRowActionsColumn
+      ? [...columnsWithSelection, createRowActionsColumn(rowActions)]
+      : columnsWithSelection;
 
-      // 展开态只通过行点击和背景高亮表达，不再额外插入展开图标列。
-      return showRowNumberColumn
-        ? [createRowNumberColumn<TData>(), ...columnsWithActions]
-        : columnsWithActions;
-    },
-    [
-      baseColumns,
-      hasGeneratedRowActionsColumn,
-      hasManualSelectColumn,
-      rowActions,
-      showRowNumberColumn,
-      showSelectColumn
-    ]
-  );
+    // 展开态只通过行点击和背景高亮表达，不再额外插入展开图标列。
+    return showRowNumberColumn
+      ? [createRowNumberColumn<TData>(), ...columnsWithActions]
+      : columnsWithActions;
+  }, [
+    baseColumns,
+    hasGeneratedRowActionsColumn,
+    hasManualSelectColumn,
+    rowActions,
+    showRowNumberColumn,
+    showSelectColumn
+  ]);
 
   const fixedWidthColumnSizing = React.useMemo(
     () => getFixedWidthColumnSizing(resolvedColumns),
@@ -160,11 +157,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   );
 
   const resolvedInitialState = React.useMemo(() => {
-    if (
-      !showRowNumberColumn &&
-      !hasPinnedActionsColumn &&
-      !hasSelectColumn
-    ) {
+    if (!showRowNumberColumn && !hasPinnedActionsColumn && !hasSelectColumn) {
       return initialState;
     }
 
@@ -192,13 +185,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       columnVisibility,
       columnSizing: omitFixedWidthColumnSizing(initialState?.columnSizing)
     };
-  }, [
-    actionColumnPin,
-    hasPinnedActionsColumn,
-    hasSelectColumn,
-    initialState,
-    showRowNumberColumn
-  ]);
+  }, [actionColumnPin, hasPinnedActionsColumn, hasSelectColumn, initialState, showRowNumberColumn]);
 
   const resolvedStorageMode: ColumnResizeStorageMode = React.useMemo(
     () =>
@@ -299,15 +286,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     setColumnSizing
   });
 
-  const getSelectedRows = React.useCallback(
-    () => getSelectedPageRows(table),
-    [table]
-  );
-  const currentRows = table.getRowModel().rows;
-  const selectedRows = React.useMemo(
-    () => getSelectedRows(),
-    [currentRows, getSelectedRows, rowSelection]
-  );
+  const getSelectedRows = React.useCallback(() => getSelectedPageRows(table), [table]);
+  const selectedRows = getSelectedRows();
   const clearSelectedRows = React.useCallback(() => {
     setRowSelection({});
   }, [setRowSelection]);

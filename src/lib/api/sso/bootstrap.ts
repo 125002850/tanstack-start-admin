@@ -9,21 +9,30 @@ function removeToken() {
   } catch {}
 }
 
+function findLogoutUrl(value: unknown): string | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.logoutUrl === 'string') {
+    return record.logoutUrl;
+  }
+
+  for (const nestedValue of Object.values(record)) {
+    const found = findLogoutUrl(nestedValue);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
 async function extractLogoutUrlFromBody(response: Response): Promise<string | null> {
   try {
     const body = await response.clone().json();
-    const crawl = (obj: unknown): string | null => {
-      if (!obj || typeof obj !== 'object') return null;
-      if ('logoutUrl' in obj && typeof (obj as Record<string, unknown>).logoutUrl === 'string') {
-        return (obj as Record<string, unknown>).logoutUrl as string;
-      }
-      for (const value of Object.values(obj as Record<string, unknown>)) {
-        const found = crawl(value);
-        if (found) return found;
-      }
-      return null;
-    };
-    return crawl(body);
+    return findLogoutUrl(body);
   } catch {
     return null;
   }

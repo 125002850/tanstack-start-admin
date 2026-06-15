@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as React from 'react';
 import userEvent from '@testing-library/user-event';
@@ -48,7 +48,13 @@ vi.mock('@/components/ui/sidebar', () => ({
     React.createElement('div', null, children),
   SidebarMenuItem: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
-  SidebarMenuButton: ({ children, size, className }: any) =>
+  SidebarMenuButton: ({
+    children,
+    className
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) =>
     React.createElement('button', { 'data-testid': 'sidebar-menu-button', className }, children),
   SidebarMenuSub: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
@@ -87,7 +93,7 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenuLabel: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
   DropdownMenuSeparator: () => React.createElement('hr', null),
-  DropdownMenuTrigger: ({ children, asChild }: any) =>
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': 'dropdown-trigger' }, children)
 }));
 

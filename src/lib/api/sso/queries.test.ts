@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockSession = {
@@ -22,6 +23,21 @@ vi.mock('./set-headers', () => ({
   refreshTokenFromResponse: () => {}
 }));
 
+async function importQueryOptions() {
+  const mod = await import('./queries');
+  return mod.getLoginInfoQueryOptions();
+}
+
+function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false
+      }
+    }
+  });
+}
+
 describe('login info query', () => {
   let originalFetch: typeof fetch;
 
@@ -33,11 +49,6 @@ describe('login info query', () => {
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });
-
-  async function importQueryOptions() {
-    const mod = await import('./queries');
-    return mod.getLoginInfoQueryOptions();
-  }
 
   it('writes logoutUrl to session on success', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue(
@@ -61,7 +72,7 @@ describe('login info query', () => {
     );
 
     const options = await importQueryOptions();
-    const data = await options.queryFn!({ signal: new AbortController().signal } as any);
+    const data = await createQueryClient().fetchQuery(options);
 
     expect(data.userName).toBe('admin');
     expect(mockSession.setLogoutUrl).toHaveBeenCalledWith('https://sso/logout');
@@ -77,9 +88,7 @@ describe('login info query', () => {
 
     const options = await importQueryOptions();
 
-    await expect(
-      options.queryFn!({ signal: new AbortController().signal } as any)
-    ).rejects.toThrow('error');
+    await expect(createQueryClient().fetchQuery(options)).rejects.toThrow('error');
 
     expect(mockSession.setLogoutUrl).not.toHaveBeenCalled();
   });
@@ -91,15 +100,16 @@ describe('login info query', () => {
 
     const options = await importQueryOptions();
 
-    let caught: any;
+    let caught: unknown;
     try {
-      await options.queryFn!({ signal: new AbortController().signal } as any);
+      await createQueryClient().fetchQuery(options);
     } catch (e) {
       caught = e;
     }
 
-    expect(caught.message).toBe('Failed to fetch login info: 500');
-    expect(caught.status).toBe(500);
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error).message).toBe('Failed to fetch login info: 500');
+    expect((caught as Error & { status?: number }).status).toBe(500);
     expect(mockSession.setLogoutUrl).not.toHaveBeenCalled();
   });
 
@@ -110,13 +120,14 @@ describe('login info query', () => {
 
     const options = await importQueryOptions();
 
-    let caught: any;
+    let caught: unknown;
     try {
-      await options.queryFn!({ signal: new AbortController().signal } as any);
+      await createQueryClient().fetchQuery(options);
     } catch (e) {
       caught = e;
     }
 
-    expect(caught.status).toBe(401);
+    expect(caught).toBeInstanceOf(Error);
+    expect((caught as Error & { status?: number }).status).toBe(401);
   });
 });
