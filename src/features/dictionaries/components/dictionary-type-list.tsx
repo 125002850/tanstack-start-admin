@@ -1,28 +1,30 @@
 import * as React from 'react';
+import type { Table } from '@tanstack/react-table';
 
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
+import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { cn } from '@/lib/utils';
 
 import type { DictionaryTypeRecord } from '../api/types';
 
 interface DictionaryTypeListProps {
+  table: Table<DictionaryTypeRecord>;
+  total: number;
   types: DictionaryTypeRecord[];
   selectedTypeCode: string | null;
-  keyword: string;
-  onKeywordChange: (value: string) => void;
   onSelect: (dictTypeCode: string) => void;
   onAddType: () => void;
 }
 
 export function DictionaryTypeList({
+  table,
+  total,
   types,
   selectedTypeCode,
-  keyword,
-  onKeywordChange,
   onSelect,
   onAddType
 }: DictionaryTypeListProps) {
@@ -33,19 +35,12 @@ export function DictionaryTypeList({
         <CardDescription>按字典编码或名称筛选字典类型列表</CardDescription>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <div className='flex gap-2'>
-          <Input
-            aria-label='搜索字典类型'
-            placeholder='搜索 编码 / 名称'
-            value={keyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-            className='flex-1'
-          />
+        <DataTableToolbar table={table} className='p-0'>
           <Button variant='outline' size='icon' onClick={onAddType}>
             <Icons.add className='size-4' />
             <span className='sr-only'>新增字典类型</span>
           </Button>
-        </div>
+        </DataTableToolbar>
 
         <div className='max-h-[56vh] overflow-y-auto pr-2'>
           <div className='space-y-2'>
@@ -87,6 +82,7 @@ export function DictionaryTypeList({
             )}
           </div>
         </div>
+        <DataTablePagination table={table} totalRowCount={total} />
       </CardContent>
     </Card>
   );

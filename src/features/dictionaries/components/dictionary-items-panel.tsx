@@ -42,6 +42,7 @@ export function DictionaryItemsPanel({
   const [addSheetOpen, setAddSheetOpen] = React.useState(false);
   const { withConfirm: withBatchConfirm, confirmDialog: batchConfirmDialog } =
     useConfirmAction<[DataTableActionContext<DictionaryItemRecord>]>();
+  const tableId = 'dictionary-items';
 
   const rowActions = React.useMemo<DataTableRowAction<DictionaryItemRecord>[]>(
     () => [
@@ -89,7 +90,7 @@ export function DictionaryItemsPanel({
     showRowNumberColumn: false,
     showSelectColumn: true,
     rowActions,
-    tableId: record ? `dictionary-items-${record.dictTypeCode}` : 'dictionary-items-empty'
+    tableId
   });
 
   const actions = React.useMemo<DataTableAction<DictionaryItemRecord>[]>(

@@ -5,15 +5,16 @@ import { toast } from 'sonner';
 
 import PageContainer from '@/components/layout/page-container';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
+import { useDataTableQuery } from '@/hooks/use-data-table-query';
 
 import {
-  createGlobalItemPreciseInvalidationMutationOptions,
+  createGlobalItemMutationOptions,
   createGlobalTypeMutationOptions,
   deleteGlobalItemMutationOptions,
   deleteGlobalTypeMutationOptions,
-  listGlobalTypesQueryOptions,
   listGlobalItemsByTypeQueryOptions,
-  updateGlobalItemPreciseInvalidationMutationOptions,
+  listGlobalTypesQueryOptions,
+  updateGlobalItemMutationOptions,
   updateGlobalTypeMutationOptions,
   type CreateGlobalItemRequest,
   type CreateGlobalTypeRequest,
@@ -29,6 +30,7 @@ import type {
   DictionaryTypeRecord
 } from '../api/types';
 import { DictionaryItemsPanel } from './dictionary-items-panel';
+import { dictionaryTypeColumns } from './dictionary-type-columns';
 import { DictionaryTypeDetails } from './dictionary-type-details';
 import { DictionaryTypeList } from './dictionary-type-list';
 import { DictionaryTypeSheet } from './dictionary-type-sheet';
@@ -44,48 +46,59 @@ export default function DictionaryManagementPage() {
 }
 
 function DictionaryManagementContent() {
-  const { data: dictionaryTypeResult, isLoading: typesLoading } = useQuery(
-    listGlobalTypesQueryOptions({ pageNo: 1, pageSize: 200 })
-  );
-  const [keyword, setKeyword] = React.useState('');
   const [requestedTypeCode, setRequestedTypeCode] = React.useState<string | null>(null);
+  const {
+    table: dictionaryTypeTable,
+    total: dictionaryTypeTotal,
+    query: dictionaryTypeQuery
+  } = useDataTableQuery({
+    tableId: 'dictionary-types',
+    columns: dictionaryTypeColumns,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    queryOptions: listGlobalTypesQueryOptions as any
+  });
 
   // Sheet state: null = closed, { type: record } = editing, { type: null } = creating
   const [sheetState, setSheetState] = React.useState<{
     type?: DictionaryTypeRecord | null;
   } | null>(null);
 
-  const dictionaryTypes = dictionaryTypeResult?.list ?? EMPTY_DICTIONARY_TYPES;
-
-  const filteredTypes = React.useMemo(() => {
-    const normalized = keyword.trim().toLowerCase();
-    if (!normalized) {
-      return dictionaryTypes;
-    }
-
-    return dictionaryTypes.filter((record) => {
-      return (
-        record.dictTypeCode!.toLowerCase().includes(normalized) ||
-        record.dictTypeName!.toLowerCase().includes(normalized)
-      );
-    });
-  }, [dictionaryTypes, keyword]);
+  const dictionaryTypes = dictionaryTypeQuery.data?.list ?? EMPTY_DICTIONARY_TYPES;
 
   const selectedType =
-    filteredTypes.find((record) => record.dictTypeCode === requestedTypeCode) ??
-    filteredTypes[0] ??
+    dictionaryTypes.find((record) => record.dictTypeCode === requestedTypeCode) ??
+    dictionaryTypes[0] ??
     null;
 
   const itemsQuery = useQuery({
-    ...listGlobalItemsByTypeQueryOptions({ dictTypeCode: selectedType?.dictTypeCode ?? '' }),
+    ...listGlobalItemsByTypeQueryOptions({
+      pageNo: 1,
+      pageSize: 200,
+      dslVersion: 1,
+      condition: selectedType
+        ? {
+            nodeType: 'text',
+            field: 'dictTypeCode',
+            op: 'EQ',
+            value: selectedType.dictTypeCode!
+          }
+        : undefined
+    }),
     enabled: Boolean(selectedType)
   });
-  const items = itemsQuery.data ?? [];
+  const items = React.useMemo<DictionaryItemRecord[]>(
+    () =>
+      (itemsQuery.data?.list ?? []).map((item) => ({
+        ...item,
+        sort: item.sortOrder
+      })),
+    [itemsQuery.data?.list]
+  );
 
   const createTypeMutation = useMutation(createGlobalTypeMutationOptions());
   const updateTypeMutation = useMutation(updateGlobalTypeMutationOptions());
-  const createItemMutation = useMutation(createGlobalItemPreciseInvalidationMutationOptions());
-  const updateItemMutation = useMutation(updateGlobalItemPreciseInvalidationMutationOptions());
+  const createItemMutation = useMutation(createGlobalItemMutationOptions());
+  const updateItemMutation = useMutation(updateGlobalItemMutationOptions());
   const deleteItemMutation = useMutation(deleteGlobalItemMutationOptions());
   const deleteTypeMutation = useMutation(deleteGlobalTypeMutationOptions());
 
@@ -197,15 +210,15 @@ function DictionaryManagementContent() {
         type={sheetState?.type ?? null}
         onSubmit={handleTypeSubmit}
       />
-      {typesLoading && dictionaryTypes.length === 0 ? (
+      {dictionaryTypeQuery.isLoading && dictionaryTypes.length === 0 ? (
         <DictionaryManagementFallback />
       ) : (
         <div className='grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start'>
           <DictionaryTypeList
-            types={filteredTypes}
+            table={dictionaryTypeTable}
+            total={dictionaryTypeTotal}
+            types={dictionaryTypes}
             selectedTypeCode={selectedType?.dictTypeCode ?? null}
-            keyword={keyword}
-            onKeywordChange={setKeyword}
             onSelect={(dictTypeCode) => {
               setRequestedTypeCode(dictTypeCode);
             }}
