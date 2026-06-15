@@ -13,6 +13,7 @@ import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstac
 import * as React from 'react';
 
 import { dataTableConfig } from '@/config/data-table';
+import { getSelectedPageRows } from '@/lib/data-table';
 import type { ColumnResizeStorageMode } from '@/types/data-table';
 
 import { getFixedWidthColumnSizing, omitFixedWidthColumnSizing } from './column-sizing';
@@ -299,8 +300,13 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   });
 
   const getSelectedRows = React.useCallback(
-    () => table.getFilteredSelectedRowModel().rows.map((row) => row.original),
+    () => getSelectedPageRows(table),
     [table]
+  );
+  const currentRows = table.getRowModel().rows;
+  const selectedRows = React.useMemo(
+    () => getSelectedRows(),
+    [currentRows, getSelectedRows, rowSelection]
   );
   const clearSelectedRows = React.useCallback(() => {
     setRowSelection({});
@@ -308,7 +314,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
   return {
     table,
-    selectedRows: getSelectedRows(),
+    selectedRows,
     getSelectedRows,
     clearSelectedRows,
     debounceMs,

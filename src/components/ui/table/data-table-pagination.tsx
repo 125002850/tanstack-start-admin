@@ -10,6 +10,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table-page-size';
+import { getSelectedPageRowCount } from '@/lib/data-table';
 import { cn } from '@/lib/utils';
 import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
@@ -27,6 +28,7 @@ export interface DataTablePaginationLabels {
 interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
   getSelectedRows?: () => TData[];
+  selectedRowCount?: number;
   pageSizeOptions?: readonly number[];
   totalRowCount?: number;
   labels?: DataTablePaginationLabels;
@@ -35,6 +37,7 @@ interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
 export function DataTablePagination<TData>({
   table,
   getSelectedRows,
+  selectedRowCount,
   pageSizeOptions = DATA_TABLE_PAGE_SIZE_OPTIONS,
   totalRowCount,
   labels,
@@ -48,9 +51,8 @@ export function DataTablePagination<TData>({
     labels?.totalRowsText ?? ((totalCount: number) => `共 ${totalCount} 条数据`);
   const pageText =
     labels?.pageText ?? ((page: number, totalPages: number) => `第 ${page} / ${totalPages} 页`);
-  const selectedRowCount = getSelectedRows
-    ? getSelectedRows().length
-    : table.getFilteredSelectedRowModel().rows.length;
+  const resolvedSelectedRowCount =
+    selectedRowCount ?? (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
   const resolvedTotalRowCount = totalRowCount ?? table.getFilteredRowModel().rows.length;
 
   return (
@@ -62,8 +64,8 @@ export function DataTablePagination<TData>({
       {...props}
     >
       <div className='text-muted-foreground flex-1 text-sm whitespace-nowrap'>
-        {selectedRowCount > 0 ? (
-          <>{selectedRowsText(selectedRowCount, resolvedTotalRowCount)}</>
+        {resolvedSelectedRowCount > 0 ? (
+          <>{selectedRowsText(resolvedSelectedRowCount, resolvedTotalRowCount)}</>
         ) : (
           <>{totalRowsText(resolvedTotalRowCount)}</>
         )}

@@ -33,12 +33,14 @@ import {
   type DataTableStatusConfig,
   type DataTableStatusFactory
 } from '@/components/ui/table/data-table-status';
+import { getSelectedPageRowCount } from '@/lib/data-table';
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   tableActions?: DataTableAction<TData>[];
   actionBar?: React.ReactNode;
   getSelectedRows?: () => TData[];
+  selectedRowCount?: number;
   scrollTargetId?: string;
   emptyMessage?: React.ReactNode;
   statusTotalCount?: number;
@@ -83,6 +85,7 @@ export function DataTable<TData>({
   actionBar,
   children,
   getSelectedRows,
+  selectedRowCount,
   scrollTargetId,
   emptyMessage = '暂无数据',
   statusTotalCount,
@@ -165,9 +168,8 @@ export function DataTable<TData>({
   const hasViewOptions = table
     .getAllColumns()
     .some((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide());
-  const selectedRowCount = getSelectedRows
-    ? getSelectedRows().length
-    : table.getFilteredSelectedRowModel().rows.length;
+  const resolvedSelectedRowCount =
+    selectedRowCount ?? (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
   const isExpanded = !!(expandConfig && expandedRow && expandPanelId);
   const expandSplitLayout = React.useMemo(
     () =>
@@ -452,9 +454,10 @@ export function DataTable<TData>({
                   table={table}
                   labels={paginationLabels}
                   getSelectedRows={getSelectedRows}
+                  selectedRowCount={resolvedSelectedRowCount}
                   totalRowCount={statusTotalCount}
                 />
-                {actionBar && selectedRowCount > 0 && actionBar}
+                {actionBar && resolvedSelectedRowCount > 0 && actionBar}
               </div>
               <div
                 role='separator'
@@ -529,9 +532,10 @@ export function DataTable<TData>({
                   table={table}
                   labels={paginationLabels}
                   getSelectedRows={getSelectedRows}
+                  selectedRowCount={resolvedSelectedRowCount}
                   totalRowCount={statusTotalCount}
                 />
-                {actionBar && selectedRowCount > 0 && actionBar}
+                {actionBar && resolvedSelectedRowCount > 0 && actionBar}
               </div>
             </>
           )}

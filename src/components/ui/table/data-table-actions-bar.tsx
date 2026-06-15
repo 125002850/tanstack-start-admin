@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Icons } from '@/components/icons';
+import { getSelectedPageRows } from '@/lib/data-table';
 import { cn } from '@/lib/utils';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -102,9 +103,7 @@ export function DataTableActionsBar<TData>({
 }: DataTableActionsBarProps<TData>) {
   const ctx: DataTableActionContext<TData> = {
     table,
-    selectedRows: getSelectedRows
-      ? getSelectedRows()
-      : table.getFilteredSelectedRowModel().rows.map((r) => r.original)
+    selectedRows: getSelectedRows ? getSelectedRows() : getSelectedPageRows(table)
   };
 
   const visibleActions = actions.filter(

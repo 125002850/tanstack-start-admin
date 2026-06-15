@@ -101,12 +101,14 @@ function ProductTableContent({ seedPageSize, onPageSizePrefChange }: ProductTabl
     tableId: PRODUCT_TABLE_ID,
     data: data.products,
     columns,
+    getRowId: (row) => String(row.id),
     pageCount,
     debounceMs: 500,
     pageSize: seedPageSize,
     onPageSizeChange: (newSize) => {
       onPageSizePrefChange(newSize);
     },
+    showSelectColumn: true,
     rowActions
   });
 

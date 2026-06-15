@@ -243,6 +243,39 @@ function SelectableHarness({ rows }: { rows: TestRow[] }) {
   return <DataTable table={table} />;
 }
 
+function SelectedRowModelCounterHarness({
+  rows,
+  onFilteredSelectedRowModelAccess
+}: {
+  rows: TestRow[];
+  onFilteredSelectedRowModelAccess: () => void;
+}) {
+  const { table } = useDataTable({
+    data: rows,
+    columns: COLUMNS,
+    getRowId: (row) => String(row.id),
+    pageCount: 1,
+    showRowNumberColumn: false,
+    showSelectColumn: true
+  });
+  const patchedRef = React.useRef(false);
+
+  if (!patchedRef.current) {
+    const original = table.getFilteredSelectedRowModel.bind(table);
+    const mutableTable = table as typeof table & {
+      getFilteredSelectedRowModel: typeof table.getFilteredSelectedRowModel;
+    };
+
+    mutableTable.getFilteredSelectedRowModel = () => {
+      onFilteredSelectedRowModelAccess();
+      return original();
+    };
+    patchedRef.current = true;
+  }
+
+  return <DataTable table={table} />;
+}
+
 afterEach(cleanup);
 
 describe('DataTable body', () => {
@@ -401,6 +434,33 @@ describe('DataTable body', () => {
     await user.click(firstRowHitbox);
 
     expect(screen.getByText('已选择 1 / 2 行')).toBeInTheDocument();
+  });
+
+  it('avoids filtered selected row model work for product-style selection summaries', async () => {
+    const user = userEvent.setup();
+    let filteredSelectedRowModelAccessCount = 0;
+    const { container } = render(
+      <SelectedRowModelCounterHarness
+        rows={makeRows(200)}
+        onFilteredSelectedRowModelAccess={() => {
+          filteredSelectedRowModelAccessCount += 1;
+        }}
+      />
+    );
+
+    expect(filteredSelectedRowModelAccessCount).toBe(0);
+
+    const hitboxes = container.querySelectorAll('[data-slot="data-table-select-hitbox"]');
+    const firstRowHitbox = hitboxes.item(1);
+
+    if (!(firstRowHitbox instanceof HTMLElement)) {
+      throw new Error('first row select hitbox missing');
+    }
+
+    await user.click(firstRowHitbox);
+
+    expect(screen.getByText('已选择 1 / 200 行')).toBeInTheDocument();
+    expect(filteredSelectedRowModelAccessCount).toBe(0);
   });
 
   it('renders all rows when virtualization is disabled', () => {

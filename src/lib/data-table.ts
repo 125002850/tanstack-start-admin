@@ -1,5 +1,5 @@
 import type { FilterOperator, FilterVariant } from '@/types/data-table';
-import type { Column } from '@tanstack/react-table';
+import type { Column, Table } from '@tanstack/react-table';
 
 import { dataTableConfig } from '@/config/data-table';
 
@@ -48,4 +48,36 @@ export function getFilterOperators(filterVariant: FilterVariant) {
   return operatorMap[filterVariant] ?? dataTableConfig.textOperators;
 }
 
+export function getSelectedPageRows<TData>(table: Table<TData>): TData[] {
+  const rowSelection = table.getState().rowSelection;
+  const rows = table.getRowModel().rows;
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const selectedRows: TData[] = [];
+
+  for (const row of rows) {
+    if (rowSelection[row.id]) {
+      selectedRows.push(row.original);
+    }
+  }
+
+  return selectedRows;
+}
+
+export function getSelectedPageRowCount<TData>(table: Table<TData>): number {
+  const rowSelection = table.getState().rowSelection;
+  const rows = table.getRowModel().rows;
+  let count = 0;
+
+  for (const row of rows) {
+    if (rowSelection[row.id]) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
 
