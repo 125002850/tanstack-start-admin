@@ -1,19 +1,19 @@
 import * as React from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 
 import { toast } from 'sonner';
 
 import PageContainer from '@/components/layout/page-container';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
-import { useDataTableQuery } from '@/hooks/use-data-table-query';
+import { useDataTable } from '@/hooks/use-data-table';
 
 import {
   createGlobalItemMutationOptions,
   createGlobalTypeMutationOptions,
   deleteGlobalItemMutationOptions,
   deleteGlobalTypeMutationOptions,
+  listAllGlobalTypesQueryOptions,
   listGlobalItemsByTypeQueryOptions,
-  listGlobalTypesQueryOptions,
   updateGlobalItemMutationOptions,
   updateGlobalTypeMutationOptions,
   type CreateGlobalItemRequest,
@@ -29,8 +29,11 @@ import type {
   DictionaryTypeMutationPayload,
   DictionaryTypeRecord
 } from '../api/types';
+import {
+  dictionaryTypeColumns,
+  DICTIONARY_TYPE_KEYWORD_FILTER_COLUMN_ID
+} from './dictionary-type-columns';
 import { DictionaryItemsPanel } from './dictionary-items-panel';
-import { dictionaryTypeColumns } from './dictionary-type-columns';
 import { DictionaryTypeDetails } from './dictionary-type-details';
 import { DictionaryTypeList } from './dictionary-type-list';
 import { DictionaryTypeSheet } from './dictionary-type-sheet';
@@ -47,23 +50,32 @@ export default function DictionaryManagementPage() {
 
 function DictionaryManagementContent() {
   const [requestedTypeCode, setRequestedTypeCode] = React.useState<string | null>(null);
-  const {
-    table: dictionaryTypeTable,
-    total: dictionaryTypeTotal,
-    query: dictionaryTypeQuery
-  } = useDataTableQuery({
+  const { table: dictionaryTypeTable } = useDataTable({
     tableId: 'dictionary-types',
+    data: EMPTY_DICTIONARY_TYPES,
     columns: dictionaryTypeColumns,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    queryOptions: listGlobalTypesQueryOptions as any
+    pageCount: 1
   });
+  const dictionaryTypeKeyword =
+    (dictionaryTypeTable.getColumn(DICTIONARY_TYPE_KEYWORD_FILTER_COLUMN_ID)?.getFilterValue() as
+      | string
+      | undefined)
+      ?.trim() || undefined;
+  const dictionaryTypeQuery = useQuery(
+    {
+      ...listAllGlobalTypesQueryOptions({
+        keyword: dictionaryTypeKeyword
+      }),
+      placeholderData: keepPreviousData
+    }
+  );
 
   // Sheet state: null = closed, { type: record } = editing, { type: null } = creating
   const [sheetState, setSheetState] = React.useState<{
     type?: DictionaryTypeRecord | null;
   } | null>(null);
 
-  const dictionaryTypes = dictionaryTypeQuery.data?.list ?? EMPTY_DICTIONARY_TYPES;
+  const dictionaryTypes = dictionaryTypeQuery.data ?? EMPTY_DICTIONARY_TYPES;
 
   const selectedType =
     dictionaryTypes.find((record) => record.dictTypeCode === requestedTypeCode) ??
@@ -216,7 +228,6 @@ function DictionaryManagementContent() {
         <div className='grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start'>
           <DictionaryTypeList
             table={dictionaryTypeTable}
-            total={dictionaryTypeTotal}
             types={dictionaryTypes}
             selectedTypeCode={selectedType?.dictTypeCode ?? null}
             onSelect={(dictTypeCode) => {

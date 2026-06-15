@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DataTableDslCondition } from '@/hooks/use-data-table-query.dsl';
 
 const serviceMocks = vi.hoisted(() => ({
-  listGlobalTypesQueryOptions: vi.fn(),
+  listAllGlobalTypesQueryOptions: vi.fn(),
   listGlobalItemsByTypeQueryOptions: vi.fn(),
   createGlobalTypeMutationOptions: vi.fn(),
   updateGlobalTypeMutationOptions: vi.fn(),
@@ -18,7 +18,8 @@ const serviceMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/api/clients/service', () => ({
-  listGlobalTypesQueryOptions: (...args: unknown[]) => serviceMocks.listGlobalTypesQueryOptions(...args),
+  listAllGlobalTypesQueryOptions: (...args: unknown[]) =>
+    serviceMocks.listAllGlobalTypesQueryOptions(...args),
   listGlobalItemsByTypeQueryOptions: (...args: unknown[]) =>
     serviceMocks.listGlobalItemsByTypeQueryOptions(...args),
   createGlobalTypeMutationOptions: (...args: unknown[]) =>
@@ -63,10 +64,7 @@ type DictionaryItemResponse = {
 };
 
 type DictionaryTypeRequest = {
-  pageNo: number;
-  pageSize: number;
-  dslVersion: number;
-  condition?: DataTableDslCondition;
+  keyword?: string;
 };
 
 type DictionaryItemRequest = {
@@ -206,7 +204,7 @@ describe('DictionaryManagementPage', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
 
   beforeEach(() => {
-    serviceMocks.listGlobalTypesQueryOptions.mockReset();
+    serviceMocks.listAllGlobalTypesQueryOptions.mockReset();
     serviceMocks.listGlobalItemsByTypeQueryOptions.mockReset();
     serviceMocks.createGlobalTypeMutationOptions.mockReset();
     serviceMocks.updateGlobalTypeMutationOptions.mockReset();
@@ -233,6 +231,7 @@ describe('DictionaryManagementPage', () => {
   });
 
   afterEach(() => {
+    cleanup();
     globalThis.ResizeObserver = originalResizeObserver;
   });
 
@@ -241,11 +240,11 @@ describe('DictionaryManagementPage', () => {
     const itemRequests: DictionaryItemRequest[] = [];
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    serviceMocks.listGlobalTypesQueryOptions.mockImplementation((request: DictionaryTypeRequest) => {
+    serviceMocks.listAllGlobalTypesQueryOptions.mockImplementation((request: DictionaryTypeRequest) => {
       typeRequests.push(request);
 
-      const keyword = getTextConditionValue(request.condition)?.toLowerCase();
-      const source = request.pageNo === 2 ? PAGE_TWO_TYPES : PAGE_ONE_TYPES;
+      const keyword = request.keyword?.toLowerCase();
+      const source = [...PAGE_ONE_TYPES, ...PAGE_TWO_TYPES];
       const filtered = keyword
         ? source.filter(
             (record) =>
@@ -256,10 +255,7 @@ describe('DictionaryManagementPage', () => {
 
       return queryOptions({
         queryKey: ['dictionary-types', request],
-        queryFn: async () => ({
-          total: keyword ? filtered.length : 11,
-          list: filtered
-        })
+        queryFn: async () => filtered
       });
     });
 
@@ -283,11 +279,7 @@ describe('DictionaryManagementPage', () => {
       expect(screen.getByRole('button', { name: /付款状态 payment/i })).toBeInTheDocument();
     });
 
-    expect(typeRequests[0]).toMatchObject({
-      pageNo: 1,
-      pageSize: 10,
-      dslVersion: 1
-    });
+    expect(typeRequests[0]).toEqual({});
     expect(itemRequests.at(-1)).toMatchObject({
       condition: {
         nodeType: 'text',
@@ -313,23 +305,16 @@ describe('DictionaryManagementPage', () => {
       expect(screen.getByText('红色')).toBeInTheDocument();
     });
 
-    const nextPageButton = screen
-      .getAllByRole('button', { name: '前往下一页' })
-      .find((button) => !button.hasAttribute('disabled'));
-
-    expect(nextPageButton).toBeDefined();
-
-    await user.click(nextPageButton!);
+    await user.clear(screen.getByPlaceholderText('搜索 编码 / 名称'));
+    await user.type(screen.getByPlaceholderText('搜索 编码 / 名称'), 'invoice');
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /发票状态 invoice/i })).toBeInTheDocument();
     });
 
     await waitFor(() => {
-      expect(typeRequests.at(-1)).toMatchObject({
-        pageNo: 2,
-        pageSize: 10,
-        dslVersion: 1
+      expect(typeRequests.at(-1)).toEqual({
+        keyword: 'invoice'
       });
     });
     await waitFor(() => {
@@ -351,22 +336,23 @@ describe('DictionaryManagementPage', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  it('serializes toolbar filters into paginated dsl requests', async () => {
+  it('serializes keyword search into list-all requests', async () => {
     const typeRequests: DictionaryTypeRequest[] = [];
 
-    serviceMocks.listGlobalTypesQueryOptions.mockImplementation((request: DictionaryTypeRequest) => {
+    serviceMocks.listAllGlobalTypesQueryOptions.mockImplementation((request: DictionaryTypeRequest) => {
       typeRequests.push(request);
-      const keyword = getTextConditionValue(request.condition)?.toLowerCase();
+      const keyword = request.keyword?.toLowerCase();
       const filtered = keyword
-        ? PAGE_ONE_TYPES.filter((record) => record.dictTypeCode.toLowerCase().includes(keyword))
+        ? PAGE_ONE_TYPES.filter(
+            (record) =>
+              record.dictTypeCode.toLowerCase().includes(keyword) ||
+              record.dictTypeName.toLowerCase().includes(keyword)
+          )
         : PAGE_ONE_TYPES;
 
       return queryOptions({
         queryKey: ['dictionary-types', request],
-        queryFn: async () => ({
-          total: filtered.length,
-          list: filtered
-        })
+        queryFn: async () => filtered
       });
     });
 
@@ -384,39 +370,84 @@ describe('DictionaryManagementPage', () => {
     render(<DictionaryManagementPage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('筛选编码')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('搜索 编码 / 名称')).toBeInTheDocument();
     });
+    expect(screen.queryByPlaceholderText('筛选编码')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('筛选名称')).not.toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText('筛选编码'), ' payment ');
+    await user.type(screen.getByPlaceholderText('搜索 编码 / 名称'), ' payment ');
 
     await waitFor(() => {
       expect(typeRequests.at(-1)).toMatchObject({
-        pageSize: 10,
-        dslVersion: 1,
-        condition: {
-          nodeType: 'compose',
-          logic: 'AND',
-          children: [
-            {
-              nodeType: 'text',
-              field: 'dictTypeCode',
-              op: 'CONTAINS',
-              value: 'payment'
-            }
-          ]
-        }
+        keyword: 'payment'
       });
     });
   });
 
-  it('binds the page write actions to the current mutation option factories', async () => {
-    serviceMocks.listGlobalTypesQueryOptions.mockImplementation((request: DictionaryTypeRequest) =>
-      queryOptions({
+  it('keeps previous dictionary type content visible while keyword refetch is pending', async () => {
+    const typeRequests: DictionaryTypeRequest[] = [];
+    let resolveKeywordQuery: ((value: DictionaryTypeResponse[]) => void) | undefined;
+
+    serviceMocks.listAllGlobalTypesQueryOptions.mockImplementation((request: DictionaryTypeRequest) => {
+      typeRequests.push(request);
+
+      if (request.keyword === 'invoice') {
+        return queryOptions({
+          queryKey: ['dictionary-types', request],
+          queryFn: async () =>
+            new Promise<DictionaryTypeResponse[]>((resolve) => {
+              resolveKeywordQuery = resolve;
+            })
+        });
+      }
+
+      return queryOptions({
         queryKey: ['dictionary-types', request],
+        queryFn: async () => PAGE_ONE_TYPES
+      });
+    });
+
+    serviceMocks.listGlobalItemsByTypeQueryOptions.mockImplementation((request: DictionaryItemRequest) =>
+      queryOptions({
+        queryKey: ['dictionary-items', request],
         queryFn: async () => ({
           total: 1,
-          list: PAGE_ONE_TYPES.slice(0, 1)
+          list: ITEMS_BY_TYPE.payment
         })
+      })
+    );
+
+    const user = userEvent.setup();
+    render(<DictionaryManagementPage />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /付款状态 payment/i })).toBeInTheDocument();
+    });
+
+    await user.clear(screen.getByPlaceholderText('搜索 编码 / 名称'));
+    await user.type(screen.getByPlaceholderText('搜索 编码 / 名称'), 'invoice');
+
+    await waitFor(() => {
+      expect(typeRequests.at(-1)).toEqual({
+        keyword: 'invoice'
+      });
+    });
+
+    expect(screen.queryByText('加载字典数据中...')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /付款状态 payment/i })).toBeInTheDocument();
+
+    resolveKeywordQuery?.(PAGE_TWO_TYPES);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /发票状态 invoice/i })).toBeInTheDocument();
+    });
+  });
+
+  it('binds the page write actions to the current mutation option factories', async () => {
+    serviceMocks.listAllGlobalTypesQueryOptions.mockImplementation((request: DictionaryTypeRequest) =>
+      queryOptions({
+        queryKey: ['dictionary-types', request],
+        queryFn: async () => PAGE_ONE_TYPES.slice(0, 1)
       })
     );
 

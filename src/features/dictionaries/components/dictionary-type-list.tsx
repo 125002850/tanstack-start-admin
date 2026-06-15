@@ -5,15 +5,15 @@ import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTablePagination } from '@/components/ui/table/data-table-pagination';
-import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
+import { Input } from '@/components/ui/input';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 import { cn } from '@/lib/utils';
 
 import type { DictionaryTypeRecord } from '../api/types';
+import { DICTIONARY_TYPE_KEYWORD_FILTER_COLUMN_ID } from './dictionary-type-columns';
 
 interface DictionaryTypeListProps {
   table: Table<DictionaryTypeRecord>;
-  total: number;
   types: DictionaryTypeRecord[];
   selectedTypeCode: string | null;
   onSelect: (dictTypeCode: string) => void;
@@ -22,12 +22,22 @@ interface DictionaryTypeListProps {
 
 export function DictionaryTypeList({
   table,
-  total,
   types,
   selectedTypeCode,
   onSelect,
   onAddType
 }: DictionaryTypeListProps) {
+  const keywordColumn = table.getColumn(DICTIONARY_TYPE_KEYWORD_FILTER_COLUMN_ID);
+  const keywordFilterValue = (keywordColumn?.getFilterValue() as string | undefined) ?? '';
+  const [keyword, setKeyword] = React.useState(keywordFilterValue);
+  const debouncedSetKeywordFilter = useDebouncedCallback((value: string) => {
+    keywordColumn?.setFilterValue(value);
+  }, 300);
+
+  React.useEffect(() => {
+    setKeyword(keywordFilterValue);
+  }, [keywordFilterValue]);
+
   return (
     <Card className='xl:sticky xl:top-0'>
       <CardHeader>
@@ -35,12 +45,22 @@ export function DictionaryTypeList({
         <CardDescription>按字典编码或名称筛选字典类型列表</CardDescription>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <DataTableToolbar table={table} className='p-0'>
+        <div className='flex items-center gap-2'>
+          <Input
+            value={keyword}
+            placeholder='搜索 编码 / 名称'
+            className='h-9 flex-1'
+            onChange={(event) => {
+              const nextKeyword = event.target.value;
+              setKeyword(nextKeyword);
+              debouncedSetKeywordFilter(nextKeyword);
+            }}
+          />
           <Button variant='outline' size='icon' onClick={onAddType}>
             <Icons.add className='size-4' />
             <span className='sr-only'>新增字典类型</span>
           </Button>
-        </DataTableToolbar>
+        </div>
 
         <div className='max-h-[56vh] overflow-y-auto pr-2'>
           <div className='space-y-2'>
@@ -82,7 +102,6 @@ export function DictionaryTypeList({
             )}
           </div>
         </div>
-        <DataTablePagination table={table} totalRowCount={total} />
       </CardContent>
     </Card>
   );
