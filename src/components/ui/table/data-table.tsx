@@ -452,6 +452,7 @@ export function DataTable<TData>({
                   table={table}
                   labels={paginationLabels}
                   getSelectedRows={getSelectedRows}
+                  totalRowCount={statusTotalCount}
                 />
                 {actionBar && selectedRowCount > 0 && actionBar}
               </div>
@@ -528,6 +529,7 @@ export function DataTable<TData>({
                   table={table}
                   labels={paginationLabels}
                   getSelectedRows={getSelectedRows}
+                  totalRowCount={statusTotalCount}
                 />
                 {actionBar && selectedRowCount > 0 && actionBar}
               </div>

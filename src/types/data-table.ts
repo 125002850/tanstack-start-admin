@@ -8,6 +8,9 @@ declare module '@tanstack/react-table' {
     label?: string;
     placeholder?: string;
     variant?: FilterVariant;
+    query?: {
+      operator?: DataTableDslOperator;
+    };
     options?: Option[];
     range?: [number, number];
     unit?: string;
@@ -24,6 +27,17 @@ export interface Option {
 
 export type FilterOperator = DataTableConfig['operators'][number];
 export type FilterVariant = DataTableConfig['filterVariants'][number];
+export type DataTableDslOperator =
+  | 'EQ'
+  | 'CONTAINS'
+  | 'STARTS_WITH'
+  | 'ENDS_WITH'
+  | 'IN'
+  | 'GT'
+  | 'GTE'
+  | 'LT'
+  | 'LTE'
+  | 'BETWEEN';
 
 
 export interface ExtendedColumnSort<TData> extends Omit<ColumnSort, 'id'> {

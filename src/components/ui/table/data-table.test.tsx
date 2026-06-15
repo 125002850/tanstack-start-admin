@@ -376,6 +376,17 @@ describe('DataTable body', () => {
     expect(screen.getByText('已选择 2 / 5 行')).toBeInTheDocument();
   });
 
+  it('passes the server total row count to the pagination summary', () => {
+    function HarnessWithServerTotal() {
+      const table = useHarnessTable(makeRows(5), 5);
+      return <DataTable table={table} statusTotalCount={42} />;
+    }
+
+    render(<HarnessWithServerTotal />);
+
+    expect(screen.getByText('共 42 条数据')).toBeInTheDocument();
+  });
+
   it('expands the select-column click target to the full table cell', async () => {
     const user = userEvent.setup();
     const { container } = render(<SelectableHarness rows={makeRows(2)} />);

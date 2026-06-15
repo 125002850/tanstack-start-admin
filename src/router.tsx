@@ -4,9 +4,6 @@ import { getQueryClient } from '@/lib/query-client';
 import { hydrateFromUrl } from '@/lib/api/sso/session';
 import { routeTree } from './routeTree.gen';
 
-
-export const getRouter = createRouter;
-
 export function createRouter() {
   hydrateFromUrl();
 
@@ -38,6 +35,6 @@ export function createRouter() {
 
 declare module '@tanstack/react-router' {
   interface Register {
-    router: ReturnType<typeof getRouter>;
+    router: ReturnType<typeof createRouter>;
   }
 }

@@ -28,6 +28,7 @@ interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
   getSelectedRows?: () => TData[];
   pageSizeOptions?: readonly number[];
+  totalRowCount?: number;
   labels?: DataTablePaginationLabels;
 }
 
@@ -35,6 +36,7 @@ export function DataTablePagination<TData>({
   table,
   getSelectedRows,
   pageSizeOptions = DATA_TABLE_PAGE_SIZE_OPTIONS,
+  totalRowCount,
   labels,
   className,
   ...props
@@ -49,7 +51,7 @@ export function DataTablePagination<TData>({
   const selectedRowCount = getSelectedRows
     ? getSelectedRows().length
     : table.getFilteredSelectedRowModel().rows.length;
-  const totalRowCount = table.getFilteredRowModel().rows.length;
+  const resolvedTotalRowCount = totalRowCount ?? table.getFilteredRowModel().rows.length;
 
   return (
     <div
@@ -61,9 +63,9 @@ export function DataTablePagination<TData>({
     >
       <div className='text-muted-foreground flex-1 text-sm whitespace-nowrap'>
         {selectedRowCount > 0 ? (
-          <>{selectedRowsText(selectedRowCount, totalRowCount)}</>
+          <>{selectedRowsText(selectedRowCount, resolvedTotalRowCount)}</>
         ) : (
-          <>{totalRowsText(totalRowCount)}</>
+          <>{totalRowsText(resolvedTotalRowCount)}</>
         )}
       </div>
       <div className='flex flex-col-reverse items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8'>

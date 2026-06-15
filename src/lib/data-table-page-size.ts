@@ -6,6 +6,14 @@ export const DEFAULT_DATA_TABLE_PAGE_SIZE = DATA_TABLE_PAGE_SIZE_OPTIONS[0];
 const STORAGE_KEY = 'app-data-table-per-page';
 const DATA_TABLE_PAGE_SIZE_OPTION_SET = new Set<number>(DATA_TABLE_PAGE_SIZE_OPTIONS);
 
+function getStorageKey(tableId?: string): string {
+  if (!tableId) {
+    return STORAGE_KEY;
+  }
+
+  return `${STORAGE_KEY}:${tableId}`;
+}
+
 /**
  * Reads the user's preferred page size from localStorage.
  * Returns null when no preference has been saved or localStorage is unavailable.
@@ -13,10 +21,10 @@ const DATA_TABLE_PAGE_SIZE_OPTION_SET = new Set<number>(DATA_TABLE_PAGE_SIZE_OPT
  * Contract: this function ONLY reads from localStorage. It does NOT read from
  * URL search params, router state, or any other source.
  */
-export function readDataTablePageSize(): number | null {
+export function readDataTablePageSize(tableId?: string): number | null {
   try {
     if (typeof window === 'undefined') return null;
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(getStorageKey(tableId));
     if (!raw) return null;
     const parsed = Number.parseInt(raw, 10);
     return isValidDataTablePageSize(parsed) ? parsed : null;
@@ -31,11 +39,11 @@ export function readDataTablePageSize(): number | null {
  * Contract: this function ONLY writes to localStorage. It does NOT write to
  * URL search params, router state, or any other destination.
  */
-export function writeDataTablePageSize(pageSize: number): void {
+export function writeDataTablePageSize(pageSize: number, tableId?: string): void {
   try {
     if (typeof window === 'undefined') return;
     const normalized = normalizeDataTablePageSize(pageSize);
-    window.localStorage.setItem(STORAGE_KEY, String(normalized));
+    window.localStorage.setItem(getStorageKey(tableId), String(normalized));
   } catch {
     // write blocked — degrade silently
   }
@@ -57,6 +65,7 @@ function normalizeDataTablePageSize(
 }
 
 type UseDataTablePageSizeOptions = {
+  tableId?: string;
   /**
    * Optional seed value from a caller-managed source (e.g. search params).
    * When provided with hasExplicitSearchPerPage=true, the seed takes priority
@@ -85,6 +94,7 @@ type UseDataTablePageSizeOptions = {
  * New code should call `useDataTablePageSize({})`.
  */
 export function useDataTablePageSize({
+  tableId,
   searchPerPage,
   hasExplicitSearchPerPage = typeof searchPerPage === 'number'
 }: UseDataTablePageSizeOptions = {}) {
@@ -101,11 +111,11 @@ export function useDataTablePageSize({
 
       setPageSizeState(normalizedSearchPageSize);
       setIsReady(true);
-      writeDataTablePageSize(normalizedSearchPageSize);
+      writeDataTablePageSize(normalizedSearchPageSize, tableId);
       return;
     }
 
-    const persistedPageSize = readDataTablePageSize();
+    const persistedPageSize = readDataTablePageSize(tableId);
     const nextPageSize = persistedPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE;
 
     setPageSizeState((currentPageSize) =>
@@ -113,18 +123,18 @@ export function useDataTablePageSize({
     );
 
     if (persistedPageSize === null) {
-      writeDataTablePageSize(nextPageSize);
+      writeDataTablePageSize(nextPageSize, tableId);
     }
 
     setIsReady(true);
-  }, [hasExplicitSearchPerPage, searchPerPage]);
+  }, [hasExplicitSearchPerPage, searchPerPage, tableId]);
 
   const setPageSize = React.useCallback((nextPageSize: number) => {
     const normalizedPageSize = normalizeDataTablePageSize(nextPageSize);
 
     setPageSizeState(normalizedPageSize);
-    writeDataTablePageSize(normalizedPageSize);
-  }, []);
+    writeDataTablePageSize(normalizedPageSize, tableId);
+  }, [tableId]);
 
   return {
     isReady,

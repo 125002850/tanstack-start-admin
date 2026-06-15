@@ -1,17 +1,23 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   readDataTablePageSize,
   writeDataTablePageSize,
   isValidDataTablePageSize,
   DEFAULT_DATA_TABLE_PAGE_SIZE,
-  DATA_TABLE_PAGE_SIZE_OPTIONS
+  DATA_TABLE_PAGE_SIZE_OPTIONS,
+  useDataTablePageSize
 } from './data-table-page-size';
 
 const STORAGE_KEY = 'app-data-table-per-page';
+const USERS_STORAGE_KEY = 'app-data-table-per-page:users';
+const ORDERS_STORAGE_KEY = 'app-data-table-per-page:orders';
 
 function clearStorage() {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(USERS_STORAGE_KEY);
+    localStorage.removeItem(ORDERS_STORAGE_KEY);
   } catch {
     // localStorage unavailable
   }
@@ -41,6 +47,14 @@ describe('data-table-page-size', () => {
       localStorage.setItem(STORAGE_KEY, 'abc');
       expect(readDataTablePageSize()).toBeNull();
     });
+
+    it('reads table-scoped values when tableId is provided', () => {
+      localStorage.setItem(USERS_STORAGE_KEY, '50');
+      localStorage.setItem(ORDERS_STORAGE_KEY, '100');
+
+      expect(readDataTablePageSize('users')).toBe(50);
+      expect(readDataTablePageSize('orders')).toBe(100);
+    });
   });
 
   describe('writeDataTablePageSize', () => {
@@ -59,6 +73,17 @@ describe('data-table-page-size', () => {
         writeDataTablePageSize(size);
         expect(readDataTablePageSize()).toBe(size);
       }
+    });
+
+    it('persists table-scoped values without polluting other tables', () => {
+      writeDataTablePageSize(50, 'users');
+      writeDataTablePageSize(100, 'orders');
+
+      expect(localStorage.getItem(USERS_STORAGE_KEY)).toBe('50');
+      expect(localStorage.getItem(ORDERS_STORAGE_KEY)).toBe('100');
+      expect(readDataTablePageSize('users')).toBe(50);
+      expect(readDataTablePageSize('orders')).toBe(100);
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     });
   });
 
@@ -94,6 +119,38 @@ describe('data-table-page-size', () => {
       writeDataTablePageSize(50);
       expect(localStorage.getItem(STORAGE_KEY)).toBe('50');
       // Does not touch any URL or router state (verified by absence of side effects)
+    });
+  });
+
+  describe('useDataTablePageSize', () => {
+    it('hydrates table-scoped persisted values after mount', async () => {
+      localStorage.setItem(USERS_STORAGE_KEY, '50');
+
+      const { result } = renderHook(() => useDataTablePageSize({ tableId: 'users' }));
+
+      await waitFor(() => {
+        expect(result.current.isReady).toBe(true);
+      });
+
+      expect(result.current.pageSize).toBe(50);
+    });
+
+    it('updates only the current table scope when page size changes', async () => {
+      localStorage.setItem(USERS_STORAGE_KEY, '50');
+      localStorage.setItem(ORDERS_STORAGE_KEY, '100');
+
+      const { result } = renderHook(() => useDataTablePageSize({ tableId: 'users' }));
+
+      await waitFor(() => {
+        expect(result.current.isReady).toBe(true);
+      });
+
+      act(() => {
+        result.current.setPageSize(10);
+      });
+
+      expect(localStorage.getItem(USERS_STORAGE_KEY)).toBe('10');
+      expect(localStorage.getItem(ORDERS_STORAGE_KEY)).toBe('100');
     });
   });
 });
