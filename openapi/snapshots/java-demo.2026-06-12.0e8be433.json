@@ -32,10 +32,6 @@
       "description": "跟进记录写侧管理接口"
     },
     {
-      "name": "员工信息",
-      "description": "通过 SSO 服务查询员工信息"
-    },
-    {
       "name": "导出中心",
       "description": "统一导出提交、查询、下载相关接口"
     },
@@ -49,70 +45,6 @@
     }
   ],
   "paths": {
-    "/api/staff/list": {
-      "post": {
-        "tags": [
-          "员工信息"
-        ],
-        "summary": "分页查询员工列表",
-        "description": "通过 SSO 服务分页查询员工信息，支持动态条件树筛选",
-        "operationId": "queryStaffList",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StaffDynamicPageReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RPageResultStaffInfoRspDTO"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/staff/list-all": {
-      "post": {
-        "tags": [
-          "员工信息"
-        ],
-        "summary": "查询全部员工列表",
-        "description": "通过 SSO 服务查询员工全部列表（不分页），支持动态条件树筛选",
-        "operationId": "queryStaffListAll",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StaffDynamicListReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RListStaffInfoRspDTO"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/postloan/workbench/customer/summary/page": {
       "post": {
         "tags": [
@@ -1458,376 +1390,6 @@
   },
   "components": {
     "schemas": {
-      "StaffConditionNode": {
-        "required": [
-          "nodeType"
-        ],
-        "type": "object",
-        "properties": {
-          "nodeType": {
-            "type": "string"
-          }
-        },
-        "description": "员工信息动态查询节点",
-        "discriminator": {
-          "propertyName": "nodeType"
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/StaffGroupCondition"
-          },
-          {
-            "$ref": "#/components/schemas/StaffTextCondition"
-          },
-          {
-            "$ref": "#/components/schemas/StaffEnumCondition"
-          }
-        ]
-      },
-      "StaffDynamicPageReqDTO": {
-        "type": "object",
-        "properties": {
-          "pageNo": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "页码，从1开始",
-            "format": "int64",
-            "example": 1
-          },
-          "pageSize": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "每页条数",
-            "format": "int64",
-            "example": 20
-          },
-          "dslVersion": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "动态查询协议版本",
-            "format": "int32",
-            "example": 1
-          },
-          "condition": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/StaffEnumCondition"
-              },
-              {
-                "$ref": "#/components/schemas/StaffGroupCondition"
-              },
-              {
-                "$ref": "#/components/schemas/StaffTextCondition"
-              }
-            ]
-          },
-          "sort": {
-            "maxItems": 3,
-            "minItems": 0,
-            "type": "array",
-            "description": "排序项",
-            "items": {
-              "$ref": "#/components/schemas/StaffSortItem"
-            }
-          }
-        },
-        "description": "员工信息动态分页查询请求"
-      },
-      "StaffEnumCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
-        "type": "object",
-        "description": "员工信息枚举条件",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/StaffConditionNode"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "field": {
-                "type": "string",
-                "description": "枚举字段",
-                "enum": [
-                  "staffStatus",
-                  "status"
-                ]
-              },
-              "op": {
-                "type": "string",
-                "description": "枚举操作符",
-                "enum": [
-                  "EQ",
-                  "IN"
-                ]
-              },
-              "value": {
-                "type": "integer",
-                "description": "单值操作符使用",
-                "format": "int32"
-              },
-              "values": {
-                "type": "array",
-                "description": "IN 操作符使用",
-                "items": {
-                  "type": "integer",
-                  "description": "IN 操作符使用",
-                  "format": "int32"
-                }
-              },
-              "payloadValid": {
-                "type": "boolean"
-              }
-            }
-          }
-        ]
-      },
-      "StaffGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
-        "type": "object",
-        "description": "员工信息逻辑分组",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/StaffConditionNode"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "logic": {
-                "type": "string",
-                "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
-              },
-              "children": {
-                "type": "array",
-                "description": "子节点列表",
-                "items": {
-                  "$ref": "#/components/schemas/StaffConditionNode"
-                }
-              }
-            }
-          }
-        ]
-      },
-      "StaffSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
-        "type": "object",
-        "properties": {
-          "field": {
-            "type": "string",
-            "description": "排序字段",
-            "enum": [
-              "staffCode"
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
-          }
-        },
-        "description": "员工信息排序项"
-      },
-      "StaffTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
-        "type": "object",
-        "description": "员工信息文本条件",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/StaffConditionNode"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "field": {
-                "type": "string",
-                "description": "文本字段",
-                "enum": [
-                  "name",
-                  "account",
-                  "mobile",
-                  "staffCode",
-                  "ssoAccountId"
-                ]
-              },
-              "op": {
-                "type": "string",
-                "description": "文本操作符",
-                "enum": [
-                  "EQ",
-                  "CONTAINS",
-                  "STARTS_WITH",
-                  "ENDS_WITH",
-                  "IN"
-                ]
-              },
-              "value": {
-                "type": "string",
-                "description": "单值操作符使用"
-              },
-              "values": {
-                "type": "array",
-                "description": "IN 操作符使用",
-                "items": {
-                  "type": "string",
-                  "description": "IN 操作符使用"
-                }
-              },
-              "payloadValid": {
-                "type": "boolean"
-              }
-            }
-          }
-        ]
-      },
-      "PageResultStaffInfoRspDTO": {
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "list": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StaffInfoRspDTO"
-            }
-          }
-        }
-      },
-      "RPageResultStaffInfoRspDTO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PageResultStaffInfoRspDTO"
-          }
-        }
-      },
-      "StaffInfoRspDTO": {
-        "type": "object",
-        "properties": {
-          "staffCode": {
-            "type": "string",
-            "description": "员工工号",
-            "example": "EMP001"
-          },
-          "ssoAccountId": {
-            "type": "string",
-            "description": "SSO账号ID",
-            "example": "1001"
-          },
-          "userName": {
-            "type": "string",
-            "description": "姓名",
-            "example": "张三"
-          },
-          "sex": {
-            "type": "string",
-            "description": "性别",
-            "example": "男"
-          },
-          "account": {
-            "type": "string",
-            "description": "登录账号",
-            "example": "zhangsan"
-          },
-          "mobile": {
-            "type": "string",
-            "description": "手机号",
-            "example": "13800138000"
-          },
-          "staffStatus": {
-            "type": "integer",
-            "description": "员工状态：0-在职，1-离职，2-待聘，8-系统删除",
-            "format": "int32",
-            "example": 0
-          },
-          "status": {
-            "type": "integer",
-            "description": "账号状态：1-可用，2-禁用",
-            "format": "int32",
-            "example": 1
-          }
-        },
-        "description": "员工信息响应"
-      },
-      "StaffDynamicListReqDTO": {
-        "type": "object",
-        "properties": {
-          "dslVersion": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "动态查询协议版本",
-            "format": "int32",
-            "example": 1
-          },
-          "condition": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/StaffEnumCondition"
-              },
-              {
-                "$ref": "#/components/schemas/StaffGroupCondition"
-              },
-              {
-                "$ref": "#/components/schemas/StaffTextCondition"
-              }
-            ]
-          },
-          "sort": {
-            "maxItems": 3,
-            "minItems": 0,
-            "type": "array",
-            "description": "排序项",
-            "items": {
-              "$ref": "#/components/schemas/StaffSortItem"
-            }
-          }
-        },
-        "description": "员工信息动态列表查询请求（不分页）"
-      },
-      "RListStaffInfoRspDTO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StaffInfoRspDTO"
-            }
-          }
-        }
-      },
       "CustomerSummaryPageReqDTO": {
         "type": "object",
         "properties": {
@@ -2694,53 +2256,42 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "text",
               "dateTime",
-              "compose"
+              "compose",
+              "text"
             ]
           },
           "field": {
             "type": "string",
-            "description": "文本字段；时间字段",
+            "description": "时间字段；文本字段",
             "enum": [
+              "createTime",
+              "lastSyncTime",
               "customerCode",
               "customerName",
               "ownerUserName",
-              "assistUserName",
-              "createTime",
-              "lastSyncTime"
+              "assistUserName"
             ]
           },
           "op": {
             "type": "string",
-            "description": "文本操作符；时间操作符",
+            "description": "时间操作符；文本操作符",
             "enum": [
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN",
               "GT",
               "GTE",
               "LT",
               "LTE",
-              "BETWEEN"
+              "BETWEEN",
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN"
             ]
           },
           "value": {
             "type": "string",
-            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
-          },
-          "payloadValid": {
-            "type": "boolean"
+            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
           },
           "start": {
             "type": "string",
@@ -2749,6 +2300,9 @@
           "end": {
             "type": "string",
             "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "payloadValid": {
+            "type": "boolean"
           },
           "logic": {
             "type": "string",
@@ -2764,15 +2318,23 @@
             "items": {
               "$ref": "#/components/schemas/TrackOwnerRelConditionNode"
             }
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
           }
         },
         "description": "客户跟踪人关系动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "text": "#/components/schemas/TrackOwnerRelTextCondition",
             "dateTime": "#/components/schemas/TrackOwnerRelDateTimeCondition",
-            "compose": "#/components/schemas/TrackOwnerRelGroupCondition"
+            "compose": "#/components/schemas/TrackOwnerRelGroupCondition",
+            "text": "#/components/schemas/TrackOwnerRelTextCondition"
           }
         },
         "oneOf": [
@@ -3458,26 +3020,11 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "compose",
               "text",
               "dateTime",
-              "enum"
+              "enum",
+              "compose"
             ]
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/ExportRecordConditionNode"
-            }
           },
           "field": {
             "type": "string",
@@ -3528,16 +3075,31 @@
           "end": {
             "type": "string",
             "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/ExportRecordConditionNode"
+            }
           }
         },
         "description": "导出记录动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "compose": "#/components/schemas/ExportRecordGroupCondition",
             "text": "#/components/schemas/ExportRecordTextCondition",
             "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
-            "enum": "#/components/schemas/ExportRecordEnumCondition"
+            "enum": "#/components/schemas/ExportRecordEnumCondition",
+            "compose": "#/components/schemas/ExportRecordGroupCondition"
           }
         },
         "oneOf": [
@@ -3943,50 +3505,39 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "text",
               "dateTime",
-              "compose"
+              "compose",
+              "text"
             ]
           },
           "field": {
             "type": "string",
-            "description": "文本字段；时间字段",
+            "description": "时间字段；文本字段",
             "enum": [
+              "createTime",
               "dictTypeCode",
-              "dictTypeName",
-              "createTime"
+              "dictTypeName"
             ]
           },
           "op": {
             "type": "string",
-            "description": "文本操作符；时间操作符",
+            "description": "时间操作符；文本操作符",
             "enum": [
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN",
               "GT",
               "GTE",
               "LT",
               "LTE",
-              "BETWEEN"
+              "BETWEEN",
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN"
             ]
           },
           "value": {
             "type": "string",
-            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
-          },
-          "payloadValid": {
-            "type": "boolean"
+            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
           },
           "start": {
             "type": "string",
@@ -3995,6 +3546,9 @@
           "end": {
             "type": "string",
             "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "payloadValid": {
+            "type": "boolean"
           },
           "logic": {
             "type": "string",
@@ -4010,15 +3564,23 @@
             "items": {
               "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
             }
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
           }
         },
         "description": "全局字典类型动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "text": "#/components/schemas/GlobalDictTypeTextCondition",
             "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition",
-            "compose": "#/components/schemas/GlobalDictTypeGroupCondition"
+            "compose": "#/components/schemas/GlobalDictTypeGroupCondition",
+            "text": "#/components/schemas/GlobalDictTypeTextCondition"
           }
         },
         "oneOf": [
