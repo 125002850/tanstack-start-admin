@@ -2748,25 +2748,10 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "compose",
               "dateTime",
-              "text"
+              "text",
+              "compose"
             ]
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/TrackOwnerRelConditionNode"
-            }
           },
           "field": {
             "type": "string",
@@ -2818,15 +2803,30 @@
               "type": "string",
               "description": "IN 操作符使用"
             }
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/TrackOwnerRelConditionNode"
+            }
           }
         },
         "description": "客户跟踪人关系动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "compose": "#/components/schemas/TrackOwnerRelGroupCondition",
             "dateTime": "#/components/schemas/TrackOwnerRelDateTimeCondition",
-            "text": "#/components/schemas/TrackOwnerRelTextCondition"
+            "text": "#/components/schemas/TrackOwnerRelTextCondition",
+            "compose": "#/components/schemas/TrackOwnerRelGroupCondition"
           }
         },
         "oneOf": [
@@ -3997,25 +3997,10 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "compose",
               "dateTime",
-              "text"
+              "text",
+              "compose"
             ]
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
-            }
           },
           "field": {
             "type": "string",
@@ -4064,15 +4049,30 @@
               "type": "string",
               "description": "IN 操作符使用"
             }
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+            }
           }
         },
         "description": "全局字典类型动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "compose": "#/components/schemas/GlobalDictTypeGroupCondition",
             "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition",
-            "text": "#/components/schemas/GlobalDictTypeTextCondition"
+            "text": "#/components/schemas/GlobalDictTypeTextCondition",
+            "compose": "#/components/schemas/GlobalDictTypeGroupCondition"
           }
         },
         "oneOf": [
