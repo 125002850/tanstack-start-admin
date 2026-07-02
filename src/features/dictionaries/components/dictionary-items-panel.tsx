@@ -1,4 +1,6 @@
 import * as React from 'react';
+import type { ApiClientError } from '@oig/react-query-generator/core';
+import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,39 +12,71 @@ import type {
 } from '@/components/ui/table/data-table-actions-bar';
 import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
-import { useDataTable } from '@/hooks/use-data-table';
+import { useDslDataTable } from '@/hooks/use-dsl-data-table';
+import type { DataTableDslCondition } from '@/hooks/use-dsl-data-table.dsl';
+import type { MdmDictGlobalItemsByTypeResponse } from '@/lib/api/clients/service';
 
 import type {
   DictionaryItemMutationPayload,
   DictionaryItemRecord,
   DictionaryTypeRecord
 } from '../api/types';
+import {
+  dictionaryItemsByTypeQueryOptions,
+  type DictionaryItemsQueryRequest
+} from '../api/query-options';
 import { DictionaryItemSheet } from './dictionary-item-sheet';
 import { dictionaryItemColumns } from './dictionary-items-columns';
 
 interface DictionaryItemsPanelProps {
   record: DictionaryTypeRecord | null;
-  items: DictionaryItemRecord[];
-  isRefreshing: boolean;
+  onTotalChange: (total: number) => void;
   onItemSubmit: (payload: DictionaryItemMutationPayload) => Promise<void>;
-  onRefresh: () => Promise<void>;
   onDelete: (item: DictionaryItemRecord) => void;
   onBulkDelete: (payload: { ids: number[] }) => Promise<void>;
+  onToggleItemStatus: (record: DictionaryItemRecord) => void;
 }
+
+const NOOP = () => {};
 
 export function DictionaryItemsPanel({
   record,
-  items,
-  isRefreshing,
+  onTotalChange,
   onItemSubmit,
-  onRefresh,
   onDelete,
-  onBulkDelete
+  onBulkDelete,
+  onToggleItemStatus
 }: DictionaryItemsPanelProps) {
   const [addSheetOpen, setAddSheetOpen] = React.useState(false);
   const { withConfirm: withBatchConfirm, confirmDialog: batchConfirmDialog } =
     useConfirmAction<[DataTableActionContext<DictionaryItemRecord>]>();
   const tableId = 'dictionary-items';
+
+  const refetchRef = React.useRef<() => void>(NOOP);
+
+  const handleItemSubmit = React.useCallback(
+    async (payload: DictionaryItemMutationPayload) => {
+      await onItemSubmit(payload);
+      refetchRef.current();
+    },
+    [onItemSubmit]
+  );
+
+  const handleDelete = React.useCallback(
+    async (item: DictionaryItemRecord) => {
+      await onDelete(item);
+      refetchRef.current();
+    },
+    [onDelete]
+  );
+
+  const handleBulkDelete = React.useCallback(
+    async (payload: { ids: number[] }) => {
+      await onBulkDelete(payload);
+      refetchRef.current();
+    },
+    [onBulkDelete]
+  );
 
   const rowActions = React.useMemo<DataTableRowAction<DictionaryItemRecord>[]>(
     () => [
@@ -63,8 +97,8 @@ export function DictionaryItemsPanel({
             onOpenChange={onOpenChange}
             dictTypeCode={item.dictTypeCode!}
             item={item}
-            onSubmit={onItemSubmit}
-            onDelete={onDelete}
+            onSubmit={handleItemSubmit}
+            onDelete={handleDelete}
           />
         )
       },
@@ -77,23 +111,79 @@ export function DictionaryItemsPanel({
           confirmText: '删除',
           cancelText: '取消'
         },
-        onClick: (item) => onDelete(item)
+        onClick: (item) => handleDelete(item)
       }
     ],
-    [onItemSubmit, onDelete]
+    [handleItemSubmit, handleDelete]
   );
 
-  const { table, clearSelectedRows, getSelectedRows } = useDataTable({
-    data: items,
-    columns: dictionaryItemColumns,
-    getRowId: (row) => String(row.id),
-    pageCount: 1,
-    showRowNumberColumn: false,
-    showSelectColumn: true,
-    rowSelectionScopeKey: record?.dictTypeCode ?? null,
-    rowActions,
-    tableId
+  const baseCondition = React.useMemo<DataTableDslCondition | undefined>(() => {
+    if (!record?.dictTypeCode) {
+      return undefined;
+    }
+
+    return {
+      nodeType: 'text',
+      field: 'dictTypeCode',
+      op: 'EQ',
+      value: record.dictTypeCode
+    };
+  }, [record?.dictTypeCode]);
+
+  const mapQueryData = React.useCallback(
+    (data: MdmDictGlobalItemsByTypeResponse | undefined) => ({
+      total: data?.total ?? 0,
+      list:
+        data?.list?.map((item) => ({
+          ...item,
+          sort: item.sortOrder
+        })) ?? []
+    }),
+    []
+  );
+
+  const dictionaryItemsQueryOptions = React.useCallback(
+    (request: DictionaryItemsQueryRequest) => ({
+      ...dictionaryItemsByTypeQueryOptions(request),
+      enabled: Boolean(record?.dictTypeCode)
+    }),
+    [record?.dictTypeCode]
+  );
+
+  const { table, total, clearSelectedRows, getSelectedRows, queryState, refreshProps } =
+    useDslDataTable<
+      DictionaryItemRecord,
+      DictionaryItemsQueryRequest,
+      MdmDictGlobalItemsByTypeResponse,
+      ApiClientError,
+      readonly ['service', 'mdm-dict-global-items-by-type', DictionaryItemsQueryRequest]
+    >({
+      columns: dictionaryItemColumns(onToggleItemStatus),
+      tableId,
+      queryOptions: dictionaryItemsQueryOptions,
+      baseCondition,
+      mapQueryData,
+      showRowNumberColumn: false,
+      showSelectColumn: true,
+      rowSelectionScopeKey: record?.dictTypeCode ?? null,
+      rowActions,
+      refreshBehavior: {
+        onSuccess: () => {
+          toast.success('列表已刷新');
+        }
+      }
+    });
+
+  React.useEffect(() => {
+    refetchRef.current = queryState.refetch;
   });
+
+  const rowCount = table.getRowModel().rows.length;
+  const isInitialLoading = queryState.isFetching && !queryState.data;
+
+  React.useEffect(() => {
+    onTotalChange(record ? total : 0);
+  }, [onTotalChange, record, total]);
 
   const actions = React.useMemo<DataTableAction<DictionaryItemRecord>[]>(
     () => [
@@ -106,12 +196,6 @@ export function DictionaryItemsPanel({
         }
       },
       {
-        label: '刷新列表',
-        icon: <Icons.chevronsDown className='size-3.5' />,
-        disabled: !record || isRefreshing,
-        callback: () => void onRefresh()
-      },
-      {
         label: '批量删除',
         icon: <Icons.trash className='size-3.5' />,
         type: 'danger' as const,
@@ -122,15 +206,15 @@ export function DictionaryItemsPanel({
           confirmText: '批量删除',
           cancelText: '取消',
           run: async (ctx) => {
-            if (!record) return;
+            if (!record?.dictTypeCode) return;
             const ids = ctx.selectedRows.map((row) => row.id!).filter(Boolean);
-            await onBulkDelete({ ids });
+            await handleBulkDelete({ ids });
             clearSelectedRows();
           }
         })
       }
     ],
-    [clearSelectedRows, isRefreshing, onRefresh, record, onBulkDelete, withBatchConfirm]
+    [record, handleBulkDelete, clearSelectedRows, withBatchConfirm]
   );
 
   return (
@@ -142,7 +226,7 @@ export function DictionaryItemsPanel({
           onOpenChange={setAddSheetOpen}
           dictTypeCode={record.dictTypeCode!}
           item={null}
-          onSubmit={onItemSubmit}
+          onSubmit={handleItemSubmit}
         />
       )}
       <CardHeader>
@@ -160,8 +244,11 @@ export function DictionaryItemsPanel({
         <DataTable
           table={table}
           tableActions={actions}
+          statusTotalCount={total}
+          isLoading={isInitialLoading}
           getSelectedRows={getSelectedRows}
-          getStatusConfig={() => {
+          {...refreshProps}
+          getStatusConfig={({ rows, isLoading }) => {
             if (!record) {
               return {
                 type: 'onboarding',
@@ -169,11 +256,11 @@ export function DictionaryItemsPanel({
                 description: '左侧选择后可查看并维护当前字典类型'
               };
             }
-            if (!items.length) {
+            if (!rows.length && !isLoading) {
               return { type: 'empty', title: '当前字典类型暂无字典项', description: '' };
             }
           }}
-          statusDeps={[record, items.length]}
+          statusDeps={[record, rowCount, queryState.isFetching]}
         />
       </CardContent>
     </Card>

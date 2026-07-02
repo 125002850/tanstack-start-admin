@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
+import { createRedirectWithSearch } from '@/lib/router/redirect-search';
 
 const meta = defineRouteMeta({
   label: '系统管理',
@@ -9,18 +10,15 @@ const meta = defineRouteMeta({
     keepAlive: false
   },
   nav: {
-    visible: true,
-    group: 'overview',
-    order: 25,
-    kind: 'container',
-    icon: 'settings',
-    linkable: false
+    visible: false,
+    group: 'systemManagement',
+    order: 0
   }
 });
 
 export const Route = createFileRoute('/dashboard/system-management/')({
   ...meta,
-  beforeLoad: () => {
-    throw redirect({ to: '/dashboard/system-management/dictionaries' });
+  beforeLoad: ({ location }) => {
+    throw redirect(createRedirectWithSearch('/dashboard/system-management/dictionaries', location));
   }
 });

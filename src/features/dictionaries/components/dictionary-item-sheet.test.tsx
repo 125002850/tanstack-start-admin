@@ -9,7 +9,7 @@ const ITEM: DictionaryItemRecord = {
   dictTypeCode: 'color',
   dictItemCode: 'red',
   dictItemName: '红色',
-  status: 'ENABLE',
+  status: 'enable',
   sort: 10,
   remark: 'warm',
   createBy: 1,

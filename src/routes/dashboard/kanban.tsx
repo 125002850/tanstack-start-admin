@@ -1,22 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router';
-import KanbanViewPage from '@/features/kanban/components/kanban-view-page';
+import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
 
+const KanbanViewPage = lazyRouteComponent(
+  () => import('@/features/kanban/components/kanban-view-page')
+);
+
 const meta = defineRouteMeta({
   label: '看板',
-  title: 'Dashboard : Kanban view',
+  title: '开发示例：看板',
   workspace: {},
   nav: {
-    visible: true,
-    group: 'overview',
-    order: 40,
+    visible: false,
+    group: 'components',
+    order: 20,
     icon: 'kanban',
     shortcut: ['k', 'k']
-  },
-  page: {
-    title: 'Kanban',
-    description: 'Manage tasks with drag and drop'
   }
 });
 

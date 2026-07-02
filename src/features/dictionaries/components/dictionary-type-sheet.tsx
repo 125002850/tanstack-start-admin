@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 
-import { STATUS_OPTIONS } from '@/constants/enums';
+import { DictStatus, STATUS_OPTIONS } from '@/constants/enums';
 import type { DictionaryTypeMutationPayload, DictionaryTypeRecord } from '../api/types';
 
 const createSchema = z.object({
@@ -67,15 +67,13 @@ export function DictionaryTypeSheet({
     }
   });
 
-  const {
-    FormTextField: CreateTextField
-  } = useFormFields<CreateFormValues>();
+  const { FormTextField: CreateTextField } = useFormFields<CreateFormValues>();
 
   // ---- Edit form ----
   const editForm = useAppForm({
     defaultValues: {
       dictTypeName: type?.dictTypeName ?? '',
-      status: type?.status ?? 'ENABLE'
+      status: (type?.status ?? DictStatus.ENABLE) as string
     } as EditFormValues,
     validators: { onSubmit: editSchema },
     onSubmit: async ({ value }) => {
@@ -90,14 +88,21 @@ export function DictionaryTypeSheet({
     }
   });
 
-  const {
-    FormTextField: EditTextField,
-    FormSelectField: EditSelectField
-  } = useFormFields<EditFormValues>();
+  const { FormTextField: EditTextField, FormSelectField: EditSelectField } =
+    useFormFields<EditFormValues>();
+
+  const resetForms = React.useCallback(() => {
+    createForm.reset();
+    editForm.reset();
+  }, [createForm, editForm]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex max-w-xl flex-col'>
+      <SheetContent
+        autoFocusFirstField
+        onAfterClose={resetForms}
+        className='flex max-w-xl flex-col'
+      >
         <SheetHeader>
           <SheetTitle>{isEdit ? '编辑字典类型' : '新增字典类型'}</SheetTitle>
           <SheetDescription>

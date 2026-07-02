@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ActiveThemeProvider } from '@/components/themes/active-theme';
 import ThemeProvider from '@/components/themes/theme-provider';
 import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
+import { baseConfig } from '@/config';
 
 import appCss from '@/styles/globals.css?url';
 
@@ -29,10 +30,10 @@ export const Route = createRootRouteWithContext<{
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'TanStack Dashboard' },
+      { title: baseConfig.projectName },
       {
         name: 'description',
-        content: 'Dashboard with TanStack Start and Shadcn'
+        content: '后台管理框架与基础设施工作台'
       }
     ],
     links: [{ rel: 'stylesheet', href: appCss }]

@@ -4,7 +4,8 @@ import type { InfobarContent } from '@/components/ui/infobar';
 export const NAV_GROUP_META = {
   overview: { label: '概览', order: 10 },
   components: { label: '组件', order: 20 },
-  account: { label: '账户', order: 30 }
+  systemManagement: { label: '系统管理', order: 30 },
+  account: { label: '账户', order: 40 }
 } as const;
 
 export type AppNavGroupKey = keyof typeof NAV_GROUP_META;
@@ -13,6 +14,8 @@ export interface AppNavStaticData {
   visible: boolean;
   group: AppNavGroupKey;
   order: number;
+  // Stable permission key used to match SSO menuData.code.
+  menuKey?: string;
   kind?: 'container';
   parentId?: string;
   icon?: keyof typeof Icons;
@@ -26,7 +29,7 @@ export interface AppBreadcrumbData {
 }
 
 export interface AppPageData {
-  // Rendered by PageContainer as the in-page heading, distinct from the document title.
+  // Reserved for explicit consumers. PageContainer does not auto-read route metadata.
   title?: string;
   description?: string;
   infoContent?: InfobarContent;
@@ -35,12 +38,13 @@ export interface AppPageData {
 export interface AppRouteWorkspaceData {
   tagEnabled?: boolean;
   keepAlive?: boolean;
+  closable?: boolean;
   instanceStrategy?: 'global' | 'by-params';
   refreshPolicy?: 'query-invalidate';
 }
 
 export interface AppRouteStaticData {
-  // Human-readable route label used by navigation and as the PageContainer title fallback.
+  // Human-readable route label used by navigation, breadcrumbs and workspace tab titles.
   label: string;
   // Browser document title generated through defineRouteMeta(). Falls back to label when omitted.
   title?: string;

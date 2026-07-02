@@ -38,14 +38,14 @@ const mockNotifications: Notification[] = [
   },
   {
     id: '2',
-    title: '新增了一个产品',
-    body: '新产品“Dashboard Pro”已添加到产品目录中。',
+    title: '字典配置已更新',
+    body: '基础状态字典已同步到系统管理模块。',
     status: 'unread',
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     actions: [
       {
-        id: 'view-product',
-        label: '查看产品',
+        id: 'view-dictionaries',
+        label: '查看字典',
         type: 'redirect',
         style: 'primary'
       }

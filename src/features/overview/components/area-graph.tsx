@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/chart';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
-import React from 'react';
 
 const chartData = [
   { month: '1月', desktop: 342, mobile: 245 },

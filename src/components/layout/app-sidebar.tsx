@@ -331,7 +331,7 @@ export default function AppSidebar() {
                 </div>
                 <div className='grid flex-1 text-left text-sm leading-tight'>
                   <span className='truncate font-semibold'>{baseConfig.projectName}</span>
-                  <span className='text-muted-foreground truncate text-xs'>控制台</span>
+                  <span className='text-muted-foreground truncate text-xs'>工作台</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -359,29 +359,29 @@ export default function AppSidebar() {
                   size='lg'
                   className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 >
-                    {isLoading ? (
-                      <>
-                        <SsoAvatarSkeleton size={32} />
-                        <div className='grid flex-1 gap-1'>
-                          <SsoTextSkeleton width='60%' className='h-3' />
-                          <SsoTextSkeleton width='80%' className='h-2.5' />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className='bg-muted flex aspect-square size-8 shrink-0 items-center justify-center rounded-full'>
-                          <Icons.account className='size-4' />
-                        </div>
-                        <div className='grid flex-1 text-left text-sm leading-tight'>
-                          <span className='truncate font-medium'>
-                            {loginUser?.realName || loginUser?.userName || '用户'}
-                          </span>
-                          <span className='text-muted-foreground truncate text-xs'>
-                            {loginUser?.phone || '-'}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                  {isLoading ? (
+                    <>
+                      <SsoAvatarSkeleton size={32} />
+                      <div className='grid flex-1 gap-1'>
+                        <SsoTextSkeleton width='60%' className='h-3' />
+                        <SsoTextSkeleton width='80%' className='h-2.5' />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className='bg-muted flex aspect-square size-8 shrink-0 items-center justify-center rounded-full'>
+                        <Icons.account className='size-4' />
+                      </div>
+                      <div className='grid flex-1 text-left text-sm leading-tight'>
+                        <span className='truncate font-medium'>
+                          {loginUser?.realName || loginUser?.userName || '用户'}
+                        </span>
+                        <span className='text-muted-foreground truncate text-xs'>
+                          {loginUser?.phone || '-'}
+                        </span>
+                      </div>
+                    </>
+                  )}
                   <Icons.chevronsDown className='ml-auto size-4' />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>

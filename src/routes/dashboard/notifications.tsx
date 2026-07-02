@@ -1,22 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router';
-import NotificationsPage from '@/features/notifications/components/notifications-page';
+import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
 
+const NotificationsPage = lazyRouteComponent(
+  () => import('@/features/notifications/components/notifications-page')
+);
+
 const meta = defineRouteMeta({
   label: '通知',
-  title: 'Dashboard: Notifications',
+  title: '开发示例：通知',
   workspace: {},
   nav: {
-    visible: true,
-    group: 'account',
-    order: 10,
+    visible: false,
+    group: 'components',
+    order: 40,
     icon: 'notification',
     shortcut: ['n', 'n']
-  },
-  page: {
-    title: 'Notifications',
-    description: 'View and manage all your notifications.'
   }
 });
 

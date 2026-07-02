@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 import type { DictionaryTypeRecord } from '../api/types';
 import { DICTIONARY_TYPE_KEYWORD_FILTER_COLUMN_ID } from './dictionary-type-columns';
+import { getStatusLabel } from '@/constants/enums';
 
 interface DictionaryTypeListProps {
   table: Table<DictionaryTypeRecord>;
@@ -62,7 +63,7 @@ export function DictionaryTypeList({
           </Button>
         </div>
 
-        <div className='max-h-[56vh] overflow-y-auto pr-2'>
+        <div className='max-h-[64vh] overflow-y-auto pr-2'>
           <div className='space-y-2'>
             {types.length > 0 ? (
               types.map((record) => {
@@ -89,7 +90,7 @@ export function DictionaryTypeList({
                         </div>
                       </div>
                       <Badge variant={isActive ? 'default' : 'outline'}>
-                        {record.status === 'DISABLE' ? '停用' : '启用'}
+                        {getStatusLabel(record.status)}
                       </Badge>
                     </div>
                   </button>

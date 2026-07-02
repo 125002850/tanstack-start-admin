@@ -90,7 +90,7 @@ export default function OverViewPage() {
                 </CardHeader>
                 <CardFooter className='flex-col items-start gap-1.5 text-sm'>
                   <div className='line-clamp-1 flex gap-2 font-medium'>
-                    用户留存表现强劲 <Icons.trendingUp className='size-4' />
+                    活跃度表现强劲 <Icons.trendingUp className='size-4' />
                   </div>
                   <div className='text-muted-foreground'>互动度超过目标</div>
                 </CardFooter>

@@ -1,10 +1,9 @@
-import * as React from 'react';
-
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import type { DictionaryTypeRecord } from '../api/types';
+import { getStatusLabel } from '@/constants/enums';
 
 interface DictionaryTypeDetailsProps {
   record: DictionaryTypeRecord | null;
@@ -54,7 +53,7 @@ export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTy
       </CardHeader>
       <CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
         <DetailField label='名称' value={record.dictTypeName} />
-        <DetailField label='状态' value={record.status === 'DISABLE' ? '停用' : '启用'} />
+        <DetailField label='状态' value={getStatusLabel(record.status)} />
         <DetailField label='编码' value={record.dictTypeCode} />
         <DetailField label='创建人' value={record.createBy} />
         <DetailField label='创建时间' value={record.createTime} />

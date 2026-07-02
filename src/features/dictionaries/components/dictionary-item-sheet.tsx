@@ -22,7 +22,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
 
-import { STATUS_OPTIONS } from '@/constants/enums';
+import { DictStatus, STATUS_OPTIONS } from '@/constants/enums';
 import type { DictionaryItemMutationPayload, DictionaryItemRecord } from '../api/types';
 
 const dictionaryItemSchema = z.object({
@@ -59,7 +59,7 @@ export function DictionaryItemSheet({
     defaultValues: {
       dictItemCode: item?.dictItemCode ?? '',
       dictItemName: item?.dictItemName ?? '',
-      status: item?.status ?? 'ENABLE',
+      status: (item?.status ?? DictStatus.ENABLE) as string,
       sort: item?.sort ?? '',
       remark: item?.remark ?? ''
     } as DictionaryItemFormValues,
@@ -83,9 +83,18 @@ export function DictionaryItemSheet({
   const { FormSelectField, FormTextField, FormTextareaField } =
     useFormFields<DictionaryItemFormValues>();
 
+  const resetState = React.useCallback(() => {
+    form.reset();
+    setDeleteDialogOpen(false);
+  }, [form]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex max-w-xl flex-col'>
+      <SheetContent
+        autoFocusFirstField
+        onAfterClose={resetState}
+        className='flex max-w-xl flex-col'
+      >
         <SheetHeader>
           <SheetTitle>{isEdit ? '编辑字典项' : '新增字典项'}</SheetTitle>
           <SheetDescription>

@@ -54,7 +54,7 @@ export const initialConversations: Conversation[] = [
         id: 'api-1',
         sender: 'user',
         author: 'You',
-        text: "I'm getting a 429 rate limit error when calling the /api/products endpoint. We're only making about 50 requests per minute.",
+        text: "I'm getting a 429 rate limit error when calling the /api/resources endpoint. We're only making about 50 requests per minute.",
         timestamp: '09:15'
       },
       {
