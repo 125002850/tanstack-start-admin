@@ -1,5 +1,7 @@
 const TOKEN_KEY = 'sso_token';
 const LOGOUT_URL_KEY = 'sso_logout_url';
+const USER_ID_KEY = 'sso_user_id';
+const LOGIN_RETURN_SEARCH_KEY = 'sso_login_return_search';
 
 function isBrowser() {
   return typeof window !== 'undefined';
@@ -15,6 +17,41 @@ function normalizeToken(raw: string): string {
   return trimmed;
 }
 
+function getSearch(url: URL): string {
+  return url.searchParams.toString();
+}
+
+function restorePreservedLoginQuery(url: URL) {
+  try {
+    const preservedSearch = sessionStorage.getItem(LOGIN_RETURN_SEARCH_KEY);
+    if (!preservedSearch) return;
+
+    sessionStorage.removeItem(LOGIN_RETURN_SEARCH_KEY);
+
+    const currentKeys = new Set(url.searchParams.keys());
+    const preservedSearchParams = new URLSearchParams(preservedSearch);
+
+    for (const [key, value] of preservedSearchParams) {
+      if (currentKeys.has(key)) continue;
+      url.searchParams.append(key, value);
+    }
+  } catch {}
+}
+
+export function preserveLoginQueryFromCurrentUrl() {
+  if (!isBrowser()) return;
+  try {
+    const url = new URL(window.location.href);
+    const search = getSearch(url);
+
+    if (search) {
+      sessionStorage.setItem(LOGIN_RETURN_SEARCH_KEY, search);
+    } else {
+      sessionStorage.removeItem(LOGIN_RETURN_SEARCH_KEY);
+    }
+  } catch {}
+}
+
 export function hydrateFromUrl() {
   if (!isBrowser()) return;
   try {
@@ -22,7 +59,7 @@ export function hydrateFromUrl() {
     const token = url.searchParams.get('token');
     if (token && token.trim().length > 0) {
       setAuthHeader(token);
-      url.searchParams.delete('token');
+      restorePreservedLoginQuery(url);
       window.history.replaceState({}, '', url.toString());
     }
   } catch {}
@@ -51,6 +88,25 @@ export function clearAuth() {
   try {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(LOGOUT_URL_KEY);
+    localStorage.removeItem(USER_ID_KEY);
+  } catch {}
+}
+
+export function getLoginUserId(): string | null {
+  if (!isBrowser()) return null;
+  try {
+    return localStorage.getItem(USER_ID_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setLoginUserId(value: string) {
+  if (!isBrowser()) return;
+  const normalized = value.trim();
+  if (!normalized) return;
+  try {
+    localStorage.setItem(USER_ID_KEY, normalized);
   } catch {}
 }
 
@@ -78,8 +134,8 @@ export function handleUnauthorized() {
   }
 }
 
-export function logout() {
-  const url = getLogoutUrl();
+export function logout(redirectUrl?: string | null) {
+  const url = redirectUrl || getLogoutUrl();
   clearAuth();
   window.location.href = url || window.location.origin;
 }

@@ -2,14 +2,23 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-function createMockLocation(token?: string): Location {
-  const url = token
-    ? `https://example.com/dashboard?token=${encodeURIComponent(token)}`
-    : 'https://example.com/dashboard';
+function createMockLocation(token?: string, search?: string): Location {
+  const parsedUrl = new URL('https://example.com/dashboard');
+  const searchParams = new URLSearchParams(search);
+
+  for (const [key, value] of searchParams) {
+    parsedUrl.searchParams.append(key, value);
+  }
+
+  if (token !== undefined) {
+    parsedUrl.searchParams.set('token', token);
+  }
+
+  const url = parsedUrl.toString();
 
   return {
     href: url,
-    search: token ? `?token=${encodeURIComponent(token)}` : '',
+    search: parsedUrl.search,
     protocol: 'https:',
     host: 'example.com',
     hostname: 'example.com',
@@ -38,10 +47,11 @@ function createMockHistory() {
   };
 }
 
-function setupBrowserMocks(token?: string) {
+function setupBrowserMocks(token?: string, search?: string) {
   const store: Record<string, string> = {};
+  const sessionStore: Record<string, string> = {};
 
-  const mockLocation = createMockLocation(token);
+  const mockLocation = createMockLocation(token, search);
   const mockHistory = createMockHistory();
 
   vi.stubGlobal('localStorage', {
@@ -59,11 +69,30 @@ function setupBrowserMocks(token?: string) {
     key: vi.fn(() => null)
   });
 
+  vi.stubGlobal('sessionStorage', {
+    getItem: vi.fn((key: string) => sessionStore[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      sessionStore[key] = value;
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete sessionStore[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(sessionStore).forEach((k) => delete sessionStore[k]);
+    }),
+    length: 0,
+    key: vi.fn(() => null)
+  });
+
   vi.stubGlobal('location', mockLocation);
   vi.stubGlobal('history', mockHistory);
   vi.stubGlobal('window', { location: mockLocation, history: mockHistory });
 
-  return store;
+  Object.defineProperty(store, 'sessionStore', {
+    value: sessionStore
+  });
+
+  return store as Record<string, string> & { sessionStore: Record<string, string> };
 }
 
 describe('session', () => {
@@ -95,13 +124,59 @@ describe('session', () => {
       expect(getAuthHeader()).toBe('existing-token');
     });
 
-    it('cleans token param from URL after hydration', async () => {
+    it('keeps token param in URL after hydration', async () => {
       setupBrowserMocks('some-token');
       const { hydrateFromUrl } = await import('./session');
 
       hydrateFromUrl();
 
-      expect(history.replaceState).toHaveBeenCalledWith({}, '', 'https://example.com/dashboard');
+      expect(history.replaceState).toHaveBeenCalledWith(
+        {},
+        '',
+        'https://example.com/dashboard?token=some-token'
+      );
+    });
+
+    it('keeps existing callback query params when hydrating token', async () => {
+      setupBrowserMocks('some-token', 'customerCode=C001&tab=follow');
+      const { hydrateFromUrl } = await import('./session');
+
+      hydrateFromUrl();
+
+      expect(history.replaceState).toHaveBeenCalledWith(
+        {},
+        '',
+        'https://example.com/dashboard?customerCode=C001&tab=follow&token=some-token'
+      );
+    });
+
+    it('restores query params captured before SSO login callback', async () => {
+      const store = setupBrowserMocks('some-token');
+      store.sessionStore['sso_login_return_search'] = 'customerCode=C001&tab=follow';
+      const { hydrateFromUrl } = await import('./session');
+
+      hydrateFromUrl();
+
+      expect(history.replaceState).toHaveBeenCalledWith(
+        {},
+        '',
+        'https://example.com/dashboard?token=some-token&customerCode=C001&tab=follow'
+      );
+      expect(store.sessionStore['sso_login_return_search']).toBeUndefined();
+    });
+
+    it('does not override callback query params when restoring preserved login query', async () => {
+      const store = setupBrowserMocks('some-token', 'tab=current');
+      store.sessionStore['sso_login_return_search'] = 'tab=follow&customerCode=C001';
+      const { hydrateFromUrl } = await import('./session');
+
+      hydrateFromUrl();
+
+      expect(history.replaceState).toHaveBeenCalledWith(
+        {},
+        '',
+        'https://example.com/dashboard?tab=current&token=some-token&customerCode=C001'
+      );
     });
 
     it('does nothing if no token in URL', async () => {
@@ -120,6 +195,27 @@ describe('session', () => {
       hydrateFromUrl();
 
       expect(getAuthHeader()).toBeNull();
+    });
+
+    it('stores current query before redirecting to SSO login', async () => {
+      const store = setupBrowserMocks(undefined, 'customerCode=C001&tab=follow&token=stale');
+      const { preserveLoginQueryFromCurrentUrl } = await import('./session');
+
+      preserveLoginQueryFromCurrentUrl();
+
+      expect(store.sessionStore['sso_login_return_search']).toBe(
+        'customerCode=C001&tab=follow&token=stale'
+      );
+    });
+
+    it('clears preserved login query when current URL has no non-token query', async () => {
+      const store = setupBrowserMocks();
+      store.sessionStore['sso_login_return_search'] = 'customerCode=C001';
+      const { preserveLoginQueryFromCurrentUrl } = await import('./session');
+
+      preserveLoginQueryFromCurrentUrl();
+
+      expect(store.sessionStore['sso_login_return_search']).toBeUndefined();
     });
   });
 
@@ -208,23 +304,70 @@ describe('session', () => {
       expect(getLogoutUrl()).toBeNull();
       expect(window.location.href).toBe('https://example.com');
     });
-  });
 
-  describe('clearAuth', () => {
-    it('removes token and logout metadata', async () => {
-      const store = setupBrowserMocks();
-      const { setAuthHeader, setLogoutUrl, clearAuth, getAuthHeader, getLogoutUrl } =
+    it('prefers explicit redirect url over cached logout url', async () => {
+      setupBrowserMocks();
+      const { setAuthHeader, setLogoutUrl, logout, getAuthHeader, getLogoutUrl } =
         await import('./session');
 
       setAuthHeader('Bearer token');
+      setLogoutUrl('https://sso/cached-logout');
+
+      logout('https://sso/forbidden-logout');
+
+      expect(getAuthHeader()).toBeNull();
+      expect(getLogoutUrl()).toBeNull();
+      expect(window.location.href).toBe('https://sso/forbidden-logout');
+    });
+  });
+
+  describe('clearAuth', () => {
+    it('removes token, logout metadata, and login user id', async () => {
+      const store = setupBrowserMocks();
+      const {
+        setAuthHeader,
+        setLoginUserId,
+        setLogoutUrl,
+        clearAuth,
+        getAuthHeader,
+        getLoginUserId,
+        getLogoutUrl
+      } = await import('./session');
+
+      setAuthHeader('Bearer token');
+      setLoginUserId('10086');
       setLogoutUrl('https://sso/logout');
 
       clearAuth();
 
       expect(getAuthHeader()).toBeNull();
+      expect(getLoginUserId()).toBeNull();
       expect(getLogoutUrl()).toBeNull();
       expect(store['sso_token']).toBeUndefined();
+      expect(store['sso_user_id']).toBeUndefined();
       expect(store['sso_logout_url']).toBeUndefined();
+    });
+  });
+
+  describe('getLoginUserId / setLoginUserId', () => {
+    it('writes and reads login user id', async () => {
+      const store = setupBrowserMocks();
+      const { setLoginUserId, getLoginUserId } = await import('./session');
+
+      setLoginUserId(' 10086 ');
+
+      expect(getLoginUserId()).toBe('10086');
+      expect(store['sso_user_id']).toBe('10086');
+    });
+
+    it('rejects empty login user id', async () => {
+      const store = setupBrowserMocks();
+      const { setLoginUserId, getLoginUserId } = await import('./session');
+
+      setLoginUserId('   ');
+
+      expect(getLoginUserId()).toBeNull();
+      expect(store['sso_user_id']).toBeUndefined();
     });
   });
 

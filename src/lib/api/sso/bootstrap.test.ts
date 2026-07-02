@@ -5,14 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mockSession = {
   getAuthHeader: vi.fn<() => string | null>(),
   setAuthHeader: vi.fn<(token: string) => void>(),
-  getLogoutUrl: vi.fn<() => string | null>()
+  getLogoutUrl: vi.fn<() => string | null>(),
+  setLogoutUrl: vi.fn<(url: string) => void>(),
+  preserveLoginQueryFromCurrentUrl: vi.fn<() => void>()
 };
 
 vi.mock('./session', () => ({
   getAuthHeader: () => mockSession.getAuthHeader(),
   setAuthHeader: (token: string) => mockSession.setAuthHeader(token),
   getLogoutUrl: () => mockSession.getLogoutUrl(),
-  setLogoutUrl: () => {},
+  setLogoutUrl: (url: string) => mockSession.setLogoutUrl(url),
+  preserveLoginQueryFromCurrentUrl: () => mockSession.preserveLoginQueryFromCurrentUrl(),
   clearAuth: () => {}
 }));
 
@@ -35,8 +38,6 @@ vi.mock('./set-headers', () => ({
 }));
 
 const mockLocation = { href: '' };
-vi.stubGlobal('window', { location: mockLocation });
-vi.stubGlobal('localStorage', { removeItem: vi.fn() });
 
 describe('bootstrap', () => {
   let originalFetch: typeof fetch;
@@ -44,11 +45,14 @@ describe('bootstrap', () => {
   beforeEach(() => {
     originalFetch = globalThis.fetch;
     mockLocation.href = 'https://example.com/dashboard';
+    vi.stubGlobal('window', { location: mockLocation });
+    vi.stubGlobal('localStorage', { removeItem: vi.fn() });
     vi.clearAllMocks();
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    vi.unstubAllGlobals();
   });
 
   it('injects auth header from session', async () => {
@@ -82,28 +86,18 @@ describe('bootstrap', () => {
     expect(mockSession.setAuthHeader).toHaveBeenCalledWith('Bearer refreshed-from-bootstrap');
   });
 
-  it('redirects to logoutUrl on 401 when url is cached', async () => {
-    mockSession.getAuthHeader.mockReturnValue('Bearer expired');
-    mockSession.getLogoutUrl.mockReturnValue('https://sso/logout');
-
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('Unauthorized', { status: 401 })
-    );
-
-    const { bootstrapRequest } = await import('./bootstrap');
-    const resp = await bootstrapRequest('/api/getLoginInfo');
-
-    expect(resp.status).toBe(401);
-    expect(mockLocation.href).toBe('https://sso/logout');
-  });
-
-  it('extracts logoutUrl from response body when not cached', async () => {
-    mockSession.getAuthHeader.mockReturnValue('Bearer expired');
-    mockSession.getLogoutUrl.mockReturnValue(null);
+  it('redirects to loginUrl on first-entry 401 when no auth token exists', async () => {
+    mockSession.getAuthHeader.mockReturnValue(null);
+    mockSession.getLogoutUrl.mockReturnValue('https://sso/cached-logout');
 
     globalThis.fetch = vi.fn().mockResolvedValue(
       new Response(
-        JSON.stringify({ data: { logoutUrl: 'https://sso/from-body' } }),
+        JSON.stringify({
+          data: {
+            loginUrl: 'https://sso/login',
+            logoutUrl: 'https://sso/logout'
+          }
+        }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       )
     );
@@ -112,16 +106,54 @@ describe('bootstrap', () => {
     const resp = await bootstrapRequest('/api/getLoginInfo');
 
     expect(resp.status).toBe(401);
-    expect(mockLocation.href).toBe('https://sso/from-body');
+    expect(mockSession.setLogoutUrl).toHaveBeenCalledWith('https://sso/logout');
+    expect(mockSession.preserveLoginQueryFromCurrentUrl).toHaveBeenCalledOnce();
+    expect(mockLocation.href).toBe('https://sso/login');
+  });
+
+  it('redirects to logoutUrl on expired-token 401 when url is cached', async () => {
+    mockSession.getAuthHeader.mockReturnValue('Bearer expired');
+    mockSession.getLogoutUrl.mockReturnValue('https://sso/logout');
+
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response('Unauthorized', { status: 401 }));
+
+    const { bootstrapRequest } = await import('./bootstrap');
+    const resp = await bootstrapRequest('/api/getLoginInfo');
+
+    expect(resp.status).toBe(401);
+    expect(mockSession.preserveLoginQueryFromCurrentUrl).not.toHaveBeenCalled();
+    expect(mockLocation.href).toBe('https://sso/logout');
+  });
+
+  it('extracts logoutUrl from response body for expired-token 401 when not cached', async () => {
+    mockSession.getAuthHeader.mockReturnValue('Bearer expired');
+    mockSession.getLogoutUrl.mockReturnValue(null);
+
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            loginUrl: 'https://sso/login-from-body',
+            logoutUrl: 'https://sso/logout-from-body'
+          }
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const { bootstrapRequest } = await import('./bootstrap');
+    const resp = await bootstrapRequest('/api/getLoginInfo');
+
+    expect(resp.status).toBe(401);
+    expect(mockSession.setLogoutUrl).toHaveBeenCalledWith('https://sso/logout-from-body');
+    expect(mockLocation.href).toBe('https://sso/logout-from-body');
   });
 
   it('skips redirect on 401 when no logoutUrl available anywhere', async () => {
     mockSession.getAuthHeader.mockReturnValue('Bearer expired');
     mockSession.getLogoutUrl.mockReturnValue(null);
 
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('Unauthorized', { status: 401 })
-    );
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response('Unauthorized', { status: 401 }));
 
     const { bootstrapRequest } = await import('./bootstrap');
     const resp = await bootstrapRequest('/api/getLoginInfo');

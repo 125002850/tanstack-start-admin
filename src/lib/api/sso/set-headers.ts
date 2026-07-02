@@ -1,9 +1,10 @@
 import { env } from '@/config/env';
-import { getAuthHeader, setAuthHeader } from './session';
+import { getAuthHeader, getLoginUserId, setAuthHeader } from './session';
 
 const H_SERVICE_ID = 'service-id';
 const H_CLIENT_ID = 'client-id';
 const H_SERVICE_CODE = 'service-code';
+const H_USER_ID = 'X-User-Id';
 
 function buildHeaders(headers?: HeadersInit): Headers {
   const merged = new Headers(headers);
@@ -30,8 +31,12 @@ export function setHeader(headers?: HeadersInit): Headers {
 export function createAuthHeaders(init?: HeadersInit): Headers {
   const headers = buildHeaders(init);
   const token = getAuthHeader();
+  const userId = getLoginUserId();
   if (token) {
     headers.set('Authorization', token);
+  }
+  if (userId) {
+    headers.set(H_USER_ID, userId);
   }
   return headers;
 }

@@ -5,12 +5,14 @@ import { createTransport, HttpError } from '@oig/react-query-generator/core';
 
 const mockSession = {
   getAuthHeader: vi.fn<() => string | null>(),
+  getLoginUserId: vi.fn<() => string | null>(),
   setAuthHeader: vi.fn<(token: string) => void>(),
   handleUnauthorized: vi.fn<() => void>()
 };
 
 vi.mock('./sso/session', () => ({
   getAuthHeader: () => mockSession.getAuthHeader(),
+  getLoginUserId: () => mockSession.getLoginUserId(),
   setAuthHeader: (token: string) => mockSession.setAuthHeader(token),
   handleUnauthorized: () => mockSession.handleUnauthorized()
 }));
@@ -19,8 +21,12 @@ vi.mock('./sso/set-headers', () => ({
   createAuthHeaders: (init?: HeadersInit) => {
     const headers = new Headers(init);
     const token = mockSession.getAuthHeader();
+    const userId = mockSession.getLoginUserId();
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
+    }
+    if (userId) {
+      headers.set('X-User-Id', userId);
     }
     return headers;
   },
@@ -80,6 +86,7 @@ describe('transport auth pipeline', () => {
 
   it('injects auth header from session into requests', async () => {
     mockSession.getAuthHeader.mockReturnValue('jwt-token-value');
+    mockSession.getLoginUserId.mockReturnValue(null);
 
     let capturedHeaders: Headers | undefined;
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
@@ -94,8 +101,26 @@ describe('transport auth pipeline', () => {
     expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-token-value');
   });
 
+  it('injects user id header from login session into requests', async () => {
+    mockSession.getAuthHeader.mockReturnValue('jwt-token-value');
+    mockSession.getLoginUserId.mockReturnValue('10086');
+
+    let capturedHeaders: Headers | undefined;
+    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
+      capturedHeaders = new Headers((init as RequestInit)?.headers);
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+
+    const transport = createAuthTransport();
+    await transport.customInstance('http://test/api', { method: 'GET' });
+
+    expect(mockSession.getLoginUserId).toHaveBeenCalled();
+    expect(capturedHeaders?.get('X-User-Id')).toBe('10086');
+  });
+
   it('skips auth header injection when no token stored', async () => {
     mockSession.getAuthHeader.mockReturnValue(null);
+    mockSession.getLoginUserId.mockReturnValue(null);
 
     let capturedHeaders: Headers | undefined;
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
@@ -165,6 +190,7 @@ describe('production transport module integration', () => {
 
   it('exports a working factory that injects token from session', async () => {
     mockSession.getAuthHeader.mockReturnValue('jwt-from-production');
+    mockSession.getLoginUserId.mockReturnValue('42');
 
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
       capturedHeaders = new Headers((init as RequestInit)?.headers);
@@ -177,6 +203,7 @@ describe('production transport module integration', () => {
     await client('/api/endpoint');
 
     expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-from-production');
+    expect(capturedHeaders?.get('X-User-Id')).toBe('42');
   });
 });
 
@@ -192,4 +219,3 @@ describe('production transport module integration', () => {
     }
     return null;
   }
-

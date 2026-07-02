@@ -1,5 +1,5 @@
 import { createAuthHeaders, refreshTokenFromResponse } from './set-headers';
-import { getLogoutUrl, setLogoutUrl } from './session';
+import { getLogoutUrl, preserveLoginQueryFromCurrentUrl, setLogoutUrl } from './session';
 
 const TOKEN_KEY = 'sso_token';
 
@@ -9,54 +9,69 @@ function removeToken() {
   } catch {}
 }
 
-function findLogoutUrl(value: unknown): string | null {
+export interface SsoRedirectUrls {
+  loginUrl?: string;
+  logoutUrl?: string;
+}
+
+export function collectSsoRedirectUrls(
+  value: unknown,
+  urls: SsoRedirectUrls = {}
+): SsoRedirectUrls {
   if (!value || typeof value !== 'object') {
-    return null;
+    return urls;
   }
 
   const record = value as Record<string, unknown>;
+  if (typeof record.loginUrl === 'string') {
+    urls.loginUrl = record.loginUrl;
+  }
   if (typeof record.logoutUrl === 'string') {
-    return record.logoutUrl;
+    urls.logoutUrl = record.logoutUrl;
   }
 
   for (const nestedValue of Object.values(record)) {
-    const found = findLogoutUrl(nestedValue);
-    if (found) {
-      return found;
-    }
+    collectSsoRedirectUrls(nestedValue, urls);
   }
 
-  return null;
+  return urls;
 }
 
-async function extractLogoutUrlFromBody(response: Response): Promise<string | null> {
+async function extractSsoRedirectUrlsFromBody(response: Response): Promise<SsoRedirectUrls> {
   try {
     const body = await response.clone().json();
-    return findLogoutUrl(body);
+    return collectSsoRedirectUrls(body);
   } catch {
-    return null;
+    return {};
   }
 }
 
 export async function bootstrapRequest(url: string, init?: RequestInit): Promise<Response> {
+  const headers = createAuthHeaders(init?.headers);
+  const hasAuthHeader = !!headers.get('authorization');
   const response = await fetch(url, {
     ...init,
-    headers: createAuthHeaders(init?.headers)
+    headers
   });
 
   if (response.status === 401) {
     removeToken();
 
-    let redirectUrl = getLogoutUrl();
+    const cachedLogoutUrl = getLogoutUrl();
+    const redirectUrls = await extractSsoRedirectUrlsFromBody(response);
 
-    if (!redirectUrl) {
-      redirectUrl = await extractLogoutUrlFromBody(response);
-      if (redirectUrl) {
-        setLogoutUrl(redirectUrl);
-      }
+    if (redirectUrls.logoutUrl) {
+      setLogoutUrl(redirectUrls.logoutUrl);
     }
 
+    const redirectUrl = hasAuthHeader
+      ? (redirectUrls.logoutUrl ?? cachedLogoutUrl)
+      : (redirectUrls.loginUrl ?? redirectUrls.logoutUrl ?? cachedLogoutUrl);
+
     if (redirectUrl) {
+      if (!hasAuthHeader) {
+        preserveLoginQueryFromCurrentUrl();
+      }
       window.location.href = redirectUrl;
     }
 
