@@ -1,260 +1,169 @@
-# TanStack Start SSR 部署说明
+# Docker / GitLab CI 部署说明
 
-本文档说明如何将当前项目以自建 SSR 方式部署，使用的运行形态为：
+当前项目是 Vite SPA，生产运行形态为：
 
-- Nitro `node-server`
-- Docker / Docker Compose
-- Nginx 反向代理
-
-本文档对应当前仓库状态，其中 `vite.config.ts` 已配置为：
-
-```ts
-nitro({ preset: 'node-server' });
-```
+- Docker build 阶段使用 Node + pnpm 执行 `pnpm build`
+- 最终镜像使用 Nginx 承载 `dist/` 静态文件
+- GitLab CI 沿用团队 `oig-cli-shared-utils` 模板构建、推送镜像并更新 K8s 镜像
 
 ## 涉及文件
 
-- `vite.config.ts`
+- `.gitlab-ci.yml`
 - `Dockerfile`
 - `.dockerignore`
 - `docker-compose.yml`
 - `nginx.conf.example`
+- `deploy/nginx.conf`
+- `deploy/<branch>/nginx.conf`
+- `deploy/<branch>/source.env`
 
-## 部署模型
+## CI 模型
 
-当前项目不是传统静态 SPA 的部署方式。
+流水线包含两个阶段：
 
-- Nginx 不直接托管 `dist/` 静态文件
-- 页面由 Docker 容器中的 Node SSR 服务动态返回
-- Nginx 只负责把请求转发给容器
-
-## 前置条件
-
-服务器需要具备以下环境：
-
-- Linux
-- Docker
-- Docker Compose
-- Nginx
-- 已解析到该服务器的域名
-
-当前项目在基础启动场景下不要求额外环境变量。
-
-本仓库统一使用 `pnpm` 作为包管理器，锁文件以 `pnpm-lock.yaml` 为准。
-
-## 首次部署
-
-### 1. 上传代码
-
-将项目代码放到服务器，例如：
-
-```bash
-mkdir -p /srv/tanstack-start-admin
-cd /srv/tanstack-start-admin
+```text
+build -> deploy
 ```
 
-然后把仓库内容上传到该目录。
+`build` 阶段执行：
 
-### 2. 构建并启动容器
+1. 读取团队远程模板中定义的 `UTILS_URL`
+2. 读取 `deploy/$CI_COMMIT_REF_NAME/source.env`
+3. 复制分支 Nginx 配置到 `deploy/nginx.conf`
+4. 使用项目级 `.npmrc-ci` 配置 npm 私服，避免写入 runner 用户目录
+5. 调用 `npx $UTILS_URL build:image`
 
-在项目根目录执行：
+项目构建不再在 CI 脚本里执行。`pnpm build` 位于 Dockerfile 的 builder stage 中，避免 CI 构建一次、Dockerfile 再构建一次。
+
+`deploy` 阶段沿用团队模板：
+
+```yaml
+extends:
+  - .include_env
+  - .deploy_k8s
+```
+
+团队工具会根据 `source.env` 中的 K8s 元数据执行镜像更新。
+
+## 分支约定
+
+当前配置：
+
+- `develop`：构建并部署
+- `main`：构建并部署
+- `release`：只构建镜像
+
+每个分支都需要存在：
+
+```text
+deploy/<branch>/nginx.conf
+deploy/<branch>/source.env
+```
+
+## source.env
+
+`source.env` 是 shell 文件，会被 CI `source`。
+
+当前默认字段：
+
+```bash
+export PROJECT_DIR=front
+export K8S_PROJECT=front
+export DEPLOYMENT_NAME=tanstack-start-admin-v1
+export VITE_ENABLE_WORKSPACE_TABS=1
+export VITE_ENABLE_DATA_TABLE_VIRTUALIZATION=1
+export VITE_APP_SSO_CLIENT_ID=
+export VITE_APP_SSO_SERVICE_ID=
+export VITE_APP_SSO_SERVICE_CODE=
+```
+
+说明：
+
+- `PROJECT_DIR` 影响镜像仓库路径：`nexus.oigit.cn/$PROJECT_DIR/$CI_PROJECT_NAME:<tag>`
+- `K8S_PROJECT` 是 K8s namespace
+- `DEPLOYMENT_NAME` 是需要更新镜像的工作负载
+- `VITE_*` 会在构建期固化到前端静态资源中
+
+如果实际 namespace 或工作负载名称不同，优先修改对应分支的 `source.env`。
+
+## Docker 镜像
+
+Dockerfile 使用 multi-stage：
+
+1. `nexus.oigit.cn/library/node:22-alpine` 安装依赖并执行 `pnpm build`
+2. 构建前执行 `pnpm codegen`，生成 `src/lib/api/clients/*/generated/` 和 `openapi/.generated/`
+3. 写入可选 `dist/version.js`
+4. `nexus.oigit.cn/library/nginx:1.21` 只复制 `dist/` 和 Nginx 配置
+
+`generated/` 目录不提交到仓库，因此 Docker build 必须在 `pnpm build` 前重新生成 API client。
+
+生产镜像默认约定：
+
+- `APP_BASE_PATH=/tanstack-start-admin`：前端公共路径，用于 Vite 静态资源 URL 和 TanStack Router `basepath`
+- `APP_GATEWAY=/admin-api`：后端接口网关前缀，用于 OpenAPI codegen 和 SSO 查询路径
+
+这两个变量职责不同，不能互相替代。前端页面访问路径是 `/tanstack-start-admin/`，后端接口路径是 `/admin-api/...`。
+
+最终容器监听 `80`。
+
+本地验证：
 
 ```bash
 docker compose up -d --build
+curl -I http://127.0.0.1:3000/tanstack-start-admin/
 ```
 
-这一步会完成：
-
-- 构建 Docker 镜像
-- 在构建阶段执行 `pnpm build`
-- 生成 `.output/server/index.mjs`
-- 启动监听 `3000` 端口的 SSR 服务
-
-### 3. 检查容器状态
-
-```bash
-docker compose ps
-```
-
-预期结果：
-
-- `tanstack-admin` 容器状态为 `Up`
-
-### 4. 查看应用日志
-
-```bash
-docker compose logs -f tanstack-admin
-```
-
-先确认没有启动报错。如果进程启动后立即退出，先排查应用问题，再继续配置 Nginx。
-
-### 5. 在宿主机上验证应用响应
-
-在接入 Nginx 前，先确认容器内应用本身可访问：
-
-```bash
-curl -I http://127.0.0.1:3000
-```
-
-预期结果：
-
-- 返回正常 HTTP 响应，例如 `200`、`301` 或 `404`
-- 不应该出现 `connection refused`
+`docker-compose.yml` 将宿主机 `127.0.0.1:3000` 映射到容器 `80`。
 
 ## Nginx 配置
 
-以 `nginx.conf.example` 为模板。
-
-Ubuntu 常见放置方式：
-
-```bash
-cp nginx.conf.example /etc/nginx/sites-available/tanstack-start-admin
-ln -s /etc/nginx/sites-available/tanstack-start-admin /etc/nginx/sites-enabled/tanstack-start-admin
-```
-
-需要修改：
-
-- `server_name your-domain.com;`
-
-替换成真实域名。
-
-当前 Nginx 配置会把所有请求转发到：
+当前 Nginx 配置用于子路径 SPA：
 
 ```nginx
-proxy_pass http://127.0.0.1:3000;
+root /usr/share/nginx/html;
+index index.html;
+
+location = / {
+    return 302 /tanstack-start-admin/;
+}
+
+location /tanstack-start-admin/ {
+    try_files $uri $uri/ /tanstack-start-admin/index.html;
+}
 ```
 
-注意：
+说明：
 
-- 不要使用 SPA 场景下常见的 `try_files $uri /index.html`
-- 当前项目是 SSR，不是静态前端站点
+- Dockerfile 将 `dist/` 复制到 `/usr/share/nginx/html/tanstack-start-admin`，因此 Nginx 使用 `root + /tanstack-start-admin/...` 即可直接命中文件。
+- 只有 `/tanstack-start-admin/` 进入 SPA fallback，避免 `/admin-api/...` API 请求被前端 `index.html` 吃掉。
+- `index index.html` 放在 `server` 级，对当前 server 的 location 生效，不需要在 `location /` 内重复配置。
+- `client_max_body_size`、`absolute_redirect`、gzip 和 proxy timeout 作为团队 Nginx 基线配置保留在 `server` 级。
+- 当前容器只承载静态资源，`proxy_*` timeout 只有在后续增加 `proxy_pass` 的 API location 时才会实际生效。
 
-### 校验并重载 Nginx
+静态资源设置长期缓存，`version.js` 设置 `no-store`。
+
+如果生产环境需要在前端容器内代理后端 API，应在对应分支的 `deploy/<branch>/nginx.conf` 中增加明确的 API location；不要把未知后端地址写进公共默认配置。
+
+## 验收
+
+提交前至少执行：
 
 ```bash
-nginx -t
-systemctl reload nginx
+APP_BASE_PATH=/tanstack-start-admin APP_GATEWAY=/admin-api pnpm codegen
+APP_BASE_PATH=/tanstack-start-admin APP_GATEWAY=/admin-api pnpm build
 ```
 
-### 通过 Nginx 验证
+具备 Docker daemon 时继续执行：
 
 ```bash
-curl -I http://your-domain.com
+docker build -t tanstack-start-admin:local .
+docker run --rm -p 3000:80 tanstack-start-admin:local
+curl -I http://127.0.0.1:3000/tanstack-start-admin/
 ```
 
-预期结果：
+CI 首次跑通后，重点检查：
 
-- 返回正常 HTTP 响应
-
-## HTTPS
-
-如果需要 HTTPS，建议在 Nginx 层做 TLS 终止，容器内应用继续使用 HTTP。
-
-典型结构：
-
-- Nginx 暴露 `80/443`
-- 应用容器继续监听 `3000`
-- Nginx 保留 `Host` 和 `X-Forwarded-*` 请求头
-
-## 更新发布
-
-如果采用服务器本机构建方式，可按以下流程更新：
-
-```bash
-cd /srv/tanstack-start-admin
-git pull
-docker compose up -d --build
-docker image prune -f
-```
-
-这会重新构建镜像，并以新代码重启容器。
-
-## 运行时检查
-
-部署完成后，建议执行以下检查：
-
-```bash
-docker compose ps
-docker compose logs --tail=100 tanstack-admin
-curl -I http://127.0.0.1:3000
-curl -I http://your-domain.com
-```
-
-可选端口检查：
-
-```bash
-ss -lntp | grep 3000
-```
-
-## 故障排查
-
-### 502 Bad Gateway
-
-先检查：
-
-```bash
-docker compose logs -f tanstack-admin
-curl -I http://127.0.0.1:3000
-```
-
-如果 `127.0.0.1:3000` 无法响应，问题在应用容器，不在 Nginx。
-
-### 容器启动后立即退出
-
-检查：
-
-```bash
-docker compose logs -f tanstack-admin
-```
-
-常见原因：
-
-- 构建失败
-- 运行命令错误
-- 运行时缺少必要文件
-
-### 本机可访问，外网不可访问
-
-检查以下项目：
-
-- Nginx 是否加载了正确配置
-- 防火墙是否放行 `80/443`
-- DNS 是否正确指向当前服务器
-
-### 沿用了静态 SPA 配置
-
-如果 Nginx 中还保留了：
-
-```nginx
-try_files $uri /index.html;
-```
-
-请删除。这个规则适用于前端静态 SPA，不适用于 SSR Node 应用。
-
-## 环境变量
-
-当前项目在基础启动时不依赖额外环境变量。
-
-如果后续需要增加：
-
-- 服务端敏感变量应通过 Docker 运行时注入
-- 不要把敏感信息写进镜像
-- 除非变量需要暴露给浏览器，否则不要使用 `VITE_` 前缀
-
-未来可放在 `docker-compose.yml` 中，例如：
-
-```yaml
-environment:
-  NODE_ENV: production
-  PORT: 3000
-  HOST: 0.0.0.0
-```
-
-## 总结
-
-当前项目的部署链路是：
-
-1. 用 Docker 构建镜像
-2. 在容器中运行 TanStack Start SSR 服务
-3. 由 Nginx 将请求转发到 `127.0.0.1:3000`
-4. 通过容器状态、宿主机响应和域名响应完成验收
+- `build:image` 是否成功 push 到 `nexus.oigit.cn/front/tanstack-start-admin`
+- `develop` / `main` 的 `deploy` 阶段是否更新到正确 namespace
+- 浏览器访问深层路由是否能回退到 `index.html`
+- `/admin-api/...` API 路由是否由 Ingress 或后端服务正确承接，不能落到前端 SPA fallback

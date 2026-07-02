@@ -1,10 +1,10 @@
-# 业务跟进工作台
+# TanStack Admin Framework
 
 ## 项目概览
 
-这是一个基于 **TanStack Router、Shadcn UI、TypeScript 与 Tailwind CSS** 构建的 **纯 SPA 业务跟进工作台**。
+这是一个基于 **TanStack Router、Shadcn UI、TypeScript 与 Tailwind CSS** 构建的 **纯 SPA 后台管理框架**。
 
-它提供了一套可直接用于生产环境的 **后台界面基础设施**，包含图表、表格、表单、字典管理、看板、聊天，以及按业务拆分的目录结构，适合用于 **SaaS 产品、内部工具和管理后台**。
+它提供了一套可直接用于生产环境的 **后台界面基础设施**，包含图表、表格、表单、字典管理、导出中心、看板、聊天，以及按功能拆分的目录结构，适合用于 **SaaS 应用、内部工具和管理后台**。
 
 ### 技术栈
 
@@ -42,7 +42,7 @@
 
 - **多主题支持**，内置 10+ 主题并支持快速切换
 
-- **按业务功能划分的目录结构**，更适合扩展型项目
+- **按功能划分的目录结构**，更适合扩展型项目
 
 - **Kanban 看板**，支持拖拽交互（dnd-kit + Zustand）
 
@@ -62,20 +62,17 @@
 
 ## 页面说明
 
-| 页面                                       | 说明                                                                                           |
-| :----------------------------------------- | :--------------------------------------------------------------------------------------------- |
-| [数据概览](/dashboard/overview)            | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离               |
-| [产品列表（表格）](/dashboard/product)     | 基于 TanStack Table + React Query，结合路由预取、客户端缓存和 URL 搜索参数实现搜索、筛选与分页 |
-| [新建产品表单](/dashboard/product/new)     | 使用 TanStack Form + Zod，并通过 `useMutation` 完成新增与编辑，成功后做缓存失效处理            |
-| [用户列表（表格）](/dashboard/users)       | 用户表格页，使用 React Query + URL 状态模式，整体架构与产品模块保持一致                        |
-| [React Query 示例](/dashboard/react-query) | 以 Pokemon API 为例，演示 route loader + `useSuspenseQuery` + 客户端缓存模式                   |
-| [Kanban 看板](/dashboard/kanban)           | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                                 |
-| [聊天](/dashboard/chat)                    | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                                       |
-| [通知中心](/dashboard/notifications)                 | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                                     |
-| [字典管理](/dashboard/system-management/dictionaries) | 字典类型管理 + 字典项增删改查，支持 Sheet 抽屉交互和搜索筛选                                 |
-| [系统管理](/dashboard/system-management)            | 系统管理导航页面，提供字典管理、基础设置等模块入口                                              |
-| [表单示例](/dashboard/forms/basic)                   | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                                      |
-| [未找到页面](/notfound)                              | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面                         |
+| 页面                                                | 说明                                                                           |
+| :-------------------------------------------------- | :----------------------------------------------------------------------------- |
+| [数据概览](/dashboard/overview)                     | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离 |
+| [Kanban 看板](/dashboard/kanban)                    | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                 |
+| [聊天](/dashboard/chat)                             | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                       |
+| [通知中心](/dashboard/notifications)                | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                     |
+| [字典管理](/dashboard/system-management/dictionaries) | 字典类型管理 + 字典项增删改查，支持 Sheet 抽屉交互和搜索筛选                   |
+| [导出中心](/dashboard/system-management/export-center) | 管理异步导出任务、导出进度、文件下载和失败重试                                 |
+| [系统管理](/dashboard/system-management)            | 系统管理导航页面，提供字典管理、导出中心等基础设施入口                         |
+| [表单示例](/dashboard/forms/basic)                  | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                      |
+| [未找到页面](/notfound)                             | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面         |
 
 ## 按功能划分的目录结构
 
@@ -86,17 +83,14 @@ src/
 │   ├── index.tsx                  # 首页（认证跳转）
 │   ├── auth/                      # 认证页面（登录、注册）
 │   ├── dashboard.tsx              # 控制台布局（侧边栏、头部、KBar）
-│   └── dashboard/                 # 控制台业务页面
+│   └── dashboard/                 # 控制台页面
 │       ├── overview.tsx           # 概览页，使用 Suspense 做分区加载
-│       ├── product/               # 产品 CRUD（route loader + React Query）
-│       ├── users.tsx              # 用户表格页（route loader + React Query）
-│       ├── react-query.tsx        # React Query 示例页
 │       ├── kanban.tsx             # 任务看板页
 │       ├── chat.tsx               # 聊天页面
 │       ├── notifications.tsx      # 通知页面
 │       ├── forms/                 # 表单示例
 │       ├── elements/              # UI 展示页
-│       └── system-management/     # 系统管理（字典管理、基础设置）
+│       └── system-management/     # 系统管理（字典管理、导出中心）
 │
 ├── components/                    # 共享组件
 │   ├── ui/                        # UI 基础组件（button、input、kanban 等）
@@ -104,15 +98,13 @@ src/
 │   ├── themes/                    # 主题系统（selector、mode toggle、config）
 │   └── kbar/                      # Command+K 命令面板
 │
-├── features/                      # 按业务功能组织的模块
+├── features/                      # 按功能组织的模块
 │   ├── overview/                  # 控制台数据概览（图表、卡片）
-│   ├── products/                  # 产品列表、表单、表格（React Query）
-│   ├── users/                     # 用户管理表格（React Query）
-│   ├── react-query-demo/          # React Query 示例（Pokemon API）
 │   ├── kanban/                    # 拖拽任务看板
 │   ├── chat/                      # 聊天模块（会话、气泡、输入框）
 │   ├── notifications/             # 通知中心与状态存储
 │   ├── dictionaries/              # 字典管理（类型 + 字典项 CRUD）
+│   ├── export-center/             # 导出中心（任务列表、下载、重试）
 │   ├── workspace-tabs/            # 工作区页签系统（注册表、LRU 淘汰、拖拽排序）
 │   ├── auth/                      # 认证相关组件
 │   └── forms/                     # 表单展示模块
@@ -231,25 +223,23 @@ import { createFileRoute } from '@tanstack/react-router';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
 const meta = defineRouteMeta({
-  label: '用户',
-  title: '概览: 用户管理',
+  label: '字典管理',
+  title: '系统管理：字典管理',
   nav: {
     visible: true,
-    group: 'overview',
-    order: 30,
-    icon: 'teams',
-    shortcut: ['u', 'u']
+    group: 'systemManagement',
+    order: 10,
+    icon: 'databaseCog',
+    shortcut: ['d', 'm']
   },
-  page: {
-    title: 'Users',
-    description: 'Manage users (React Query + search params table pattern.)',
-    infoContent: usersInfoContent
+  workspace: {
+    refreshPolicy: 'query-invalidate'
   }
 });
 
-export const Route = createFileRoute('/dashboard/users')({
+export const Route = createFileRoute('/dashboard/system-management/dictionaries')({
   ...meta,
-  component: UsersPage
+  component: DictionariesPage
 });
 ```
 
@@ -387,8 +377,8 @@ export const MAX_KEEPALIVE_TABS = 15;
 // src/config/data-table.ts
 import { env } from './env';
 
-export function isProductTableVirtualizationEnabled(): boolean {
-  if (!env.productTableVirtualization) return false;
+export function isDataTableVirtualizationEnabled(): boolean {
+  if (!env.dataTableVirtualization) return false;
   return isBrowserSupportedForVirtualization(); // 额外的运行时检测
 }
 ```
@@ -403,11 +393,11 @@ export function isProductTableVirtualizationEnabled(): boolean {
 
 ### 请求头注入
 
-认证相关的环境值仍由 `env.ts` 提供，但请求头组装和 API 中间件统一放在 `src/lib/api/interceptors/`：
+认证相关的环境值仍由 `env.ts` 提供，但请求头组装集中放在 `src/lib/api/sso/`，并由共享 transport 统一调用：
 
 ```ts
-// src/lib/api/interceptors/set-header.ts
-export function setHeader(headers?: HeadersInit): Headers {
+// src/lib/api/sso/set-headers.ts
+export function setSsoHeaders(headers?: HeadersInit): Headers {
   const merged = new Headers(headers);
 
   if (env.ssoServiceID) {
@@ -428,15 +418,16 @@ export function setHeader(headers?: HeadersInit): Headers {
 
 所有 HTTP 请求都复用项目自维护的共享 transport：
 
-- `apiRequestMiddleware`：调用 `setHeader()` 注入认证头
-- `apiResponseMiddleware`：集中处理响应头扩展点
+- `src/lib/api/transport.ts`：集中创建请求实例并调用 `setSsoHeaders()`
+- `src/lib/api/sso/session.ts`：维护 SSO 会话状态
+- `src/lib/api/sso/bootstrap.ts`：负责启动阶段的 SSO 初始化
 
-`registerApiClientMiddlewares()` 在 `src/lib/api/transport/create-api-client-custom-instance.ts` 中只执行一次。`pnpm codegen` 结束后会自动执行 `scripts/apply-api-client-middlewares.mjs`，把 `openapi/.generated/*-orval-mutator.ts` 改写成对共享 transport 工厂的转发层，而不是在 generated 文件里直接注册 middleware。
+OpenAPI client 当前仍保留在 `src/lib/api/clients/service/`，后续可在后端框架抽离完成后重新生成干净 client。
 
 ## 快速开始
 
 > [!NOTE]
-> 这个业务跟进工作台基于 **TanStack Router**、**React 19**、**Vite 7** 和 **Shadcn UI** 构建，采用纯 SPA 架构。可按以下步骤在本地运行：
+> 这个后台管理框架基于 **TanStack Router**、**React 19**、**Vite 7** 和 **Shadcn UI** 构建，采用纯 SPA 架构。可按以下步骤在本地运行：
 
 克隆仓库：
 

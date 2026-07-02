@@ -2625,9 +2625,24 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "text",
-              "compose"
+              "compose",
+              "text"
             ]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/CollectOrderDetailConditionNode"
+            }
           },
           "field": {
             "type": "string",
@@ -2670,29 +2685,14 @@
           },
           "payloadValid": {
             "type": "boolean"
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/CollectOrderDetailConditionNode"
-            }
           }
         },
         "description": "订单催收明细动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "text": "#/components/schemas/CollectOrderDetailTextCondition",
-            "compose": "#/components/schemas/CollectOrderDetailGroupCondition"
+            "compose": "#/components/schemas/CollectOrderDetailGroupCondition",
+            "text": "#/components/schemas/CollectOrderDetailTextCondition"
           }
         },
         "oneOf": [
@@ -3062,27 +3062,19 @@
         "description": "订单催收明细"
       },
       "PageResultCollectOrderDetailRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/CollectOrderDetailRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultCollectOrderDetailRspDTO": {
         "type": "object",
@@ -3268,15 +3260,20 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "text",
+              "dateTime",
               "compose",
-              "dateTime"
+              "text"
             ]
           },
           "field": {
             "type": "string",
-            "description": "文本字段；时间字段",
+            "description": "时间字段；文本字段",
             "enum": [
+              "createTime",
+              "updateTime",
+              "expectedResolveTime",
+              "actualResolveTime",
+              "finishTime",
               "trackNo",
               "customerCode",
               "customerName",
@@ -3287,43 +3284,38 @@
               "trackMethod",
               "handlerUserName",
               "siteVisitRecord",
-              "riskEscalated",
-              "createTime",
-              "updateTime",
-              "expectedResolveTime",
-              "actualResolveTime",
-              "finishTime"
+              "riskEscalated"
             ]
           },
           "op": {
             "type": "string",
-            "description": "文本操作符；时间操作符",
+            "description": "时间操作符；文本操作符",
             "enum": [
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN",
-              "IS_NULL",
-              "IS_NOT_NULL",
               "GT",
               "GTE",
               "LT",
               "LTE",
-              "BETWEEN"
+              "BETWEEN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN"
             ]
           },
           "value": {
             "type": "string",
-            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
           },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           },
           "payloadValid": {
             "type": "boolean"
@@ -3343,22 +3335,22 @@
               "$ref": "#/components/schemas/TrackRecordConditionNode"
             }
           },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
           }
         },
         "description": "跟进记录动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "text": "#/components/schemas/TrackRecordTextCondition",
+            "dateTime": "#/components/schemas/TrackRecordDateTimeCondition",
             "compose": "#/components/schemas/TrackRecordGroupCondition",
-            "dateTime": "#/components/schemas/TrackRecordDateTimeCondition"
+            "text": "#/components/schemas/TrackRecordTextCondition"
           }
         },
         "oneOf": [
@@ -3658,27 +3650,19 @@
         "description": "附件项"
       },
       "PageResultTrackRecordRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/TrackRecordRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultTrackRecordRspDTO": {
         "type": "object",
@@ -3849,9 +3833,24 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "text",
-              "compose"
+              "compose",
+              "text"
             ]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/CustomerSummaryConditionNode"
+            }
           },
           "field": {
             "type": "string",
@@ -3894,29 +3893,14 @@
           },
           "payloadValid": {
             "type": "boolean"
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/CustomerSummaryConditionNode"
-            }
           }
         },
         "description": "客户汇总动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "text": "#/components/schemas/CustomerSummaryTextCondition",
-            "compose": "#/components/schemas/CustomerSummaryGroupCondition"
+            "compose": "#/components/schemas/CustomerSummaryGroupCondition",
+            "text": "#/components/schemas/CustomerSummaryTextCondition"
           }
         },
         "oneOf": [
@@ -4396,27 +4380,19 @@
         "description": "客户情况汇总"
       },
       "PageResultCustomerSummaryRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/CustomerSummaryRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultCustomerSummaryRspDTO": {
         "type": "object",
@@ -4477,9 +4453,24 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "text",
-              "compose"
+              "compose",
+              "text"
             ]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/CustomerOrderTabConditionNode"
+            }
           },
           "field": {
             "type": "string",
@@ -4517,29 +4508,14 @@
           },
           "payloadValid": {
             "type": "boolean"
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/CustomerOrderTabConditionNode"
-            }
           }
         },
         "description": "客户订单型子页签动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "text": "#/components/schemas/CustomerOrderTabTextCondition",
-            "compose": "#/components/schemas/CustomerOrderTabGroupCondition"
+            "compose": "#/components/schemas/CustomerOrderTabGroupCondition",
+            "text": "#/components/schemas/CustomerOrderTabTextCondition"
           }
         },
         "oneOf": [
@@ -4847,27 +4823,19 @@
         "description": "逾期订单明细"
       },
       "PageResultOverdueOrderRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/OverdueOrderRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultOverdueOrderRspDTO": {
         "type": "object",
@@ -5071,27 +5039,19 @@
         "description": "超期未电放明细"
       },
       "PageResultOverdueNotTelexReleaseRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/OverdueNotTelexReleaseRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultOverdueNotTelexReleaseRspDTO": {
         "type": "object",
@@ -5255,27 +5215,19 @@
         "description": "超期未发船明细"
       },
       "PageResultOverdueNotShippedRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/OverdueNotShippedRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultOverdueNotShippedRspDTO": {
         "type": "object",
@@ -5464,27 +5416,19 @@
         "description": "超期未放行明细"
       },
       "PageResultOverdueNotReleaseRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/OverdueNotReleaseRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultOverdueNotReleaseRspDTO": {
         "type": "object",
@@ -5673,27 +5617,19 @@
         "description": "超期未入库明细"
       },
       "PageResultOverdueNotInwarehouseRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/OverdueNotInwarehouseRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultOverdueNotInwarehouseRspDTO": {
         "type": "object",
@@ -5864,27 +5800,19 @@
         "description": "订单关闭明细"
       },
       "PageResultOrderCloseDetailRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/OrderCloseDetailRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultOrderCloseDetailRspDTO": {
         "type": "object",
@@ -6003,24 +5931,9 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "compose",
-              "text"
+              "text",
+              "compose"
             ]
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/CustomerInventoryConditionNode"
-            }
           },
           "field": {
             "type": "string",
@@ -6060,14 +5973,29 @@
           },
           "payloadValid": {
             "type": "boolean"
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/CustomerInventoryConditionNode"
+            }
           }
         },
         "description": "客户库存动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "compose": "#/components/schemas/CustomerInventoryGroupCondition",
-            "text": "#/components/schemas/CustomerInventoryTextCondition"
+            "text": "#/components/schemas/CustomerInventoryTextCondition",
+            "compose": "#/components/schemas/CustomerInventoryGroupCondition"
           }
         },
         "oneOf": [
@@ -6469,27 +6397,19 @@
         "description": "客户库存明细"
       },
       "PageResultCustomerInventoryRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/CustomerInventoryRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultCustomerInventoryRspDTO": {
         "type": "object",
@@ -6827,27 +6747,19 @@
         }
       },
       "PageResultFinanceLoanDetailRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/FinanceLoanDetailRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultFinanceLoanDetailRspDTO": {
         "type": "object",
@@ -7022,27 +6934,19 @@
         "description": "临期订单明细"
       },
       "PageResultExpiringOrderRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/ExpiringOrderRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultExpiringOrderRspDTO": {
         "type": "object",
@@ -7731,62 +7635,10 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "dateTime",
+              "compose",
               "text",
-              "compose"
+              "dateTime"
             ]
-          },
-          "field": {
-            "type": "string",
-            "description": "时间字段；文本字段",
-            "enum": [
-              "createTime",
-              "customerCode",
-              "customerName",
-              "ownerUserName",
-              "assistUserName"
-            ]
-          },
-          "op": {
-            "type": "string",
-            "description": "时间操作符；文本操作符",
-            "enum": [
-              "GT",
-              "GTE",
-              "LT",
-              "LTE",
-              "BETWEEN",
-              "IS_NULL",
-              "IS_NOT_NULL",
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN"
-            ]
-          },
-          "value": {
-            "type": "string",
-            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "payloadValid": {
-            "type": "boolean"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
           },
           "logic": {
             "type": "string",
@@ -7802,15 +7654,67 @@
             "items": {
               "$ref": "#/components/schemas/TrackOwnerRelConditionNode"
             }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段",
+            "enum": [
+              "customerCode",
+              "customerName",
+              "ownerUserName",
+              "assistUserName",
+              "createTime"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           }
         },
         "description": "客户跟踪人关系动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "dateTime": "#/components/schemas/TrackOwnerRelDateTimeCondition",
+            "compose": "#/components/schemas/TrackOwnerRelGroupCondition",
             "text": "#/components/schemas/TrackOwnerRelTextCondition",
-            "compose": "#/components/schemas/TrackOwnerRelGroupCondition"
+            "dateTime": "#/components/schemas/TrackOwnerRelDateTimeCondition"
           }
         },
         "oneOf": [
@@ -8057,27 +7961,19 @@
         ]
       },
       "PageResultTrackOwnerRelRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/TrackOwnerRelRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultTrackOwnerRelRspDTO": {
         "type": "object",
@@ -8373,64 +8269,10 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "dateTime",
+              "compose",
               "text",
-              "compose"
+              "dateTime"
             ]
-          },
-          "field": {
-            "type": "string",
-            "description": "时间字段；文本字段",
-            "enum": [
-              "createTime",
-              "staffCode",
-              "userName",
-              "account",
-              "mobile",
-              "status",
-              "dataScope"
-            ]
-          },
-          "op": {
-            "type": "string",
-            "description": "时间操作符；文本操作符",
-            "enum": [
-              "GT",
-              "GTE",
-              "LT",
-              "LTE",
-              "BETWEEN",
-              "IS_NULL",
-              "IS_NOT_NULL",
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN"
-            ]
-          },
-          "value": {
-            "type": "string",
-            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "payloadValid": {
-            "type": "boolean"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
           },
           "logic": {
             "type": "string",
@@ -8446,15 +8288,69 @@
             "items": {
               "$ref": "#/components/schemas/TrackFollowerConditionNode"
             }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段",
+            "enum": [
+              "staffCode",
+              "userName",
+              "account",
+              "mobile",
+              "status",
+              "dataScope",
+              "createTime"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           }
         },
         "description": "跟进人动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "dateTime": "#/components/schemas/TrackFollowerDateTimeCondition",
+            "compose": "#/components/schemas/TrackFollowerGroupCondition",
             "text": "#/components/schemas/TrackFollowerTextCondition",
-            "compose": "#/components/schemas/TrackFollowerGroupCondition"
+            "dateTime": "#/components/schemas/TrackFollowerDateTimeCondition"
           }
         },
         "oneOf": [
@@ -8703,27 +8599,19 @@
         ]
       },
       "PageResultTrackFollowerRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/TrackFollowerRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultTrackFollowerRspDTO": {
         "type": "object",
@@ -8932,30 +8820,48 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "enum",
-              "dateTime",
+              "compose",
               "text",
-              "compose"
+              "dateTime",
+              "enum"
             ]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/ExportRecordConditionNode"
+            }
           },
           "field": {
             "type": "string",
-            "description": "枚举字段；时间字段；文本字段",
+            "description": "文本字段；时间字段；枚举字段",
             "enum": [
-              "status",
+              "exportBizCode",
+              "exportBizName",
+              "fileName",
               "createTime",
               "finishedTime",
               "expireTime",
-              "exportBizCode",
-              "exportBizName",
-              "fileName"
+              "status"
             ]
           },
           "op": {
             "type": "string",
-            "description": "枚举操作符；时间操作符；文本操作符",
+            "description": "文本操作符；时间操作符；枚举操作符",
             "enum": [
               "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
               "IN",
               "IS_NULL",
               "IS_NOT_NULL",
@@ -8963,10 +8869,7 @@
               "GTE",
               "LT",
               "LTE",
-              "BETWEEN",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH"
+              "BETWEEN"
             ]
           },
           "value": {
@@ -8989,31 +8892,16 @@
           "end": {
             "type": "string",
             "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/ExportRecordConditionNode"
-            }
           }
         },
         "description": "导出记录动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "enum": "#/components/schemas/ExportRecordEnumCondition",
-            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
+            "compose": "#/components/schemas/ExportRecordGroupCondition",
             "text": "#/components/schemas/ExportRecordTextCondition",
-            "compose": "#/components/schemas/ExportRecordGroupCondition"
+            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
+            "enum": "#/components/schemas/ExportRecordEnumCondition"
           }
         },
         "oneOf": [
@@ -9412,27 +9300,19 @@
         "description": "导出记录响应"
       },
       "PageResultExportRecordRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/ExportRecordRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultExportRecordRspDTO": {
         "type": "object",
@@ -9616,60 +9496,10 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "dateTime",
+              "compose",
               "text",
-              "compose"
+              "dateTime"
             ]
-          },
-          "field": {
-            "type": "string",
-            "description": "时间字段；文本字段",
-            "enum": [
-              "createTime",
-              "dictTypeCode",
-              "dictTypeName"
-            ]
-          },
-          "op": {
-            "type": "string",
-            "description": "时间操作符；文本操作符",
-            "enum": [
-              "GT",
-              "GTE",
-              "LT",
-              "LTE",
-              "BETWEEN",
-              "IS_NULL",
-              "IS_NOT_NULL",
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN"
-            ]
-          },
-          "value": {
-            "type": "string",
-            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "payloadValid": {
-            "type": "boolean"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
           },
           "logic": {
             "type": "string",
@@ -9685,15 +9515,65 @@
             "items": {
               "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
             }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段",
+            "enum": [
+              "dictTypeCode",
+              "dictTypeName",
+              "createTime"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           }
         },
         "description": "全局字典类型动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition",
+            "compose": "#/components/schemas/GlobalDictTypeGroupCondition",
             "text": "#/components/schemas/GlobalDictTypeTextCondition",
-            "compose": "#/components/schemas/GlobalDictTypeGroupCondition"
+            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition"
           }
         },
         "oneOf": [
@@ -9996,27 +9876,19 @@
         "description": "全局字典类型响应"
       },
       "PageResultGlobalDictTypeRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultGlobalDictTypeRspDTO": {
         "type": "object",
@@ -10134,61 +10006,10 @@
             "type": "string",
             "description": "节点类型",
             "enum": [
-              "dateTime",
+              "compose",
               "text",
-              "compose"
+              "dateTime"
             ]
-          },
-          "field": {
-            "type": "string",
-            "description": "时间字段；文本字段",
-            "enum": [
-              "createTime",
-              "dictTypeCode",
-              "dictItemCode",
-              "dictItemName"
-            ]
-          },
-          "op": {
-            "type": "string",
-            "description": "时间操作符；文本操作符",
-            "enum": [
-              "GT",
-              "GTE",
-              "LT",
-              "LTE",
-              "BETWEEN",
-              "IS_NULL",
-              "IS_NOT_NULL",
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN"
-            ]
-          },
-          "value": {
-            "type": "string",
-            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "payloadValid": {
-            "type": "boolean"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
           },
           "logic": {
             "type": "string",
@@ -10204,15 +10025,66 @@
             "items": {
               "$ref": "#/components/schemas/GlobalDictItemConditionNode"
             }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段",
+            "enum": [
+              "dictTypeCode",
+              "dictItemCode",
+              "dictItemName",
+              "createTime"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
           }
         },
         "description": "全局字典项动态查询节点",
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "dateTime": "#/components/schemas/GlobalDictItemDateTimeCondition",
+            "compose": "#/components/schemas/GlobalDictItemGroupCondition",
             "text": "#/components/schemas/GlobalDictItemTextCondition",
-            "compose": "#/components/schemas/GlobalDictItemGroupCondition"
+            "dateTime": "#/components/schemas/GlobalDictItemDateTimeCondition"
           }
         },
         "oneOf": [
@@ -10524,27 +10396,19 @@
         "description": "字典项响应"
       },
       "PageResultDictItemRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
         "type": "object",
         "properties": {
           "total": {
             "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
+            "format": "int64"
           },
           "list": {
             "type": "array",
-            "description": "当前页数据列表",
             "items": {
               "$ref": "#/components/schemas/DictItemRspDTO"
             }
           }
-        },
-        "description": "分页结果"
+        }
       },
       "RPageResultDictItemRspDTO": {
         "type": "object",
