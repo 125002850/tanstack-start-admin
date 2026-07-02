@@ -124,15 +124,15 @@ describe('workspace-tags store', () => {
     });
 
     it('updates href and title on re-activation', () => {
-      const tab = makeTab({ href: '/dashboard/product' });
+      const tab = makeTab({ href: '/dashboard/items' });
       useWorkspaceTabStore.getState().openOrActivate(tab);
       useWorkspaceTabStore
         .getState()
         .openOrActivate(
-          makeTab({ id: tab.id, href: '/dashboard/product?page=2', title: 'Updated' })
+          makeTab({ id: tab.id, href: '/dashboard/items?page=2', title: 'Updated' })
         );
       const updated = useWorkspaceTabStore.getState().tabs[tab.id];
-      expect(updated.href).toBe('/dashboard/product?page=2');
+      expect(updated.href).toBe('/dashboard/items?page=2');
       expect(updated.title).toBe('Updated');
     });
 
@@ -152,13 +152,13 @@ describe('workspace-tags store', () => {
     it('pins home tab to the first position when it is opened after other tabs', () => {
       const store = useWorkspaceTabStore.getState();
       store.openOrActivate(
-        makeTab({ id: 'products', href: '/dashboard/product', title: 'Products' })
+        makeTab({ id: 'items', href: '/dashboard/items', title: 'Exports' })
       );
       store.openOrActivate(
         makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false })
       );
 
-      expect(useWorkspaceTabStore.getState().openedOrder).toEqual([HOME_ID, 'products']);
+      expect(useWorkspaceTabStore.getState().openedOrder).toEqual([HOME_ID, 'items']);
     });
   });
 
@@ -433,11 +433,11 @@ describe('workspace-tags store', () => {
     it('preserves the existing href when re-registering an open tab', () => {
       openRegisteredPage(
         'tab-1',
-        { initialTitle: 'Products' },
-        { href: '/dashboard/product?page=2', title: 'Products' }
+        { initialTitle: 'Exports' },
+        { href: '/dashboard/items?page=2', title: 'Exports' }
       );
 
-      expect(getState().tabs['tab-1']?.href).toBe('/dashboard/product?page=2');
+      expect(getState().tabs['tab-1']?.href).toBe('/dashboard/items?page=2');
     });
 
     it('does not duplicate tab in openedOrder when an open tab is re-registered', () => {

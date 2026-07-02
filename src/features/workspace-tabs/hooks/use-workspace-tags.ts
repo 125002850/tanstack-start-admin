@@ -1,8 +1,9 @@
 import { useRouter } from '@tanstack/react-router';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { isDashboardHomeHref, resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import type { WorkspaceTab, WorkspaceTabId } from '../types';
+import { dismissWorkspacePageOverlays } from '../utils/page-overlays';
 import { useWorkspaceTabStore } from '../utils/store';
 
 const CLOSE_GUARD_TIMEOUT_MS = 1500;
@@ -28,6 +29,7 @@ async function checkCloseGuard(
 
 export function useWorkspaceTags() {
   const router = useRouter();
+  const activationSequenceRef = useRef(0);
   const tabs = useWorkspaceTabStore((state) => state.tabs);
   const activeId = useWorkspaceTabStore((state) => state.activeId);
   const openedOrder = useWorkspaceTabStore((state) => state.openedOrder);
@@ -42,7 +44,25 @@ export function useWorkspaceTags() {
 
   const openOrActivate = useCallback(
     (tab: WorkspaceTab) => {
-      navigate(tab.href);
+      const sequence = activationSequenceRef.current + 1;
+      activationSequenceRef.current = sequence;
+      const currentActiveId = useWorkspaceTabStore.getState().activeId;
+      let navigateAfterDismiss = () => navigate(tab.href);
+
+      if (currentActiveId && currentActiveId !== tab.id) {
+        const dismissResult = dismissWorkspacePageOverlays(currentActiveId);
+        if (dismissResult.hasPendingExit) {
+          navigateAfterDismiss = () => {
+            void dismissResult.waitForSettled().then(() => {
+              if (activationSequenceRef.current === sequence) {
+                navigate(tab.href);
+              }
+            });
+          };
+        }
+      }
+
+      navigateAfterDismiss();
     },
     [navigate]
   );

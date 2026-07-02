@@ -133,7 +133,7 @@ describe('WorkspaceViewport', () => {
       const { getByTestId } = render(React.createElement(WorkspaceViewport));
       const inactiveEl = getByTestId('inactive-content');
       expect(inactiveEl).toBeDefined();
-      expect(inactiveEl).toHaveStyle({ display: 'none' });
+      expect(inactiveEl).not.toBeVisible();
     });
 
     it('does NOT render inactive non-keep-alive tabs', () => {
@@ -319,8 +319,8 @@ describe('WorkspaceViewport', () => {
       // B is active → visible
       expect(getByTestId('screen-b').style.display).not.toBe('none');
       // A and C are inactive keep-alive → hidden
-      expect(getByTestId('screen-a')).toHaveStyle({ display: 'none' });
-      expect(getByTestId('screen-c')).toHaveStyle({ display: 'none' });
+      expect(getByTestId('screen-a')).not.toBeVisible();
+      expect(getByTestId('screen-c')).not.toBeVisible();
     });
   });
 });

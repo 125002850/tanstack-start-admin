@@ -15,6 +15,7 @@ import * as ReactDOM from 'react-dom';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useWorkspaceTags } from '@/features/workspace-tabs/hooks/use-workspace-tags';
 import type { WorkspaceTabId } from '@/features/workspace-tabs/types';
+import { cn } from '@/lib/utils';
 import { OverlayTag, PinnedHomeTag, SortableTagItem } from './components';
 import {
   dropAnimation,
@@ -34,6 +35,11 @@ type TagVisualState = {
   isActive: boolean;
 };
 
+type ScrollHintState = {
+  canScrollLeft: boolean;
+  canScrollRight: boolean;
+};
+
 export default function TagsBar() {
   const {
     tabs,
@@ -48,6 +54,7 @@ export default function TagsBar() {
   } = useWorkspaceTags();
   const tabsRef = React.useRef<Map<string, HTMLButtonElement>>(new Map());
   const viewportRef = React.useRef<HTMLDivElement | null>(null);
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
   const suppressClickRef = React.useRef(false);
   const suppressClickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -62,6 +69,10 @@ export default function TagsBar() {
   }>({ activeId: null, snapshot: null, overlayMetrics: null });
 
   const [overlayMounted, setOverlayMounted] = React.useState(false);
+  const [scrollHints, setScrollHints] = React.useState<ScrollHintState>({
+    canScrollLeft: false,
+    canScrollRight: false
+  });
 
   React.useLayoutEffect(() => {
     setOverlayMounted(true);
@@ -79,6 +90,60 @@ export default function TagsBar() {
       }
     };
   }, []);
+
+  const updateScrollHints = React.useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+    const next: ScrollHintState = {
+      canScrollLeft: viewport.scrollLeft > 1,
+      canScrollRight: maxScrollLeft - viewport.scrollLeft > 1
+    };
+
+    setScrollHints((current) => {
+      if (
+        current.canScrollLeft === next.canScrollLeft &&
+        current.canScrollRight === next.canScrollRight
+      ) {
+        return current;
+      }
+      return next;
+    });
+  }, []);
+
+  React.useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const content = contentRef.current;
+    if (!viewport) return;
+
+    // 滚动条被隐藏后，边缘提示需要由 scroll/resize/内容宽度变化主动维护。
+    const handleMeasure = () => {
+      updateScrollHints();
+    };
+
+    handleMeasure();
+    viewport.addEventListener('scroll', handleMeasure, { passive: true });
+    window.addEventListener('resize', handleMeasure);
+
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(() => {
+            handleMeasure();
+          });
+
+    resizeObserver?.observe(viewport);
+    if (content) {
+      resizeObserver?.observe(content);
+    }
+
+    return () => {
+      viewport.removeEventListener('scroll', handleMeasure);
+      window.removeEventListener('resize', handleMeasure);
+      resizeObserver?.disconnect();
+    };
+  }, [updateScrollHints]);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -298,11 +363,40 @@ export default function TagsBar() {
       >
         <div data-slot='scroll-area' className='relative min-w-0'>
           <div
+            data-slot='workspace-tabs-overflow-left'
+            data-visible={scrollHints.canScrollLeft ? 'true' : 'false'}
+            aria-hidden='true'
+            className={cn(
+              'pointer-events-none absolute inset-y-0 left-0 z-10 w-10 transition-opacity duration-200',
+              scrollHints.canScrollLeft ? 'opacity-100' : 'opacity-0'
+            )}
+          >
+            <div
+              data-slot='workspace-tabs-overflow-left-surface'
+              className='absolute inset-y-0 left-0 right-2 bg-gradient-to-r from-background via-background/80 to-transparent'
+            />
+          </div>
+          <div
+            data-slot='workspace-tabs-overflow-right'
+            data-visible={scrollHints.canScrollRight ? 'true' : 'false'}
+            aria-hidden='true'
+            className={cn(
+              'pointer-events-none absolute inset-y-0 right-0 z-10 w-10 transition-opacity duration-200',
+              scrollHints.canScrollRight ? 'opacity-100' : 'opacity-0'
+            )}
+          >
+            <div
+              data-slot='workspace-tabs-overflow-right-surface'
+              className='absolute inset-y-0 left-2 right-0 bg-gradient-to-l from-background via-background/80 to-transparent'
+            />
+          </div>
+          <div
             ref={viewportRef}
             data-slot='scroll-area-viewport'
             className='focus-visible:ring-ring/50 size-full rounded-[inherit] min-w-0 overflow-x-auto overflow-y-hidden transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
           >
             <div
+              ref={contentRef}
               data-slot='workspace-tags-bar'
               className='flex min-w-max items-center gap-px pr-2 py-px'
               role='tablist'

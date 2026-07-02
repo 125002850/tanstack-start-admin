@@ -2,9 +2,14 @@ import * as React from 'react';
 import type { WorkspacePageDescriptor, WorkspacePageLifecyclePatch } from '../types';
 import { useWorkspaceTabStore } from '../utils/store';
 import { useWorkspacePageRegistryStore } from '../utils/page-registry';
+import {
+  dismissWorkspacePageOverlays,
+  registerWorkspacePageOverlayRoot
+} from '../utils/page-overlays';
 import { WorkspacePageContext } from '../hooks/use-workspace-page';
 import { Activity } from './activity';
 import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary';
+import { RouterSuspenseProgressSignal } from '@/lib/router/progress';
 
 /**
  * WorkspaceViewport is the ActivityHost — the single owner of all page instances
@@ -20,6 +25,18 @@ export function WorkspaceViewport() {
   const activeId = useWorkspaceTabStore((s) => s.activeId);
   const pageDescriptors = useWorkspacePageRegistryStore((s) => s.descriptors);
   const disabledKeepAliveIds = useWorkspaceTabStore((s) => s.disabledKeepAliveIds);
+  const previousActiveIdRef = React.useRef(activeId);
+
+  const useIsomorphicLayoutEffect =
+    typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
+
+  useIsomorphicLayoutEffect(() => {
+    if (previousActiveIdRef.current && previousActiveIdRef.current !== activeId) {
+      dismissWorkspacePageOverlays(previousActiveIdRef.current);
+    }
+
+    previousActiveIdRef.current = activeId;
+  }, [activeId]);
 
   const entries = React.useMemo(() => {
     const result: Array<{
@@ -54,8 +71,10 @@ export function WorkspaceViewport() {
           tagId={tagId}
           fallback={descriptor.errorFallback ?? <DefaultWorkspaceFallback />}
         >
-          <PageContextProvider tagId={tagId}>
-            <PageRenderer render={descriptor.render} hidden={!active} />
+          <PageContextProvider active={active} tagId={tagId}>
+            <React.Suspense fallback={active ? <RouterSuspenseProgressSignal /> : null}>
+              <PageRenderer render={descriptor.render} hidden={!active} tagId={tagId} />
+            </React.Suspense>
           </PageContextProvider>
         </WorkspaceSlotErrorBoundary>
       ))}
@@ -63,11 +82,56 @@ export function WorkspaceViewport() {
   );
 }
 
-function PageRenderer({ render, hidden }: { render: () => React.ReactNode; hidden: boolean }) {
-  return <Activity mode={hidden ? 'hidden' : 'visible'}>{render()}</Activity>;
+function PageRenderer({
+  render,
+  hidden,
+  tagId
+}: {
+  render: () => React.ReactNode;
+  hidden: boolean;
+  tagId: string;
+}) {
+  return (
+    <Activity mode={hidden ? 'hidden' : 'visible'}>
+      <WorkspacePageOverlayRoot tagId={tagId}>{render()}</WorkspacePageOverlayRoot>
+    </Activity>
+  );
 }
 
-function PageContextProvider({ tagId, children }: { tagId: string; children: React.ReactNode }) {
+function WorkspacePageOverlayRoot({
+  children,
+  tagId
+}: {
+  children: React.ReactNode;
+  tagId: string;
+}) {
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const useIsomorphicLayoutEffect =
+    typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
+
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    return registerWorkspacePageOverlayRoot(tagId, root);
+  }, [tagId]);
+
+  return (
+    <div ref={rootRef} data-workspace-page-id={tagId} style={{ display: 'contents' }}>
+      {children}
+    </div>
+  );
+}
+
+function PageContextProvider({
+  active,
+  children,
+  tagId
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  tagId: string;
+}) {
   const updateLifecycle = React.useCallback(
     (patch: WorkspacePageLifecyclePatch) => {
       useWorkspaceTabStore.getState().updateLifecycle(tagId, patch);
@@ -75,7 +139,10 @@ function PageContextProvider({ tagId, children }: { tagId: string; children: Rea
     [tagId]
   );
 
-  const value = React.useMemo(() => ({ tabId: tagId, updateLifecycle }), [tagId, updateLifecycle]);
+  const value = React.useMemo(
+    () => ({ active, tabId: tagId, updateLifecycle }),
+    [active, tagId, updateLifecycle]
+  );
 
   return <WorkspacePageContext.Provider value={value}>{children}</WorkspacePageContext.Provider>;
 }

@@ -13,13 +13,28 @@ describe('resolveRouteWorkspaceConfig', () => {
     expect(cfg.keepAlive).toBe(true);
   });
 
+  it('defaults dashboard home closable to false', () => {
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview');
+    expect(cfg.closable).toBe(false);
+  });
+
+  it('normalizes trailing slash before applying home closable default', () => {
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/overview/');
+    expect(cfg.closable).toBe(false);
+  });
+
+  it('defaults non-home closable to true', () => {
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/system-management/dictionaries');
+    expect(cfg.closable).toBe(true);
+  });
+
   it('defaults instanceStrategy to global for routes without path params', () => {
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/users');
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/system-management/dictionaries');
     expect(cfg.instanceStrategy).toBe('global');
   });
 
   it('defaults instanceStrategy to by-params for routes with $ path params', () => {
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/product/$productId');
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/items/$itemId');
     expect(cfg.instanceStrategy).toBe('by-params');
   });
 
@@ -41,12 +56,21 @@ describe('resolveRouteWorkspaceConfig', () => {
     expect(cfg.keepAlive).toBe(false);
   });
 
+  it('uses explicit closable over default', () => {
+    const staticData: AppRouteStaticData = {
+      label: 'Test',
+      workspace: { closable: false }
+    };
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData);
+    expect(cfg.closable).toBe(false);
+  });
+
   it('uses explicit instanceStrategy over path-param default', () => {
     const staticData: AppRouteStaticData = {
       label: 'Test',
       workspace: { instanceStrategy: 'global' }
     };
-    const cfg = resolveRouteWorkspaceConfig('/dashboard/product/$productId', staticData);
+    const cfg = resolveRouteWorkspaceConfig('/dashboard/items/$itemId', staticData);
     expect(cfg.instanceStrategy).toBe('global');
   });
 
@@ -55,6 +79,7 @@ describe('resolveRouteWorkspaceConfig', () => {
     expect(cfg).toEqual({
       tagEnabled: true,
       keepAlive: true,
+      closable: false,
       instanceStrategy: 'global'
     });
   });
@@ -65,6 +90,7 @@ describe('resolveRouteWorkspaceConfig', () => {
     expect(cfg).toEqual({
       tagEnabled: true,
       keepAlive: true,
+      closable: true,
       instanceStrategy: 'global'
     });
   });
@@ -92,15 +118,7 @@ describe('resolveRouteTagTitle', () => {
     expect(resolveRouteTagTitle(staticData)).toBe('My Label');
   });
 
-  it('falls back to page.title when label and title are nullish', () => {
-    const staticData = {
-      label: undefined,
-      page: { title: 'Page Title' }
-    } as unknown as AppRouteStaticData;
-    expect(resolveRouteTagTitle(staticData)).toBe('Page Title');
-  });
-
-  it('falls back to routeId when title, label, and page.title are nullish', () => {
+  it('falls back to routeId when title and label are nullish', () => {
     const staticData = { label: undefined } as unknown as AppRouteStaticData;
     expect(resolveRouteTagTitle(staticData, '/dashboard/test')).toBe('/dashboard/test');
   });
@@ -109,19 +127,10 @@ describe('resolveRouteTagTitle', () => {
     expect(resolveRouteTagTitle(undefined, undefined)).toBe('');
   });
 
-  it('prioritizes label over title over page.title', () => {
+  it('prioritizes label over title', () => {
     const staticData: AppRouteStaticData = {
       title: 'Doc Title',
-      label: 'Nav Label',
-      page: { title: 'Page Heading' }
-    };
-    expect(resolveRouteTagTitle(staticData)).toBe('Nav Label');
-  });
-
-  it('falls back label over page.title when title is absent', () => {
-    const staticData: AppRouteStaticData = {
-      label: 'Nav Label',
-      page: { title: 'Page Heading' }
+      label: 'Nav Label'
     };
     expect(resolveRouteTagTitle(staticData)).toBe('Nav Label');
   });

@@ -54,7 +54,7 @@ build_output() {
   else
     pnpm run build
   fi
-  cp -R .output "$target_dir"
+  cp -R dist "$target_dir"
 }
 
 trap cleanup EXIT INT TERM
@@ -63,18 +63,16 @@ build_output "1" "$DEFAULT_OUTPUT_DIR"
 build_output "0" "$ROLLBACK_OUTPUT_DIR"
 
 (
-  cd "$DEFAULT_OUTPUT_DIR"
-  PORT="$DEFAULT_PORT" node server/index.mjs
+  pnpm exec vite preview --host 127.0.0.1 --port "$DEFAULT_PORT" --strictPort --outDir "$DEFAULT_OUTPUT_DIR"
 ) >/tmp/playwright-workspace-default.log 2>&1 &
 DEFAULT_PID=$!
 (
-  cd "$ROLLBACK_OUTPUT_DIR"
-  PORT="$ROLLBACK_PORT" node server/index.mjs
+  pnpm exec vite preview --host 127.0.0.1 --port "$ROLLBACK_PORT" --strictPort --outDir "$ROLLBACK_OUTPUT_DIR"
 ) >/tmp/playwright-workspace-rollback.log 2>&1 &
 ROLLBACK_PID=$!
 
-wait_for_http "http://127.0.0.1:${DEFAULT_PORT}/dashboard/product"
-wait_for_http "http://127.0.0.1:${ROLLBACK_PORT}/dashboard/product"
+wait_for_http "http://127.0.0.1:${DEFAULT_PORT}/dashboard/overview"
+wait_for_http "http://127.0.0.1:${ROLLBACK_PORT}/dashboard/overview"
 
 # Keep the wrapper alive until Playwright stops it. If one server exits early,
 # do not proactively tear down the sibling process for the other project.

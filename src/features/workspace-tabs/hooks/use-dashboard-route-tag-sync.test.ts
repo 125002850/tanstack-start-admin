@@ -24,30 +24,30 @@ const mockRoutesByPath = {
       }
     }
   },
-  '/dashboard/product/': {
+  '/dashboard/items/': {
     options: {
       staticData: {
-        label: '产品管理',
-        title: '产品管理',
+        label: '条目管理',
+        title: '条目管理',
         workspace: { tagEnabled: true, keepAlive: true }
       }
     }
   },
-  '/dashboard/product/$productId': {
+  '/dashboard/items/$itemId': {
     options: {
       staticData: {
-        label: '产品详情',
-        title: '产品详情',
+        label: '条目详情',
+        title: '条目详情',
         workspace: { tagEnabled: true, keepAlive: true }
       }
     }
   },
-  '/dashboard/users': {
+  '/dashboard/system-management/dictionaries': {
     options: {
       staticData: {
         label: '用户管理',
         title: '用户管理',
-        workspace: { tagEnabled: true, keepAlive: true }
+        workspace: { tagEnabled: true, keepAlive: true, closable: false }
       }
     }
   }
@@ -78,22 +78,22 @@ function resetStore() {
 
 describe('findDeepestRouteMatch', () => {
   it('matches a static route', () => {
-    const match = findDeepestRouteMatch('/dashboard/product', mockRoutesByPath);
+    const match = findDeepestRouteMatch('/dashboard/items', mockRoutesByPath);
     expect(match).toBeDefined();
-    expect(match!.staticData.label).toBe('产品管理');
+    expect(match!.staticData.label).toBe('条目管理');
   });
 
   it('matches a dynamic route with $param', () => {
-    const match = findDeepestRouteMatch('/dashboard/product/123', mockRoutesByPath);
+    const match = findDeepestRouteMatch('/dashboard/items/123', mockRoutesByPath);
     expect(match).toBeDefined();
-    expect(match!.staticData.label).toBe('产品详情');
-    expect(match!.pattern).toBe('/dashboard/product/$productId');
+    expect(match!.staticData.label).toBe('条目详情');
+    expect(match!.pattern).toBe('/dashboard/items/$itemId');
   });
 
   it('prefers the deepest matching route', () => {
-    const match = findDeepestRouteMatch('/dashboard/product/456', mockRoutesByPath);
+    const match = findDeepestRouteMatch('/dashboard/items/456', mockRoutesByPath);
     expect(match).toBeDefined();
-    expect(match!.staticData.label).toBe('产品详情');
+    expect(match!.staticData.label).toBe('条目详情');
   });
 
   it('returns undefined for non-matching paths', () => {
@@ -128,42 +128,49 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   });
 
   it('syncs a non-home route as a closable tag', () => {
-    mockPathname = '/dashboard/product';
+    mockPathname = '/dashboard/items';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    const productTab = state.tabs['/dashboard/product'];
-    expect(productTab).toBeDefined();
-    expect(productTab.closable).toBe(true);
-    expect(productTab.keepAlive).toBe(true);
+    const itemTab = state.tabs['/dashboard/items'];
+    expect(itemTab).toBeDefined();
+    expect(itemTab.closable).toBe(true);
+    expect(itemTab.keepAlive).toBe(true);
   });
 
   it('normalizes a trailing-slash pathname to the canonical tab id', () => {
-    mockPathname = '/dashboard/product/';
+    mockPathname = '/dashboard/items/';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    expect(state.tabs['/dashboard/product']).toBeDefined();
-    expect(state.tabs['/dashboard/product/']).toBeUndefined();
-    expect(state.tabs['/dashboard/product']?.href).toBe('/dashboard/product');
+    expect(state.tabs['/dashboard/items']).toBeDefined();
+    expect(state.tabs['/dashboard/items/']).toBeUndefined();
+    expect(state.tabs['/dashboard/items']?.href).toBe('/dashboard/items');
   });
 
   it('does not duplicate tabs when only the trailing slash changes', () => {
-    mockPathname = '/dashboard/product';
+    mockPathname = '/dashboard/items';
     const { rerender } = render(React.createElement(SyncHarness));
 
-    mockPathname = '/dashboard/product/';
+    mockPathname = '/dashboard/items/';
     rerender(React.createElement(SyncHarness));
 
     const state = useWorkspaceTabStore.getState();
-    expect(state.openedOrder.filter((id) => id === '/dashboard/product')).toHaveLength(1);
-    expect(state.tabs['/dashboard/product/']).toBeUndefined();
+    expect(state.openedOrder.filter((id) => id === '/dashboard/items')).toHaveLength(1);
+    expect(state.tabs['/dashboard/items/']).toBeUndefined();
   });
 
   it('sets the synced route as the active tab', () => {
-    mockPathname = '/dashboard/users';
+    mockPathname = '/dashboard/system-management/dictionaries';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    expect(state.activeId).toBe('/dashboard/users');
-    expect(state.tabs['/dashboard/users']).toBeDefined();
+    expect(state.activeId).toBe('/dashboard/system-management/dictionaries');
+    expect(state.tabs['/dashboard/system-management/dictionaries']).toBeDefined();
+  });
+
+  it('uses route metadata for closable', () => {
+    mockPathname = '/dashboard/system-management/dictionaries';
+    render(React.createElement(SyncHarness));
+    const state = useWorkspaceTabStore.getState();
+    expect(state.tabs['/dashboard/system-management/dictionaries']?.closable).toBe(false);
   });
 
   it('skips the layout route /dashboard', () => {
@@ -176,24 +183,24 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   });
 
   it('preserves search params in the tag href', () => {
-    mockPathname = '/dashboard/product';
+    mockPathname = '/dashboard/items';
     mockSearch = '?page=2&sort=name';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    const productTab = state.tabs['/dashboard/product'];
-    expect(productTab).toBeDefined();
-    expect(productTab.href).toBe('/dashboard/product?page=2&sort=name');
+    const itemTab = state.tabs['/dashboard/items'];
+    expect(itemTab).toBeDefined();
+    expect(itemTab.href).toBe('/dashboard/items?page=2&sort=name');
   });
 
   it('updates href when search params change', () => {
-    mockPathname = '/dashboard/product';
+    mockPathname = '/dashboard/items';
     mockSearch = '?page=1';
     const { rerender } = render(React.createElement(SyncHarness));
     // Change search params and re-render
     mockSearch = '?page=2';
     rerender(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    expect(state.tabs['/dashboard/product'].href).toBe('/dashboard/product?page=2');
+    expect(state.tabs['/dashboard/items'].href).toBe('/dashboard/items?page=2');
   });
 
   it('does not re-seed home tab if it already exists', () => {
@@ -212,12 +219,12 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   });
 
   it('matches dynamic route and creates tag with correct title', () => {
-    mockPathname = '/dashboard/product/789';
+    mockPathname = '/dashboard/items/789';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    const detailTab = state.tabs['/dashboard/product/789'];
+    const detailTab = state.tabs['/dashboard/items/789'];
     expect(detailTab).toBeDefined();
-    expect(detailTab.title).toBe('产品详情');
+    expect(detailTab.title).toBe('条目详情');
     expect(detailTab.closable).toBe(true);
     expect(detailTab.keepAlive).toBe(true);
   });

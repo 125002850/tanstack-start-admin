@@ -21,7 +21,7 @@ export const WorkspacePageContext = createContext<UseWorkspacePageResult | null>
 export function useWorkspacePage(): UseWorkspacePageResult {
   const ctx = useContext(WorkspacePageContext);
   if (!ctx) {
-    return { tabId: '', updateLifecycle: () => {} };
+    return { active: true, tabId: '', updateLifecycle: () => {} };
   }
   return ctx;
 }

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TagsBar from './tags-bar';
@@ -85,8 +85,27 @@ function setupHomeAndChat() {
 
 function setupThreeTabs() {
   openTab('/dashboard/overview', '仪表盘', { closable: false });
-  openTab('/dashboard/users', 'Users');
+  openTab('/dashboard/system-management/dictionaries', 'Dictionaries');
   openTab('/dashboard/chat', 'Chat');
+}
+
+function setViewportMetrics(
+  viewport: HTMLElement,
+  metrics: { clientWidth: number; scrollWidth: number; scrollLeft: number }
+) {
+  Object.defineProperty(viewport, 'clientWidth', {
+    configurable: true,
+    value: metrics.clientWidth
+  });
+  Object.defineProperty(viewport, 'scrollWidth', {
+    configurable: true,
+    value: metrics.scrollWidth
+  });
+  Object.defineProperty(viewport, 'scrollLeft', {
+    configurable: true,
+    writable: true,
+    value: metrics.scrollLeft
+  });
 }
 
 describe('TagsBar', () => {
@@ -138,6 +157,52 @@ describe('TagsBar', () => {
       '[&::-webkit-scrollbar]:hidden'
     );
     expect(scrollArea).toHaveClass('relative', 'min-w-0');
+  });
+
+  it('shows theme-aware edge hints only when horizontal content is clipped', () => {
+    setupThreeTabs();
+    render(<TagsBar />);
+
+    const tablist = screen.getByRole('tablist', { name: 'Workspace tabs' });
+    const viewport = tablist.closest('[data-slot="scroll-area-viewport"]') as HTMLElement;
+    const leftHint = document.querySelector(
+      '[data-slot="workspace-tabs-overflow-left"]'
+    ) as HTMLElement;
+    const rightHint = document.querySelector(
+      '[data-slot="workspace-tabs-overflow-right"]'
+    ) as HTMLElement;
+    const leftSurface = document.querySelector(
+      '[data-slot="workspace-tabs-overflow-left-surface"]'
+    ) as HTMLElement;
+    const rightSurface = document.querySelector(
+      '[data-slot="workspace-tabs-overflow-right-surface"]'
+    ) as HTMLElement;
+
+    act(() => {
+      setViewportMetrics(viewport, { clientWidth: 240, scrollWidth: 520, scrollLeft: 0 });
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    expect(leftHint).toHaveAttribute('data-visible', 'false');
+    expect(rightHint).toHaveAttribute('data-visible', 'true');
+    expect(leftSurface).toHaveClass('bg-gradient-to-r', 'from-background', 'to-transparent');
+    expect(rightSurface).toHaveClass('bg-gradient-to-l', 'from-background', 'to-transparent');
+
+    act(() => {
+      viewport.scrollLeft = 120;
+      fireEvent.scroll(viewport);
+    });
+
+    expect(leftHint).toHaveAttribute('data-visible', 'true');
+    expect(rightHint).toHaveAttribute('data-visible', 'true');
+
+    act(() => {
+      viewport.scrollLeft = 280;
+      fireEvent.scroll(viewport);
+    });
+
+    expect(leftHint).toHaveAttribute('data-visible', 'true');
+    expect(rightHint).toHaveAttribute('data-visible', 'false');
   });
 
   it('home tab has no close button', () => {
@@ -218,7 +283,7 @@ describe('TagsBar', () => {
     render(<TagsBar />);
 
     const ids = screen.getAllByRole('tab').map((tab) => tab.getAttribute('data-tab-id'));
-    expect(ids).toEqual(['/dashboard/overview', '/dashboard/users', '/dashboard/chat']);
+    expect(ids).toEqual(['/dashboard/overview', '/dashboard/system-management/dictionaries', '/dashboard/chat']);
     expect(screen.getByRole('tab', { name: /仪表盘/ })).toHaveAttribute('data-pinned', 'home');
   });
 });

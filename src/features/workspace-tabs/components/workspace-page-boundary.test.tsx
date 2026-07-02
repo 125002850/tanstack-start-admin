@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
@@ -35,11 +34,11 @@ function getDescriptors() {
 }
 
 describe('WorkspacePageBoundary', () => {
-  let pathname = '/dashboard/users';
+  let pathname = '/dashboard/system-management/dictionaries';
   let matches: unknown[] = [{ options: { staticData: { label: '用户' } } }];
 
   beforeEach(() => {
-    pathname = '/dashboard/users';
+    pathname = '/dashboard/system-management/dictionaries';
     matches = [{ options: { staticData: { label: '用户' } } }];
     resetStore();
     cleanup();
@@ -62,96 +61,162 @@ describe('WorkspacePageBoundary', () => {
   it('defaults tabId to pathname and initialTitle to the leaf route label', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
 
-    const { container } = render(<WorkspacePageBoundary render={() => <div>Users</div>} />);
+    const { container } = render(<WorkspacePageBoundary render={() => <div>Dictionaries</div>} />);
 
     expect(container.innerHTML).toBe('');
-    expect(getDescriptors()['/dashboard/users']).toMatchObject({
-      tabId: '/dashboard/users',
+    expect(getDescriptors()['/dashboard/system-management/dictionaries']).toMatchObject({
+      tabId: '/dashboard/system-management/dictionaries',
       initialTitle: '用户'
     });
   });
 
   it('keeps explicit tabId and initialTitle overrides', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
-    pathname = '/dashboard/product/new';
-    matches = [{ options: { staticData: { label: '新增产品' } } }];
+    pathname = '/dashboard/items/new';
+    matches = [{ options: { staticData: { label: '新增条目' } } }];
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/product/new': { options: { staticData: { label: '新增产品' } } }
+        '/dashboard/items/new': { options: { staticData: { label: '新增条目' } } }
       }
     });
 
     render(
       <WorkspacePageBoundary
-        tabId='/dashboard/product/new'
-        initialTitle='新增产品'
+        tabId='/dashboard/items/new'
+        initialTitle='新增条目'
         keepAlive={false}
-        render={() => <div>Product</div>}
+        render={() => <div>Item</div>}
       />
     );
 
-    expect(getDescriptors()['/dashboard/product/new']).toMatchObject(
+    expect(getDescriptors()['/dashboard/items/new']).toMatchObject(
       {
-        tabId: '/dashboard/product/new',
-        initialTitle: '新增产品',
+        tabId: '/dashboard/items/new',
+        initialTitle: '新增条目',
         keepAlive: false
       }
     );
+  });
+
+  it('normalizes an explicit tabId with a trailing slash', () => {
+    vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
+
+    render(
+      <WorkspacePageBoundary tabId='/dashboard/system-management/dictionaries/' render={() => <div>Dictionaries</div>} />
+    );
+
+    expect(getDescriptors()['/dashboard/system-management/dictionaries']).toMatchObject({
+      tabId: '/dashboard/system-management/dictionaries',
+      initialTitle: '用户'
+    });
+    expect(getDescriptors()['/dashboard/system-management/dictionaries/']).toBeUndefined();
+  });
+
+  it('prefers route workspace metadata over legacy lifecycle props', () => {
+    vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
+    mockUseRouter.mockReturnValue({
+      routesByPath: {
+        '/dashboard/system-management/dictionaries': {
+          options: {
+            staticData: {
+              label: '用户',
+              workspace: { keepAlive: true, closable: false }
+            }
+          }
+        }
+      }
+    });
+
+    render(
+      <WorkspacePageBoundary
+        tabId='/dashboard/system-management/dictionaries'
+        keepAlive={false}
+        closable={true}
+        render={() => <div>Dictionaries</div>}
+      />
+    );
+
+    expect(getDescriptors()['/dashboard/system-management/dictionaries']).toMatchObject({
+      keepAlive: true,
+      closable: false
+    });
+  });
+
+  it('registers render and ignores renderWhenDisabled when workspace tabs are enabled', () => {
+    vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
+    const renderPage = vi.fn(() => <div>Workspace Content</div>);
+    const renderDisabled = vi.fn(() => <div>Disabled Content</div>);
+
+    const { container } = render(
+      <WorkspacePageBoundary render={renderPage} renderWhenDisabled={renderDisabled} />
+    );
+
+    expect(container.innerHTML).toBe('');
+    expect(renderPage).not.toHaveBeenCalled();
+    expect(renderDisabled).not.toHaveBeenCalled();
+
+    const descriptor = getDescriptors()['/dashboard/system-management/dictionaries'];
+    expect(descriptor).toBeDefined();
+
+    const descriptorView = render(<>{descriptor.render()}</>);
+    expect(descriptorView.getByText('Workspace Content')).toBeTruthy();
+    expect(renderPage).toHaveBeenCalledTimes(1);
+    expect(renderDisabled).not.toHaveBeenCalled();
   });
 
   it('does not re-register a closed explicit tab after pathname changes away', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/users': { options: { staticData: { label: '用户' } } },
+        '/dashboard/system-management/dictionaries': { options: { staticData: { label: '用户' } } },
         '/dashboard/overview': { options: { staticData: { label: '仪表盘' } } }
       }
     });
 
     const { rerender } = render(
-      <WorkspacePageBoundary tabId='/dashboard/users' render={() => <div>Users</div>} />
+      <WorkspacePageBoundary tabId='/dashboard/system-management/dictionaries' render={() => <div>Dictionaries</div>} />
     );
 
-    expect(getDescriptors()['/dashboard/users']).toMatchObject({
-      tabId: '/dashboard/users',
+    expect(getDescriptors()['/dashboard/system-management/dictionaries']).toMatchObject({
+      tabId: '/dashboard/system-management/dictionaries',
       initialTitle: '用户'
     });
 
     useWorkspaceTabStore.getState().openOrActivate({
-      id: '/dashboard/users',
-      href: '/dashboard/users',
+      id: '/dashboard/system-management/dictionaries',
+      href: '/dashboard/system-management/dictionaries',
       title: '用户',
       closable: true,
       keepAlive: true
     });
-    useWorkspaceTabStore.getState().close('/dashboard/users');
+    useWorkspaceTabStore.getState().close('/dashboard/system-management/dictionaries');
 
     pathname = '/dashboard/overview';
     matches = [{ options: { staticData: { label: '仪表盘' } } }];
 
-    rerender(<WorkspacePageBoundary tabId='/dashboard/users' render={() => <div>Users</div>} />);
+    rerender(<WorkspacePageBoundary tabId='/dashboard/system-management/dictionaries' render={() => <div>Dictionaries</div>} />);
 
-    expect(getDescriptors()['/dashboard/users']).toBeUndefined();
-    expect(useWorkspaceTabStore.getState().tabs['/dashboard/users']).toBeUndefined();
+    expect(getDescriptors()['/dashboard/system-management/dictionaries']).toBeUndefined();
+    expect(useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']).toBeUndefined();
   });
 
   it('normalizes the implicit tabId when pathname has a trailing slash', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
-    pathname = '/dashboard/product/';
-    matches = [{ options: { staticData: { label: '产品' } } }];
+    pathname = '/dashboard/items/';
+    matches = [{ options: { staticData: { label: '条目' } } }];
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/product/': { options: { staticData: { label: '产品' } } }
+        '/dashboard/items/': { options: { staticData: { label: '条目' } } }
       }
     });
 
-    render(<WorkspacePageBoundary render={() => <div>Products</div>} />);
+    render(<WorkspacePageBoundary render={() => <div>Exports</div>} />);
 
-    expect(getDescriptors()['/dashboard/product']).toMatchObject({
-      tabId: '/dashboard/product',
-      initialTitle: '产品'
+    expect(getDescriptors()['/dashboard/items']).toMatchObject({
+      tabId: '/dashboard/items',
+      initialTitle: '条目'
     });
-    expect(getDescriptors()['/dashboard/product/']).toBeUndefined();
+    expect(getDescriptors()['/dashboard/items/']).toBeUndefined();
   });
 
   it('renders content directly when workspace tabs are disabled', () => {

@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import { useWorkspaceTabStore } from '../utils/store';
 import { useWorkspacePageRegistryStore } from '../utils/page-registry';
+import { resetWorkspacePageOverlays } from '../utils/page-overlays';
 import { useWorkspacePage, WorkspacePageContext } from './use-workspace-page';
 import type { WorkspacePageDescriptor, WorkspacePageLifecyclePatch } from '../types';
 
@@ -25,11 +26,13 @@ function resetStore() {
     lifecycleSnapshots: {}
   });
   useWorkspacePageRegistryStore.getState().resetDescriptors();
+  resetWorkspacePageOverlays();
 }
 
 function TestHarness() {
-  const { tabId, updateLifecycle } = useWorkspacePage();
+  const { active, tabId, updateLifecycle } = useWorkspacePage();
   return React.createElement('div', { 'data-testid': 'harness' }, [
+    React.createElement('span', { key: 'active', 'data-testid': 'active' }, String(active)),
     React.createElement('span', { key: 'id', 'data-testid': 'tab-id' }, tabId),
     React.createElement(
       'button',
@@ -72,7 +75,7 @@ function renderWithProvider(tabId: string) {
   return render(
     React.createElement(
       WorkspacePageContext.Provider,
-      { value: { tabId, updateLifecycle } },
+      { value: { active: true, tabId, updateLifecycle } },
       React.createElement(TestHarness)
     )
   );
@@ -89,12 +92,14 @@ describe('useWorkspacePage', () => {
   });
 
   it('returns tabId from context (injected by ActivityHost)', () => {
-    const { getByTestId } = renderWithProvider('/dashboard/users');
-    expect(getByTestId('tab-id').textContent).toBe('/dashboard/users');
+    const { getByTestId } = renderWithProvider('/dashboard/system-management/dictionaries');
+    expect(getByTestId('active').textContent).toBe('true');
+    expect(getByTestId('tab-id').textContent).toBe('/dashboard/system-management/dictionaries');
   });
 
-  it('returns empty string and no-op updateLifecycle when no provider is in the tree', () => {
+  it('returns active=true, empty string and no-op updateLifecycle when no provider is in the tree', () => {
     const { getByTestId } = render(React.createElement(TestHarness));
+    expect(getByTestId('active').textContent).toBe('true');
     expect(getByTestId('tab-id').textContent).toBe('');
     // updateLifecycle is a no-op — clicking should not throw
     act(() => {
@@ -192,20 +197,34 @@ describe('useWorkspacePage', () => {
 
   it('hidden keep-alive page still writes lifecycle to its own tab', () => {
     const s = useWorkspaceTabStore.getState();
-    s.registerPageDescriptor('/dashboard/products', makeDescriptor('/dashboard/products'));
-    s.registerPageDescriptor('/dashboard/users', makeDescriptor('/dashboard/users'));
+    s.registerPageDescriptor('/dashboard/system-management/export-center', makeDescriptor('/dashboard/system-management/export-center'));
+    s.registerPageDescriptor('/dashboard/system-management/dictionaries', makeDescriptor('/dashboard/system-management/dictionaries'));
 
-    // Products is hidden (keep-alive) — provider still injects /dashboard/products
-    const { getByTestId } = renderWithProvider('/dashboard/products');
+    // Exports is hidden (keep-alive) — provider still injects /dashboard/system-management/export-center
+    const { getByTestId } = renderWithProvider('/dashboard/system-management/export-center');
     act(() => {
       getByTestId('set-title').click();
     });
 
-    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/products']?.title).toBe(
+    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/system-management/export-center']?.title).toBe(
       'Updated Title'
     );
-    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/users']?.title).not.toBe(
+    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.title).not.toBe(
       'Updated Title'
     );
+  });
+
+  it('reads active=false from provider when page is hidden', () => {
+    const updateLifecycle = makeUpdateLifecycle('/dashboard/system-management/export-center');
+    const { getByTestId } = render(
+      React.createElement(
+        WorkspacePageContext.Provider,
+        { value: { active: false, tabId: '/dashboard/system-management/export-center', updateLifecycle } },
+        React.createElement(TestHarness)
+      )
+    );
+
+    expect(getByTestId('active').textContent).toBe('false');
+    expect(getByTestId('tab-id').textContent).toBe('/dashboard/system-management/export-center');
   });
 });

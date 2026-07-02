@@ -20,21 +20,34 @@ const ensureLoopbackBypassesProxy = () => {
 
 ensureLoopbackBypassesProxy();
 
+const useExternalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
+const browserProxy = process.env.PLAYWRIGHT_BROWSER_PROXY;
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   retries: 0,
-  webServer: {
-    command: 'bash scripts/playwright-workspace-tabs-servers.sh',
-    timeout: 240_000,
-    url: 'http://127.0.0.1:3099/dashboard/product',
-    reuseExistingServer: false
-  },
+  ...(useExternalServer
+    ? {}
+    : {
+        webServer: {
+          command: 'bash scripts/playwright-workspace-tabs-servers.sh',
+          timeout: 240_000,
+          url: 'http://127.0.0.1:3099/dashboard/overview',
+          reuseExistingServer: false
+        }
+      }),
   use: {
     browserName: 'chromium',
-    launchOptions: {
-      args: ['--no-proxy-server']
-    }
+    ...(browserProxy
+      ? {
+          proxy: {
+            server: browserProxy,
+            bypass: '127.0.0.1,localhost'
+          }
+        }
+      : {}),
+    launchOptions: browserProxy ? undefined : { args: ['--no-proxy-server'] }
   },
   projects: [
     {

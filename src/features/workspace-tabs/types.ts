@@ -30,9 +30,26 @@ export interface WorkspaceTabOpenInput {
 export interface WorkspacePageBoundaryProps {
   tabId?: string;
   initialTitle?: string;
+  /**
+   * @deprecated Prefer route metadata `workspace.keepAlive`.
+   * Kept as a compatibility fallback for legacy or non-route callers.
+   */
   keepAlive?: boolean;
+  /**
+   * @deprecated Prefer route metadata `workspace.closable`.
+   * Kept as a compatibility fallback for legacy or non-route callers.
+   */
   closable?: boolean;
+  /**
+   * Workspace-on tree registered into ActivityHost.
+   * Business pages should pass the Screen component that owns PageContainer.
+   */
   render: () => React.ReactNode;
+  /**
+   * Workspace-off direct route tree. Use this when render wraps the actual
+   * route body in a workspace Screen shell, while disabled mode should render
+   * the body directly.
+   */
   renderWhenDisabled?: () => React.ReactNode;
   errorFallback?: React.ReactNode;
 }
@@ -47,6 +64,7 @@ export interface WorkspacePageLifecyclePatch {
 }
 
 export interface UseWorkspacePageResult {
+  active: boolean;
   tabId: string;
   updateLifecycle: (patch: WorkspacePageLifecyclePatch) => void;
 }

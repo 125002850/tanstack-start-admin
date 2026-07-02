@@ -11,9 +11,11 @@ import type {
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import { MAX_KEEPALIVE_TABS } from '@/config/workspace-tabs';
 import { useWorkspacePageRegistryStore } from './page-registry';
+import { dismissWorkspacePageOverlays, resetWorkspacePageOverlays } from './page-overlays';
 
 const HOME_ID = resolveDashboardHomeHref();
 const HOME_TITLE = '仪表盘';
+let openOrActivateSequence = 0;
 
 interface WorkspaceTabState {
   tabs: Record<WorkspaceTabId, WorkspaceTab>;
@@ -44,11 +46,7 @@ function makeDefaultLifecycle(title: string): WorkspacePageLifecycle {
 
 function createBaseState(): Pick<
   WorkspaceTabState,
-  | 'tabs'
-  | 'activeId'
-  | 'openedOrder'
-  | 'disabledKeepAliveIds'
-  | 'lifecycleSnapshots'
+  'tabs' | 'activeId' | 'openedOrder' | 'disabledKeepAliveIds' | 'lifecycleSnapshots'
 > {
   const homeTab = createHomeTab();
   return {
@@ -64,97 +62,120 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
   ...createBaseState(),
 
   openOrActivate: (tab) => {
-    let evictedIds: WorkspaceTabId[] = [];
+    const sequence = openOrActivateSequence + 1;
+    openOrActivateSequence = sequence;
 
-    set((state) => {
-      const existing = state.tabs[tab.id];
+    const commit = () => {
+      let evictedIds: WorkspaceTabId[] = [];
 
-      // Step 1: Build the base next state (open or activate the tab)
-      let nextTabs: Record<WorkspaceTabId, WorkspaceTab>;
-      let nextLifecycleSnapshots: Record<WorkspaceTabId, WorkspacePageLifecycle>;
-      let nextActiveId: WorkspaceTabId;
-      let nextOpenedOrder: WorkspaceTabId[];
+      set((state) => {
+        const existing = state.tabs[tab.id];
 
-      if (existing) {
-        nextTabs = {
-          ...state.tabs,
-          [tab.id]: { ...existing, href: tab.href, title: tab.title, lastVisitedAt: Date.now() }
-        };
-        nextActiveId = tab.id;
-        nextLifecycleSnapshots = state.lifecycleSnapshots;
-        nextOpenedOrder = state.openedOrder;
-      } else {
-        const nextTab: WorkspaceTab = {
-          id: tab.id,
-          href: tab.href,
-          title: tab.title,
-          closable: tab.closable ?? true,
-          keepAlive: tab.keepAlive ?? false,
-          lastVisitedAt: Date.now()
-        };
-        nextTabs = { ...state.tabs, [tab.id]: nextTab };
-        nextActiveId = tab.id;
-        nextLifecycleSnapshots = state.lifecycleSnapshots;
-        nextOpenedOrder = normalizeOpenedOrder(
-          state.openedOrder.includes(tab.id) ? state.openedOrder : [...state.openedOrder, tab.id]
-        );
-      }
+        // Step 1: Build the base next state (open or activate the tab)
+        let nextTabs: Record<WorkspaceTabId, WorkspaceTab>;
+        let nextLifecycleSnapshots: Record<WorkspaceTabId, WorkspacePageLifecycle>;
+        let nextActiveId: WorkspaceTabId;
+        let nextOpenedOrder: WorkspaceTabId[];
 
-      // Step 2: Enforce LRU eviction within the same atomic update.
-      // Previously this was an off-cycle mutation (enforceLruAfterOpen) that
-      // called evictInactive via a separate set() after openOrActivate returned,
-      // which could cause subscriber ordering bugs.
-      const keepAliveTabs = Object.values(nextTabs).filter((t) => t.keepAlive);
-      if (keepAliveTabs.length > MAX_KEEPALIVE_TABS) {
-        const sorted = keepAliveTabs.toSorted((a, b) => a.lastVisitedAt - b.lastVisitedAt);
-        const toEvict = new Set<WorkspaceTabId>();
-
-        for (const t of sorted) {
-          if (keepAliveTabs.length - toEvict.size <= MAX_KEEPALIVE_TABS) break;
-          // Never evict the tab we just opened — its lifecycle snapshot may not
-          // be registered yet (registerPageDescriptor runs in a LayoutEffect),
-          // so the dirty guard above would treat it as evictable.
-          if (t.id === tab.id) continue;
-          if (state.lifecycleSnapshots[t.id]?.dirty) continue;
-          toEvict.add(t.id);
-        }
-
-        if (toEvict.size > 0) {
-          // Prune evicted tabs from all state slices to prevent unbounded growth
-          const kept: Record<string, WorkspaceTab> = {};
-          const keptLifecycles: Record<string, WorkspacePageLifecycle> = {};
-          for (const id of Object.keys(nextTabs)) {
-            if (!toEvict.has(id) || isHomeId(id)) {
-              kept[id] = nextTabs[id];
-              if (nextLifecycleSnapshots[id]) keptLifecycles[id] = nextLifecycleSnapshots[id];
-            }
-          }
-          nextTabs = ensureHomeTab(kept);
-          nextLifecycleSnapshots = keptLifecycles;
+        if (existing) {
+          nextTabs = {
+            ...state.tabs,
+            [tab.id]: { ...existing, href: tab.href, title: tab.title, lastVisitedAt: Date.now() }
+          };
+          nextActiveId = tab.id;
+          nextLifecycleSnapshots = state.lifecycleSnapshots;
+          nextOpenedOrder = state.openedOrder;
+        } else {
+          const nextTab: WorkspaceTab = {
+            id: tab.id,
+            href: tab.href,
+            title: tab.title,
+            closable: tab.closable ?? true,
+            keepAlive: tab.keepAlive ?? false,
+            lastVisitedAt: Date.now()
+          };
+          nextTabs = { ...state.tabs, [tab.id]: nextTab };
+          nextActiveId = tab.id;
+          nextLifecycleSnapshots = state.lifecycleSnapshots;
           nextOpenedOrder = normalizeOpenedOrder(
-            nextOpenedOrder.filter((id) => !toEvict.has(id) || isHomeId(id))
+            state.openedOrder.includes(tab.id) ? state.openedOrder : [...state.openedOrder, tab.id]
           );
-          evictedIds = [...toEvict];
+        }
+
+        // Step 2: Enforce LRU eviction within the same atomic update.
+        // Previously this was an off-cycle mutation (enforceLruAfterOpen) that
+        // called evictInactive via a separate set() after openOrActivate returned,
+        // which could cause subscriber ordering bugs.
+        const keepAliveTabs = Object.values(nextTabs).filter((t) => t.keepAlive);
+        if (keepAliveTabs.length > MAX_KEEPALIVE_TABS) {
+          const sorted = keepAliveTabs.toSorted((a, b) => a.lastVisitedAt - b.lastVisitedAt);
+          const toEvict = new Set<WorkspaceTabId>();
+
+          for (const t of sorted) {
+            if (keepAliveTabs.length - toEvict.size <= MAX_KEEPALIVE_TABS) break;
+            // Never evict the tab we just opened — its lifecycle snapshot may not
+            // be registered yet (registerPageDescriptor runs in a LayoutEffect),
+            // so the dirty guard above would treat it as evictable.
+            if (t.id === tab.id) continue;
+            if (state.lifecycleSnapshots[t.id]?.dirty) continue;
+            toEvict.add(t.id);
+          }
+
+          if (toEvict.size > 0) {
+            // Prune evicted tabs from all state slices to prevent unbounded growth
+            const kept: Record<string, WorkspaceTab> = {};
+            const keptLifecycles: Record<string, WorkspacePageLifecycle> = {};
+            for (const id of Object.keys(nextTabs)) {
+              if (!toEvict.has(id) || isHomeId(id)) {
+                kept[id] = nextTabs[id];
+                if (nextLifecycleSnapshots[id]) keptLifecycles[id] = nextLifecycleSnapshots[id];
+              }
+            }
+            nextTabs = ensureHomeTab(kept);
+            nextLifecycleSnapshots = keptLifecycles;
+            nextOpenedOrder = normalizeOpenedOrder(
+              nextOpenedOrder.filter((id) => !toEvict.has(id) || isHomeId(id))
+            );
+            evictedIds = [...toEvict];
+          }
+        }
+
+        return {
+          tabs: nextTabs,
+          activeId: nextActiveId,
+          openedOrder: nextOpenedOrder,
+          lifecycleSnapshots: nextLifecycleSnapshots
+        };
+      });
+
+      if (evictedIds.length > 0) {
+        const registry = useWorkspacePageRegistryStore.getState();
+        for (const id of evictedIds) {
+          dismissWorkspacePageOverlays(id);
+          registry.unregisterDescriptor(id);
         }
       }
+    };
 
-      return {
-        tabs: nextTabs,
-        activeId: nextActiveId,
-        openedOrder: nextOpenedOrder,
-        lifecycleSnapshots: nextLifecycleSnapshots
-      };
-    });
-
-    if (evictedIds.length > 0) {
-      const registry = useWorkspacePageRegistryStore.getState();
-      for (const id of evictedIds) {
-        registry.unregisterDescriptor(id);
+    const previousActiveId = get().activeId;
+    if (previousActiveId && previousActiveId !== tab.id) {
+      const dismissResult = dismissWorkspacePageOverlays(previousActiveId);
+      if (dismissResult.hasPendingExit) {
+        void dismissResult.waitForSettled().then(() => {
+          if (openOrActivateSequence === sequence) {
+            commit();
+          }
+        });
+        return;
       }
     }
+
+    commit();
   },
 
   close: (id) => {
+    dismissWorkspacePageOverlays(id);
+
     let shouldUnregister = false;
 
     set((state) => {
@@ -189,6 +210,13 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
   },
 
   closeOther: (id) => {
+    const currentTabs = get().tabs;
+    for (const tabId of Object.keys(currentTabs)) {
+      if (tabId !== id && !isHomeId(tabId)) {
+        dismissWorkspacePageOverlays(tabId);
+      }
+    }
+
     let keepIds: WorkspaceTabId[] | null = null;
 
     set((state) => {
@@ -231,6 +259,13 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
   },
 
   closeAll: () => {
+    const currentTabs = get().tabs;
+    for (const tabId of Object.keys(currentTabs)) {
+      if (!isHomeId(tabId)) {
+        dismissWorkspacePageOverlays(tabId);
+      }
+    }
+
     set((state) => {
       const homeTab = state.tabs[HOME_ID];
       if (homeTab) {
@@ -267,6 +302,13 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
     }),
 
   evictInactive: (keepAliveIds) => {
+    const currentTabs = get().tabs;
+    for (const tabId of Object.keys(currentTabs)) {
+      if (!keepAliveIds.has(tabId) && !isHomeId(tabId)) {
+        dismissWorkspacePageOverlays(tabId);
+      }
+    }
+
     let keepIds: WorkspaceTabId[] = [];
 
     set((state) => {
@@ -355,6 +397,7 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
   resetAll: () => {
     set(createBaseState());
     useWorkspacePageRegistryStore.getState().resetDescriptors();
+    resetWorkspacePageOverlays();
   }
 }));
 

@@ -3,7 +3,7 @@ import { useRouter, useRouterState } from '@tanstack/react-router';
 import { findDeepestRouteMatch, normalizeRoutePath } from '../hooks/use-dashboard-route-tag-sync';
 import { useWorkspaceTabStore } from '../utils/store';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
-import { resolveRouteTagTitle } from '../lib/route-workspace';
+import { resolveRouteTagTitle, resolveRouteWorkspaceConfig } from '../lib/route-workspace';
 import type { WorkspacePageBoundaryProps, WorkspacePageDescriptor } from '../types';
 
 /**
@@ -11,8 +11,8 @@ import type { WorkspacePageBoundaryProps, WorkspacePageDescriptor } from '../typ
  * into the workspace shell.
  *
  * Flag-off: renders the page directly with zero side effects — no descriptor
- * registration, no store writes. Callers may optionally provide a dedicated
- * renderWhenDisabled tree when flag-off should bypass the workspace screen.
+ * registration, no store writes. renderWhenDisabled is the direct route tree
+ * for pages whose workspace render tree uses a Screen shell around the page body.
  *
  * Host Ownership Contract (flag-on):
  * 1. Registers a WorkspacePageDescriptor in the store during render
@@ -22,8 +22,8 @@ import type { WorkspacePageBoundaryProps, WorkspacePageDescriptor } from '../typ
 export function WorkspacePageBoundary({
   tabId,
   initialTitle,
-  keepAlive = true,
-  closable = true,
+  keepAlive: legacyKeepAlive,
+  closable: legacyClosable,
   render,
   renderWhenDisabled,
   errorFallback
@@ -32,16 +32,25 @@ export function WorkspacePageBoundary({
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const normalizedPathname = normalizeRoutePath(pathname);
-  const resolvedTabId = tabId ?? normalizedPathname;
-  const staticData = React.useMemo(
+  const resolvedTabId = normalizeRoutePath(tabId ?? normalizedPathname);
+  const routeMatch = React.useMemo(
     () =>
       findDeepestRouteMatch(
         resolvedTabId,
         router.routesByPath as unknown as Record<string, unknown>
-      )?.staticData,
+      ),
     [resolvedTabId, router.routesByPath]
   );
+  const staticData = routeMatch?.staticData;
+  const routeWorkspaceConfig = React.useMemo(
+    () => resolveRouteWorkspaceConfig(routeMatch?.pattern ?? resolvedTabId, staticData),
+    [resolvedTabId, routeMatch?.pattern, staticData]
+  );
   const resolvedInitialTitle = initialTitle ?? resolveRouteTagTitle(staticData, resolvedTabId);
+  const resolvedKeepAlive =
+    staticData?.workspace?.keepAlive ?? legacyKeepAlive ?? routeWorkspaceConfig.keepAlive;
+  const resolvedClosable =
+    staticData?.workspace?.closable ?? legacyClosable ?? routeWorkspaceConfig.closable;
   const isCurrentRouteInstance = normalizedPathname === resolvedTabId;
 
   if (!enabled) {
@@ -57,8 +66,8 @@ export function WorkspacePageBoundary({
       key={resolvedTabId}
       tabId={resolvedTabId}
       initialTitle={resolvedInitialTitle}
-      keepAlive={keepAlive}
-      closable={closable}
+      keepAlive={resolvedKeepAlive}
+      closable={resolvedClosable}
       render={render}
       errorFallback={errorFallback}
     />
