@@ -1,21 +1,35 @@
-import { flexRender, type Row, type Table as TanstackTable } from '@tanstack/react-table';
+import {
+  flexRender,
+  type Cell,
+  type Row,
+  type Table as TanstackTable
+} from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/lib/data-table';
-import type { DataTableVirtualizationOptions } from '@/types/data-table';
+import type {
+  DataTableColumnRenderItem,
+  DataTableColumnVirtualWindow,
+  DataTableResolvedVirtualizationOptions
+} from '@/types/data-table';
 import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
 import { emitDataTableVirtualEvent } from '@/components/ui/table/data-table-virtual-events';
 import { cn } from '@/lib/utils';
 import { DataTableCellContent } from '@/components/ui/table/data-table-cell-content';
 import { Icons } from '@/components/icons';
-import { DataTableStatus, type DataTableStatusConfig } from '@/components/ui/table/data-table-status';
+import {
+  DataTableStatus,
+  type DataTableStatusConfig
+} from '@/components/ui/table/data-table-status';
 
 interface DataTableBodyProps<TData> {
   table: TanstackTable<TData>;
   emptyMessage: React.ReactNode;
   status?: DataTableStatusConfig;
-  virtualization?: DataTableVirtualizationOptions;
+  virtualization?: DataTableResolvedVirtualizationOptions;
+  columnVirtualWindow?: DataTableColumnVirtualWindow<TData>;
+  useTransformFreeVirtualRows?: boolean;
   scrollViewportRef: React.RefObject<HTMLDivElement | null>;
   headerRowRef: React.RefObject<HTMLTableRowElement | null>;
   onRowClick?: (rowKey: string) => void;
@@ -56,11 +70,103 @@ function areColumnWidthsEqual(current: number[], next: number[]): boolean {
   return true;
 }
 
+function offsetPinnedCellByOnePixel(offset: CSSProperties['left']): CSSProperties['left'] {
+  if (typeof offset === 'number') {
+    return offset - 1;
+  }
+
+  if (typeof offset !== 'string') {
+    return '-1px';
+  }
+
+  const pixelValue = Number.parseFloat(offset);
+  if (Number.isFinite(pixelValue) && offset.trim().endsWith('px')) {
+    return `${pixelValue - 1}px`;
+  }
+
+  return `calc(${offset} - 1px)`;
+}
+
+function getBodyCellPinningStyles<TData>(cell: Cell<TData, unknown>): CSSProperties {
+  const pinningStyles = getCommonPinningStyles({ column: cell.column });
+  const pinnedSide = cell.column.getIsPinned();
+
+  if (pinnedSide === 'left') {
+    return {
+      ...pinningStyles,
+      left: offsetPinnedCellByOnePixel(pinningStyles.left)
+    };
+  }
+
+  if (pinnedSide === 'right') {
+    return {
+      ...pinningStyles,
+      right: offsetPinnedCellByOnePixel(pinningStyles.right)
+    };
+  }
+
+  return pinningStyles;
+}
+
+function renderDataTableCellSurface<TData>(cell: Cell<TData, unknown>, content: React.ReactNode) {
+  const pinnedSide = cell.column.getIsPinned();
+
+  if (!pinnedSide) {
+    return content;
+  }
+
+  const pinningShadow = cell.column.columnDef.meta?.pinningShadow?.[pinnedSide];
+  const shadowEdge = pinningShadow ? (pinnedSide === 'left' ? 'right' : 'left') : undefined;
+  const shadowStyle =
+    shadowEdge === 'right'
+      ? { right: 0, boxShadow: pinningShadow }
+      : shadowEdge === 'left'
+        ? { left: 0, boxShadow: pinningShadow }
+        : undefined;
+
+  return (
+    <>
+      <div
+        aria-hidden='true'
+        data-slot='data-table-pinned-cell-base'
+        data-pinning-shadow-edge={shadowEdge}
+        className='bg-background group-data-[expanded=true]:bg-accent pointer-events-none absolute inset-0'
+      />
+      <div
+        aria-hidden='true'
+        data-slot='data-table-pinned-cell-overlay'
+        data-pinning-shadow-edge={shadowEdge}
+        className='group-hover:bg-muted/50 group-data-[state=selected]:bg-muted pointer-events-none absolute inset-0'
+      />
+      {shadowStyle ? (
+        <div
+          aria-hidden='true'
+          data-slot='data-table-pinned-cell-shadow'
+          data-pinning-shadow-edge={shadowEdge}
+          className='pointer-events-none absolute top-0 bottom-0 z-[1] w-px'
+          style={shadowStyle}
+        />
+      ) : null}
+      <div className='relative z-10 w-full'>{content}</div>
+    </>
+  );
+}
+
+function getColumnVirtualCellWidthStyle(size: number): React.CSSProperties {
+  return {
+    width: size,
+    minWidth: size,
+    maxWidth: size
+  };
+}
+
 export function DataTableBody<TData>({
   table,
   emptyMessage,
   status,
   virtualization,
+  columnVirtualWindow,
+  useTransformFreeVirtualRows = false,
   scrollViewportRef,
   headerRowRef,
   onRowClick,
@@ -94,6 +200,14 @@ export function DataTableBody<TData>({
     enabled: shouldVirtualize
   });
 
+  useLayoutEffect(() => {
+    if (!shouldVirtualize || !scrollViewportRef.current || rows.length === 0) {
+      return;
+    }
+
+    rowVirtualizer.measure();
+  }, [rowVirtualizer, rows.length, scrollViewportRef, shouldVirtualize]);
+
   // ── Measure actual header widths ──
   // ResizeObserver on each <th> catches all width changes (column resize,
   // window resize, toggling). No columnSizing dependency needed — the RO
@@ -126,6 +240,10 @@ export function DataTableBody<TData>({
   const handleRowClick = useCallback(
     (event: React.MouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
       const target = event.target as HTMLElement | null;
+      if (!target || !event.currentTarget.contains(target)) {
+        return;
+      }
+
       if (target?.closest(ROW_EXPAND_IGNORE_SELECTOR)) {
         return;
       }
@@ -186,6 +304,94 @@ export function DataTableBody<TData>({
 
   // Emit enabled event on first virtual render
   const enabledEmittedRef = useRef(false);
+  const renderColumnVirtualSpacer = useCallback(
+    (side: 'left' | 'right', size: number, isVirtualRow: boolean) => {
+      if (size <= 0) return null;
+
+      return (
+        <TableCell
+          key={`column-virtual-spacer-${side}`}
+          aria-hidden='true'
+          data-column-virtual-spacer={side}
+          style={{
+            ...getColumnVirtualCellWidthStyle(size),
+            ...(isVirtualRow
+              ? {
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%'
+                }
+              : {})
+          }}
+        />
+      );
+    },
+    []
+  );
+  const renderColumnVirtualCell = useCallback(
+    (row: Row<TData>, item: DataTableColumnRenderItem<TData>, isVirtualRow: boolean) => {
+      const cell = row.getVisibleCells()[item.leafIndex] as Cell<TData, unknown> | undefined;
+      if (!cell) return null;
+      const pinningStyles = getBodyCellPinningStyles(cell);
+
+      return (
+        <TableCell
+          key={cell.id}
+          data-column-id={item.columnId}
+          data-column-leaf-index={item.leafIndex}
+          data-column-center-index={item.centerIndex >= 0 ? item.centerIndex : undefined}
+          className={cell.column.getIsPinned() ? 'bg-background' : undefined}
+          style={{
+            ...(isVirtualRow
+              ? {
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%'
+                }
+              : {}),
+            ...pinningStyles,
+            ...getColumnVirtualCellWidthStyle(item.size)
+          }}
+        >
+          {renderDataTableCellSurface(
+            cell,
+            <DataTableCellContent cell={cell}>
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </DataTableCellContent>
+          )}
+        </TableCell>
+      );
+    },
+    []
+  );
+  const renderColumnVirtualCells = useCallback(
+    (row: Row<TData>, isVirtualRow: boolean) => {
+      if (!columnVirtualWindow?.enabled) {
+        return null;
+      }
+
+      return (
+        <>
+          {columnVirtualWindow.leftItems.map((item) =>
+            renderColumnVirtualCell(row, item, isVirtualRow)
+          )}
+          {renderColumnVirtualSpacer('left', columnVirtualWindow.virtualPaddingLeft, isVirtualRow)}
+          {columnVirtualWindow.items.map((item) =>
+            renderColumnVirtualCell(row, item, isVirtualRow)
+          )}
+          {renderColumnVirtualSpacer(
+            'right',
+            columnVirtualWindow.virtualPaddingRight,
+            isVirtualRow
+          )}
+          {columnVirtualWindow.rightItems.map((item) =>
+            renderColumnVirtualCell(row, item, isVirtualRow)
+          )}
+        </>
+      );
+    },
+    [columnVirtualWindow, renderColumnVirtualCell, renderColumnVirtualSpacer]
+  );
 
   if (status) {
     return <DataTableStatus status={status} colSpan={table.getAllColumns().length} />;
@@ -223,6 +429,10 @@ export function DataTableBody<TData>({
           style={{ height: `${totalSize}px`, position: 'relative' }}
           aria-rowcount={rows.length + 1}
           data-virtual-enabled='true'
+          data-column-virtual-enabled={columnVirtualWindow?.enabled ? 'true' : undefined}
+          data-column-virtual-count={
+            columnVirtualWindow?.enabled ? columnVirtualWindow.items.length : undefined
+          }
           data-virtual-count={virtualItems.length}
           data-virtual-total-size={totalSize}
           data-virtual-scroll-offset={virtualItems[0]?.start ?? 0}
@@ -235,6 +445,11 @@ export function DataTableBody<TData>({
               <TableRow
                 key={row.id}
                 data-index={virtualRow.index}
+                data-expanded={
+                  expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey
+                    ? 'true'
+                    : undefined
+                }
                 aria-rowindex={virtualRow.index + 2}
                 data-state={row.getIsSelected() ? 'selected' : undefined}
                 className={getRowClassName(row)}
@@ -243,46 +458,56 @@ export function DataTableBody<TData>({
                   position: 'absolute',
                   display: 'flex',
                   alignItems: 'center',
-                  top: 0,
+                  top: useTransformFreeVirtualRows ? `${virtualRow.start}px` : 0,
                   left: 0,
                   width: '100%',
                   height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`
+                  transform: useTransformFreeVirtualRows
+                    ? undefined
+                    : `translateY(${virtualRow.start}px)`
                 }}
+                data-virtual-row-positioning={useTransformFreeVirtualRows ? 'top' : 'transform'}
               >
-                {row.getVisibleCells().map((cell, ci) => {
-                  const measured = columnWidths[ci];
-                  const thWidth =
-                    measured ??
-                    (headerRowRef.current
-                      ? (
-                          headerRowRef.current.querySelectorAll('th')[ci] as
-                            | HTMLTableCellElement
-                            | undefined
-                        )?.offsetWidth
-                      : undefined);
-                  const pinningStyles = getCommonPinningStyles({ column: cell.column });
-                  return (
-                    <TableCell
-                      key={cell.id}
-                      className={cell.column.getIsPinned() ? 'bg-background' : undefined}
-                      style={{
-                        display: 'block',
-                        ...pinningStyles,
-                        // Measured header width wins over pinning's configured size.
-                        // Fallback chain: measured → pinned configured → column default.
-                        width:
-                          thWidth ??
-                          (pinningStyles.width as number | undefined) ??
-                          cell.column.getSize()
-                      }}
-                    >
-                      <DataTableCellContent cell={cell}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </DataTableCellContent>
-                    </TableCell>
-                  );
-                })}
+                {columnVirtualWindow?.enabled
+                  ? renderColumnVirtualCells(row, true)
+                  : row.getVisibleCells().map((cell, ci) => {
+                      const measured = columnWidths[ci];
+                      const thWidth =
+                        measured ??
+                        (headerRowRef.current
+                          ? (
+                              headerRowRef.current.querySelectorAll('th')[ci] as
+                                | HTMLTableCellElement
+                                | undefined
+                            )?.offsetWidth
+                          : undefined);
+                      const pinningStyles = getBodyCellPinningStyles(cell);
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          className={cell.column.getIsPinned() ? 'bg-background' : undefined}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            height: '100%',
+                            ...pinningStyles,
+                            // Measured header width wins over pinning's configured size.
+                            // Fallback chain: measured → pinned configured → column default.
+                            width:
+                              thWidth ??
+                              (pinningStyles.width as number | undefined) ??
+                              cell.column.getSize()
+                          }}
+                        >
+                          {renderDataTableCellSurface(
+                            cell,
+                            <DataTableCellContent cell={cell}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </DataTableCellContent>
+                          )}
+                        </TableCell>
+                      );
+                    })}
               </TableRow>
             );
           })}
@@ -296,26 +521,41 @@ export function DataTableBody<TData>({
   }
 
   return (
-    <TableBody>
+    <TableBody
+      data-column-virtual-enabled={columnVirtualWindow?.enabled ? 'true' : undefined}
+      data-column-virtual-count={
+        columnVirtualWindow?.enabled ? columnVirtualWindow.items.length : undefined
+      }
+    >
       {rows.map((row, index) => (
         <TableRow
           key={row.id}
           data-row-index={index}
+          data-expanded={
+            expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey
+              ? 'true'
+              : undefined
+          }
           data-state={row.getIsSelected() ? 'selected' : undefined}
           className={getRowClassName(row)}
           onClick={(event) => handleRowClick(event, row)}
         >
-          {row.getVisibleCells().map((cell) => (
-            <TableCell
-              key={cell.id}
-              className={cell.column.getIsPinned() ? 'bg-background' : undefined}
-              style={getCommonPinningStyles({ column: cell.column })}
-            >
-              <DataTableCellContent cell={cell}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </DataTableCellContent>
-            </TableCell>
-          ))}
+          {columnVirtualWindow?.enabled
+            ? renderColumnVirtualCells(row, false)
+            : row.getVisibleCells().map((cell) => (
+                <TableCell
+                  key={cell.id}
+                  className={cell.column.getIsPinned() ? 'bg-background' : undefined}
+                  style={getBodyCellPinningStyles(cell)}
+                >
+                  {renderDataTableCellSurface(
+                    cell,
+                    <DataTableCellContent cell={cell}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </DataTableCellContent>
+                  )}
+                </TableCell>
+              ))}
         </TableRow>
       ))}
     </TableBody>

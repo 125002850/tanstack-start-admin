@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
-import * as React from 'react';
 import userEvent from '@testing-library/user-event';
 
 import {

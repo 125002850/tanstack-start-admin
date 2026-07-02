@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-export const DATA_TABLE_PAGE_SIZE_OPTIONS = [10, 50, 100, 500, 2000] as const;
-export const DEFAULT_DATA_TABLE_PAGE_SIZE = DATA_TABLE_PAGE_SIZE_OPTIONS[0];
+export const DATA_TABLE_PAGE_SIZE_OPTIONS = [10, 50, 200, 500, 2000] as const;
+export const DEFAULT_DATA_TABLE_PAGE_SIZE = DATA_TABLE_PAGE_SIZE_OPTIONS[1];
 
 const STORAGE_KEY = 'app-data-table-per-page';
 const DATA_TABLE_PAGE_SIZE_OPTION_SET = new Set<number>(DATA_TABLE_PAGE_SIZE_OPTIONS);
@@ -66,17 +66,6 @@ function normalizeDataTablePageSize(
 
 type UseDataTablePageSizeOptions = {
   tableId?: string;
-  /**
-   * Optional seed value from a caller-managed source (e.g. search params).
-   * When provided with hasExplicitSearchPerPage=true, the seed takes priority
-   * over localStorage preference for initialization only.
-   *
-   * @deprecated The search-per-page pathway is preserved for backward compat.
-   * New code should omit this and rely on localStorage preference exclusively.
-   */
-  searchPerPage?: number;
-  /** @deprecated See searchPerPage. */
-  hasExplicitSearchPerPage?: boolean;
 };
 
 /**
@@ -88,33 +77,14 @@ type UseDataTablePageSizeOptions = {
  * - On pageSize change via setPageSize: writes back to localStorage
  * - Does NOT sync with URL search params (that's the caller's choice)
  * - Does NOT read router state
- *
- * The `searchPerPage` / `hasExplicitSearchPerPage` options are deprecated
- * and preserved only for backward compatibility during the V1→V2 migration.
- * New code should call `useDataTablePageSize({})`.
  */
 export function useDataTablePageSize({
-  tableId,
-  searchPerPage,
-  hasExplicitSearchPerPage = typeof searchPerPage === 'number'
+  tableId
 }: UseDataTablePageSizeOptions = {}) {
-  const [pageSize, setPageSizeState] = React.useState(() =>
-    hasExplicitSearchPerPage
-      ? normalizeDataTablePageSize(searchPerPage)
-      : DEFAULT_DATA_TABLE_PAGE_SIZE
-  );
-  const [isReady, setIsReady] = React.useState(hasExplicitSearchPerPage);
+  const [pageSize, setPageSizeState] = React.useState<number>(DEFAULT_DATA_TABLE_PAGE_SIZE);
+  const [isReady, setIsReady] = React.useState(false);
 
   React.useEffect(() => {
-    if (hasExplicitSearchPerPage) {
-      const normalizedSearchPageSize = normalizeDataTablePageSize(searchPerPage);
-
-      setPageSizeState(normalizedSearchPageSize);
-      setIsReady(true);
-      writeDataTablePageSize(normalizedSearchPageSize, tableId);
-      return;
-    }
-
     const persistedPageSize = readDataTablePageSize(tableId);
     const nextPageSize = persistedPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE;
 
@@ -127,14 +97,17 @@ export function useDataTablePageSize({
     }
 
     setIsReady(true);
-  }, [hasExplicitSearchPerPage, searchPerPage, tableId]);
-
-  const setPageSize = React.useCallback((nextPageSize: number) => {
-    const normalizedPageSize = normalizeDataTablePageSize(nextPageSize);
-
-    setPageSizeState(normalizedPageSize);
-    writeDataTablePageSize(normalizedPageSize, tableId);
   }, [tableId]);
+
+  const setPageSize = React.useCallback(
+    (nextPageSize: number) => {
+      const normalizedPageSize = normalizeDataTablePageSize(nextPageSize);
+
+      setPageSizeState(normalizedPageSize);
+      writeDataTablePageSize(normalizedPageSize, tableId);
+    },
+    [tableId]
+  );
 
   return {
     isReady,

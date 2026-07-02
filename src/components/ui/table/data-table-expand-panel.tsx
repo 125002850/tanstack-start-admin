@@ -31,18 +31,89 @@ export function DataTableExpandPanel<TData>({
   onClose
 }: DataTableExpandPanelProps<TData>) {
   const availableTabs = getAvailableExpandTabs(expandConfig, row);
+  const tabsListRef = React.useRef<HTMLDivElement | null>(null);
+  const [indicatorStyle, setIndicatorStyle] = React.useState<React.CSSProperties>({ opacity: 0 });
+
+  const updateTabIndicator = React.useCallback(() => {
+    const tabsList = tabsListRef.current;
+    const activeTrigger = Array.from(
+      tabsList?.querySelectorAll<HTMLElement>('[data-expand-tab-trigger]') ?? []
+    ).find((trigger) => trigger.dataset.expandTabTrigger === activeTab);
+
+    if (!tabsList || !activeTrigger) {
+      setIndicatorStyle((current) =>
+        current.opacity === 0 ? current : { ...current, opacity: 0 }
+      );
+      return;
+    }
+
+    const listRect = tabsList.getBoundingClientRect();
+    const triggerRect = activeTrigger.getBoundingClientRect();
+    const nextStyle: React.CSSProperties = {
+      width: triggerRect.width,
+      height: triggerRect.height,
+      transform: `translate(${triggerRect.left - listRect.left}px, ${
+        triggerRect.top - listRect.top
+      }px)`,
+      opacity: 1
+    };
+
+    setIndicatorStyle((current) =>
+      current.width === nextStyle.width &&
+      current.height === nextStyle.height &&
+      current.transform === nextStyle.transform &&
+      current.opacity === nextStyle.opacity
+        ? current
+        : nextStyle
+    );
+  }, [activeTab]);
+
+  React.useLayoutEffect(() => {
+    updateTabIndicator();
+  });
+
+  React.useEffect(() => {
+    const tabsList = tabsListRef.current;
+    if (!tabsList) return;
+
+    window.addEventListener('resize', updateTabIndicator);
+
+    if (typeof ResizeObserver === 'undefined') {
+      return () => {
+        window.removeEventListener('resize', updateTabIndicator);
+      };
+    }
+
+    const resizeObserver = new ResizeObserver(updateTabIndicator);
+    resizeObserver.observe(tabsList);
+
+    return () => {
+      window.removeEventListener('resize', updateTabIndicator);
+      resizeObserver.disconnect();
+    };
+  }, [updateTabIndicator]);
 
   return (
     <div
       id={panelId}
       data-slot='data-table-expand-panel'
-      className='bg-background flex h-full min-h-0 flex-col overflow-hidden rounded-lg border'
+      className='bg-background flex flex-col overflow-hidden rounded-lg border'
     >
-      <Tabs value={activeTab} onValueChange={onActiveTabChange} className='flex min-h-0 flex-1 flex-col gap-0'>
-        <div className='flex items-center gap-3 border-b px-4 py-3'>
-          <TabsList className='h-auto flex-wrap gap-1 p-1'>
+      <Tabs value={activeTab} onValueChange={onActiveTabChange} className='flex flex-col gap-0'>
+        <div className='flex items-center gap-3 border-b px-4 py-2'>
+          <TabsList ref={tabsListRef} className='relative isolate h-auto flex-wrap gap-1 p-1'>
+            <span
+              aria-hidden='true'
+              className='bg-background pointer-events-none absolute top-0 left-0 rounded-md border border-transparent shadow-sm transition-[width,transform,opacity] duration-200 ease-out motion-reduce:transition-none dark:border-input dark:bg-input/30'
+              style={indicatorStyle}
+            />
             {availableTabs.map((tab) => (
-              <TabsTrigger key={tab.id} value={tab.id} className='min-w-20'>
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                data-expand-tab-trigger={tab.id}
+                className='relative z-10 min-w-20 flex-none data-[state=active]:border-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent'
+              >
                 {tab.icon}
                 <span>{tab.label}</span>
               </TabsTrigger>
@@ -60,9 +131,9 @@ export function DataTableExpandPanel<TData>({
             <Icons.close className='size-4' />
           </Button>
         </div>
-        <div className='min-h-0 flex-1 overflow-auto px-4 py-4'>
+        <div className='px-4 py-4'>
           {availableTabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id} className='mt-0 h-full outline-none'>
+            <TabsContent key={tab.id} value={tab.id} className='mt-0 min-w-0 outline-none'>
               {tab.render(row)}
             </TabsContent>
           ))}

@@ -123,6 +123,7 @@ function ActionColumnStateHarness({
   expandEnabled?: boolean;
 }) {
   const { table } = useDataTable({
+    tableId: 'data-table-actions-column-state',
     data: DATA,
     columns,
     pageCount: 1,
@@ -184,6 +185,7 @@ function ActionColumnRenderHarness({
   rowActions?: DataTableRowAction<TestRow>[];
 }) {
   const { table } = useDataTable({
+    tableId: 'data-table-actions-column-render',
     data: DATA,
     columns: COLUMNS,
     pageCount: 1,
@@ -193,6 +195,16 @@ function ActionColumnRenderHarness({
   });
 
   return <DataTable table={table} />;
+}
+
+function getActionsHeader(container: HTMLElement) {
+  const headers = Array.from(container.querySelectorAll('thead th'));
+  return headers.find((header) => header.textContent?.includes('操作'));
+}
+
+function getFirstRowShadowedCell(container: HTMLElement) {
+  const cells = Array.from(container.querySelectorAll('tbody tr:first-child td'));
+  return cells.find((cell) => cell.getAttribute('style')?.includes('box-shadow'));
 }
 
 afterEach(cleanup);
@@ -293,12 +305,48 @@ describe('DataTable actions column', () => {
   it('renders the actions column pinned right without a resize handle', () => {
     const { container } = render(<ActionColumnRenderHarness />);
 
-    const headers = Array.from(container.querySelectorAll('thead th'));
-    const actionsHeader = headers.find((header) => header.textContent?.includes('操作'));
+    const actionsHeader = getActionsHeader(container);
 
     expect(actionsHeader?.getAttribute('style')).toContain('position: sticky');
     expect(actionsHeader?.getAttribute('style')).toContain('right:');
     expect(actionsHeader?.querySelector('[data-resizing]')).toBeNull();
+  });
+
+  it('adds a subtle left shadow when the actions column is pinned right', () => {
+    const { container } = render(<ActionColumnRenderHarness />);
+    const expectedShadow =
+      'box-shadow: 4px 0 8px -8px color-mix(in oklch, var(--border) 18%, transparent) inset';
+    const shadowedCell = getFirstRowShadowedCell(container);
+
+    expect(getActionsHeader(container)?.getAttribute('style')).toContain(expectedShadow);
+    expect(shadowedCell?.getAttribute('style')).toContain(expectedShadow);
+    expect(shadowedCell?.getAttribute('style')).toContain('right: -1px;');
+    expect(shadowedCell?.getAttribute('style')).toContain('pointer-events: auto;');
+    expect(shadowedCell?.getAttribute('style')).toContain('z-index: 2;');
+    expect(
+      shadowedCell
+        ?.querySelector('[data-slot="data-table-pinned-cell-base"]')
+        ?.getAttribute('data-pinning-shadow-edge')
+    ).toBe('left');
+  });
+
+  it('adds a subtle right shadow when the actions column is pinned left', () => {
+    const { container } = render(<ActionColumnRenderHarness actionColumnPin='left' />);
+
+    const style = getActionsHeader(container)?.getAttribute('style');
+    const expectedShadow =
+      'box-shadow: -4px 0 8px -8px color-mix(in oklch, var(--border) 18%, transparent) inset';
+    const shadowedCell = getFirstRowShadowedCell(container);
+
+    expect(style).toContain('left:');
+    expect(style).toContain(expectedShadow);
+    expect(shadowedCell?.getAttribute('style')).toContain(expectedShadow);
+    expect(shadowedCell?.getAttribute('style')).toContain('left: -1px;');
+    expect(
+      shadowedCell
+        ?.querySelector('[data-slot="data-table-pinned-cell-base"]')
+        ?.getAttribute('data-pinning-shadow-edge')
+    ).toBe('right');
   });
 
   it('sizes the actions column by the visible action count', () => {
@@ -315,7 +363,10 @@ describe('DataTable actions column', () => {
     expect(getByTestId('actions-size').textContent).toBe(
       String(getDataTableRowActionsColumnWidth(4))
     );
-    expect(getDataTableRowActionsColumnWidth(4)).toBe(getDataTableRowActionsColumnWidth(3));
+    expect(getDataTableRowActionsColumnWidth(4)).toBeGreaterThan(
+      getDataTableRowActionsColumnWidth(3)
+    );
+    expect(getDataTableRowActionsColumnWidth(4)).toBe(getDataTableRowActionsColumnWidth(10));
   });
 
   it('renders a fixed width for more-than-three actions', () => {

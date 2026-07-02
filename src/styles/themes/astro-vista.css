@@ -1,9 +1,9 @@
 [data-theme='astro-vista'] {
   --background: oklch(0.9383 0.0042 236.4993);
   --foreground: oklch(0.3211 0 0);
-  --card: oklch(1 0 0);
+  --card: oklch(0.9708 0.0086 241.6411);
   --card-foreground: oklch(0.3211 0 0);
-  --popover: oklch(1 0 0);
+  --popover: oklch(0.9791 0.0067 240.6168);
   --popover-foreground: oklch(0.3211 0 0);
   --primary: oklch(0.642 0.1691 38.5815);
   --primary-foreground: oklch(1 0 0);
@@ -15,8 +15,8 @@
   --accent-foreground: oklch(0.3791 0.1378 265.5222);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.8452 0 0);
-  --input: oklch(0.97 0.0029 264.542);
+  --border: oklch(0.8729 0.0091 247.9142);
+  --input: oklch(0.9609 0.0073 245.1753);
   --ring: oklch(0.6397 0.172 36.4421);
   --chart-1: oklch(0.6693 0.0706 248.923);
   --chart-2: oklch(0.6678 0.1546 41.62);
@@ -156,4 +156,30 @@
     --shadow-xl: var(--shadow-xl);
     --shadow-2xl: var(--shadow-2xl);
   }
+}
+
+[data-theme='astro-vista'] :where(.data-table-filter-control) {
+  border-color: color-mix(in oklch, var(--border) 82%, var(--accent-foreground) 18%);
+  background-color: color-mix(in oklch, var(--popover) 92%, var(--accent) 8%);
+  box-shadow: var(--shadow-xs);
+}
+
+[data-theme='astro-vista'] :where(.data-table-filter-control:hover) {
+  background-color: color-mix(in oklch, var(--popover) 84%, var(--accent) 16%);
+}
+
+[data-theme='astro-vista'] :where(.data-table-filter-control[data-active='true']) {
+  border-color: color-mix(in oklch, var(--border) 70%, var(--accent-foreground) 30%);
+  background-color: color-mix(in oklch, var(--popover) 76%, var(--accent) 24%);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme='astro-vista'] :where(.data-table-filter-popover) {
+  border-color: color-mix(in oklch, var(--border) 78%, var(--accent-foreground) 22%);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme='astro-vista']
+  :where(.data-table-filter-popover [data-slot='command-input-wrapper']) {
+  background-color: color-mix(in oklch, var(--background) 90%, var(--accent) 10%);
 }

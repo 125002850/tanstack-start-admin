@@ -1,6 +1,5 @@
 import type { Cell } from '@tanstack/react-table';
-import { useLayoutEffect, useRef, useState } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DataTableOverflowTooltipText } from '@/components/ui/table/data-table-overflow-tooltip-text';
 
 interface DataTableCellContentProps<TData, TValue> {
   cell: Cell<TData, TValue>;
@@ -20,59 +19,33 @@ function isTextLikeValue(value: unknown): boolean {
   return t === 'string' || t === 'number' || t === 'bigint' || t === 'boolean';
 }
 
-/**
- * Distinguishes TanStack Table's built-in default cell renderer from a
- * user-provided custom `cell` function.
- *
- * TanStack's default calls `props.renderValue()`. User code universally
- * destructures `cell.getValue()` instead. Fingerprinting the function
- * source on `renderValue` reliably tells them apart.
- */
+function isTextLikeNode(node: React.ReactNode): node is string | number | bigint | boolean {
+  const t = typeof node;
+  return t === 'string' || t === 'number' || t === 'bigint' || t === 'boolean';
+}
+
+function textLikeNodeToString(node: React.ReactNode): string | null {
+  if (isTextLikeNode(node)) return displayText(node);
+  if (!Array.isArray(node)) return null;
+
+  const parts = node.map(textLikeNodeToString);
+  if (parts.some((part) => part === null)) return null;
+  return parts.join('');
+}
+
+/** TanStack's default cell renderer calls `renderValue()` instead of `getValue()`. */
 function isDefaultCellFn(fn: unknown): fn is Function {
   return typeof fn === 'function' && fn.toString().includes('renderValue');
 }
 
-/**
- * Text cell with truncate. Only wraps in Tooltip when the content actually
- * overflows (scrollWidth > clientWidth). Otherwise the span is rendered
- * without a tooltip to avoid showing tooltips on cells that already fit.
- */
+/** "—" placeholder for falsy accessor values, consistent with `|| '-'` pattern. */
+function displayText(value: unknown): string {
+  if (value == null || value === '') return '-';
+  return String(value);
+}
+
 function TextCellContent({ value, children }: { value: string; children: React.ReactNode }) {
-  const spanRef = useRef<HTMLSpanElement>(null);
-  const [isOverflowing, setIsOverflowing] = useState(false);
-
-  useLayoutEffect(() => {
-    const el = spanRef.current;
-    if (!el) return;
-
-    const check = () => {
-      const overflowing = el.scrollWidth > el.clientWidth;
-      setIsOverflowing((prev) => (prev !== overflowing ? overflowing : prev));
-    };
-
-    check();
-
-    if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [value]);
-
-  const span = (
-    <span ref={spanRef} className='block truncate max-w-full'>
-      {children}
-    </span>
-  );
-
-  // Only show tooltip when text is actually truncated
-  return (
-    <Tooltip open={isOverflowing ? undefined : false}>
-      <TooltipTrigger asChild>{span}</TooltipTrigger>
-      <TooltipContent side='top' sideOffset={4}>
-        {value}
-      </TooltipContent>
-    </Tooltip>
-  );
+  return <DataTableOverflowTooltipText value={value}>{children}</DataTableOverflowTooltipText>;
 }
 
 /**
@@ -83,20 +56,27 @@ export function DataTableCellContent<TData, TValue>({
   cell,
   children
 }: DataTableCellContentProps<TData, TValue>) {
-  const rawValue = cell.getValue();
-  // Use column.accessorFn (on the Column object, not columnDef union type)
-  const hasAccessor = typeof cell.column.accessorFn === 'function';
-  const hasCustomCell = !isDefaultCellFn(cell.column.columnDef.cell);
-
-  // Structured content: custom cell render (badge, image, checkbox),
-  // no accessor (select/actions column), or non-primitive value.
-  if (hasCustomCell || !hasAccessor || !isTextLikeValue(rawValue)) {
-    return <div className='overflow-hidden'>{children}</div>;
+  if (cell.column.columnDef.meta?.cellOwnsTooltip) {
+    return children;
   }
 
-  // Default cell render + primitive value = plain text.
-  // Always truncate, only show tooltip on actual overflow.
-  return (
-    <TextCellContent value={String(rawValue)}>{children}</TextCellContent>
-  );
+  const rawValue = cell.getValue();
+  const hasAccessor = typeof cell.column.accessorFn === 'function';
+
+  if (isTextLikeValue(rawValue) && hasAccessor) {
+    const text = displayText(rawValue);
+    const isDefaultRender = isDefaultCellFn(cell.column.columnDef.cell);
+
+    // Default renderer: use computed display text so falsy values show "-".
+    // Custom primitive renderers use their rendered text for tooltip; structured cells keep accessor text.
+    const tooltipText = !isDefaultRender ? (textLikeNodeToString(children) ?? text) : text;
+    return (
+      <TextCellContent value={tooltipText}>
+        {isDefaultRender ? text : children}
+      </TextCellContent>
+    );
+  }
+
+  // Non-primitive or no accessor (select/actions/group columns).
+  return <div className='overflow-hidden'>{children}</div>;
 }

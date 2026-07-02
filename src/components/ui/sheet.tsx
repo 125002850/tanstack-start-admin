@@ -1,8 +1,44 @@
 import * as React from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { Icons } from '@/components/icons';
-
 import { cn } from '@/lib/utils';
+
+const FIRST_FIELD_SELECTOR = [
+  'input:not([type="hidden"])',
+  'textarea',
+  'select',
+  '[data-slot="select-trigger"]',
+  '[data-slot="combobox-trigger"]',
+  '[data-slot="switch"]',
+  '[data-slot="checkbox"]',
+  '[data-slot="radio-group-item"]',
+  '[role="combobox"]'
+].join(',');
+
+function isFocusableField(element: Element): element is HTMLElement {
+  if (!(element instanceof HTMLElement)) return false;
+
+  if (
+    element.matches(
+      '[disabled], [aria-disabled="true"], [data-disabled="true"], [hidden], [aria-hidden="true"]'
+    )
+  ) {
+    return false;
+  }
+
+  return element.tabIndex !== -1;
+}
+
+function getFirstFocusableField(container: HTMLElement) {
+  return Array.from(container.querySelectorAll(FIRST_FIELD_SELECTOR)).find(isFocusableField);
+}
+
+function focusFirstField(target: HTMLElement) {
+  target.focus({
+    preventScroll: true,
+    focusVisible: true
+  } as FocusOptions & { focusVisible?: boolean });
+}
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot='sheet' {...props} />;
@@ -40,15 +76,76 @@ function SheetContent({
   className,
   children,
   side = 'right',
+  onAfterClose,
+  onCloseAutoFocus,
+  onOpenAutoFocus,
+  autoFocusFirstField = false,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
+  onAfterClose?: () => void;
+  autoFocusFirstField?: boolean;
 }) {
+  const contentRef = React.useRef<React.ElementRef<typeof SheetPrimitive.Content>>(null);
+  const hasAutoFocusedFirstFieldRef = React.useRef(false);
+  const handleCloseAutoFocus = React.useCallback(
+    (event: Event) => {
+      try {
+        onCloseAutoFocus?.(event);
+      } finally {
+        hasAutoFocusedFirstFieldRef.current = false;
+        onAfterClose?.();
+      }
+    },
+    [onAfterClose, onCloseAutoFocus]
+  );
+  const handleOpenAutoFocus = React.useCallback(
+    (event: Event) => {
+      onOpenAutoFocus?.(event);
+
+      if (!autoFocusFirstField || event.defaultPrevented) {
+        return;
+      }
+
+      const target = getFirstFocusableField(event.currentTarget as HTMLElement);
+      if (!target) {
+        return;
+      }
+
+      event.preventDefault();
+      focusFirstField(target);
+      hasAutoFocusedFirstFieldRef.current = true;
+    },
+    [autoFocusFirstField, onOpenAutoFocus]
+  );
+
+  React.useEffect(() => {
+    if (!autoFocusFirstField || hasAutoFocusedFirstFieldRef.current) {
+      return;
+    }
+
+    const content = contentRef.current;
+    if (!content) {
+      return;
+    }
+
+    const target = getFirstFocusableField(content);
+    if (!target) {
+      return;
+    }
+
+    focusFirstField(target);
+    hasAutoFocusedFirstFieldRef.current = true;
+  });
+
   return (
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Content
+        ref={contentRef}
         data-slot='sheet-content'
+        onCloseAutoFocus={handleCloseAutoFocus}
+        onOpenAutoFocus={handleOpenAutoFocus}
         className={cn(
           'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 px-6 py-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500',
           side === 'right' &&

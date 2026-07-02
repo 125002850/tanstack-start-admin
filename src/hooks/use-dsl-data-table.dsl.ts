@@ -50,7 +50,6 @@ export interface DataTableDslSortItem<TField extends string = string> {
 export interface DataTableDslPageRequestBase<TField extends string = string> {
   pageNo: number;
   pageSize: number;
-  dslVersion: number;
   condition?: DataTableDslCondition<TField>;
   sort?: Array<DataTableDslSortItem<TField>>;
 }
@@ -58,11 +57,10 @@ export interface DataTableDslPageRequestBase<TField extends string = string> {
 export type QueryOptionsFactory<
   TData,
   TRequest = DataTableDslPageRequestBase,
+  TQueryData = PaginatedResponse<TData>,
   TError = unknown,
-  TQueryKey extends QueryKey = QueryKey,
-> = (
-  request: TRequest,
-) => UseQueryOptions<PaginatedResponse<TData>, TError, PaginatedResponse<TData>, TQueryKey>;
+  TQueryKey extends QueryKey = QueryKey
+> = (request: TRequest) => UseQueryOptions<TQueryData, TError, TQueryData, TQueryKey>;
 
 const TEXT_VARIANT_OPERATORS = {
   text: ['EQ', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH'] as const,
@@ -75,15 +73,17 @@ const DATE_VARIANT_OPERATORS = {
   dateRange: ['GT', 'GTE', 'LT', 'LTE', 'BETWEEN'] as const
 } satisfies Partial<Record<FilterVariant, readonly DataTableDslOperator[]>>;
 
-type SupportedFilterVariant = keyof typeof TEXT_VARIANT_OPERATORS | keyof typeof DATE_VARIANT_OPERATORS;
+type SupportedFilterVariant =
+  | keyof typeof TEXT_VARIANT_OPERATORS
+  | keyof typeof DATE_VARIANT_OPERATORS;
 
 type BuildDataTableDslRequestOptions<TData> = {
   columns: Array<ColumnDef<TData>>;
   pagination: PaginationState;
   sorting: SortingState;
   columnFilters: ColumnFiltersState;
-  dslVersion?: number;
   baseCondition?: DataTableDslCondition;
+  defaultRequestSort?: Array<DataTableDslSortItem>;
 };
 
 type ResolvedColumn<TData> = {
@@ -92,7 +92,7 @@ type ResolvedColumn<TData> = {
 };
 
 function warn(message: string, details?: Record<string, unknown>) {
-  console.warn(`[useDataTableQuery.dsl] ${message}`, details ?? {});
+  console.warn(`[useDslDataTable.dsl] ${message}`, details ?? {});
 }
 
 function getColumnId<TData>(column: ColumnDef<TData>): string | null {
@@ -100,14 +100,20 @@ function getColumnId<TData>(column: ColumnDef<TData>): string | null {
     return column.id;
   }
 
-  if ('accessorKey' in column && typeof column.accessorKey === 'string' && column.accessorKey.length > 0) {
+  if (
+    'accessorKey' in column &&
+    typeof column.accessorKey === 'string' &&
+    column.accessorKey.length > 0
+  ) {
     return column.accessorKey;
   }
 
   return null;
 }
 
-function resolveColumns<TData>(columns: Array<ColumnDef<TData>>): Map<string, ResolvedColumn<TData>> {
+function resolveColumns<TData>(
+  columns: Array<ColumnDef<TData>>
+): Map<string, ResolvedColumn<TData>> {
   const resolved = new Map<string, ResolvedColumn<TData>>();
 
   for (const column of columns) {
@@ -146,8 +152,15 @@ function normalizeStringValue(value: unknown): string | undefined {
 }
 
 function normalizeStringArray(value: unknown): string[] {
-  const values = Array.isArray(value) ? value : value === undefined || value === null ? [] : [value];
-  return values.map((item) => normalizeStringValue(item)).filter((item): item is string => Boolean(item));
+  const values = Array.isArray(value)
+    ? value
+    : value === undefined || value === null
+      ? []
+      : [value];
+
+  return values
+    .map((item) => normalizeStringValue(item))
+    .filter((item): item is string => Boolean(item));
 }
 
 function parseTimestamp(value: unknown): Date | undefined {
@@ -171,7 +184,7 @@ function parseTimestamp(value: unknown): Date | undefined {
 }
 
 function formatDateTimeWithOffset(date: Date): string {
-  return format(date, "yyyy-MM-dd'T'HH:mm:ssxxx");
+  return format(date, 'yyyy-MM-dd HH:mm:ss');
 }
 
 function toStartOfDay(date: Date): string {
@@ -251,7 +264,9 @@ function buildFilterCondition<TData>(
 
   if (variant === 'text' || variant === 'select') {
     const value =
-      variant === 'select' ? normalizeStringArray(filter.value)[0] : normalizeStringValue(filter.value);
+      variant === 'select'
+        ? normalizeStringArray(filter.value)[0]
+        : normalizeStringValue(filter.value);
     if (!value) {
       return undefined;
     }
@@ -326,7 +341,8 @@ function buildFilterCondition<TData>(
 
 function buildSort<TData>(
   sorting: SortingState,
-  resolvedColumns: Map<string, ResolvedColumn<TData>>
+  resolvedColumns: Map<string, ResolvedColumn<TData>>,
+  defaultRequestSort?: Array<DataTableDslSortItem>
 ): Array<DataTableDslSortItem> | undefined {
   const items = sorting
     .map((sort) => {
@@ -342,7 +358,8 @@ function buildSort<TData>(
     })
     .filter((item): item is DataTableDslSortItem => Boolean(item));
 
-  return items.length > 0 ? items : undefined;
+  if (items.length > 0) return items;
+  return defaultRequestSort && defaultRequestSort.length > 0 ? defaultRequestSort : undefined;
 }
 
 function buildCondition<TData>({
@@ -374,16 +391,15 @@ export function buildDataTableDslRequest<TData>({
   pagination,
   sorting,
   columnFilters,
-  dslVersion = 1,
-  baseCondition
+  baseCondition,
+  defaultRequestSort
 }: BuildDataTableDslRequestOptions<TData>): DataTableDslPageRequestBase {
   const resolvedColumns = resolveColumns(columns);
 
   return {
     pageNo: pagination.pageIndex + 1,
     pageSize: pagination.pageSize,
-    dslVersion,
     condition: buildCondition({ columnFilters, resolvedColumns, baseCondition }),
-    sort: buildSort(sorting, resolvedColumns)
+    sort: buildSort(sorting, resolvedColumns, defaultRequestSort)
   };
 }

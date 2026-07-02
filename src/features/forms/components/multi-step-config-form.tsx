@@ -11,41 +11,41 @@ import { useFormStepper } from '@/hooks/use-stepper';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-const productFormSchema = z.object({
-  name: z.string().min(2, '产品名称至少需要 2 个字符'),
+const configFormSchema = z.object({
+  name: z.string().min(2, '配置项名称至少需要 2 个字符'),
   category: z.string().min(1, '请选择分类'),
-  price: z.number().min(0.01, '价格必须大于 0'),
+  priority: z.number().min(1, '优先级必须大于 0'),
   description: z.string().min(10, '描述至少需要 10 个字符')
 });
 
 const stepSchemas = [
-  productFormSchema.pick({ name: true, category: true, price: true }),
-  productFormSchema.pick({ description: true }),
+  configFormSchema.pick({ name: true, category: true, priority: true }),
+  configFormSchema.pick({ description: true }),
   z.object({})
 ];
 
 const categoryOptions = [
-  { value: 'beauty', label: '美妆' },
-  { value: 'electronics', label: '电子产品' },
-  { value: 'home', label: '家居园艺' },
-  { value: 'sports', label: '运动户外' }
+  { value: 'system', label: '系统配置' },
+  { value: 'workflow', label: '流程配置' },
+  { value: 'notification', label: '通知配置' },
+  { value: 'integration', label: '集成配置' }
 ];
 
 const Step1Group = withFieldGroup({
   defaultValues: {
     name: '',
     category: '',
-    price: undefined as number | undefined
+    priority: undefined as number | undefined
   },
   render: function Step1Render({ group }) {
     return (
       <div className='space-y-4'>
         <h3 className='text-lg font-semibold'>基本信息</h3>
-        <FieldDescription>输入产品名称、分类和价格。</FieldDescription>
+        <FieldDescription>输入配置项名称、分类和优先级。</FieldDescription>
 
         <group.AppField name='name'>
           {(field) => (
-            <field.TextField label='产品名称' required placeholder='请输入产品名称' />
+            <field.TextField label='配置项名称' required placeholder='请输入配置项名称' />
           )}
         </group.AppField>
 
@@ -60,15 +60,15 @@ const Step1Group = withFieldGroup({
           )}
         </group.AppField>
 
-        <group.AppField name='price'>
+        <group.AppField name='priority'>
           {(field) => (
             <field.TextField
-              label='价格'
+              label='优先级'
               required
               type='number'
-              min={0}
-              step={0.01}
-              placeholder='请输入价格'
+              min={1}
+              step={1}
+              placeholder='请输入优先级'
             />
           )}
         </group.AppField>
@@ -85,14 +85,14 @@ const Step2Group = withFieldGroup({
     return (
       <div className='space-y-4'>
         <h3 className='text-lg font-semibold'>详细信息</h3>
-        <FieldDescription>添加详细的产品描述。</FieldDescription>
+        <FieldDescription>添加详细的配置说明。</FieldDescription>
 
         <group.AppField name='description'>
           {(field) => (
             <field.TextareaField
               label='描述'
               required
-              placeholder='请输入产品描述'
+              placeholder='请输入配置说明'
               maxLength={500}
               rows={5}
             />
@@ -121,7 +121,7 @@ function ReviewSummary({
   values: {
     name: string;
     category: string;
-    price?: number;
+    priority?: number;
     description: string;
   };
 }) {
@@ -138,8 +138,8 @@ function ReviewSummary({
           <p className='text-sm capitalize'>{values.category || '—'}</p>
         </div>
         <div>
-          <p className='text-muted-foreground text-xs font-medium uppercase'>价格</p>
-          <p className='text-sm'>{values.price != null ? `¥${values.price}` : '—'}</p>
+          <p className='text-muted-foreground text-xs font-medium uppercase'>优先级</p>
+          <p className='text-sm'>{values.priority ?? '—'}</p>
         </div>
         <div>
           <p className='text-muted-foreground text-xs font-medium uppercase'>描述</p>
@@ -150,14 +150,14 @@ function ReviewSummary({
   );
 }
 
-type ProductFormValues = {
+type ConfigFormValues = {
   name: string;
   category: string;
-  price: number | undefined;
+  priority: number | undefined;
   description: string;
 };
 
-export default function MultiStepProductForm() {
+export default function MultiStepConfigForm() {
   const {
     currentValidator,
     step,
@@ -171,16 +171,16 @@ export default function MultiStepProductForm() {
     defaultValues: {
       name: '',
       category: '',
-      price: undefined,
+      priority: undefined,
       description: ''
-    } as ProductFormValues,
+    } as ConfigFormValues,
     validationLogic: revalidateLogic(),
     validators: {
-      onDynamic: currentValidator as typeof productFormSchema,
+      onDynamic: currentValidator as typeof configFormSchema,
       onDynamicAsyncDebounceMs: 500
     },
     onSubmit: () => {
-      toast.success('产品创建成功！');
+      toast.success('配置项创建成功！');
     }
   });
 
@@ -188,7 +188,12 @@ export default function MultiStepProductForm() {
   const formValues = useStore(form.store, (state) => state.values);
 
   const groups: Record<number, React.ReactNode> = {
-    1: <Step1Group form={form} fields={{ name: 'name', category: 'category', price: 'price' }} />,
+    1: (
+      <Step1Group
+        form={form}
+        fields={{ name: 'name', category: 'category', priority: 'priority' }}
+      />
+    ),
     2: <Step2Group form={form} fields={{ description: 'description' }} />,
     3: (
       <>

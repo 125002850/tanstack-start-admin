@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
-import * as React from 'react';
+import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 
 // DataTableViewOptions is always rendered by DataTableToolbar — mock it to avoid
 // Radix Popover / Command complexity in jsdom.
@@ -60,17 +60,18 @@ const DATA: TestRow[] = [
 interface ToolbarHarnessProps {
   columns: ColumnDef<TestRow>[];
   initialState?: { columnFilters?: { id: string; value: unknown }[] };
+  isQuerying?: boolean;
 }
 
 /** Renders DataTableToolbar with a useReactTable instance created inside a component. */
-function ToolbarHarness({ columns, initialState }: ToolbarHarnessProps) {
+function ToolbarHarness({ columns, initialState, isQuerying }: ToolbarHarnessProps) {
   const table = useReactTable({
     data: DATA,
     columns,
     getCoreRowModel: getCoreRowModel(),
     initialState
   });
-  return <DataTableToolbar table={table} />;
+  return <DataTableToolbar table={table} isQuerying={isQuerying} />;
 }
 
 afterEach(cleanup);
@@ -194,5 +195,72 @@ describe('DataTableToolbar filter variant dispatch', () => {
 
     // The reset button has aria-label "重置筛选条件"
     expect(screen.getByRole('button', { name: '重置筛选条件' })).toBeInTheDocument();
+  });
+
+  it('shows querying state in the reset button while keeping reset available', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        meta: { variant: 'text' as const }
+      }
+    ];
+    render(
+      <ToolbarHarness
+        columns={columns}
+        initialState={{
+          columnFilters: [{ id: 'name', value: 'test' }]
+        }}
+        isQuerying
+      />
+    );
+
+    const resetButton = screen.getByRole('button', { name: '重置筛选条件' });
+
+    expect(resetButton).toHaveAttribute('aria-busy', 'true');
+    expect(resetButton).toHaveTextContent('查询中');
+    expect(screen.getByRole('status', { name: '查询中' })).toBeInTheDocument();
+
+    fireEvent.click(resetButton);
+
+    expect(screen.queryByRole('button', { name: '重置筛选条件' })).not.toBeInTheDocument();
+  });
+
+  it('does not render a standalone querying button without active filters', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        meta: { variant: 'text' as const }
+      }
+    ];
+
+    render(<ToolbarHarness columns={columns} isQuerying />);
+
+    expect(screen.queryByRole('button', { name: '重置筛选条件' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: '查询中' })).not.toBeInTheDocument();
+  });
+
+  it('falls back to header text when meta.label is omitted', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'name',
+        header: ({ column }) => <DataTableColumnHeader column={column} title='客户名称' />,
+        meta: { variant: 'text' as const }
+      },
+      {
+        accessorKey: 'category',
+        header: '客户分类',
+        meta: {
+          variant: 'multiSelect' as const,
+          options: [{ label: 'A', value: 'A' }]
+        }
+      }
+    ];
+
+    render(<ToolbarHarness columns={columns} />);
+
+    expect(screen.getByPlaceholderText('客户名称')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '客户分类' })).toBeInTheDocument();
   });
 });

@@ -7,28 +7,7 @@
 @import '@fontsource/geist-sans';
 @import '@fontsource/geist-mono';
 
-/* Theme-specific fonts */
-/* inter: Light Green, Zen */
-/* dm-sans + space-mono: NeoBrutualism */
-/* outfit: Supabase, Astro Vista */
-/* fira-code: Astro Vista, Notebook */
-/* jetbrains-mono: Light Green, Zen */
-/* merriweather: Astro Vista */
-/* playfair-display: Zen */
-/* architects-daughter: Notebook */
-
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/dm-sans';
-@import '@fontsource-variable/outfit';
-@import '@fontsource-variable/fira-code';
-@import '@fontsource-variable/jetbrains-mono';
-@import '@fontsource/merriweather/300.css';
-@import '@fontsource/merriweather/400.css';
-@import '@fontsource/merriweather/700.css';
-@import '@fontsource-variable/playfair-display';
-@import '@fontsource/architects-daughter/400.css';
-@import '@fontsource/space-mono/400.css';
-@import '@fontsource/space-mono/700.css';
+/* Theme font stacks fall back to system fonts unless a theme makes a font essential. */
 
 @custom-variant dark (&:is(.dark *));
 

@@ -1,7 +1,9 @@
 import { useStore } from '@tanstack/react-form';
 import {
   Select,
+  SelectClear,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue
@@ -22,6 +24,8 @@ interface SelectFieldProps {
   required?: boolean;
   options: Option[];
   placeholder?: string;
+  allowClear?: boolean;
+  disabled?: boolean;
 }
 
 export function SelectField({
@@ -29,36 +33,51 @@ export function SelectField({
   description,
   required,
   options,
-  placeholder = 'Select an option'
+  placeholder = 'Select an option',
+  allowClear = true,
+  disabled
 }: SelectFieldProps) {
   const field = useFieldContext();
-  const isTouched = useStore(field.store, (s) => s.meta.isTouched);
-  const isValid = useStore(field.store, (s) => s.meta.isValid);
   const value = useStore(field.store, (s) => s.value) as string;
+
+  const showClear = allowClear && !!value && !disabled;
 
   return (
     <FormFieldSet>
-      <FormField>
-        <FieldLabel htmlFor={field.name}>
+      <FormField data-disabled={disabled}>
+        <FieldLabel htmlFor={field.name} required={required}>
           {label}
-          {required && ' *'}
         </FieldLabel>
         <Select
           value={value}
+          disabled={disabled}
           onValueChange={field.handleChange}
           onOpenChange={(open) => {
             if (!open) field.handleBlur();
           }}
         >
-          <SelectTrigger id={field.name} aria-invalid={isTouched && !isValid}>
+          <SelectTrigger
+            id={field.name}
+            aria-label={label}
+            aria-describedby={field.formMessageId}
+            aria-invalid={field.isInvalid}
+          >
             <SelectValue placeholder={placeholder} />
+            {showClear && (
+              <SelectClear
+                aria-label={`清除${label}`}
+                onClear={() => field.handleChange('')}
+              />
+            )}
           </SelectTrigger>
           <SelectContent>
-            {options.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {options.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
         {description && <FieldDescription>{description}</FieldDescription>}

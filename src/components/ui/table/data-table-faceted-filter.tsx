@@ -17,7 +17,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
-import { CheckIcon } from '@radix-ui/react-icons';
 
 export interface DataTableFacetedFilterLabels {
   clearFilterAriaLabel?: (title?: string) => string;
@@ -73,6 +72,7 @@ export function DataTableFacetedFilter<TData, TValue>({
 
   const onReset = React.useCallback(
     (event?: React.MouseEvent) => {
+      event?.preventDefault();
       event?.stopPropagation();
       column?.setFilterValue(undefined);
     },
@@ -82,16 +82,21 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant='outline' size='sm' className='border-dashed'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='data-table-filter-control border-dashed'
+          data-active={selectedValues.size > 0 ? 'true' : undefined}
+        >
           {selectedValues?.size > 0 ? (
-            <button
-              type='button'
-              aria-label={labels?.clearFilterAriaLabel?.(title) ?? `清除${title ?? ''}筛选`}
+            <span
+              aria-hidden='true'
+              data-filter-clear=''
               onClick={onReset}
-              className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
+              className='rounded-sm opacity-70 transition-opacity hover:opacity-100'
             >
               <Icons.xCircle />
-            </button>
+            </span>
           ) : (
             <Icons.plusCircle />
           )}
@@ -129,7 +134,7 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-[12.5rem] p-0' align='start'>
+      <PopoverContent className='data-table-filter-popover w-[12.5rem] p-0' align='start'>
         <Command>
           <CommandInput placeholder={labels?.inputPlaceholder?.(title) ?? `筛选${title ?? ''}`} />
           <CommandList className='max-h-full'>
@@ -146,7 +151,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                         isSelected ? 'bg-primary' : 'opacity-50 [&_svg]:invisible'
                       )}
                     >
-                      <CheckIcon />
+                      <Icons.check className='size-4' />
                     </div>
                     {option.icon && <option.icon />}
                     <span className='truncate'>{option.label}</span>

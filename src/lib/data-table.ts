@@ -3,6 +3,33 @@ import type { Column, Table } from '@tanstack/react-table';
 
 import { dataTableConfig } from '@/config/data-table';
 
+function getColumnPinningShadow<TData>({
+  column,
+  isPinned,
+  isLastLeftPinnedColumn,
+  isFirstRightPinnedColumn
+}: {
+  column: Column<TData>;
+  isPinned: 'left' | 'right';
+  isLastLeftPinnedColumn: boolean;
+  isFirstRightPinnedColumn: boolean;
+}): string | undefined {
+  const customShadow = column.columnDef.meta?.pinningShadow?.[isPinned];
+  if (customShadow) {
+    return customShadow;
+  }
+
+  if (isLastLeftPinnedColumn) {
+    return '-5px 0 5px -5px var(--border) inset';
+  }
+
+  if (isFirstRightPinnedColumn) {
+    return '5px 0 5px -5px var(--border) inset';
+  }
+
+  return undefined;
+}
+
 export function getCommonPinningStyles<TData>({
   column
 }: {
@@ -17,16 +44,18 @@ export function getCommonPinningStyles<TData>({
   // for column widths — setting width here would conflict with border-box sizing.
   if (isPinned) {
     return {
-      boxShadow: isLastLeftPinnedColumn
-        ? '-5px 0 5px -5px var(--border) inset'
-        : isFirstRightPinnedColumn
-          ? '5px 0 5px -5px var(--border) inset'
-          : undefined,
+      boxShadow: getColumnPinningShadow({
+        column,
+        isPinned,
+        isLastLeftPinnedColumn,
+        isFirstRightPinnedColumn
+      }),
       left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
       right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
       position: 'sticky',
+      pointerEvents: 'auto',
       width: column.getSize(),
-      zIndex: 1
+      zIndex: 2
     };
   }
 
@@ -49,7 +78,7 @@ export function getFilterOperators(filterVariant: FilterVariant) {
 }
 
 export function getSelectedPageRows<TData>(table: Table<TData>): TData[] {
-  const rowSelection = table.getState().rowSelection;
+  const rowSelection = table.getState().rowSelection ?? {};
   const rows = table.getRowModel().rows;
 
   if (rows.length === 0) {
@@ -68,7 +97,7 @@ export function getSelectedPageRows<TData>(table: Table<TData>): TData[] {
 }
 
 export function getSelectedPageRowCount<TData>(table: Table<TData>): number {
-  const rowSelection = table.getState().rowSelection;
+  const rowSelection = table.getState().rowSelection ?? {};
   const rows = table.getRowModel().rows;
   let count = 0;
 
@@ -80,4 +109,3 @@ export function getSelectedPageRowCount<TData>(table: Table<TData>): number {
 
   return count;
 }
-

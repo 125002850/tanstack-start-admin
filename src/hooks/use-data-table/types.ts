@@ -1,12 +1,14 @@
-import type { TableOptions, TableState } from '@tanstack/react-table';
+import type { Row, TableOptions, TableState } from '@tanstack/react-table';
 import type * as React from 'react';
 
 import type {
+  ColumnOrderStorageMode,
   ColumnResizeStorageMode,
   ExpandConfigEdge,
   ExtendedColumnSort
 } from '@/types/data-table';
 import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
+import type { RowNumberDisplayMode } from './columns/row-number-column';
 
 /** 服务端查询参数，与 `apiFiltersBuilder` 的返回值类型一致。 */
 export interface ApiFilters {
@@ -18,18 +20,23 @@ export interface ApiFilters {
 
 export type DataTablePinnedSide = 'left' | 'right';
 
-export interface UseDataTableProps<TData>
-  extends
-    Omit<
-      TableOptions<TData>,
-      | 'state'
-      | 'pageCount'
-      | 'getCoreRowModel'
-      | 'manualFiltering'
-      | 'manualPagination'
-      | 'manualSorting'
-    >,
-    Required<Pick<TableOptions<TData>, 'pageCount'>> {
+export type DataTableRowId<TData> =
+  | keyof TData
+  | ((row: TData, index: number, parent?: Row<TData>) => string | number);
+
+export interface UseDataTableProps<TData> extends Omit<
+  TableOptions<TData>,
+  | 'state'
+  | 'pageCount'
+  | 'getCoreRowModel'
+  | 'manualFiltering'
+  | 'manualPagination'
+  | 'manualSorting'
+> {
+  /** 手动指定总页数；未传时可改为传 `totalCount` 由内部按当前 pageSize 计算。 */
+  pageCount?: number;
+  /** 服务端总条数；适用于服务端分页表格，内部会基于当前 pageSize 自动推导 pageCount。 */
+  totalCount?: number;
   /**
    * 表格初始状态。
    * `sorting` 支持 `ExtendedColumnSort<TData>[]` 以提供更精确的排序列类型推断。
@@ -59,7 +66,12 @@ export interface UseDataTableProps<TData>
    * 表格唯一标识，用于列宽持久化存储的 key。
    * 传入后自动启用 localStorage / sessionStorage 列宽缓存。
    */
-  tableId?: string;
+  tableId: string;
+  /**
+   * 行 ID 来源。未传时默认读取 `row.id`，字段值为空时回退为 `${tableId}-${index}`。
+   * 传入函数时由函数完整生成行 ID。
+   */
+  rowId?: DataTableRowId<TData>;
   /**
    * 列宽持久化存储模式。
    * - `'localStorage'` — 持久存储（默认）
@@ -67,10 +79,23 @@ export interface UseDataTableProps<TData>
    * - `false` — 禁用持久化
    */
   columnResizeStorage?: ColumnResizeStorageMode;
+  /**
+   * 列顺序持久化存储模式。
+   * - `'localStorage'` — 持久存储（默认）
+   * - `'sessionStorage'` — 会话存储
+   * - `false` — 禁用持久化
+   */
+  columnOrderStorage?: ColumnOrderStorageMode;
   /** 列宽拖拽结束时的回调，仅在列宽实际变化时触发。 */
   onColumnResizeEnd?: (columnKey: string, width: number) => void;
   /** 是否在表格首列显示行号列。默认 `true`。 */
   showRowNumberColumn?: boolean;
+  /**
+   * 行号显示模式。
+   * - `'static'`：按当前可见行位置连续编号，服务端分页时叠加页偏移（默认）
+   * - `'original'`：跟随原始数据数组索引，不叠加分页偏移
+   */
+  rowNumberDisplayMode?: RowNumberDisplayMode;
   /** 是否自动注入多选列。默认 `false`。 */
   showSelectColumn?: boolean;
   /** 行选中态所属的数据上下文 key；变化时会自动清空当前选中。 */

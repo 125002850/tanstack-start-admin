@@ -30,24 +30,23 @@ export function TextareaField({
   ...textareaProps
 }: TextareaFieldProps) {
   const field = useFieldContext();
-  const isTouched = useStore(field.store, (s) => s.meta.isTouched);
-  const isValid = useStore(field.store, (s) => s.meta.isValid);
   const value = (useStore(field.store, (s) => s.value) as string) ?? '';
 
   return (
     <FormFieldSet>
-      <FormField>
-        <FieldLabel htmlFor={field.name}>
+      <FormField data-disabled={textareaProps.disabled}>
+        <FieldLabel htmlFor={field.name} required={required}>
           {label}
-          {required && ' *'}
         </FieldLabel>
         <Textarea
           id={field.name}
+          aria-label={label}
           value={value}
           onBlur={field.handleBlur}
           onChange={(e) => field.handleChange(e.target.value)}
           maxLength={maxLength}
-          aria-invalid={isTouched && !isValid}
+          aria-describedby={field.formMessageId}
+          aria-invalid={field.isInvalid}
           className={className}
           {...textareaProps}
         />

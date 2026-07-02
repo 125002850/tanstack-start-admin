@@ -3,12 +3,16 @@
  *
  * These tests validate the default code path (no external state adapter).
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, act, cleanup, waitFor } from '@testing-library/react';
 import * as React from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import { flexRender, type ColumnDef } from '@tanstack/react-table';
 import type { ExtendedColumnSort } from '@/types/data-table';
-import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
+import {
+  getDataTableRowActionsColumnWidth,
+  type DataTableRowAction
+} from '@/components/ui/table/data-table-row-action';
+import type { RowNumberDisplayMode } from '@/hooks/use-data-table/columns/row-number-column';
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
@@ -61,16 +65,21 @@ const data: TestRow[] = [
 function InternalStateTester({
   pageSize,
   onPageSizeChange,
-  initialSorting = []
+  initialSorting = [],
+  totalCount
 }: {
   pageSize?: number;
   onPageSizeChange?: (size: number) => void;
   initialSorting?: Array<{ id: string; desc: boolean }>;
+  totalCount?: number;
 }) {
   const { table } = useDataTable({
+    tableId: 'internal-state-tester',
     columns,
     data,
-    pageCount: Math.ceil(data.length / (pageSize ?? 10)),
+    ...(typeof totalCount === 'number'
+      ? { totalCount }
+      : { pageCount: Math.ceil(data.length / (pageSize ?? 10)) }),
     pageSize,
     onPageSizeChange,
     initialState:
@@ -134,9 +143,13 @@ function InternalStateTester({
 
 function RowNumberColumnInspector({
   showRowNumberColumn = true,
+  totalCount,
+  rowNumberDisplayMode,
   initialState
 }: {
   showRowNumberColumn?: boolean;
+  totalCount?: number;
+  rowNumberDisplayMode?: RowNumberDisplayMode;
   initialState?: {
     columnOrder?: string[];
     columnVisibility?: Record<string, boolean>;
@@ -144,18 +157,30 @@ function RowNumberColumnInspector({
   };
 }) {
   const { table } = useDataTable({
+    tableId: 'row-number-column-inspector',
     columns,
     data,
-    pageCount: 1,
+    totalCount,
+    pageCount: totalCount === undefined ? 1 : undefined,
     showRowNumberColumn,
+    rowNumberDisplayMode,
     initialState
   });
 
   const leafColumns = table.getAllLeafColumns();
   const visibleColumns = table.getVisibleLeafColumns();
   const firstColumn = leafColumns[0];
+  const firstHeader =
+    firstColumn?.columnDef.header === undefined
+      ? null
+      : flexRender(firstColumn.columnDef.header, {} as never);
 
   return React.createElement('div', null, [
+    React.createElement(
+      'span',
+      { key: 'first-header', 'data-testid': 'first-header' },
+      firstHeader
+    ),
     React.createElement(
       'span',
       { key: 'leaf-columns', 'data-testid': 'leaf-columns' },
@@ -173,6 +198,16 @@ function RowNumberColumnInspector({
     ),
     React.createElement(
       'span',
+      { key: 'first-min-size', 'data-testid': 'first-min-size' },
+      String(firstColumn?.columnDef.minSize ?? '')
+    ),
+    React.createElement(
+      'span',
+      { key: 'first-max-size', 'data-testid': 'first-max-size' },
+      String(firstColumn?.columnDef.maxSize ?? '')
+    ),
+    React.createElement(
+      'span',
       { key: 'first-can-hide', 'data-testid': 'first-can-hide' },
       String(firstColumn?.getCanHide() ?? '')
     ),
@@ -180,6 +215,54 @@ function RowNumberColumnInspector({
       'span',
       { key: 'first-can-resize', 'data-testid': 'first-can-resize' },
       String(firstColumn?.getCanResize() ?? '')
+    )
+  ]);
+}
+
+function RowNumberCellsInspector({
+  rows,
+  totalCount,
+  rowNumberDisplayMode
+}: {
+  rows: TestRow[];
+  totalCount: number;
+  rowNumberDisplayMode?: RowNumberDisplayMode;
+}) {
+  const { table } = useDataTable({
+    tableId: 'row-number-cells-inspector',
+    columns,
+    data: rows,
+    getRowId: (row) => String(row.id),
+    totalCount,
+    pageSize: 10,
+    rowNumberDisplayMode
+  });
+
+  return React.createElement('div', null, [
+    React.createElement(
+      'span',
+      { key: 'row-numbers', 'data-testid': 'row-numbers' },
+      table.getRowModel().rows.map((row) => {
+        const cell = row
+          .getVisibleCells()
+          .find((visibleCell) => visibleCell.column.id === ROW_NUMBER_COLUMN_ID);
+
+        return React.createElement(
+          React.Fragment,
+          { key: row.id },
+          cell ? flexRender(cell.column.columnDef.cell, cell.getContext()) : null,
+          '|'
+        );
+      })
+    ),
+    React.createElement(
+      'button',
+      {
+        key: 'next-page',
+        'data-testid': 'row-number-next-page',
+        onClick: () => table.setPageIndex(1)
+      },
+      'Next'
     )
   ]);
 }
@@ -192,6 +275,7 @@ function FixedColumnSizingInspector({
   };
 }) {
   const { table } = useDataTable({
+    tableId: 'fixed-column-sizing-inspector',
     columns,
     data,
     pageCount: 1,
@@ -310,6 +394,7 @@ function ExpandStateInspector({
 
 function SelectedRowsInspector() {
   const { table, selectedRows, getSelectedRows, clearSelectedRows } = useDataTable({
+    tableId: 'selected-rows-inspector',
     columns,
     data,
     pageCount: 1,
@@ -348,12 +433,9 @@ function SelectedRowsInspector() {
   ]);
 }
 
-function ScopedSelectedRowsInspector({
-  scopeKey
-}: {
-  scopeKey: string | null;
-}) {
+function ScopedSelectedRowsInspector({ scopeKey }: { scopeKey: string | null }) {
   const { table, selectedRows } = useDataTable({
+    tableId: 'scoped-selected-rows-inspector',
     columns,
     data,
     pageCount: 1,
@@ -379,9 +461,90 @@ function ScopedSelectedRowsInspector({
   ]);
 }
 
-afterEach(cleanup);
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 describe('useDataTable — internal-state mode (default)', () => {
+  it('resolves row ids from default id, rowId key, rowId function, and table fallback', () => {
+    type RowIdTestRow = {
+      id?: number | null;
+      code?: string | null;
+      name: string;
+    };
+
+    const rowIdColumns: ColumnDef<RowIdTestRow>[] = [
+      { id: 'name', header: 'Name', accessorKey: 'name' }
+    ];
+
+    function RowIdInspector() {
+      const defaultResult = useDataTable<RowIdTestRow>({
+        tableId: 'default-row-id',
+        columns: rowIdColumns,
+        data: [
+          { id: 7, name: 'default-id' },
+          { id: null, name: 'default-fallback' }
+        ],
+        pageCount: 1,
+        showRowNumberColumn: false
+      });
+      const keyResult = useDataTable<RowIdTestRow>({
+        tableId: 'key-row-id',
+        columns: rowIdColumns,
+        data: [
+          { code: 'customer-001', name: 'key-id' },
+          { code: null, name: 'key-fallback' }
+        ],
+        pageCount: 1,
+        showRowNumberColumn: false,
+        rowId: 'code'
+      });
+      const functionResult = useDataTable<RowIdTestRow>({
+        tableId: 'function-row-id',
+        columns: rowIdColumns,
+        data: [{ name: 'function-id' }, { name: 'function-fallback' }],
+        pageCount: 1,
+        showRowNumberColumn: false,
+        rowId: (row) => `fn-${row.name}`
+      });
+
+      return React.createElement('div', null, [
+        React.createElement(
+          'span',
+          { key: 'default', 'data-testid': 'default-row-ids' },
+          JSON.stringify(defaultResult.table.getRowModel().rows.map((row) => row.id))
+        ),
+        React.createElement(
+          'span',
+          { key: 'key', 'data-testid': 'key-row-ids' },
+          JSON.stringify(keyResult.table.getRowModel().rows.map((row) => row.id))
+        ),
+        React.createElement(
+          'span',
+          { key: 'function', 'data-testid': 'function-row-ids' },
+          JSON.stringify(functionResult.table.getRowModel().rows.map((row) => row.id))
+        )
+      ]);
+    }
+
+    render(React.createElement(RowIdInspector));
+
+    expect(screen.getByTestId('default-row-ids').textContent).toBe(
+      JSON.stringify(['7', 'default-row-id-1'])
+    );
+    expect(screen.getByTestId('key-row-ids').textContent).toBe(
+      JSON.stringify(['customer-001', 'key-row-id-1'])
+    );
+    expect(screen.getByTestId('function-row-ids').textContent).toBe(
+      JSON.stringify(['fn-function-id', 'fn-function-fallback'])
+    );
+  });
+
   it('initializes pagination at page 1', () => {
     render(React.createElement(InternalStateTester));
     expect(screen.getByTestId('page').textContent).toBe('1');
@@ -389,8 +552,8 @@ describe('useDataTable — internal-state mode (default)', () => {
 
   it('uses default page size when no pageSize prop provided', () => {
     render(React.createElement(InternalStateTester));
-    // DEFAULT_DATA_TABLE_PAGE_SIZE is 10
-    expect(screen.getByTestId('pageSize').textContent).toBe('10');
+    // DEFAULT_DATA_TABLE_PAGE_SIZE is 50
+    expect(screen.getByTestId('pageSize').textContent).toBe('50');
   });
 
   it('uses controlled pageSize prop', () => {
@@ -412,6 +575,15 @@ describe('useDataTable — internal-state mode (default)', () => {
       screen.getByTestId('next-page').click();
     });
     expect(screen.getByTestId('page').textContent).toBe('2');
+  });
+
+  it('derives page count from totalCount and current page size', () => {
+    render(React.createElement(InternalStateTester, { pageSize: 2, totalCount: 5 }));
+    act(() => {
+      screen.getByTestId('next-page').click();
+      screen.getByTestId('next-page').click();
+    });
+    expect(screen.getByTestId('page').textContent).toBe('3');
   });
 
   it('sorts by column on user interaction', () => {
@@ -503,6 +675,7 @@ describe('useDataTable — internal-state mode (default)', () => {
   it('table exposes all expected state properties', () => {
     function StateInspector() {
       const { table } = useDataTable({
+        tableId: 'internal-state-state-inspector',
         columns,
         data,
         pageCount: 1,
@@ -541,9 +714,88 @@ describe('useDataTable — internal-state mode (default)', () => {
     expect(screen.getByTestId('leaf-columns').textContent).toBe(
       JSON.stringify([ROW_NUMBER_COLUMN_ID, 'id', 'name'])
     );
+    expect(screen.getByText('序号')).toHaveClass('sr-only');
     expect(screen.getByTestId('first-size').textContent).toBe('40');
+    expect(screen.getByTestId('first-min-size').textContent).toBe('40');
+    expect(screen.getByTestId('first-max-size').textContent).toBe('40');
     expect(screen.getByTestId('first-can-hide').textContent).toBe('false');
     expect(screen.getByTestId('first-can-resize').textContent).toBe('false');
+  });
+
+  it('keeps dynamic row-number column width fixed across size/min/max', () => {
+    render(React.createElement(RowNumberColumnInspector, { totalCount: 100000 }));
+
+    expect(screen.getByTestId('first-size').textContent).toBe('84');
+    expect(screen.getByTestId('first-min-size').textContent).toBe('84');
+    expect(screen.getByTestId('first-max-size').textContent).toBe('84');
+  });
+
+  it('keeps static row numbers tied to the rendered data while the next page is loading', () => {
+    const pageOneRows: TestRow[] = [
+      { id: 1, name: 'Alice' },
+      { id: 2, name: 'Bob' }
+    ];
+    const pageTwoRows: TestRow[] = [
+      { id: 11, name: 'Nina' },
+      { id: 12, name: 'Oscar' }
+    ];
+
+    const { rerender } = render(
+      React.createElement(RowNumberCellsInspector, {
+        rows: pageOneRows,
+        totalCount: 25
+      })
+    );
+
+    expect(screen.getByTestId('row-numbers').textContent).toBe('1|2|');
+
+    act(() => {
+      screen.getByTestId('row-number-next-page').click();
+    });
+
+    expect(screen.getByTestId('row-numbers').textContent).toBe('1|2|');
+
+    rerender(
+      React.createElement(RowNumberCellsInspector, {
+        rows: pageTwoRows,
+        totalCount: 25
+      })
+    );
+
+    expect(screen.getByTestId('row-numbers').textContent).toBe('11|12|');
+  });
+
+  it('can render original row indexes without page offset', () => {
+    const pageOneRows: TestRow[] = [
+      { id: 1, name: 'Alice' },
+      { id: 2, name: 'Bob' }
+    ];
+    const pageTwoRows: TestRow[] = [
+      { id: 11, name: 'Nina' },
+      { id: 12, name: 'Oscar' }
+    ];
+
+    const { rerender } = render(
+      React.createElement(RowNumberCellsInspector, {
+        rows: pageOneRows,
+        totalCount: 25,
+        rowNumberDisplayMode: 'original'
+      })
+    );
+
+    act(() => {
+      screen.getByTestId('row-number-next-page').click();
+    });
+
+    rerender(
+      React.createElement(RowNumberCellsInspector, {
+        rows: pageTwoRows,
+        totalCount: 25,
+        rowNumberDisplayMode: 'original'
+      })
+    );
+
+    expect(screen.getByTestId('row-numbers').textContent).toBe('1|2|');
   });
 
   it('can disable the row-number column explicitly', () => {
@@ -605,7 +857,9 @@ describe('useDataTable — internal-state mode (default)', () => {
     );
     expect(screen.getByTestId('row-number-size').textContent).toBe(String(FIXED_COLUMN_WIDTH));
     expect(screen.getByTestId('select-size').textContent).toBe(String(FIXED_COLUMN_WIDTH));
-    expect(screen.getByTestId('actions-size').textContent).toBe('116');
+    expect(screen.getByTestId('actions-size').textContent).toBe(
+      String(getDataTableRowActionsColumnWidth(rowActions.length))
+    );
   });
 
   it('injects a select column when showSelectColumn is enabled', () => {
@@ -656,9 +910,7 @@ describe('useDataTable — internal-state mode (default)', () => {
   it('adds row-key based expand state and derives the panel id from tableId', () => {
     render(React.createElement(ExpandStateInspector));
 
-    expect(screen.getByTestId('expand-panel-id').textContent).toBe(
-      'data-table-expand-panel-users'
-    );
+    expect(screen.getByTestId('expand-panel-id').textContent).toBe('data-table-expand-panel-users');
     expect(screen.getByTestId('expand-leaf-columns').textContent).toBe(
       JSON.stringify([ROW_NUMBER_COLUMN_ID, SELECT_COLUMN_ID, 'id', 'name', 'actions'])
     );
@@ -670,6 +922,7 @@ describe('useDataTable — internal-state mode (default)', () => {
   it('normalizes initialState.columnOrder with leading utility columns', () => {
     function ExpandColumnOrderInspector() {
       const { table } = useDataTable({
+        tableId: 'expand-column-order-inspector',
         columns,
         data,
         pageCount: 1,

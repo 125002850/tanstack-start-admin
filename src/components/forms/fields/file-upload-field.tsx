@@ -30,10 +30,7 @@ export function FileUploadField({
   return (
     <FormFieldSet>
       <FormField>
-        <FieldLabel htmlFor={field.name}>
-          {label}
-          {required && ' *'}
-        </FieldLabel>
+        <FieldLabel htmlFor={field.name} required={required}>{label}</FieldLabel>
         <div onBlur={field.handleBlur}>
           <FileUploader
             value={value}

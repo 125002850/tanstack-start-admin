@@ -11,6 +11,15 @@ import { useDataTable } from '@/hooks/use-data-table';
 import * as React from 'react';
 import { vi } from 'vitest';
 
+type MockVirtualItem = {
+  key: number;
+  index: number;
+  start: number;
+  end: number;
+  size: number;
+  lane: number;
+};
+
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({
     count,
@@ -19,15 +28,32 @@ vi.mock('@tanstack/react-virtual', () => ({
   }: {
     count: number;
     enabled?: boolean;
-    estimateSize: () => number;
+    estimateSize: (index: number) => number;
   }) => {
-    const size = estimateSize();
-    const items = enabled
-      ? Array.from({ length: Math.min(count, 4) }, (_, i) => ({ index: i, start: i * size, size }))
-      : [];
+    const items: MockVirtualItem[] = [];
+    const itemCount = enabled ? Math.min(count, 4) : 0;
+    let start = 0;
+
+    for (let index = 0; index < itemCount; index += 1) {
+      const size = estimateSize(index);
+      items.push({
+        key: index,
+        index,
+        start,
+        end: start + size,
+        size,
+        lane: 0
+      });
+      start += size;
+    }
+
     return {
       getVirtualItems: () => items,
-      getTotalSize: () => count * size,
+      getTotalSize: () =>
+        Array.from({ length: count }, (_, index) => estimateSize(index)).reduce(
+          (sum, size) => sum + size,
+          0
+        ),
       scrollToIndex: vi.fn(),
       measure: vi.fn()
     };
@@ -168,8 +194,8 @@ describe('DataTable column alignment', () => {
       expect(extractWidth(thStyle)).toBeUndefined();
       expect(extractWidth(tdStyle)).toBeUndefined();
 
-      // No unnecessary position:relative either
-      expect(thStyle).not.toContain('position');
+      // Header cells are sticky; body cells should not add unnecessary positioning.
+      expect(thStyle).not.toContain('position: relative');
       expect(tdStyle).not.toContain('position');
     }
   });
@@ -205,7 +231,45 @@ describe('DataTable column alignment', () => {
       const style = tds[i]?.getAttribute('style') ?? '';
       // Each td must have an explicit width (from measured header or fallback)
       expect(style).toContain('width:');
-      expect(style).toContain('display: block');
+      expect(style).toContain('display: flex');
+      expect(style).toContain('height: 100%');
+      expect(style).toContain('align-items: center');
+    }
+  });
+
+  it('column virtualized header and body cells share explicit render-item widths', () => {
+    const rows = makeRows(20);
+    const { container } = render(
+      React.createElement(() => {
+        const table = useReactTable({
+          data: rows,
+          columns: COLUMNS_WITH_SIZING,
+          getCoreRowModel: getCoreRowModel(),
+          getPaginationRowModel: getPaginationRowModel(),
+          enableColumnResizing: true,
+          initialState: { pagination: { pageSize: rows.length, pageIndex: 0 } }
+        });
+
+        return <DataTable table={table} virtualization={{ columnVirtualizationMode: 'on' }} />;
+      })
+    );
+
+    expect(container.querySelectorAll('col')).toHaveLength(0);
+
+    const headerCells = Array.from(
+      container.querySelectorAll('thead th[data-column-center-index]')
+    );
+    const bodyCells = Array.from(
+      container.querySelectorAll('tbody tr:first-child td[data-column-center-index]')
+    );
+
+    expect(headerCells).toHaveLength(3);
+    expect(bodyCells).toHaveLength(3);
+
+    for (let i = 0; i < headerCells.length; i++) {
+      expect(extractWidth(headerCells[i]?.getAttribute('style') ?? '')).toBe(
+        extractWidth(bodyCells[i]?.getAttribute('style') ?? '')
+      );
     }
   });
 
@@ -270,6 +334,43 @@ describe('DataTable column alignment', () => {
     // Column 1 is NOT pinned — should NOT have inline width
     expect(extractWidth(ths[1]?.getAttribute('style') ?? '')).toBeUndefined();
     expect(extractWidth(tds[1]?.getAttribute('style') ?? '')).toBeUndefined();
+  });
+
+  it('renders pinned body cell base and overlay layers that match row state styling', () => {
+    const rows = makeRows(5);
+    const { container } = render(
+      React.createElement(() => {
+        const table = useReactTable({
+          data: rows,
+          columns: [
+            { accessorKey: 'id', header: 'ID', size: 80 },
+            { accessorKey: 'name', header: 'Name', size: 170 }
+          ],
+          getCoreRowModel: getCoreRowModel(),
+          getPaginationRowModel: getPaginationRowModel(),
+          initialState: {
+            pagination: { pageSize: 5, pageIndex: 0 },
+            columnPinning: { left: ['id'] }
+          }
+        });
+
+        return <DataTable table={table} />;
+      })
+    );
+
+    const firstPinnedCellBase = container.querySelector(
+      'tbody td [data-slot="data-table-pinned-cell-base"]'
+    );
+    const firstPinnedCellOverlay = container.querySelector(
+      'tbody td [data-slot="data-table-pinned-cell-overlay"]'
+    );
+
+    expect(firstPinnedCellBase).not.toBeNull();
+    expect(firstPinnedCellOverlay).not.toBeNull();
+    expect(firstPinnedCellBase?.getAttribute('class')).toContain('bg-background');
+    expect(firstPinnedCellBase?.getAttribute('class')).toContain('group-data-[expanded=true]:bg-accent');
+    expect(firstPinnedCellOverlay?.getAttribute('class')).toContain('group-hover:bg-muted/50');
+    expect(firstPinnedCellOverlay?.getAttribute('class')).toContain('group-data-[state=selected]:bg-muted');
   });
 
   it('colgroup widths follow the visual leaf-column order after pinning reorders columns', () => {

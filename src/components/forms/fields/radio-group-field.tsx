@@ -24,10 +24,7 @@ export function RadioGroupField({ label, description, required, options }: Radio
 
   return (
     <FormFieldSet>
-      <FieldLabel>
-        {label}
-        {required && ' *'}
-      </FieldLabel>
+      <FieldLabel required={required}>{label}</FieldLabel>
       {description && <FieldDescription>{description}</FieldDescription>}
       <RadioGroup
         value={value}

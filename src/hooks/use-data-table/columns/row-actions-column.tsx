@@ -10,6 +10,11 @@ import {
 
 import { DATA_TABLE_ACTIONS_COLUMN_ID } from '../constants';
 
+const ROW_ACTIONS_PINNING_SHADOW = {
+  left: '-4px 0 8px -8px color-mix(in oklch, var(--border) 18%, transparent) inset',
+  right: '4px 0 8px -8px color-mix(in oklch, var(--border) 18%, transparent) inset'
+} as const;
+
 export function createRowActionsColumn<TData>(
   rowActions: Array<DataTableRowAction<TData>>
 ): ColumnDef<TData> {
@@ -31,6 +36,9 @@ export function createRowActionsColumn<TData>(
     minSize: actionColumnWidth,
     maxSize: actionColumnWidth,
     enableSorting: false,
-    enableResizing: false
+    enableResizing: false,
+    meta: {
+      pinningShadow: ROW_ACTIONS_PINNING_SHADOW
+    }
   };
 }

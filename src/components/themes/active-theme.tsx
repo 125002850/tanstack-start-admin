@@ -68,3 +68,7 @@ export function useThemeConfig() {
   }
   return context;
 }
+
+export function useOptionalThemeConfig() {
+  return useContext(ThemeContext);
+}

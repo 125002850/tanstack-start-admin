@@ -107,10 +107,9 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
   );
 
   const onReset = React.useCallback(
-    (event: React.MouseEvent) => {
-      if (event.target instanceof HTMLDivElement) {
-        event.stopPropagation();
-      }
+    (event: React.MouseEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
       column.setFilterValue(undefined);
     },
     [column]
@@ -119,16 +118,21 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant='outline' size='sm' className='border-dashed'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='data-table-filter-control border-dashed'
+          data-active={columnFilterValue !== undefined ? 'true' : undefined}
+        >
           {columnFilterValue ? (
-            <button
-              type='button'
-              aria-label={`Clear ${title} filter`}
-              className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
+            <span
+              aria-hidden='true'
+              data-filter-clear=''
+              className='rounded-sm opacity-70 transition-opacity hover:opacity-100'
               onClick={onReset}
             >
               <Icons.xCircle />
-            </button>
+            </span>
           ) : (
             <Icons.plusCircle />
           )}
@@ -145,7 +149,10 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
           ) : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align='start' className='flex w-auto flex-col gap-4'>
+      <PopoverContent
+        align='start'
+        className='data-table-filter-popover flex w-auto flex-col gap-4'
+      >
         <div className='flex flex-col gap-3'>
           <p className='leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
             {title}

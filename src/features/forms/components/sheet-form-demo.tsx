@@ -27,7 +27,7 @@ import { Icons } from '@/components/icons';
 type SheetFormValues = {
   name: string;
   category: string;
-  price: number | undefined;
+  priority: number | undefined;
   description: string;
 };
 
@@ -37,10 +37,10 @@ type DialogFormValues = {
 };
 
 const categoryOptions = [
-  { value: 'beauty', label: '美妆' },
-  { value: 'electronics', label: '电子产品' },
-  { value: 'home', label: '家居园艺' },
-  { value: 'sports', label: '运动户外' }
+  { value: 'system', label: '系统配置' },
+  { value: 'workflow', label: '流程配置' },
+  { value: 'notification', label: '通知配置' },
+  { value: 'integration', label: '集成配置' }
 ];
 
 function SheetFormSection() {
@@ -50,15 +50,14 @@ function SheetFormSection() {
     defaultValues: {
       name: '',
       category: '',
-      price: undefined,
+      priority: undefined,
       description: ''
     } as SheetFormValues,
     onSubmit: ({ value }) => {
-      toast.success('产品创建成功！', {
+      toast.success('配置项创建成功！', {
         description: `${value.name} 已添加。`
       });
       setOpen(false);
-      form.reset();
     }
   });
 
@@ -69,7 +68,7 @@ function SheetFormSection() {
       <CardHeader>
         <CardTitle>侧边栏表单</CardTitle>
         <CardDescription>
-          产品创建表单嵌入在侧边栏中。提交按钮位于 SheetFooter 内、 表单元素外部，通过 HTML{' '}
+          配置项创建表单嵌入在侧边栏中。提交按钮位于 SheetFooter 内、 表单元素外部，通过 HTML{' '}
           <code className='bg-muted rounded px-1 text-sm'>form</code> 属性关联。
         </CardDescription>
       </CardHeader>
@@ -78,13 +77,17 @@ function SheetFormSection() {
           <SheetTrigger asChild>
             <Button>
               <Icons.add className='mr-2 h-4 w-4' />
-              新增产品
+              新增配置项
             </Button>
           </SheetTrigger>
-          <SheetContent className='flex flex-col'>
+          <SheetContent
+            autoFocusFirstField
+            onAfterClose={() => form.reset()}
+            className='flex flex-col'
+          >
             <SheetHeader>
-              <SheetTitle>新增产品</SheetTitle>
-              <SheetDescription>填写以下信息创建新产品。</SheetDescription>
+              <SheetTitle>新增配置项</SheetTitle>
+              <SheetDescription>填写以下信息创建新配置项。</SheetDescription>
             </SheetHeader>
 
             <div className='flex-1 overflow-auto'>
@@ -92,11 +95,11 @@ function SheetFormSection() {
                 <form.Form id='sheet-form-id' className='space-y-4 p-0 md:p-0'>
                   <FormTextField
                     name='name'
-                    label='产品名称'
+                    label='配置项名称'
                     required
-                    placeholder='请输入产品名称'
+                    placeholder='请输入配置项名称'
                     validators={{
-                      onBlur: z.string().min(2, '产品名称至少需要 2 个字符')
+                      onBlur: z.string().min(2, '配置项名称至少需要 2 个字符')
                     }}
                   />
 
@@ -112,15 +115,15 @@ function SheetFormSection() {
                   />
 
                   <FormTextField
-                    name='price'
-                    label='价格'
+                    name='priority'
+                    label='优先级'
                     required
                     type='number'
-                    min={0}
-                    step='0.01'
-                    placeholder='0.00'
+                    min={1}
+                    step='1'
+                    placeholder='1'
                     validators={{
-                      onBlur: z.number().min(0.01, '价格必须大于 0')
+                      onBlur: z.number().min(1, '优先级必须大于 0')
                     }}
                   />
 
@@ -128,7 +131,7 @@ function SheetFormSection() {
                     name='description'
                     label='描述'
                     required
-                    placeholder='请输入产品描述'
+                    placeholder='请输入配置说明'
                     maxLength={500}
                     rows={4}
                     validators={{
@@ -144,7 +147,7 @@ function SheetFormSection() {
                 取消
               </Button>
               <Button type='submit' form='sheet-form-id'>
-                创建产品
+                创建配置项
               </Button>
             </SheetFooter>
           </SheetContent>
@@ -167,7 +170,6 @@ function DialogFormSection() {
         description: `评分: ${value.rating}/10。感谢您的反馈！`
       });
       setOpen(false);
-      form.reset();
     }
   });
 
@@ -191,7 +193,7 @@ function DialogFormSection() {
               发送反馈
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent onAfterClose={() => form.reset()}>
             <DialogHeader>
               <DialogTitle>快速反馈</DialogTitle>
               <DialogDescription>为您的体验评分并留下评论。</DialogDescription>

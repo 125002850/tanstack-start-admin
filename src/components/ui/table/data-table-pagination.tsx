@@ -12,7 +12,6 @@ import {
 import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table-page-size';
 import { getSelectedPageRowCount } from '@/lib/data-table';
 import { cn } from '@/lib/utils';
-import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
 export interface DataTablePaginationLabels {
   selectedRowsText?: (selectedCount: number, totalCount: number) => string;
@@ -29,6 +28,7 @@ interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
   getSelectedRows?: () => TData[];
   selectedRowCount?: number;
+  selectedTotalRowCount?: number;
   pageSizeOptions?: readonly number[];
   totalRowCount?: number;
   labels?: DataTablePaginationLabels;
@@ -38,6 +38,7 @@ export function DataTablePagination<TData>({
   table,
   getSelectedRows,
   selectedRowCount,
+  selectedTotalRowCount,
   pageSizeOptions = DATA_TABLE_PAGE_SIZE_OPTIONS,
   totalRowCount,
   labels,
@@ -51,8 +52,14 @@ export function DataTablePagination<TData>({
     labels?.totalRowsText ?? ((totalCount: number) => `共 ${totalCount} 条数据`);
   const pageText =
     labels?.pageText ?? ((page: number, totalPages: number) => `第 ${page} / ${totalPages} 页`);
+  const isSelectedRowCountControlled = selectedRowCount !== undefined;
   const resolvedSelectedRowCount =
-    selectedRowCount ?? (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
+    selectedRowCount ??
+    (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
+  const resolvedSelectedTotalRowCount =
+    selectedTotalRowCount ??
+    (isSelectedRowCountControlled ? totalRowCount : table.getRowModel().rows.length) ??
+    table.getFilteredRowModel().rows.length;
   const resolvedTotalRowCount = totalRowCount ?? table.getFilteredRowModel().rows.length;
 
   return (
@@ -65,7 +72,7 @@ export function DataTablePagination<TData>({
     >
       <div className='text-muted-foreground flex-1 text-sm whitespace-nowrap'>
         {resolvedSelectedRowCount > 0 ? (
-          <>{selectedRowsText(resolvedSelectedRowCount, resolvedTotalRowCount)}</>
+          <>{selectedRowsText(resolvedSelectedRowCount, resolvedSelectedTotalRowCount)}</>
         ) : (
           <>{totalRowsText(resolvedTotalRowCount)}</>
         )}
@@ -115,7 +122,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeftIcon />
+            <Icons.chevronLeft />
           </Button>
           <Button
             aria-label={labels?.goToNextPage ?? '前往下一页'}
@@ -125,7 +132,7 @@ export function DataTablePagination<TData>({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRightIcon />
+            <Icons.chevronRight />
           </Button>
           <Button
             aria-label={labels?.goToLastPage ?? '前往最后一页'}

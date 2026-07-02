@@ -50,17 +50,17 @@ describe('data-table-page-size', () => {
 
     it('reads table-scoped values when tableId is provided', () => {
       localStorage.setItem(USERS_STORAGE_KEY, '50');
-      localStorage.setItem(ORDERS_STORAGE_KEY, '100');
+      localStorage.setItem(ORDERS_STORAGE_KEY, '200');
 
       expect(readDataTablePageSize('users')).toBe(50);
-      expect(readDataTablePageSize('orders')).toBe(100);
+      expect(readDataTablePageSize('orders')).toBe(200);
     });
   });
 
   describe('writeDataTablePageSize', () => {
     it('persists a valid page size to localStorage', () => {
-      writeDataTablePageSize(100);
-      expect(localStorage.getItem(STORAGE_KEY)).toBe('100');
+      writeDataTablePageSize(200);
+      expect(localStorage.getItem(STORAGE_KEY)).toBe('200');
     });
 
     it('normalizes invalid values to default before persisting', () => {
@@ -77,12 +77,12 @@ describe('data-table-page-size', () => {
 
     it('persists table-scoped values without polluting other tables', () => {
       writeDataTablePageSize(50, 'users');
-      writeDataTablePageSize(100, 'orders');
+      writeDataTablePageSize(200, 'orders');
 
       expect(localStorage.getItem(USERS_STORAGE_KEY)).toBe('50');
-      expect(localStorage.getItem(ORDERS_STORAGE_KEY)).toBe('100');
+      expect(localStorage.getItem(ORDERS_STORAGE_KEY)).toBe('200');
       expect(readDataTablePageSize('users')).toBe(50);
-      expect(readDataTablePageSize('orders')).toBe(100);
+      expect(readDataTablePageSize('orders')).toBe(200);
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
     });
   });
@@ -91,7 +91,7 @@ describe('data-table-page-size', () => {
     it('accepts values in DATA_TABLE_PAGE_SIZE_OPTIONS', () => {
       expect(isValidDataTablePageSize(10)).toBe(true);
       expect(isValidDataTablePageSize(50)).toBe(true);
-      expect(isValidDataTablePageSize(100)).toBe(true);
+      expect(isValidDataTablePageSize(200)).toBe(true);
       expect(isValidDataTablePageSize(500)).toBe(true);
       expect(isValidDataTablePageSize(2000)).toBe(true);
     });

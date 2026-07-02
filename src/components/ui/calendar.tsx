@@ -1,10 +1,9 @@
-import * as React from 'react';
 import { DayPicker } from 'react-day-picker';
 import type { ComponentProps } from 'react';
 
+import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
-import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 
 function Calendar({
   className,
@@ -55,9 +54,9 @@ function Calendar({
       components={{
         Chevron: ({ orientation }) => {
           if (orientation === 'left') {
-            return <ChevronLeftIcon className='size-4' />;
+            return <Icons.chevronLeft className='size-4' />;
           }
-          return <ChevronRightIcon className='size-4' />;
+          return <Icons.chevronRight className='size-4' />;
         }
       }}
       {...props}

@@ -8,8 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import { DataTableOverflowTooltipText } from '@/components/ui/table/data-table-overflow-tooltip-text';
 import { cn } from '@/lib/utils';
-import { ChevronDownIcon, ChevronUpIcon, CaretSortIcon, Cross2Icon } from '@radix-ui/react-icons';
 
 export interface DataTableColumnHeaderLabels {
   ascText?: string;
@@ -34,26 +34,32 @@ export function DataTableColumnHeader<TData, TValue>({
   ...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column.getCanSort() && !column.getCanHide()) {
-    return <div className={cn(className)}>{title}</div>;
+    return (
+      <div className={cn('min-w-0 max-w-full', className)}>
+        <DataTableOverflowTooltipText value={title}>{title}</DataTableOverflowTooltipText>
+      </div>
+    );
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          'hover:bg-accent focus:ring-ring data-[state=open]:bg-accent [&_svg]:text-muted-foreground -ml-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 py-1.5 focus:ring-1 focus:outline-none [&_svg]:size-4 [&_svg]:shrink-0',
+          'hover:bg-accent focus:ring-ring data-[state=open]:bg-accent [&_svg]:text-muted-foreground -ml-1.5 flex h-8 max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 focus:ring-1 focus:outline-none [&_svg]:size-4 [&_svg]:shrink-0',
           className
         )}
         {...props}
       >
-        {title}
+        <DataTableOverflowTooltipText value={title} className='min-w-0 flex-1'>
+          {title}
+        </DataTableOverflowTooltipText>
         {column.getCanSort() &&
           (column.getIsSorted() === 'desc' ? (
-            <ChevronDownIcon />
+            <Icons.chevronDown />
           ) : column.getIsSorted() === 'asc' ? (
-            <ChevronUpIcon />
+            <Icons.chevronUp />
           ) : (
-            <CaretSortIcon />
+            <Icons.chevronsUpDown />
           ))}
       </DropdownMenuTrigger>
       <DropdownMenuContent align='start' className='w-28'>
@@ -64,7 +70,7 @@ export function DataTableColumnHeader<TData, TValue>({
               checked={column.getIsSorted() === 'asc'}
               onClick={() => column.toggleSorting(false)}
             >
-              <ChevronUpIcon />
+              <Icons.chevronUp />
               {labels?.ascText ?? '升序'}
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
@@ -72,7 +78,7 @@ export function DataTableColumnHeader<TData, TValue>({
               checked={column.getIsSorted() === 'desc'}
               onClick={() => column.toggleSorting(true)}
             >
-              <ChevronDownIcon />
+              <Icons.chevronDown />
               {labels?.descText ?? '降序'}
             </DropdownMenuCheckboxItem>
             {column.getIsSorted() && (
@@ -80,7 +86,7 @@ export function DataTableColumnHeader<TData, TValue>({
                 className='[&_svg]:text-muted-foreground pl-2'
                 onClick={() => column.clearSorting()}
               >
-                <Cross2Icon />
+                <Icons.close />
                 {labels?.resetText ?? '重置排序'}
               </DropdownMenuItem>
             )}

@@ -21,16 +21,33 @@ const rows: TestRow[] = Array.from({ length: 5 }, (_, index) => ({
   name: `Item ${index + 1}`
 }));
 
-function Harness({ totalRowCount }: { totalRowCount?: number }) {
+function Harness({
+  totalRowCount,
+  selectedRowCount,
+  rowSelection
+}: {
+  totalRowCount?: number;
+  selectedRowCount?: number;
+  rowSelection?: Record<string, boolean>;
+}) {
   const table = useReactTable({
     data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 5, pageIndex: 0 } }
+    initialState: {
+      pagination: { pageSize: 5, pageIndex: 0 },
+      rowSelection
+    }
   });
 
-  return <DataTablePagination table={table} totalRowCount={totalRowCount} />;
+  return (
+    <DataTablePagination
+      table={table}
+      totalRowCount={totalRowCount}
+      selectedRowCount={selectedRowCount}
+    />
+  );
 }
 
 describe('DataTablePagination', () => {
@@ -44,5 +61,17 @@ describe('DataTablePagination', () => {
     render(<Harness />);
 
     expect(screen.getByText('共 5 条数据')).toBeInTheDocument();
+  });
+
+  it('uses the current page row count for selected summary when selectedRowCount is implicit', () => {
+    render(<Harness totalRowCount={42} rowSelection={{ '0': true }} />);
+
+    expect(screen.getByText('已选择 1 / 5 行')).toBeInTheDocument();
+  });
+
+  it('uses the provided selectedRowCount with the server total when explicitly controlled', () => {
+    render(<Harness totalRowCount={42} selectedRowCount={7} rowSelection={{ '0': true }} />);
+
+    expect(screen.getByText('已选择 7 / 42 行')).toBeInTheDocument();
   });
 });

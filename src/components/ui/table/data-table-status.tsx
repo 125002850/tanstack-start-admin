@@ -22,6 +22,7 @@ export interface DataTableStatusContext {
   rows: { length: number };
   totalCount: number;
   hasFilters: boolean;
+  isLoading: boolean;
 }
 
 export type DataTableStatusFactory = (
@@ -118,7 +119,7 @@ function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
     <TableBody>
       <TableRow>
         <TableCell colSpan={colSpan}>
-          <div className='flex flex-col items-center justify-center py-16 text-center'>
+          <div className='sticky left-1/2 -translate-x-1/2 inline-flex flex-col items-center justify-center py-16 text-center'>
             <span className='text-muted-foreground/30 mb-4'>{defaults.icon}</span>
             <h3 className='text-sm font-medium'>{title}</h3>
             {description && <p className='text-muted-foreground mt-1 text-sm'>{description}</p>}
@@ -146,13 +147,13 @@ function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
 export function DataTableStatus({ status: config, colSpan = 1, className }: DataTableStatusProps) {
   switch (config.type) {
     case 'onboarding':
-      return <StatusCard config={config} className={className} />;
     case 'empty':
     case 'error':
-    case 'permission':
       return <StatusInline config={config} colSpan={colSpan} />;
+    case 'permission':
+      return <StatusCard config={config} className={className} />;
     default: {
-      const _: never = config.type;
+      config.type satisfies never;
       return null;
     }
   }

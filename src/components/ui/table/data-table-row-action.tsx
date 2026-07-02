@@ -6,6 +6,12 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Icons } from '@/components/icons';
+import {
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 
@@ -13,11 +19,13 @@ const DATA_TABLE_ROW_ACTION_BUTTON_SIZE = 32;
 const DATA_TABLE_ROW_ACTION_GAP = 2;
 const DATA_TABLE_ROW_ACTION_CELL_PADDING_X = 16;
 
-export const DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE = 2;
+export const DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE = 3;
 
 export interface DataTableRowAction<TData> {
   label: string;
   icon: React.ReactNode;
+  disabled?: boolean | ((row: TData) => boolean);
+  hidden?: boolean | ((row: TData) => boolean);
   onClick?: (row: TData) => void | Promise<void>;
   confirmDelete?: {
     title?: string;
@@ -36,6 +44,13 @@ interface DataTableRowActionsProps<TData> {
   row: TData;
   actions: DataTableRowAction<TData>[];
   maxVisible?: number;
+}
+
+function resolveRowActionValue<TData, TValue>(
+  value: TValue | ((row: TData) => TValue),
+  row: TData
+): TValue {
+  return typeof value === 'function' ? (value as (row: TData) => TValue)(row) : value;
 }
 
 export function getDataTableRowActionsColumnWidth(
@@ -90,6 +105,10 @@ export function DataTableRowActions<TData>({
 
   const handleClick = React.useCallback(
     async (action: DataTableRowAction<TData>) => {
+      if (resolveRowActionValue(action.disabled ?? false, row)) {
+        return;
+      }
+
       if (action.confirmDelete) {
         withConfirm({
           title: (currentAction) => currentAction.confirmDelete?.title ?? '确认删除',
@@ -113,8 +132,12 @@ export function DataTableRowActions<TData>({
     [row, withConfirm]
   );
 
-  const visibleActions = actions.slice(0, maxVisible);
-  const moreActions = actions.slice(maxVisible);
+  const resolvedActions = React.useMemo(
+    () => actions.filter((action) => !resolveRowActionValue(action.hidden ?? false, row)),
+    [actions, row]
+  );
+  const visibleActions = resolvedActions.slice(0, maxVisible);
+  const moreActions = resolvedActions.slice(maxVisible);
 
   return (
     <>
@@ -126,56 +149,64 @@ export function DataTableRowActions<TData>({
           onOpenChange={handleSheetOpenChange}
         />
       )}
-      <div className='flex items-center gap-0.5' data-row-expand-ignore>
-        {visibleActions.map((action) => (
-          <Button
-            key={action.label}
-            variant='ghost'
-            size='icon'
-            className='h-8 w-8'
-            onClick={(event) => {
-              event.stopPropagation();
-              void handleClick(action);
-            }}
-            aria-label={action.label}
-            data-row-expand-ignore
-          >
-            {action.icon}
-          </Button>
-        ))}
-        {moreActions.length > 0 && (
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant='ghost'
-                className='h-8 w-8 p-0'
-                aria-label='更多操作'
-                data-row-expand-ignore
-                onClick={(event) => {
-                  event.stopPropagation();
-                }}
-              >
-                <Icons.ellipsis className='size-4' />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
-              {moreActions.map((action) => (
-                <DropdownMenuItem
-                  key={action.label}
-                  data-row-expand-ignore
+      <TooltipProvider>
+        <div className='flex items-center gap-0.5' data-row-expand-ignore>
+          {visibleActions.map((action) => (
+            <TooltipPrimitive.Root key={action.label}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-8 w-8'
+                  disabled={resolveRowActionValue(action.disabled ?? false, row)}
                   onClick={(event) => {
                     event.stopPropagation();
                     void handleClick(action);
                   }}
+                  aria-label={action.label}
+                  data-row-expand-ignore
                 >
                   {action.icon}
-                  <span className='ml-2'>{action.label}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{action.label}</TooltipContent>
+            </TooltipPrimitive.Root>
+          ))}
+          {moreActions.length > 0 && (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  className='h-8 w-8 p-0'
+                  aria-label='更多操作'
+                  data-row-expand-ignore
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
+                  <Icons.ellipsis className='size-4' />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end'>
+                {moreActions.map((action) => (
+                  <DropdownMenuItem
+                    key={action.label}
+                    data-row-expand-ignore
+                    disabled={resolveRowActionValue(action.disabled ?? false, row)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleClick(action);
+                    }}
+                  >
+                    {action.icon}
+                    <span className='ml-2'>{action.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </TooltipProvider>
     </>
   );
 }

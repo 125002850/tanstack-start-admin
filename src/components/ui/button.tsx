@@ -41,6 +41,7 @@ function Button({
   isLoading,
   children,
   disabled,
+  type,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
@@ -52,6 +53,7 @@ function Button({
       <Slot
         data-slot='button'
         className={cn(buttonVariants({ variant, size, className }))}
+        {...(type !== undefined ? { type } : {})}
         {...props}
       >
         {children}
@@ -66,6 +68,7 @@ function Button({
         data-slot='button'
         className={cn(buttonVariants({ variant, size, className }))}
         disabled={disabled}
+        type={type ?? 'button'}
         {...props}
       >
         {children}
@@ -86,6 +89,7 @@ function Button({
       )}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
+      type={type ?? 'button'}
       {...props}
     >
       <span className={cn('inline-flex items-center gap-2', isLoading && 'invisible')}>

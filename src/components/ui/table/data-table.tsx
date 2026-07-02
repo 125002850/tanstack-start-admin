@@ -1,19 +1,48 @@
-import { type Table as TanstackTable, flexRender } from '@tanstack/react-table';
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
+import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable';
+import { type Column, type Table as TanstackTable } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import * as React from 'react';
 
 import {
   DataTablePagination,
   type DataTablePaginationLabels
 } from '@/components/ui/table/data-table-pagination';
-import { Table, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getCommonPinningStyles } from '@/lib/data-table';
+import { Table } from '@/components/ui/table';
+import { Icons } from '@/components/icons';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DataTableBody } from '@/components/ui/table/data-table-body';
+import { DataTableCellTooltipProvider } from '@/components/ui/table/data-table-cell-tooltip';
 import { Separator } from '@/components/ui/separator';
 import { DataTableViewOptions } from '@/components/ui/table/data-table-view-options';
-import { DataTableColumnResizeHandle } from './data-table-column-resize-handle';
-import type { DataTableVirtualizationOptions, ExpandConfigEdge } from '@/types/data-table';
-import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
+import { DataTableColGroup } from '@/components/ui/table/data-table-colgroup';
+import {
+  DataTableHeader,
+  DataTableHeaderDragOverlay,
+  getCanReorderColumn
+} from '@/components/ui/table/data-table-header';
+import type {
+  DataTableResolvedVirtualizationOptions,
+  DataTableColumnRenderItem,
+  DataTableColumnVirtualWindow,
+  DataTableVirtualizationProp,
+  ExpandConfigEdge
+} from '@/types/data-table';
+import {
+  DATA_TABLE_VIRTUAL_PRESET,
+  resolveDataTableVirtualizationOptions
+} from '@/config/data-table';
 import {
   DataTableActionsBar,
   type DataTableAction
@@ -22,10 +51,10 @@ import {
   DataTableExpandPanel,
   getAvailableExpandTabs
 } from '@/components/ui/table/data-table-expand-panel';
+import { DataTableExpandResizeHandle } from '@/components/ui/table/data-table-expand-trigger';
 import {
+  DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING,
   DATA_TABLE_EXPAND_KEYBOARD_STEP_PX,
-  DATA_TABLE_EXPAND_SPLIT_HANDLE_PX,
-  clampExpandSplitTop,
   resolveExpandSplitLayout
 } from '@/lib/data-table-expand-split';
 import {
@@ -34,6 +63,8 @@ import {
   type DataTableStatusFactory
 } from '@/components/ui/table/data-table-status';
 import { getSelectedPageRowCount } from '@/lib/data-table';
+import { emitDataTableVirtualEvent } from '@/components/ui/table/data-table-virtual-events';
+import { moveColumnOrder } from '@/lib/data-table-column-order-storage';
 
 interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
@@ -46,8 +77,11 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   statusTotalCount?: number;
   getStatusConfig?: DataTableStatusFactory;
   statusDeps?: unknown[];
+  isLoading?: boolean;
+  onRefresh?: () => void | Promise<void>;
+  isRefreshing?: boolean;
   paginationLabels?: DataTablePaginationLabels;
-  virtualization?: DataTableVirtualizationOptions | boolean;
+  virtualization?: DataTableVirtualizationProp;
   expandConfig?: ExpandConfigEdge<TData>;
   expandedRow?: TData | null;
   expandedRowKey?: string | null;
@@ -56,6 +90,42 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
 }
 
 const FALLBACK_EXPAND_HOST_HEIGHT = 800;
+const DEFAULT_COLUMN_SIZE = 150;
+const COLUMN_ORDER_LONG_PRESS_DELAY_MS = 180;
+const COLUMN_ORDER_LONG_PRESS_TOLERANCE_PX = 8;
+const COLUMN_ORDER_LONG_PRESS_TOUCH_TOLERANCE_PX = 12;
+
+function requestAnimationFrameSafe(callback: FrameRequestCallback) {
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    return window.requestAnimationFrame(callback);
+  }
+
+  return setTimeout(() => callback(performance.now()), 0) as unknown as number;
+}
+
+function cancelAnimationFrameSafe(frameId: number) {
+  if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+    window.cancelAnimationFrame(frameId);
+    return;
+  }
+
+  clearTimeout(frameId);
+}
+
+function isSafariBrowser() {
+  if (typeof navigator === 'undefined') {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent;
+  const vendor = navigator.vendor;
+
+  return (
+    /Safari/i.test(userAgent) &&
+    /Apple/i.test(vendor) &&
+    !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPiOS|Android/i.test(userAgent)
+  );
+}
 
 function resolveExpandActiveTabId<TData>(
   expandConfig: ExpandConfigEdge<TData>,
@@ -79,6 +149,49 @@ function resolveExpandActiveTabId<TData>(
   return availableTabs[0]?.id ?? null;
 }
 
+function createColumnRenderItem<TData>({
+  column,
+  leafIndex,
+  centerIndex,
+  size
+}: {
+  column: Column<TData>;
+  leafIndex: number;
+  centerIndex: number;
+  size: number;
+}): DataTableColumnRenderItem<TData> {
+  return {
+    column,
+    columnId: column.id,
+    leafIndex,
+    centerIndex,
+    size
+  };
+}
+
+function resolveColumnVirtualizationFallbackReason<TData>({
+  table,
+  shouldAttemptColumnVirtualization
+}: {
+  table: TanstackTable<TData>;
+  shouldAttemptColumnVirtualization: boolean;
+}) {
+  if (!shouldAttemptColumnVirtualization) {
+    return undefined;
+  }
+
+  const headerGroups = table.getHeaderGroups();
+  if (headerGroups.length > 1) {
+    return 'grouped-header' as const;
+  }
+
+  if (headerGroups.some((group) => group.headers.some((header) => header.colSpan > 1))) {
+    return 'header-colspan' as const;
+  }
+
+  return undefined;
+}
+
 export function DataTable<TData>({
   table,
   tableActions,
@@ -91,6 +204,9 @@ export function DataTable<TData>({
   statusTotalCount,
   getStatusConfig,
   statusDeps,
+  isLoading = false,
+  onRefresh,
+  isRefreshing = false,
   paginationLabels,
   virtualization,
   expandConfig,
@@ -103,13 +219,12 @@ export function DataTable<TData>({
   const headerRowRef = React.useRef<HTMLTableRowElement>(null);
   const expandHostRef = React.useRef<HTMLDivElement>(null);
   const topPanelRef = React.useRef<HTMLDivElement>(null);
-  const bottomPanelRef = React.useRef<HTMLDivElement>(null);
   const dragStateRef = React.useRef<{
     startY: number;
     startTopPx: number;
-    effectiveHeight: number;
+    minTopPx: number;
+    maxTopPx: number;
     topPanel: HTMLDivElement;
-    bottomPanel: HTMLDivElement;
   } | null>(null);
   const paginationRef = React.useRef<HTMLDivElement>(null);
   const [requestedSplitTopPx, setRequestedSplitTopPx] = React.useState<number | null>(null);
@@ -117,9 +232,40 @@ export function DataTable<TData>({
   const [expandHostHeight, setExpandHostHeight] = React.useState(FALLBACK_EXPAND_HOST_HEIGHT);
   const [expandOverheadPx, setExpandOverheadPx] = React.useState(0);
   const [isDragging, setIsDragging] = React.useState(false);
+  const lastVirtualizationGateReasonRef = React.useRef<string | null>(null);
+  const lastColumnVirtualizationFallbackReasonRef = React.useRef<string | null>(null);
+  const columnVirtualizationEnabledEmittedRef = React.useRef(false);
+  const suppressHeaderClickRef = React.useRef(false);
+  const suppressHeaderClickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeColumnDrag, setActiveColumnDrag] = React.useState<{
+    columnId: string;
+    width: number | null;
+  } | null>(null);
+  const columnOrderSensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        delay: COLUMN_ORDER_LONG_PRESS_DELAY_MS,
+        tolerance: COLUMN_ORDER_LONG_PRESS_TOLERANCE_PX
+      }
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: COLUMN_ORDER_LONG_PRESS_DELAY_MS,
+        tolerance: COLUMN_ORDER_LONG_PRESS_TOUCH_TOLERANCE_PX
+      }
+    })
+  );
 
   const statusEffectRef = React.useRef(getStatusConfig);
   statusEffectRef.current = getStatusConfig;
+
+  React.useEffect(() => {
+    return () => {
+      if (suppressHeaderClickTimerRef.current !== null) {
+        clearTimeout(suppressHeaderClickTimerRef.current);
+      }
+    };
+  }, []);
 
   const resolvedStatus = React.useMemo((): DataTableStatusConfig | undefined => {
     if (!statusEffectRef.current) return undefined;
@@ -134,53 +280,247 @@ export function DataTable<TData>({
     return statusEffectRef.current({
       rows,
       totalCount: statusTotalCount ?? 0,
-      hasFilters
+      hasFilters,
+      isLoading
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusTotalCount, table, ...(statusDeps ?? [])]);
+  }, [statusTotalCount, isLoading, table, ...(statusDeps ?? [])]);
 
-  const virtConfig: DataTableVirtualizationOptions | undefined =
-    virtualization === true
-      ? { enabled: true }
-      : virtualization === false || virtualization === undefined
-        ? undefined
-        : virtualization;
+  const virtualizationResolution = React.useMemo(
+    () => resolveDataTableVirtualizationOptions(virtualization),
+    [virtualization]
+  );
+  const virtConfig: DataTableResolvedVirtualizationOptions | undefined =
+    virtualizationResolution.value;
+
+  React.useEffect(() => {
+    const reason = virtualizationResolution.gateReason;
+
+    if (!reason) {
+      lastVirtualizationGateReasonRef.current = null;
+      return;
+    }
+
+    if (lastVirtualizationGateReasonRef.current === reason) {
+      return;
+    }
+
+    lastVirtualizationGateReasonRef.current = reason;
+    emitDataTableVirtualEvent({ event: reason });
+    virtualizationResolution.onVirtualizationFallback?.(reason);
+  }, [virtualizationResolution]);
 
   const shouldVirtualize =
     virtConfig?.enabled === true &&
     table.getRowModel().rows.length >=
       (virtConfig.rowCountThreshold ?? DATA_TABLE_VIRTUAL_PRESET.rowCountThreshold);
   const resolvedTableWidth = table.getTotalSize();
+  const leftVisibleLeafColumns = table.getLeftVisibleLeafColumns();
+  const centerVisibleLeafColumns = table.getCenterVisibleLeafColumns();
+  const rightVisibleLeafColumns = table.getRightVisibleLeafColumns();
   const orderedLeafColumns = [
-    ...table.getLeftVisibleLeafColumns(),
-    ...table.getCenterVisibleLeafColumns(),
-    ...table.getRightVisibleLeafColumns()
+    ...leftVisibleLeafColumns,
+    ...centerVisibleLeafColumns,
+    ...rightVisibleLeafColumns
   ];
-  const colgroup = (
-    <colgroup>
-      {orderedLeafColumns.map((column) => (
-        <col key={column.id} style={{ width: column.getSize() }} />
-      ))}
-    </colgroup>
+  const leafIndexByColumnId = new Map(
+    orderedLeafColumns.map((column, index) => [column.id, index])
   );
+  const columnVirtualizationConfig = virtConfig?.column;
+  const shouldAttemptColumnVirtualization =
+    typeof window !== 'undefined' &&
+    columnVirtualizationConfig?.enabled === true &&
+    centerVisibleLeafColumns.length >=
+      (columnVirtualizationConfig.columnCountThreshold ??
+        DATA_TABLE_VIRTUAL_PRESET.columnCountThreshold);
+  const columnVirtualizationFallbackReason = resolveColumnVirtualizationFallbackReason({
+    table,
+    shouldAttemptColumnVirtualization
+  });
+  const shouldVirtualizeColumns =
+    shouldAttemptColumnVirtualization && !columnVirtualizationFallbackReason;
+  const horizontalColumnVirtualizer = useVirtualizer({
+    count: centerVisibleLeafColumns.length,
+    getScrollElement: () => scrollViewportRef.current,
+    estimateSize: (index) => centerVisibleLeafColumns[index]?.getSize() ?? DEFAULT_COLUMN_SIZE,
+    horizontal: true,
+    overscan: columnVirtualizationConfig?.overscan ?? DATA_TABLE_VIRTUAL_PRESET.columnOverscan,
+    enabled: shouldVirtualizeColumns
+  });
+  const columnVirtualItems = shouldVirtualizeColumns
+    ? horizontalColumnVirtualizer.getVirtualItems()
+    : [];
+  const leftColumnRenderItems = leftVisibleLeafColumns.map((column) =>
+    createColumnRenderItem({
+      column,
+      leafIndex: leafIndexByColumnId.get(column.id) ?? 0,
+      centerIndex: -1,
+      size: column.getSize()
+    })
+  );
+  const rightColumnRenderItems = rightVisibleLeafColumns.map((column) =>
+    createColumnRenderItem({
+      column,
+      leafIndex: leafIndexByColumnId.get(column.id) ?? 0,
+      centerIndex: -1,
+      size: column.getSize()
+    })
+  );
+  const centerColumnRenderItems = columnVirtualItems.flatMap((virtualColumn) => {
+    const column = centerVisibleLeafColumns[virtualColumn.index];
+    if (!column) return [];
+
+    return [
+      createColumnRenderItem({
+        column,
+        leafIndex: leafIndexByColumnId.get(column.id) ?? 0,
+        centerIndex: virtualColumn.index,
+        size: virtualColumn.size
+      })
+    ];
+  });
+  const virtualPaddingLeft = columnVirtualItems[0]?.start ?? 0;
+  const virtualPaddingRight = shouldVirtualizeColumns
+    ? Math.max(
+        horizontalColumnVirtualizer.getTotalSize() - (columnVirtualItems.at(-1)?.end ?? 0),
+        0
+      )
+    : 0;
+  const columnVirtualWindow: DataTableColumnVirtualWindow<TData> = {
+    enabled: shouldVirtualizeColumns,
+    items: centerColumnRenderItems,
+    leftItems: leftColumnRenderItems,
+    rightItems: rightColumnRenderItems,
+    virtualPaddingLeft,
+    virtualPaddingRight,
+    virtualTotalSize: horizontalColumnVirtualizer.getTotalSize()
+  };
+  const hasPinnedColumns = leftVisibleLeafColumns.length > 0 || rightVisibleLeafColumns.length > 0;
+  const useTransformFreeVirtualRows =
+    shouldVirtualize && shouldVirtualizeColumns && hasPinnedColumns && isSafariBrowser();
+  const tableState = table.getState();
+  const columnSizingSignature = Object.entries(tableState.columnSizing ?? {})
+    .map(([key, value]) => `${key}:${value}`)
+    .toSorted()
+    .join('|');
+  const columnVisibilitySignature = Object.entries(tableState.columnVisibility ?? {})
+    .map(([key, value]) => `${key}:${value}`)
+    .toSorted()
+    .join('|');
+  const centerColumnSizeSignature = centerVisibleLeafColumns
+    .map((column) => `${column.id}:${column.getSize()}`)
+    .join('|');
+  const isFlatLeafHeader = table.getHeaderGroups().length === 1;
+  const sortableColumnIds = React.useMemo(() => {
+    if (!isFlatLeafHeader) return [];
+
+    const draggableColumnIds = centerVisibleLeafColumns
+      .filter(getCanReorderColumn)
+      .map((column) => column.id);
+
+    return draggableColumnIds.length > 1 ? draggableColumnIds : [];
+  }, [centerVisibleLeafColumns, isFlatLeafHeader]);
+  const draggableColumnIdSet = React.useMemo(() => new Set(sortableColumnIds), [sortableColumnIds]);
+  const activeDragHeader = activeColumnDrag?.columnId
+    ? table.getFlatHeaders().find((header) => header.column.id === activeColumnDrag.columnId)
+    : undefined;
+
+  React.useEffect(() => {
+    if (!shouldVirtualizeColumns || columnVirtualizationEnabledEmittedRef.current) {
+      return;
+    }
+
+    columnVirtualizationEnabledEmittedRef.current = true;
+    emitDataTableVirtualEvent({
+      event: 'columns-enabled',
+      count: centerVisibleLeafColumns.length
+    });
+  }, [centerVisibleLeafColumns.length, shouldVirtualizeColumns]);
+
+  React.useLayoutEffect(() => {
+    if (!shouldVirtualizeColumns) {
+      return;
+    }
+
+    const frameId = requestAnimationFrameSafe(() => {
+      horizontalColumnVirtualizer.measure();
+    });
+
+    return () => cancelAnimationFrameSafe(frameId);
+  }, [
+    centerColumnSizeSignature,
+    columnSizingSignature,
+    columnVisibilitySignature,
+    horizontalColumnVirtualizer,
+    shouldVirtualizeColumns,
+    tableState.columnSizingInfo.isResizingColumn
+  ]);
+
+  React.useEffect(() => {
+    if (!columnVirtualizationFallbackReason) {
+      lastColumnVirtualizationFallbackReasonRef.current = null;
+      return;
+    }
+
+    if (lastColumnVirtualizationFallbackReasonRef.current === columnVirtualizationFallbackReason) {
+      return;
+    }
+
+    lastColumnVirtualizationFallbackReasonRef.current = columnVirtualizationFallbackReason;
+    emitDataTableVirtualEvent({
+      event: 'columns-fallback',
+      reason: columnVirtualizationFallbackReason
+    });
+    virtualizationResolution.onVirtualizationFallback?.(columnVirtualizationFallbackReason);
+  }, [columnVirtualizationFallbackReason, virtualizationResolution]);
+
+  // 仅相邻的非固定列之间显示分隔符（固定列和最后一列不显示）
+  const centerColumnIds = new Set(centerVisibleLeafColumns.map((c) => c.id));
+  const separatorColumnIds = new Set<string>();
+  const orderedColumnIds = orderedLeafColumns.map((c) => c.id);
+  for (let i = 0; i < orderedColumnIds.length - 1; i++) {
+    if (centerColumnIds.has(orderedColumnIds[i]) && centerColumnIds.has(orderedColumnIds[i + 1])) {
+      separatorColumnIds.add(orderedColumnIds[i]);
+    }
+  }
 
   const ariaRowCount = shouldVirtualize ? table.getRowModel().rows.length + 1 : undefined;
+  const resolvedTableActions = React.useMemo(() => {
+    if (!onRefresh) return tableActions;
+
+    const refreshAction: DataTableAction<TData> = {
+      label: '刷新列表',
+      icon: <Icons.chevronsDown className='size-3.5' />,
+      disabled: isRefreshing,
+      callback: () => void onRefresh()
+    };
+
+    return tableActions ? [refreshAction, ...tableActions] : [refreshAction];
+  }, [onRefresh, isRefreshing, tableActions]);
   const hasViewOptions = table
     .getAllColumns()
     .some((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide());
+  const pageRows = table.getRowModel().rows;
   const resolvedSelectedRowCount =
-    selectedRowCount ?? (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
+    selectedRowCount ??
+    (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
+  const resolvedSelectedTotalRowCount =
+    selectedRowCount !== undefined ? statusTotalCount : pageRows.length;
   const isExpanded = !!(expandConfig && expandedRow && expandPanelId);
+  const expandTableSizing = expandConfig?.tableSizing ?? DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING;
   const expandSplitLayout = React.useMemo(
     () =>
       isExpanded
         ? resolveExpandSplitLayout({
             hostHeight: expandHostHeight,
             requestedTopPx: requestedSplitTopPx,
-            overheadPx: expandOverheadPx
+            overheadPx: expandOverheadPx,
+            initialTopPx: expandTableSizing.initialHeight,
+            minTopPx: expandTableSizing.minHeight,
+            maxTopPx: expandTableSizing.maxHeight
           })
         : null,
-    [expandHostHeight, expandOverheadPx, isExpanded, requestedSplitTopPx]
+    [expandHostHeight, expandOverheadPx, expandTableSizing, isExpanded, requestedSplitTopPx]
   );
 
   const getExpandRowKey = React.useCallback(
@@ -261,18 +601,13 @@ export function DataTable<TData>({
       }
 
       const deltaY = event.clientY - dragState.startY;
-      const clampedTopPx = clampExpandSplitTop({
-        hostHeight: dragState.effectiveHeight,
-        topPx: dragState.startTopPx + deltaY
-      });
-      const bottomPx = Math.max(
-        0,
-        dragState.effectiveHeight - DATA_TABLE_EXPAND_SPLIT_HANDLE_PX - clampedTopPx
+      const clampedTopPx = Math.min(
+        Math.max(dragState.startTopPx + deltaY, dragState.minTopPx),
+        dragState.maxTopPx
       );
 
-      // Direct DOM update — instant, no React reconciliation
+      dragState.topPanel.style.flex = 'none';
       dragState.topPanel.style.height = `${clampedTopPx}px`;
-      dragState.bottomPanel.style.height = `${bottomPx}px`;
     };
 
     const handlePointerUp = () => {
@@ -330,14 +665,85 @@ export function DataTable<TData>({
 
       event.preventDefault();
       setRequestedSplitTopPx(
-        clampExpandSplitTop({
-          hostHeight: expandHostHeight,
-          topPx: nextTopPx
-        })
+        Math.min(Math.max(nextTopPx, expandSplitLayout.minTopPx), expandSplitLayout.maxTopPx)
       );
     },
-    [expandHostHeight, expandSplitLayout]
+    [expandSplitLayout]
   );
+
+  const armSuppressHeaderClick = React.useCallback(() => {
+    suppressHeaderClickRef.current = true;
+
+    if (suppressHeaderClickTimerRef.current !== null) {
+      clearTimeout(suppressHeaderClickTimerRef.current);
+    }
+
+    suppressHeaderClickTimerRef.current = setTimeout(() => {
+      suppressHeaderClickRef.current = false;
+      suppressHeaderClickTimerRef.current = null;
+    }, 0);
+  }, []);
+
+  const handleHeaderClickCapture = React.useCallback(
+    (event: React.MouseEvent<HTMLTableCellElement>) => {
+      if (!suppressHeaderClickRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      suppressHeaderClickRef.current = false;
+
+      if (suppressHeaderClickTimerRef.current !== null) {
+        clearTimeout(suppressHeaderClickTimerRef.current);
+        suppressHeaderClickTimerRef.current = null;
+      }
+    },
+    []
+  );
+
+  const handleColumnDragStart = React.useCallback(
+    (event: DragStartEvent) => {
+      const columnId = String(event.active.id);
+      if (!draggableColumnIdSet.has(columnId)) return;
+
+      const activeRect = event.active.rect.current.initial;
+      setActiveColumnDrag({
+        columnId,
+        width: activeRect?.width ? Math.round(activeRect.width) : null
+      });
+      armSuppressHeaderClick();
+    },
+    [armSuppressHeaderClick, draggableColumnIdSet]
+  );
+
+  const handleColumnDragEnd = React.useCallback(
+    (event: DragEndEvent) => {
+      const activeId = String(event.active.id);
+      const overId = event.over ? String(event.over.id) : null;
+
+      setActiveColumnDrag(null);
+
+      if (
+        !overId ||
+        activeId === overId ||
+        !draggableColumnIdSet.has(activeId) ||
+        !draggableColumnIdSet.has(overId)
+      ) {
+        return;
+      }
+
+      const currentColumnOrder = table.getAllLeafColumns().map((column) => column.id);
+      const nextColumnOrder = moveColumnOrder(currentColumnOrder, activeId, overId);
+
+      table.setColumnOrder(nextColumnOrder);
+    },
+    [draggableColumnIdSet, table]
+  );
+
+  const handleColumnDragCancel = React.useCallback(() => {
+    setActiveColumnDrag(null);
+  }, []);
 
   const tableViewport = (
     <div
@@ -355,76 +761,96 @@ export function DataTable<TData>({
             : undefined
         }
       >
-        <Table
-          aria-rowcount={ariaRowCount}
-          style={{ tableLayout: 'fixed', width: resolvedTableWidth }}
-        >
-          {colgroup}
-          <TableHeader className='bg-muted sticky top-0 z-10'>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} ref={headerRowRef}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    style={{
-                      ...getCommonPinningStyles({ column: header.column }),
-                      ...(header.column.getIsPinned() ? { background: 'var(--muted)' } : {})
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                    <DataTableColumnResizeHandle header={header} />
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <DataTableBody
-            table={table}
-            emptyMessage={emptyMessage}
-            status={resolvedStatus}
-            virtualization={virtConfig}
-            scrollViewportRef={scrollViewportRef}
-            headerRowRef={headerRowRef}
-            onRowClick={
-              expandConfig
-                ? (rowKey) => {
-                    if (rowKey === expandedRowKey) {
-                      return;
-                    }
+        <DataTableCellTooltipProvider>
+          <DndContext
+            sensors={columnOrderSensors}
+            collisionDetection={closestCenter}
+            modifiers={[restrictToHorizontalAxis]}
+            onDragStart={handleColumnDragStart}
+            onDragEnd={handleColumnDragEnd}
+            onDragCancel={handleColumnDragCancel}
+          >
+            <SortableContext items={sortableColumnIds} strategy={horizontalListSortingStrategy}>
+              <Table
+                aria-rowcount={ariaRowCount}
+                data-column-virtual-enabled={shouldVirtualizeColumns ? 'true' : undefined}
+                data-column-virtual-count={
+                  shouldVirtualizeColumns ? columnVirtualWindow.items.length : undefined
+                }
+                data-column-virtual-total-size={
+                  shouldVirtualizeColumns ? columnVirtualWindow.virtualTotalSize : undefined
+                }
+                style={{ tableLayout: 'fixed', width: resolvedTableWidth }}
+              >
+                {shouldVirtualizeColumns ? null : (
+                  <DataTableColGroup columns={orderedLeafColumns} />
+                )}
+                <DataTableHeader
+                  table={table}
+                  columnVirtualWindow={columnVirtualWindow}
+                  shouldVirtualizeColumns={shouldVirtualizeColumns}
+                  separatorColumnIds={separatorColumnIds}
+                  draggableColumnIdSet={draggableColumnIdSet}
+                  headerRowRef={headerRowRef}
+                  onHeaderClickCapture={handleHeaderClickCapture}
+                />
+                <DataTableBody
+                  table={table}
+                  emptyMessage={emptyMessage}
+                  status={resolvedStatus}
+                  virtualization={virtConfig}
+                  columnVirtualWindow={columnVirtualWindow}
+                  useTransformFreeVirtualRows={useTransformFreeVirtualRows}
+                  scrollViewportRef={scrollViewportRef}
+                  headerRowRef={headerRowRef}
+                  onRowClick={
+                    expandConfig
+                      ? (rowKey) => {
+                          if (rowKey === expandedRowKey) {
+                            return;
+                          }
 
-                    onExpandedRowKeyChange?.(rowKey);
+                          onExpandedRowKeyChange?.(rowKey);
+                        }
+                      : undefined
                   }
-                : undefined
-            }
-            expandedRowKey={expandedRowKey}
-            getExpandRowKey={expandConfig ? getExpandRowKey : undefined}
-          />
-        </Table>
+                  expandedRowKey={expandedRowKey}
+                  getExpandRowKey={expandConfig ? getExpandRowKey : undefined}
+                />
+              </Table>
+            </SortableContext>
+            <DragOverlay>
+              {activeDragHeader ? (
+                <DataTableHeaderDragOverlay
+                  header={activeDragHeader}
+                  width={activeColumnDrag?.width ?? null}
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </DataTableCellTooltipProvider>
       </ScrollArea>
     </div>
   );
 
   return (
     <div className='flex flex-1 flex-col space-y-3'>
-      {resolvedStatus?.type === 'onboarding' ? (
+      {resolvedStatus?.type === 'permission' ? (
         <DataTableStatus status={resolvedStatus} className='flex-1' />
       ) : (
         <>
-          {(children || tableActions || hasViewOptions) && (
+          {(children || resolvedTableActions || hasViewOptions) && (
             <div className='flex flex-col'>
               {children && <div>{children}</div>}
-              {children && (tableActions || hasViewOptions) && (
+              {children && (resolvedTableActions || hasViewOptions) && (
                 <Separator className='my-2 ml-[calc(var(--page-container-padding-x,0rem)*-1)] data-[orientation=horizontal]:!w-[calc(100%+var(--page-container-padding-x,0rem)*2)]' />
               )}
-              {(tableActions || hasViewOptions) && (
+              {(resolvedTableActions || hasViewOptions) && (
                 <div className='flex items-center gap-2 px-1'>
-                  {tableActions && (
+                  {resolvedTableActions && (
                     <DataTableActionsBar
                       table={table}
-                      actions={tableActions}
+                      actions={resolvedTableActions}
                       getSelectedRows={getSelectedRows}
                     />
                   )}
@@ -441,11 +867,16 @@ export function DataTable<TData>({
           expandConfig &&
           expandedRow &&
           expandPanelId ? (
-            <div ref={expandHostRef} className='flex flex-1 min-h-0 flex-col'>
+            <div ref={expandHostRef} className='flex flex-1 min-h-0 min-w-0 flex-col'>
               <div
                 ref={topPanelRef}
+                data-slot='data-table-expand-main'
                 className='relative min-h-0'
-                style={{ height: `${expandSplitLayout.topPx}px` }}
+                style={
+                  expandSplitLayout.isConstrained
+                    ? { flex: `0 0 ${expandSplitLayout.topPx}px` }
+                    : { flex: '1 1 0%' }
+                }
               >
                 {tableViewport}
               </div>
@@ -455,20 +886,17 @@ export function DataTable<TData>({
                   labels={paginationLabels}
                   getSelectedRows={getSelectedRows}
                   selectedRowCount={resolvedSelectedRowCount}
+                  selectedTotalRowCount={resolvedSelectedTotalRowCount}
                   totalRowCount={statusTotalCount}
                 />
                 {actionBar && resolvedSelectedRowCount > 0 && actionBar}
               </div>
-              <div
-                role='separator'
-                tabIndex={0}
-                aria-orientation='horizontal'
-                aria-valuemin={expandSplitLayout.minTopPx}
-                aria-valuemax={expandSplitLayout.maxTopPx}
-                aria-valuenow={expandSplitLayout.topPx}
-                aria-disabled={expandSplitLayout.dragEnabled ? undefined : true}
-                data-slot='data-table-expand-split-handle'
-                className='group relative flex h-2 shrink-0 cursor-row-resize items-center justify-center outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+              <DataTableExpandResizeHandle
+                min={expandSplitLayout.minTopPx}
+                max={expandSplitLayout.maxTopPx}
+                value={expandSplitLayout.topPx}
+                disabled={!expandSplitLayout.dragEnabled}
+                dragging={isDragging}
                 onKeyDown={handleSplitKeyDown}
                 onPointerDown={(event) => {
                   if (!expandSplitLayout.dragEnabled) {
@@ -478,39 +906,22 @@ export function DataTable<TData>({
                   event.preventDefault();
                   event.stopPropagation();
                   const topEl = topPanelRef.current;
-                  const bottomEl = bottomPanelRef.current;
-                  if (!topEl || !bottomEl) return;
+                  if (!topEl) return;
 
                   setIsDragging(true);
                   dragStateRef.current = {
                     startY: event.clientY,
-                    startTopPx: expandSplitLayout.topPx,
-                    effectiveHeight: expandHostHeight - expandOverheadPx,
-                    topPanel: topEl,
-                    bottomPanel: bottomEl
+                    startTopPx: topEl.getBoundingClientRect().height,
+                    minTopPx: expandSplitLayout.minTopPx,
+                    maxTopPx: expandSplitLayout.maxTopPx,
+                    topPanel: topEl
                   };
                 }}
-              >
-                {/* Pill handle with grip dots — visible on hover, focus, and during active drag */}
-                <span
-                  className={
-                    isDragging
-                      ? 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/40 opacity-100'
-                      : 'inline-flex h-1.5 w-10 items-center justify-center rounded-full bg-border/0 opacity-0 transition-all duration-200 group-hover:bg-border/40 group-hover:opacity-100 group-focus-visible:bg-border/40 group-focus-visible:opacity-100'
-                  }
-                >
-                  <span className='inline-flex gap-px'>
-                    <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
-                    <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
-                    <span className='block h-0.5 w-0.5 rounded-full bg-muted-foreground/40' />
-                  </span>
-                </span>
-              </div>
+              />
               <div
-                ref={bottomPanelRef}
-                className='min-h-0'
+                data-slot='data-table-expand-panel-host'
+                className='min-h-0 min-w-0 shrink-0'
                 style={{
-                  height: `${expandSplitLayout.bottomPx}px`,
                   boxShadow: 'inset 0 6px 10px -6px hsl(var(--border))'
                 }}
               >
@@ -533,6 +944,7 @@ export function DataTable<TData>({
                   labels={paginationLabels}
                   getSelectedRows={getSelectedRows}
                   selectedRowCount={resolvedSelectedRowCount}
+                  selectedTotalRowCount={resolvedSelectedTotalRowCount}
                   totalRowCount={statusTotalCount}
                 />
                 {actionBar && resolvedSelectedRowCount > 0 && actionBar}

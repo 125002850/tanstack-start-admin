@@ -46,10 +46,25 @@ const {
 } = createFormHookContexts();
 
 type FormItemContextValue = {
-  id: string;
+  id?: string;
 };
 
-const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
+const FormItemContext = React.createContext<FormItemContextValue>({});
+
+function withFormItemContext<P extends object>(Component: React.ComponentType<P>) {
+  function FormItemComponent(props: P) {
+    const id = React.useId();
+
+    return (
+      <FormItemContext.Provider value={{ id }}>
+        <Component {...props} />
+      </FormItemContext.Provider>
+    );
+  }
+
+  FormItemComponent.displayName = `FormItem(${Component.displayName || Component.name})`;
+  return FormItemComponent;
+}
 
 // ---------------------------------------------------------------------------
 // 2. Enhanced useFieldContext
@@ -65,16 +80,21 @@ const useFieldContext = () => {
 
   const { name, store, ...rest } = fieldCtx;
   const errors = useStore(store, (state) => state.meta.errors);
+  const isTouched = useStore(store, (state) => state.meta.isTouched);
+  const form = useFormContext();
+  const hasSubmitted = useStore(form.store, (state) => state.submissionAttempts > 0);
+  const isInvalid = !!errors.length && (isTouched || hasSubmitted);
 
   return {
+    ...rest,
     id,
     name,
     formItemId: `${id}-form-item`,
     formDescriptionId: `${id}-form-item-description`,
     formMessageId: `${id}-form-item-message`,
     errors,
-    store,
-    ...rest
+    isInvalid,
+    store
   };
 };
 
@@ -83,37 +103,36 @@ const useFieldContext = () => {
 // ---------------------------------------------------------------------------
 
 function FieldSet({ className, children, ...props }: React.ComponentProps<'fieldset'>) {
+  const parentContext = React.useContext(FormItemContext);
   const id = React.useId();
-
-  return (
-    <FormItemContext.Provider value={{ id }}>
-      <DefaultFieldSet className={cn('grid gap-1', className)} {...props}>
-        {children}
-      </DefaultFieldSet>
-    </FormItemContext.Provider>
+  const fieldSet = (
+    <DefaultFieldSet className={cn('grid gap-1', className)} {...props}>
+      {children}
+    </DefaultFieldSet>
   );
+
+  if (parentContext.id) {
+    return fieldSet;
+  }
+
+  return <FormItemContext.Provider value={{ id }}>{fieldSet}</FormItemContext.Provider>;
 }
 
 function Field({
   children,
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants>) {
-  const { errors, formItemId, formDescriptionId, formMessageId, store } = useFieldContext();
-  const form = useFormContext();
-  const isTouched = useStore(store, (state) => state.meta.isTouched);
-  // Show errors after user interaction OR after first submit attempt
-  const hasSubmitted = useStore(form.store, (s) => s.submissionAttempts > 0);
-  const hasVisibleErrors = !!errors.length && (isTouched || hasSubmitted);
+  const { formItemId, formDescriptionId, formMessageId, isInvalid } = useFieldContext();
 
   return (
     <DefaultField
-      data-invalid={hasVisibleErrors}
+      {...props}
+      data-invalid={isInvalid}
       id={formItemId}
       aria-describedby={
-        !hasVisibleErrors ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`
+        !isInvalid ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`
       }
-      aria-invalid={hasVisibleErrors}
-      {...props}
+      aria-invalid={isInvalid}
     >
       {children}
     </DefaultField>
@@ -121,17 +140,14 @@ function Field({
 }
 
 function FieldError({ className, ...props }: React.ComponentProps<'p'>) {
-  const { errors, formMessageId, store } = useFieldContext();
-  const form = useFormContext();
-  const isTouched = useStore(store, (state) => state.meta.isTouched);
-  const hasSubmitted = useStore(form.store, (s) => s.submissionAttempts > 0);
-  if (!errors.length || (!isTouched && !hasSubmitted)) return null;
+  const { errors, formMessageId, isInvalid } = useFieldContext();
+  if (!isInvalid) return null;
   return (
     <DefaultFieldError
+      {...props}
       data-slot='form-message'
       id={formMessageId}
       className={cn('text-destructive text-sm', className)}
-      {...props}
       errors={errors}
     />
   );
@@ -305,6 +321,7 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
   }: { name: string } & FieldConfig &
     Omit<P, 'name' | 'validators' | 'asyncDebounceMs' | 'listeners' | 'mode' | 'defaultValue'>) {
     const form = useFormContext();
+    const id = React.useId();
     const FieldSlot = form.Field as unknown as FormFieldSlot;
     return (
       <FieldSlot
@@ -316,9 +333,11 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
         defaultValue={defaultValue}
       >
         {(fieldApi) => (
-          <fieldContext.Provider value={fieldApi}>
-            <FieldComponent {...(props as unknown as P)} />
-          </fieldContext.Provider>
+          <FormItemContext.Provider value={{ id }}>
+            <fieldContext.Provider value={fieldApi}>
+              <FieldComponent {...(props as unknown as P)} />
+            </fieldContext.Provider>
+          </FormItemContext.Provider>
         )}
       </FieldSlot>
     );
@@ -376,6 +395,7 @@ export type { FieldConfig, FieldValidatorConfig, FieldListenerConfig, WithTypedN
 export {
   fieldContext,
   formContext,
+  withFormItemContext,
   useFieldContext,
   useFormContext,
   createFormField,

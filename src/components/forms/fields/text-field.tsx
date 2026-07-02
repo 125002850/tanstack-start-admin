@@ -17,7 +17,7 @@ interface TextFieldProps extends Omit<
   label: string;
   description?: string;
   required?: boolean;
-  type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number';
+  type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number' | 'date';
 }
 
 export function TextField({
@@ -29,21 +29,19 @@ export function TextField({
   ...inputProps
 }: TextFieldProps) {
   const field = useFieldContext();
-  const isTouched = useStore(field.store, (s) => s.meta.isTouched);
-  const isValid = useStore(field.store, (s) => s.meta.isValid);
   const isValidating = useStore(field.store, (s) => s.meta.isValidating);
   const value = useStore(field.store, (s) => s.value) as string | number;
 
   return (
     <FormFieldSet>
-      <FormField>
-        <FieldLabel htmlFor={field.name}>
+      <FormField data-disabled={inputProps.disabled}>
+        <FieldLabel htmlFor={field.name} required={required}>
           {label}
-          {required && ' *'}
         </FieldLabel>
         <div className='relative'>
           <Input
             id={field.name}
+            aria-label={label}
             type={type}
             value={value ?? ''}
             onBlur={field.handleBlur}
@@ -55,7 +53,8 @@ export function TextField({
                 field.handleChange(e.target.value);
               }
             }}
-            aria-invalid={isTouched && !isValid}
+            aria-describedby={field.formMessageId}
+            aria-invalid={field.isInvalid}
             className={className}
             {...inputProps}
           />

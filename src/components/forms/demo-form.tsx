@@ -429,7 +429,7 @@ export default function DemoForm() {
                   children={(field) => (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel>Framework *</field.FieldLabel>
+                        <field.FieldLabel required>Framework</field.FieldLabel>
                         <ComboboxField
                           value={field.state.value}
                           onChange={field.handleChange}
@@ -456,7 +456,7 @@ export default function DemoForm() {
                   const values: string[] = field.state.value || [];
                   return (
                     <field.FieldSet>
-                      <field.FieldLabel>Interests *</field.FieldLabel>
+                      <field.FieldLabel required>Interests</field.FieldLabel>
                       <FieldDescription>Select all that apply</FieldDescription>
                       <div className='grid grid-cols-2 gap-3 md:grid-cols-3'>
                         {interestOptions.map((opt) => (
@@ -558,8 +558,8 @@ export default function DemoForm() {
                         aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                       />
                       <field.FieldContent>
-                        <field.FieldLabel className='space-y-1 leading-none'>
-                          I agree to the Terms and Conditions *
+                        <field.FieldLabel className='space-y-1 leading-none' required>
+                          I agree to the Terms and Conditions
                         </field.FieldLabel>
                         <field.FieldError />
                       </field.FieldContent>
@@ -702,7 +702,7 @@ export default function DemoForm() {
                   children={(field) => (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel>Verification Code *</field.FieldLabel>
+                        <field.FieldLabel required>Verification Code</field.FieldLabel>
                         <InputOTP
                           maxLength={6}
                           value={field.state.value}
@@ -765,7 +765,7 @@ export default function DemoForm() {
                   return (
                     <field.FieldSet>
                       <field.Field>
-                        <field.FieldLabel>Tags *</field.FieldLabel>
+                        <field.FieldLabel required>Tags</field.FieldLabel>
                         <TagsField
                           values={values}
                           onPush={(val) => field.pushValue(val)}

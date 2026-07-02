@@ -6,13 +6,16 @@ import { DataTableFacetedFilter } from '@/components/ui/table/data-table-faceted
 import { DataTableSliderFilter } from '@/components/ui/table/data-table-slider-filter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { getDataTableColumnLabel } from '@/lib/data-table-column-label';
 import { cn } from '@/lib/utils';
-import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
-import { Cross2Icon } from '@radix-ui/react-icons';
+import { useDebouncedInput } from '@/hooks/use-debounced-input';
+import { Icons } from '@/components/icons';
 import type { DataTableFacetedFilterLabels } from '@/components/ui/table/data-table-faceted-filter';
 import type { DataTableViewOptionsLabels } from '@/components/ui/table/data-table-view-options';
 
 export interface DataTableToolbarLabels {
+  queryingText?: string;
   resetFiltersAriaLabel?: string;
   resetFiltersText?: string;
   viewOptions?: DataTableViewOptionsLabels;
@@ -21,11 +24,13 @@ export interface DataTableToolbarLabels {
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
+  isQuerying?: boolean;
   labels?: DataTableToolbarLabels;
 }
 
 export function DataTableToolbar<TData>({
   table,
+  isQuerying = false,
   children,
   className,
   labels,
@@ -33,13 +38,10 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
 
-  const columns = React.useMemo(
-    () => table.getAllColumns().filter((column) => column.getCanFilter()),
-    [table]
-  );
+  const columns = table.getAllColumns().filter((column) => column.getCanFilter());
 
   const onReset = React.useCallback(() => {
-    table.resetColumnFilters();
+    table.resetColumnFilters(true);
   }, [table]);
 
   return (
@@ -51,18 +53,26 @@ export function DataTableToolbar<TData>({
     >
       <div className='flex flex-1 flex-wrap items-center gap-2'>
         {columns.map((column) => (
-          <DataTableToolbarFilter key={column.id} column={column} labels={labels} />
+          <DataTableToolbarFilter key={column.id} column={column} table={table} labels={labels} />
         ))}
         {isFiltered && (
           <Button
             aria-label={labels?.resetFiltersAriaLabel ?? '重置筛选条件'}
+            aria-busy={isQuerying || undefined}
             variant='outline'
             size='sm'
-            className='border-dashed'
+            className='data-table-filter-control min-w-[6.25rem] border-dashed'
+            data-active='true'
             onClick={onReset}
           >
-            <Cross2Icon />
-            {labels?.resetFiltersText ?? '重置筛选'}
+            {isQuerying ? (
+              <Spinner data-icon='inline-start' aria-label={labels?.queryingText ?? '查询中'} />
+            ) : (
+              <Icons.close data-icon='inline-start' className='size-4' />
+            )}
+            {isQuerying
+              ? (labels?.queryingText ?? '查询中')
+              : (labels?.resetFiltersText ?? '重置筛选')}
           </Button>
         )}
         {children}
@@ -72,12 +82,18 @@ export function DataTableToolbar<TData>({
 }
 interface DataTableToolbarFilterProps<TData> {
   column: Column<TData>;
+  table: Table<TData>;
   labels?: DataTableToolbarLabels;
 }
 
-function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilterProps<TData>) {
+function DataTableToolbarFilter<TData>({
+  column,
+  table,
+  labels
+}: DataTableToolbarFilterProps<TData>) {
   {
     const columnMeta = column.columnDef.meta;
+    const columnLabel = getDataTableColumnLabel(column, table);
 
     const onFilterRender = React.useCallback(() => {
       if (!columnMeta?.variant) return null;
@@ -86,7 +102,7 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
         case 'text':
           return (
             <DebouncedFilterInput
-              placeholder={columnMeta.placeholder ?? columnMeta.label}
+              placeholder={columnMeta.placeholder ?? columnLabel}
               value={(column.getFilterValue() as string) ?? ''}
               onChange={(value) => column.setFilterValue(value)}
               className='h-8 w-40 lg:w-56'
@@ -99,7 +115,7 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
               <DebouncedFilterInput
                 type='number'
                 inputMode='numeric'
-                placeholder={columnMeta.placeholder ?? columnMeta.label}
+                placeholder={columnMeta.placeholder ?? columnLabel}
                 value={(column.getFilterValue() as string) ?? ''}
                 onChange={(value) => column.setFilterValue(value)}
                 className={cn('h-8 w-[120px]', columnMeta.unit && 'pr-8')}
@@ -113,14 +129,14 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
           );
 
         case 'range':
-          return <DataTableSliderFilter column={column} title={columnMeta.label ?? column.id} />;
+          return <DataTableSliderFilter column={column} title={columnLabel} />;
 
         case 'date':
         case 'dateRange':
           return (
             <DataTableDateFilter
               column={column}
-              title={columnMeta.label ?? column.id}
+              title={columnLabel}
               multiple={columnMeta.variant === 'dateRange'}
             />
           );
@@ -130,7 +146,7 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
           return (
             <DataTableFacetedFilter
               column={column}
-              title={columnMeta.label ?? column.id}
+              title={columnLabel}
               options={columnMeta.options ?? []}
               multiple={columnMeta.variant === 'multiSelect'}
               labels={labels?.facetedFilter}
@@ -140,7 +156,7 @@ function DataTableToolbarFilter<TData>({ column, labels }: DataTableToolbarFilte
         default:
           return null;
       }
-    }, [column, columnMeta, labels?.facetedFilter]);
+    }, [column, columnLabel, columnMeta, labels?.facetedFilter]);
 
     return onFilterRender();
   }
@@ -161,21 +177,18 @@ function DebouncedFilterInput({
   debounceMs = 300,
   ...inputProps
 }: DebouncedFilterInputProps) {
-  const [localValue, setLocalValue] = React.useState(externalValue);
-  const debouncedOnChange = useDebouncedCallback(onChange, debounceMs);
+  const inputBindings = useDebouncedInput({
+    value: externalValue,
+    onChange,
+    debounceMs,
+  });
 
-  React.useEffect(() => {
-    setLocalValue(externalValue);
-  }, [externalValue]);
-
-  const handleChange = React.useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = e.target.value;
-      setLocalValue(next);
-      debouncedOnChange(next);
-    },
-    [debouncedOnChange]
+  return (
+    <Input
+      {...inputProps}
+      {...inputBindings}
+      data-active={inputBindings.value.length > 0 ? 'true' : undefined}
+      className={cn('data-table-filter-control', inputProps.className)}
+    />
   );
-
-  return <Input {...inputProps} value={localValue} onChange={handleChange} />;
 }

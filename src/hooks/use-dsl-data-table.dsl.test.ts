@@ -1,11 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ColumnDef, ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
+import type {
+  ColumnDef,
+  ColumnFiltersState,
+  PaginationState,
+  SortingState
+} from '@tanstack/react-table';
 
-import type { DataTableDslCondition } from './use-data-table-query.dsl';
+import type { DataTableDslCondition } from './use-dsl-data-table.dsl';
 import {
   buildDataTableDslRequest,
   isDataTableDslOperatorCompatibleWithVariant
-} from './use-data-table-query.dsl';
+} from './use-dsl-data-table.dsl';
 
 type DictionaryTypeRow = {
   id: number;
@@ -38,7 +43,7 @@ const columns: Array<ColumnDef<DictionaryTypeRow>> = [
   }
 ];
 
-describe('use-data-table-query.dsl', () => {
+describe('use-dsl-data-table.dsl', () => {
   it('builds a paginated dsl request from pagination, sorting, and filters', () => {
     const request = buildDataTableDslRequest({
       columns,
@@ -52,7 +57,7 @@ describe('use-data-table-query.dsl', () => {
 
     expect(request.pageNo).toBe(2);
     expect(request.pageSize).toBe(50);
-    expect(request.dslVersion).toBe(1);
+
     expect(request.sort).toEqual([{ field: 'createTime', direction: 'DESC' }]);
     expect(request.condition).toEqual({
       nodeType: 'compose',
@@ -72,6 +77,42 @@ describe('use-data-table-query.dsl', () => {
         }
       ]
     });
+  });
+
+  it('uses request default sort without requiring a matching table column', () => {
+    const request = buildDataTableDslRequest({
+      columns,
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [],
+      defaultRequestSort: [{ field: 'id', direction: 'ASC' }]
+    });
+
+    expect(request.sort).toEqual([{ field: 'id', direction: 'ASC' }]);
+  });
+
+  it('omits sort when request default sort is empty', () => {
+    const request = buildDataTableDslRequest({
+      columns,
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [],
+      defaultRequestSort: []
+    });
+
+    expect(request.sort).toBeUndefined();
+  });
+
+  it('prefers valid table sorting over request default sort', () => {
+    const request = buildDataTableDslRequest({
+      columns,
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [{ id: 'createTime', desc: true }],
+      columnFilters: [],
+      defaultRequestSort: [{ field: 'id', direction: 'ASC' }]
+    });
+
+    expect(request.sort).toEqual([{ field: 'createTime', direction: 'DESC' }]);
   });
 
   it('omits text and multi-select filters after empty normalization', () => {
@@ -129,26 +170,23 @@ describe('use-data-table-query.dsl', () => {
       columnFilters: [{ id: 'createTime', value: [fromDate.getTime(), toDate.getTime()] }]
     });
 
-    const singleNode = (singleDateRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
-    const fromOnlyNode = (fromOnlyRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
-    const rangeNode = (rangeRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
+    const singleNode = (
+      singleDateRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>
+    ).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
+    const fromOnlyNode = (
+      fromOnlyRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>
+    ).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
+    const rangeNode = (
+      rangeRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>
+    ).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
 
     expect(singleNode.nodeType).toBe('dateTime');
     expect(singleNode.op).toBe('BETWEEN');
-    expect(singleNode.start).toMatch(/([+-]\d{2}:\d{2}|Z)$/);
-    expect(singleNode.end).toMatch(/([+-]\d{2}:\d{2}|Z)$/);
+    expect(singleNode.start).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+    expect(singleNode.end).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
 
-    const singleStart = new Date(singleNode.start!);
-    const singleEnd = new Date(singleNode.end!);
-    expect(singleStart.getFullYear()).toBe(selectedDate.getFullYear());
-    expect(singleStart.getMonth()).toBe(selectedDate.getMonth());
-    expect(singleStart.getDate()).toBe(selectedDate.getDate());
-    expect(singleStart.getHours()).toBe(0);
-    expect(singleStart.getMinutes()).toBe(0);
-    expect(singleStart.getSeconds()).toBe(0);
-    expect(singleEnd.getHours()).toBe(23);
-    expect(singleEnd.getMinutes()).toBe(59);
-    expect(singleEnd.getSeconds()).toBe(59);
+    expect(singleNode.start).toBe('2026-06-12 00:00:00');
+    expect(singleNode.end).toBe('2026-06-12 23:59:59');
 
     expect(fromOnlyNode).toMatchObject({
       nodeType: 'dateTime',
@@ -193,7 +231,7 @@ describe('use-data-table-query.dsl', () => {
     });
   });
 
-  it('warns and skips accessorFn columns without explicit ids', () => {
+  it('warns with the new helper prefix and skips accessorFn columns without explicit ids', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const request = buildDataTableDslRequest({
@@ -214,6 +252,7 @@ describe('use-data-table-query.dsl', () => {
     expect(request.condition).toBeUndefined();
     expect(request.sort).toBeUndefined();
     expect(warn).toHaveBeenCalled();
+    expect(warn.mock.calls[0]?.[0]).toContain('[useDslDataTable.dsl]');
   });
 
   it('falls back to the default operator when the override is incompatible', () => {

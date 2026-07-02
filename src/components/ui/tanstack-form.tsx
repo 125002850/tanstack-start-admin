@@ -41,11 +41,21 @@ import { cn } from '@/lib/utils';
 import {
   fieldContext,
   formContext,
+  withFormItemContext,
   useFormContext,
   FormFieldSet,
   FormField,
   FormFieldError
 } from './form-context';
+
+const AppTextField = withFormItemContext(TextField);
+const AppTextareaField = withFormItemContext(TextareaField);
+const AppSelectField = withFormItemContext(SelectField);
+const AppCheckboxField = withFormItemContext(CheckboxField);
+const AppSwitchField = withFormItemContext(SwitchField);
+const AppRadioGroupField = withFormItemContext(RadioGroupField);
+const AppSliderField = withFormItemContext(SliderField);
+const AppFileUploadField = withFormItemContext(FileUploadField);
 
 // ---------------------------------------------------------------------------
 // Form-level components (used as form.ComponentName)
@@ -142,14 +152,14 @@ const { useAppForm, withForm, withFieldGroup } = createFormHook({
     InputGroupAddon,
     InputGroupInput,
     // Base field components (for AppField render-prop pattern)
-    TextField,
-    TextareaField,
-    SelectField,
-    CheckboxField,
-    SwitchField,
-    RadioGroupField,
-    SliderField,
-    FileUploadField
+    TextField: AppTextField,
+    TextareaField: AppTextareaField,
+    SelectField: AppSelectField,
+    CheckboxField: AppCheckboxField,
+    SwitchField: AppSwitchField,
+    RadioGroupField: AppRadioGroupField,
+    SliderField: AppSliderField,
+    FileUploadField: AppFileUploadField
   },
   formComponents: {
     // Layout & actions

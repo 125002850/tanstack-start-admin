@@ -1,84 +1,87 @@
 export const DATA_TABLE_EXPAND_MIN_TOP_PX = 200;
-export const DATA_TABLE_EXPAND_MIN_BOTTOM_PX = 150;
 export const DATA_TABLE_EXPAND_SPLIT_HANDLE_PX = 8;
-export const DATA_TABLE_EXPAND_DEFAULT_TOP_RATIO = 0.6;
 export const DATA_TABLE_EXPAND_KEYBOARD_STEP_PX = 32;
-
-const MIN_EXPAND_HOST_HEIGHT =
-  DATA_TABLE_EXPAND_MIN_TOP_PX +
-  DATA_TABLE_EXPAND_MIN_BOTTOM_PX +
-  DATA_TABLE_EXPAND_SPLIT_HANDLE_PX;
-
-interface ClampExpandSplitTopOptions {
-  hostHeight: number;
-  topPx: number;
-}
-
-interface ResolveExpandSplitLayoutOptions {
-  hostHeight: number;
-  requestedTopPx?: number | null;
-  /** Fixed-height slots between table viewport and split handle (e.g. pagination). */
-  overheadPx?: number;
-}
+export const DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING = {
+  initialHeight: 360,
+  minHeight: 240,
+  maxHeight: 640
+} as const;
 
 export interface DataTableExpandSplitLayout {
   topPx: number;
-  bottomPx: number;
   minTopPx: number;
-  minBottomPx: number;
   maxTopPx: number;
   handlePx: number;
   dragEnabled: boolean;
-  locked: boolean;
+  isConstrained: boolean;
 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function getDefaultTopPx(hostHeight: number) {
-  return Math.round(hostHeight * DATA_TABLE_EXPAND_DEFAULT_TOP_RATIO);
-}
-
-export function clampExpandSplitTop({ hostHeight, topPx }: ClampExpandSplitTopOptions) {
-  const availableHeight = Math.max(0, hostHeight - DATA_TABLE_EXPAND_SPLIT_HANDLE_PX);
-
-  if (hostHeight < MIN_EXPAND_HOST_HEIGHT) {
-    return clamp(topPx, 0, availableHeight);
-  }
-
-  return clamp(
-    topPx,
-    DATA_TABLE_EXPAND_MIN_TOP_PX,
-    hostHeight - DATA_TABLE_EXPAND_SPLIT_HANDLE_PX - DATA_TABLE_EXPAND_MIN_BOTTOM_PX
+export function clampExpandSplitTop({
+  hostHeight,
+  topPx,
+  minTopPx = DATA_TABLE_EXPAND_MIN_TOP_PX,
+  maxTopPx
+}: {
+  hostHeight: number;
+  topPx: number;
+  minTopPx?: number;
+  maxTopPx?: number;
+}) {
+  const handlePx = DATA_TABLE_EXPAND_SPLIT_HANDLE_PX;
+  const availableMaxTopPx = Math.max(minTopPx, hostHeight - handlePx);
+  const resolvedMaxTopPx = Math.max(
+    minTopPx,
+    Math.min(maxTopPx ?? availableMaxTopPx, availableMaxTopPx)
   );
+
+  return clamp(topPx, minTopPx, resolvedMaxTopPx);
 }
 
 export function resolveExpandSplitLayout({
   hostHeight,
   requestedTopPx,
-  overheadPx = 0
-}: ResolveExpandSplitLayoutOptions): DataTableExpandSplitLayout {
+  overheadPx = 0,
+  initialTopPx,
+  minTopPx = DATA_TABLE_EXPAND_MIN_TOP_PX,
+  maxTopPx
+}: {
+  hostHeight: number;
+  requestedTopPx?: number | null;
+  overheadPx?: number;
+  initialTopPx?: number;
+  minTopPx?: number;
+  maxTopPx?: number;
+}): DataTableExpandSplitLayout {
   const handlePx = DATA_TABLE_EXPAND_SPLIT_HANDLE_PX;
   const effectiveHeight = Math.max(0, hostHeight - overheadPx);
-  const nextTopPx = clampExpandSplitTop({
+  const availableMaxTopPx = Math.max(minTopPx, effectiveHeight - handlePx);
+  const resolvedMaxTopPx = Math.max(
+    minTopPx,
+    Math.min(maxTopPx ?? availableMaxTopPx, availableMaxTopPx)
+  );
+  const dragEnabled = resolvedMaxTopPx > minTopPx;
+  const preferredTopPx = requestedTopPx ?? initialTopPx ?? resolvedMaxTopPx;
+  const topPx = clampExpandSplitTop({
     hostHeight: effectiveHeight,
-    topPx: requestedTopPx ?? getDefaultTopPx(effectiveHeight)
+    topPx: preferredTopPx,
+    minTopPx,
+    maxTopPx
   });
-  const bottomPx = Math.max(0, effectiveHeight - handlePx - nextTopPx);
-  const dragEnabled = effectiveHeight >= MIN_EXPAND_HOST_HEIGHT;
-  const maxTopPx = dragEnabled
-    ? effectiveHeight - handlePx - DATA_TABLE_EXPAND_MIN_BOTTOM_PX
-    : Math.max(0, effectiveHeight - handlePx);
 
   return {
-    topPx: nextTopPx,
-    bottomPx,
-    minTopPx: DATA_TABLE_EXPAND_MIN_TOP_PX,
-    minBottomPx: DATA_TABLE_EXPAND_MIN_BOTTOM_PX,
-    maxTopPx,
+    topPx,
+    minTopPx,
+    maxTopPx: resolvedMaxTopPx,
     handlePx,
     dragEnabled,
-    locked: !dragEnabled
+    isConstrained:
+      requestedTopPx != null ||
+      initialTopPx != null ||
+      minTopPx !== DATA_TABLE_EXPAND_MIN_TOP_PX ||
+      maxTopPx != null
   };
 }

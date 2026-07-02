@@ -9,12 +9,18 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table';
-import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
+import type {
+  ColumnFiltersState,
+  PaginationState,
+  Row,
+  SortingState,
+  TableOptions
+} from '@tanstack/react-table';
 import * as React from 'react';
 
 import { dataTableConfig } from '@/config/data-table';
 import { getSelectedPageRows } from '@/lib/data-table';
-import type { ColumnResizeStorageMode } from '@/types/data-table';
+import type { ColumnOrderStorageMode, ColumnResizeStorageMode } from '@/types/data-table';
 
 import { getFixedWidthColumnSizing, omitFixedWidthColumnSizing } from './column-sizing';
 import {
@@ -36,6 +42,41 @@ import { createRowNumberColumn } from './columns/row-number-column';
 import { createSelectColumn } from './columns/select-column';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
 import { useTableState } from './use-table-state';
+
+function getPageCount(totalCount: number, pageSize: number) {
+  return Math.max(1, Math.ceil(totalCount / pageSize) || 1);
+}
+
+function usePaginationForRenderedData<TData>(
+  data: TData[],
+  pagination: PaginationState
+): PaginationState {
+  const dataRef = React.useRef(data);
+  const paginationRef = React.useRef(pagination);
+
+  if (dataRef.current !== data) {
+    dataRef.current = data;
+    paginationRef.current = pagination;
+  }
+
+  return paginationRef.current;
+}
+
+function stringifyResolvedRowId(value: unknown) {
+  if (typeof value === 'string') {
+    return value.length > 0 ? value : null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? String(value) : null;
+  }
+
+  return null;
+}
+
+function getFallbackRowId<TData>(tableId: string, index: number, parent?: Row<TData>) {
+  return parent ? `${parent.id}-${index}` : `${tableId}-${index}`;
+}
 
 /**
  * 构建 API 查询参数的工厂函数。自动将 {@link ColumnFiltersState} 映射为后端接受的键值对。
@@ -83,22 +124,28 @@ export function makeApiFilters(columnKeyMap: Record<string, string> = {}) {
 export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const {
     columns,
-    pageCount = -1,
+    pageCount: explicitPageCount,
+    totalCount,
     initialState,
     debounceMs = DEBOUNCE_MS,
     enableAdvancedFilter = false,
     pageSize: controlledPageSize,
     onPageSizeChange,
     showRowNumberColumn = true,
+    rowNumberDisplayMode = 'static',
     showSelectColumn = false,
+    tableId,
+    rowId,
+    getRowId,
     actionColumnPin = 'right',
     rowActions,
     expandConfig,
+    onColumnOrderChange: externalOnColumnOrderChange,
     ...tableProps
   } = props;
 
   const instanceId = React.useId();
-  const expandPanelId = expandConfig ? getStableExpandPanelId(props.tableId, instanceId) : null;
+  const expandPanelId = expandConfig ? getStableExpandPanelId(tableId, instanceId) : null;
   const [expandedRowKey, setExpandedRowKey] = React.useState<string | null>(null);
 
   const normalizedColumns = React.useMemo<Array<ColumnDef<TData>>>(
@@ -131,7 +178,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
     // 展开态只通过行点击和背景高亮表达，不再额外插入展开图标列。
     return showRowNumberColumn
-      ? [createRowNumberColumn<TData>(), ...columnsWithActions]
+      ? [createRowNumberColumn<TData>(totalCount), ...columnsWithActions]
       : columnsWithActions;
   }, [
     baseColumns,
@@ -139,7 +186,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     hasManualSelectColumn,
     rowActions,
     showRowNumberColumn,
-    showSelectColumn
+    showSelectColumn,
+    totalCount
   ]);
 
   const fixedWidthColumnSizing = React.useMemo(
@@ -192,6 +240,19 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       (props.columnResizeStorage ?? dataTableConfig.columnResizeStorage) as ColumnResizeStorageMode,
     [props.columnResizeStorage]
   );
+  const resolvedColumnOrderStorageMode: ColumnOrderStorageMode = React.useMemo(
+    () =>
+      (props.columnOrderStorage ?? dataTableConfig.columnOrderStorage) as ColumnOrderStorageMode,
+    [props.columnOrderStorage]
+  );
+  const normalizeColumnOrder = React.useCallback(
+    (columnOrder: Array<string> | undefined) =>
+      normalizeGeneratedColumnOrder(columnOrder, {
+        showRowNumberColumn,
+        hasSelectColumn
+      }),
+    [hasSelectColumn, showRowNumberColumn]
+  );
 
   const {
     rowSelection,
@@ -200,6 +261,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     setColumnVisibility,
     columnPinning,
     setColumnPinning,
+    columnOrder,
+    onColumnOrderChange,
+    resetColumnOrder,
+    hasCustomColumnOrder,
     columnSizing,
     setColumnSizing,
     onColumnSizingChange,
@@ -214,22 +279,66 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     controlledPageSize,
     onPageSizeChange,
     enableAdvancedFilter,
-    tableId: props.tableId,
+    tableId,
     rowSelectionScopeKey: props.rowSelectionScopeKey,
     resolvedStorageMode,
+    resolvedColumnOrderStorageMode,
+    normalizeColumnOrder,
+    externalOnColumnOrderChange,
     fixedWidthColumnSizing
   });
+
+  const rowNumberPagination = usePaginationForRenderedData(tableProps.data, pagination);
+
+  const resolvedPageCount = React.useMemo(() => {
+    if (typeof explicitPageCount === 'number') {
+      return explicitPageCount;
+    }
+
+    if (typeof totalCount === 'number') {
+      return getPageCount(totalCount, pagination.pageSize);
+    }
+
+    return -1;
+  }, [explicitPageCount, pagination.pageSize, totalCount]);
+
+  const resolvedGetRowId = React.useCallback<NonNullable<TableOptions<TData>['getRowId']>>(
+    (row, index, parent) => {
+      if (getRowId) {
+        return getRowId(row, index, parent);
+      }
+
+      if (typeof rowId === 'function') {
+        return String(rowId(row, index, parent));
+      }
+
+      const value = (row as Record<PropertyKey, unknown>)[rowId ?? 'id'];
+
+      return stringifyResolvedRowId(value) ?? getFallbackRowId(tableId, index, parent);
+    },
+    [getRowId, rowId, tableId]
+  );
 
   const table = useReactTable({
     ...tableProps,
     columns: resolvedColumns,
     initialState: resolvedInitialState,
-    pageCount,
+    pageCount: resolvedPageCount,
+    meta: {
+      ...tableProps.meta,
+      rowNumberDisplayMode,
+      rowNumberPagination,
+      dataTableColumnOrder: {
+        hasCustomOrder: hasCustomColumnOrder,
+        reset: resetColumnOrder
+      }
+    },
     state: {
       pagination,
       sorting,
       columnVisibility,
       columnPinning,
+      columnOrder,
       rowSelection,
       columnFilters,
       columnSizing
@@ -246,8 +355,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     onSortingChange,
     onColumnFiltersChange,
     onColumnSizingChange,
+    onColumnOrderChange,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    getRowId: resolvedGetRowId,
     enableColumnResizing: true,
     columnResizeMode: 'onEnd' as const,
     getCoreRowModel: getCoreRowModel(),
@@ -279,7 +390,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
   const { resetColumnSizing } = useColumnSizingPersistence({
     table,
-    tableId: props.tableId,
+    tableId,
     resolvedStorageMode,
     onColumnResizeEnd: props.onColumnResizeEnd,
     resolvedInitialColumnSizing: resolvedInitialState?.columnSizing,

@@ -1,4 +1,5 @@
 import type { Column } from '@tanstack/react-table';
+import { zhCN } from 'date-fns/locale';
 import { Icons } from '@/components/icons';
 import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { formatDate } from '@/lib/format';
+import { formatDateOnly } from '@/lib/format';
 
 type DateSelection = Date[] | DateRange;
 
@@ -93,7 +94,8 @@ export function DataTableDateFilter<TData>({
   );
 
   const onReset = React.useCallback(
-    (event: React.MouseEvent) => {
+    (event: React.MouseEvent<HTMLElement>) => {
+      event.preventDefault();
       event.stopPropagation();
       column.setFilterValue(undefined);
     },
@@ -109,12 +111,12 @@ export function DataTableDateFilter<TData>({
     return selectedDates.length > 0;
   }, [multiple, selectedDates]);
 
-  const formatDateRange = React.useCallback((range: DateRange) => {
+  const formatDateOnlyRange = React.useCallback((range: DateRange) => {
     if (!range.from && !range.to) return '';
     if (range.from && range.to) {
-      return `${formatDate(range.from)} - ${formatDate(range.to)}`;
+      return `${formatDateOnly(range.from)} - ${formatDateOnly(range.to)}`;
     }
-    return formatDate(range.from ?? range.to);
+    return formatDateOnly(range.from ?? range.to);
   }, []);
 
   const label = React.useMemo(() => {
@@ -122,7 +124,7 @@ export function DataTableDateFilter<TData>({
       if (!getIsDateRange(selectedDates)) return null;
 
       const hasSelectedDates = selectedDates.from || selectedDates.to;
-      const dateText = hasSelectedDates ? formatDateRange(selectedDates) : 'Select date range';
+      const dateText = hasSelectedDates ? formatDateOnlyRange(selectedDates) : '选择日期范围';
 
       return (
         <span className='flex items-center gap-2'>
@@ -143,7 +145,7 @@ export function DataTableDateFilter<TData>({
     if (getIsDateRange(selectedDates)) return null;
 
     const hasSelectedDate = selectedDates.length > 0;
-    const dateText = hasSelectedDate ? formatDate(selectedDates[0]) : 'Select date';
+    const dateText = hasSelectedDate ? formatDateOnly(selectedDates[0]) : '选择日期';
 
     return (
       <span className='flex items-center gap-2'>
@@ -156,32 +158,37 @@ export function DataTableDateFilter<TData>({
         )}
       </span>
     );
-  }, [selectedDates, multiple, formatDateRange, title]);
+  }, [selectedDates, multiple, formatDateOnlyRange, title]);
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant='outline' size='sm' className='border-dashed'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='data-table-filter-control border-dashed'
+          data-active={hasValue ? 'true' : undefined}
+        >
           {hasValue ? (
-            <button
-              type='button'
-              aria-label={`Clear ${title} filter`}
+            <span
+              aria-hidden='true'
+              data-filter-clear=''
               onClick={onReset}
-              className='focus-visible:ring-ring rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-1 focus-visible:outline-none'
+              className='rounded-sm opacity-70 transition-opacity hover:opacity-100'
             >
               <Icons.xCircle />
-            </button>
+            </span>
           ) : (
             <Icons.calendar />
           )}
           {label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-auto p-0' align='start'>
+      <PopoverContent className='data-table-filter-popover w-auto p-0' align='start'>
         {multiple ? (
           <Calendar
-            initialFocus
             mode='range'
+            locale={zhCN}
             selected={
               getIsDateRange(selectedDates) ? selectedDates : { from: undefined, to: undefined }
             }
@@ -189,8 +196,8 @@ export function DataTableDateFilter<TData>({
           />
         ) : (
           <Calendar
-            initialFocus
             mode='single'
+            locale={zhCN}
             selected={!getIsDateRange(selectedDates) ? selectedDates[0] : undefined}
             onSelect={onSelect}
           />

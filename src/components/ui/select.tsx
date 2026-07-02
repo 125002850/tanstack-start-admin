@@ -2,10 +2,59 @@ import * as React from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { Icons } from '@/components/icons';
 
+import { useComposedRefs } from '@/lib/compose-refs';
 import { cn } from '@/lib/utils';
+import { useOverlayPortalContainer } from './use-overlay-portal-container';
 
-function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot='select' {...props} />;
+type SelectPortalContextValue = {
+  container?: HTMLElement;
+  getContainer: () => HTMLElement | undefined;
+  open: boolean;
+  setTriggerNode: (node: HTMLElement | null) => void;
+};
+
+const SelectPortalContext = React.createContext<SelectPortalContextValue | null>(null);
+
+function Select({
+  defaultOpen,
+  onOpenChange,
+  open,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  const isControlled = open !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false);
+  const currentOpen = isControlled ? open : uncontrolledOpen;
+  const { container, getContainer, setTriggerNode } = useOverlayPortalContainer<HTMLElement>();
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (!isControlled) {
+        setUncontrolledOpen(nextOpen);
+      }
+      onOpenChange?.(nextOpen);
+    },
+    [isControlled, onOpenChange]
+  );
+  const contextValue = React.useMemo(
+    () => ({
+      container,
+      getContainer,
+      open: currentOpen,
+      setTriggerNode
+    }),
+    [container, currentOpen, getContainer, setTriggerNode]
+  );
+
+  return (
+    <SelectPortalContext.Provider value={contextValue}>
+      <SelectPrimitive.Root
+        data-slot='select'
+        defaultOpen={defaultOpen}
+        onOpenChange={handleOpenChange}
+        open={open}
+        {...props}
+      />
+    </SelectPortalContext.Provider>
+  );
 }
 
 function SelectGroup({ ...props }: React.ComponentProps<typeof SelectPrimitive.Group>) {
@@ -16,16 +65,63 @@ function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.V
   return <SelectPrimitive.Value data-slot='select-value' {...props} />;
 }
 
-function SelectTrigger({
+function SelectClear({
   className,
-  size = 'default',
-  children,
+  onClear,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: 'sm' | 'default';
+}: Omit<
+  React.ComponentProps<'span'>,
+  'children' | 'onClick' | 'onKeyDown' | 'onMouseDown' | 'onPointerDown' | 'role' | 'tabIndex'
+> & {
+  'aria-label': string;
+  onClear: () => void;
 }) {
   return (
+    <span
+      {...props}
+      role='button'
+      tabIndex={0}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClear();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          onClear();
+        }
+      }}
+      className={cn(
+        'pointer-events-auto ml-auto inline-flex size-4 shrink-0 items-center justify-center rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+        className
+      )}
+    >
+      <Icons.close />
+    </span>
+  );
+}
+
+const SelectTrigger = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
+    size?: 'sm' | 'default';
+  }
+>(function SelectTrigger({ className, size = 'default', children, ...props }, forwardedRef) {
+  const portalContext = React.useContext(SelectPortalContext);
+  const composedRef = useComposedRefs(forwardedRef, portalContext?.setTriggerNode);
+
+  return (
     <SelectPrimitive.Trigger
+      ref={composedRef}
       data-slot='select-trigger'
       data-size={size}
       className={cn(
@@ -40,16 +136,25 @@ function SelectTrigger({
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
-}
+});
 
 function SelectContent({
   className,
   children,
+  container,
   position = 'popper',
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentProps<typeof SelectPrimitive.Content> &
+  Pick<React.ComponentProps<typeof SelectPrimitive.Portal>, 'container'>) {
+  const portalContext = React.useContext(SelectPortalContext);
+  const portalContainer =
+    container ??
+    (portalContext?.open
+      ? (portalContext.container ?? portalContext.getContainer())
+      : portalContext?.container);
+
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={portalContainer}>
       <SelectPrimitive.Content
         data-slot='select-content'
         className={cn(
@@ -156,6 +261,7 @@ function SelectScrollDownButton({
 
 export {
   Select,
+  SelectClear,
   SelectContent,
   SelectGroup,
   SelectItem,

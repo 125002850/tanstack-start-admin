@@ -1,9 +1,9 @@
-import MultiStepProductForm from './multi-step-product-form';
+import MultiStepConfigForm from './multi-step-config-form';
 
 export default function FormsShowcasePage() {
   return (
     <div className='max-w-2xl'>
-      <MultiStepProductForm />
+      <MultiStepConfigForm />
     </div>
   );
 }

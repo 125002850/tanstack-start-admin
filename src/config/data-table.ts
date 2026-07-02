@@ -1,4 +1,10 @@
 import { env } from './env';
+import type {
+  DataTableResolvedVirtualizationOptions,
+  DataTableVirtualizationFallbackReason,
+  DataTableVirtualizationOptions,
+  DataTableVirtualizationProp
+} from '@/types/data-table';
 
 export type DataTableConfig = typeof dataTableConfig;
 
@@ -7,7 +13,9 @@ export type DataTableConfig = typeof dataTableConfig;
 export const DATA_TABLE_VIRTUAL_PRESET = {
   estimateRowHeight: 56,
   overscan: 8,
-  rowCountThreshold: 100
+  rowCountThreshold: 100,
+  columnCountThreshold: 20,
+  columnOverscan: 3
 } as const;
 
 export function isBrowserSupportedForVirtualization(): boolean {
@@ -15,9 +23,104 @@ export function isBrowserSupportedForVirtualization(): boolean {
   return true;
 }
 
-export function isProductTableVirtualizationEnabled(): boolean {
-  if (!env.productTableVirtualization) return false;
+export function isDataTableVirtualizationEnabled(): boolean {
+  if (!env.dataTableVirtualization) return false;
   return isBrowserSupportedForVirtualization();
+}
+
+type DataTableGateFallbackReason = Exclude<
+  DataTableVirtualizationFallbackReason,
+  'runtime-error'
+>;
+
+interface DataTableVirtualizationResolution {
+  gateReason?: DataTableGateFallbackReason;
+  onVirtualizationFallback?: DataTableVirtualizationOptions['onVirtualizationFallback'];
+  value?: DataTableResolvedVirtualizationOptions;
+}
+
+function resolveDataTableVirtualizationMode(
+  virtualization?: DataTableVirtualizationProp
+): 'auto' | 'on' | 'off' {
+  if (virtualization === false) return 'off';
+  if (virtualization === true || virtualization === undefined) return 'auto';
+
+  if (virtualization.mode) {
+    return virtualization.mode;
+  }
+
+  return virtualization.enabled === false ? 'off' : 'auto';
+}
+
+function resolveDataTableColumnVirtualizationMode(
+  virtualization?: DataTableVirtualizationProp
+): 'auto' | 'on' | 'off' {
+  if (virtualization === false) return 'off';
+  if (typeof virtualization !== 'object' || virtualization === null) return 'off';
+
+  return virtualization.columnVirtualizationMode ?? 'off';
+}
+
+function resolveDataTableVirtualizationGateReason(): DataTableGateFallbackReason | undefined {
+  if (!env.dataTableVirtualization) {
+    return 'disabled-by-config';
+  }
+
+  if (!isBrowserSupportedForVirtualization()) {
+    return 'unsupported-browser';
+  }
+
+  return undefined;
+}
+
+export function resolveDataTableVirtualizationOptions(
+  virtualization?: DataTableVirtualizationProp
+): DataTableVirtualizationResolution {
+  const mode = resolveDataTableVirtualizationMode(virtualization);
+  const columnMode = resolveDataTableColumnVirtualizationMode(virtualization);
+  const config = typeof virtualization === 'object' && virtualization !== null ? virtualization : undefined;
+
+  if (mode === 'off') {
+    return {
+      value: {
+        enabled: false,
+        column: {
+          enabled: false,
+          columnCountThreshold: DATA_TABLE_VIRTUAL_PRESET.columnCountThreshold,
+          overscan: DATA_TABLE_VIRTUAL_PRESET.columnOverscan
+        },
+        onVirtualizationFallback: config?.onVirtualizationFallback
+      },
+      onVirtualizationFallback: config?.onVirtualizationFallback
+    };
+  }
+
+  const gateReason = resolveDataTableVirtualizationGateReason();
+  if (gateReason) {
+    return {
+      gateReason,
+      onVirtualizationFallback: config?.onVirtualizationFallback
+    };
+  }
+
+  return {
+    onVirtualizationFallback: config?.onVirtualizationFallback,
+    value: {
+      enabled: true,
+      estimateRowHeight: config?.estimateRowHeight,
+      overscan: config?.overscan,
+      rowCountThreshold: mode === 'on' ? 0 : config?.rowCountThreshold,
+      column: {
+        enabled: columnMode !== 'off',
+        columnCountThreshold:
+          columnMode === 'on'
+            ? 0
+            : (config?.columnCountThreshold ?? DATA_TABLE_VIRTUAL_PRESET.columnCountThreshold),
+        overscan: config?.columnOverscan ?? DATA_TABLE_VIRTUAL_PRESET.columnOverscan
+      },
+      onVirtualizationFallback: config?.onVirtualizationFallback
+    }
+  };
 }
 
 export const dataTableConfig = {
@@ -99,5 +202,6 @@ export const dataTableConfig = {
     'isRelativeToToday'
   ] as const,
   joinOperators: ['and', 'or'] as const,
-  columnResizeStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false
+  columnResizeStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false,
+  columnOrderStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false
 };
