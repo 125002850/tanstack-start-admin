@@ -30,7 +30,7 @@
 
 - **数据概览页**，包含卡片和基于 Suspense 的独立加载区块
 
-- **数据表格**，支持 React Query 路由加载、客户端缓存、搜索、筛选与分页
+- **数据表格**，支持 React Query 路由加载、DSL 查询构建、列拖拽排序、列宽 / 排序 / 分页持久化、虚拟滚动、单元格复制反馈、搜索筛选与分页
 
 - **类型安全的文件路由**，基于 TanStack Router 自动生成路由树
 
@@ -52,9 +52,9 @@
 
 - **字典管理**，支持字典类型管理、字典项增删改查，采用 Sheet 抽屉交互
 
-- **工作区页签系统**，支持多页签打开、拖拽排序、LRU 淘汰、页面注册表
+- **工作区页签系统**，支持多页签打开、拖拽排序、LRU 淘汰、页面注册表、统一 WorkspacePageRoute 入口和浮层清理
 
-- **系统管理导航**，提供系统管理和基础设置入口
+- **系统管理导航**，提供系统管理和基础设置入口，并支持基于 SSO `menuData` 的可选菜单权限过滤
 
 - **命令面板**（Cmd+K），用于快速导航
 
@@ -62,17 +62,17 @@
 
 ## 页面说明
 
-| 页面                                                | 说明                                                                           |
-| :-------------------------------------------------- | :----------------------------------------------------------------------------- |
-| [数据概览](/dashboard/overview)                     | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离 |
-| [Kanban 看板](/dashboard/kanban)                    | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                 |
-| [聊天](/dashboard/chat)                             | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                       |
-| [通知中心](/dashboard/notifications)                | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                     |
-| [字典管理](/dashboard/system-management/dictionaries) | 字典类型管理 + 字典项增删改查，支持 Sheet 抽屉交互和搜索筛选                   |
-| [导出中心](/dashboard/system-management/export-center) | 管理异步导出任务、导出进度、文件下载和失败重试                                 |
-| [系统管理](/dashboard/system-management)            | 系统管理导航页面，提供字典管理、导出中心等基础设施入口                         |
-| [表单示例](/dashboard/forms/basic)                  | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                      |
-| [未找到页面](/notfound)                             | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面         |
+| 页面                                                   | 说明                                                                             |
+| :----------------------------------------------------- | :------------------------------------------------------------------------------- |
+| [数据概览](/dashboard/overview)                        | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离 |
+| [Kanban 看板](/dashboard/kanban)                       | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                   |
+| [聊天](/dashboard/chat)                                | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                         |
+| [通知中心](/dashboard/notifications)                   | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                       |
+| [字典管理](/dashboard/system-management/dictionaries)  | 字典类型管理 + 字典项增删改查，支持 Sheet 抽屉交互和搜索筛选                     |
+| [导出中心](/dashboard/system-management/export-center) | 管理异步导出任务、导出进度、文件下载和失败重试                                   |
+| [系统管理](/dashboard/system-management)               | 系统管理导航页面，提供字典管理、导出中心等基础设施入口                           |
+| [表单示例](/dashboard/forms/basic)                     | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                        |
+| [未找到页面](/notfound)                                | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面           |
 
 ## 按功能划分的目录结构
 
@@ -203,9 +203,16 @@ src/
 
 ### 布局容器规范
 
-- 页面必须使用 `PageContainer` 作为最外层容器
+- 页面必须使用 `PageContainer` 作为最外层容器；通过 `WorkspacePageRoute` 接入的 dashboard 页面由路由层统一包装，页面主体组件不要重复包裹
 - Dashboard 页面内嵌子区域尽量使用 `Card` 组件包裹，保持视觉一致性
 - 表格页面使用 `DataTable` + `Card`，表头和内容由 Card 统一管理间距
+
+### DataTable 开发规范
+
+- 新增表格列优先使用 `createDataTableColumnDsl()`，统一声明字段类型、筛选类型、展示格式、复制值和列面板行为。
+- DSL 查询优先通过 `useDslDataTable()` 构建；仅 `text`、`select`、`multiSelect`、`date`、`dateRange` 会自动序列化为后端 DSL 条件，不支持的筛选类型只作为前端 UI 状态。
+- 表格状态统一由 `src/lib/data-table-state-persistence.ts` 管理，覆盖列宽、列顺序、排序和每页条数；不要再新增独立的 localStorage key。
+- `src/components/ui/table/*` 的旧 flat 导入路径保留为兼容转发，新代码优先使用分层路径，例如 `core/`、`columns/`、`cells/`、`toolbar/`。
 
 ## 路由元数据规范
 
@@ -220,6 +227,7 @@ src/
 
 ```tsx
 import { createFileRoute } from '@tanstack/react-router';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
 const meta = defineRouteMeta({
@@ -229,6 +237,7 @@ const meta = defineRouteMeta({
     visible: true,
     group: 'systemManagement',
     order: 10,
+    menuKey: 'dict-management',
     icon: 'databaseCog',
     shortcut: ['d', 'm']
   },
@@ -241,6 +250,10 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
   ...meta,
   component: DictionariesPage
 });
+
+function DictionariesPage() {
+  return <WorkspacePageRoute render={() => <DictionariesManagementPage />} />;
+}
 ```
 
 ### 字段职责
@@ -261,9 +274,11 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 - `visible`
   是否进入主导航派生。
 - `group`
-  顶部分组键，当前固定为 `overview | components | account`。
+  顶部分组键，当前固定为 `overview | components | systemManagement | account`。
 - `order`
   当前分组内的排序权重，数值越小越靠前。
+- `menuKey`
+  可选权限键。声明后侧边栏和 KBar 会使用 SSO `menuData.code` 过滤该菜单；未声明 `menuKey` 的菜单默认显示。
 - `icon`
   对应 `Icons` 表中的图标键。
 - `shortcut`
@@ -299,12 +314,19 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 - 侧边栏和 KBar 都从 Router 的 `routesById` + `staticData.nav` 派生，不再维护中心化导航配置。
 - 容器菜单依赖 `nav.kind === 'container'` 和子项的 `nav.parentId` 建树，不通过 URL 前缀做隐式推断。
 - `linkable: false` 的节点不会生成可执行 KBar action，也不会在侧边栏中渲染成跳转链接。
+- 声明 `nav.menuKey` 的节点会根据 SSO `menuData` 过滤；无 `menuKey` 的框架、示例或公共页面不受权限过滤影响。
+
+#### WorkspacePageRoute
+
+- 标准 dashboard 内容页优先使用 `WorkspacePageRoute`，由它统一处理 workspace tabs 注册和 `PageContainer` 包装。
+- 页面主体组件应只输出页面内容，不再自行包裹 `PageContainer`；若组件仍需要单独直接渲染，可以保留默认 Screen 包装并额外导出主体组件。
+- 像聊天这类全屏自定义布局可以继续直接使用 `WorkspacePageBoundary`，并在 route 文件中说明原因。
 
 ### 约束
 
 - dashboard 路由新增菜单页时，必须补 `nav.visible/group/order`。
 - dashboard 业务页面默认接入 workspace tabs。除重定向页、纯容器页或明确说明的不托管页面外，不要显式设置 `workspace.tagEnabled: false`。
-- 新增实际内容页时，应默认按 workspace 页面接入；若页面需要参与多页签管理，route 侧保持默认 `workspace` 配置，并使用 `WorkspacePageBoundary` 托管页面实例。
+- 新增实际内容页时，应默认按 workspace 页面接入；若页面需要参与多页签管理，route 侧保持默认 `workspace` 配置，并使用 `WorkspacePageRoute` 托管页面主体。
 - 只有明确不需要标签页承载时，才允许关闭 tab；关闭时必须在对应 route 文件旁用注释或实现结构说明原因，避免把业务页面误排除在页签体系外。
 - 如果页面需要浏览器标题和页面头部标题不同，使用顶层 `title` 与 `page.title` 分离声明。
 - 外部链接按钮不要使用 TanStack Router `Link`；应使用普通 `<a href>`。
@@ -333,12 +355,12 @@ src/config/
 
 `vite.config.ts` 和 `src/config/env.ts` 服务于不同层面，互不替代：
 
-|                  | `vite.config.ts`                       | `src/config/env.ts`                     |
-| ---------------- | -------------------------------------- | --------------------------------------- |
-| 运行环境         | Node.js（构建时 / dev server）         | 浏览器（应用运行时）                    |
-| 读取方式         | `loadEnv()` 读 `.env`                 | `import.meta.env.VITE_*`（Vite 静态替换） |
-| 管辖变量         | `APP_GATEWAY`、`PROXY_URL`、`ANALYZE`  | `VITE_ENABLE_WORKSPACE_TABS` 等         |
-| 用途             | dev server 代理、构建工具开关          | 客户端特性开关                          |
+|          | `vite.config.ts`                      | `src/config/env.ts`                       |
+| -------- | ------------------------------------- | ----------------------------------------- |
+| 运行环境 | Node.js（构建时 / dev server）        | 浏览器（应用运行时）                      |
+| 读取方式 | `loadEnv()` 读 `.env`                 | `import.meta.env.VITE_*`（Vite 静态替换） |
+| 管辖变量 | `APP_GATEWAY`、`PROXY_URL`、`ANALYZE` | `VITE_ENABLE_WORKSPACE_TABS` 等           |
+| 用途     | dev server 代理、构建工具开关         | 客户端特性开关                            |
 
 `vite.config.ts` 是构建工具自身配置，不属于应用配置层，不纳入 `src/config/` 管辖。
 
@@ -352,11 +374,12 @@ import { env } from '@/config';
 export const env = {
   // ... 已有变量 ...
   /** 是否启用 XXX 功能（默认关闭） */
-  xxxEnabled: getEnvBool('VITE_ENABLE_XXX', false),
+  xxxEnabled: getEnvBool('VITE_ENABLE_XXX', false)
 } as const;
 ```
 
 辅助函数：
+
 - `getEnvVar(name, defaultValue)` — 读取字符串型环境变量
 - `getEnvBool(name, defaultValue)` — 读取布尔型环境变量（`'1'` / `'true'` 为 true）
 
@@ -390,6 +413,7 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 消费者统一 `import { env } from '@/config'`，禁止绕过 barrel 直接 import 特性 config 内部文件
 - `env.ts` 内不做业务逻辑判断，只负责"读取 + 默认值"
 - 编译时不可变：纯 SPA 下 `VITE_*` 在构建时静态替换，不可运行时修改
+- `VITE_ENABLE_DATA_TABLE_VIRTUALIZATION` 是通用 DataTable 虚拟滚动开关；历史变量 `VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION` 仅作为未设置新变量时的兼容 fallback。
 
 ### 请求头注入
 
@@ -406,7 +430,7 @@ export function setSsoHeaders(headers?: HeadersInit): Headers {
 
   if (env.ssoClientID) {
     merged.set('client-id', env.ssoClientID);
-  };
+  }
 
   if (env.ssoServiceCode) {
     merged.set('service-code', env.ssoServiceCode);
@@ -469,12 +493,12 @@ pnpm preview   # 本地预览构建产物
 
 ## 与 Next.js 版本的主要区别
 
-| 概念       | Next.js                                 | 本项目（TanStack Router SPA）                    |
-| ---------- | --------------------------------------- | ------------------------------------------------ |
-| 架构       | SSR / RSC                               | 纯 SPA（客户端路由）                             |
-| 路由       | App Router (`app/`)                     | 基于文件的路由（`routes/`），类型安全参数        |
-| 数据获取   | Server Components + `HydrationBoundary` | `useSuspenseQuery` + React Query                 |
-| 布局       | `layout.tsx` 嵌套                       | 基于 `<Outlet />` 的布局路由                     |
-| 构建工具   | Webpack/Turbopack                       | Vite                                             |
-| 部署       | `next start`（Node 服务端）             | 静态文件（`dist/`），部署到任意静态服务器        |
-| URL 状态   | nuqs                                    | TanStack Router `useSearch()` + `validateSearch` |
+| 概念     | Next.js                                 | 本项目（TanStack Router SPA）                    |
+| -------- | --------------------------------------- | ------------------------------------------------ |
+| 架构     | SSR / RSC                               | 纯 SPA（客户端路由）                             |
+| 路由     | App Router (`app/`)                     | 基于文件的路由（`routes/`），类型安全参数        |
+| 数据获取 | Server Components + `HydrationBoundary` | `useSuspenseQuery` + React Query                 |
+| 布局     | `layout.tsx` 嵌套                       | 基于 `<Outlet />` 的布局路由                     |
+| 构建工具 | Webpack/Turbopack                       | Vite                                             |
+| 部署     | `next start`（Node 服务端）             | 静态文件（`dist/`），部署到任意静态服务器        |
+| URL 状态 | nuqs                                    | TanStack Router `useSearch()` + `validateSearch` |

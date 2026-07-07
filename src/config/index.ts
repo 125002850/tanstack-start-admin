@@ -4,7 +4,8 @@ export {
   dataTableConfig,
   isBrowserSupportedForVirtualization,
   isDataTableVirtualizationEnabled,
-  resolveDataTableVirtualizationOptions
+  resolveDataTableVirtualizationOptions,
+  isProductTableVirtualizationEnabled
 } from './data-table';
 export type { DataTableConfig } from './data-table';
 export { isWorkspaceTabsEnabled, MAX_KEEPALIVE_TABS } from './workspace-tabs';
