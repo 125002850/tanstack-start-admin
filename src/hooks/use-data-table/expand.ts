@@ -1,5 +1,11 @@
 import type { Row } from '@tanstack/react-table';
 
+/**
+ * DataTable 行展开状态工具。
+ *
+ * 展开态只保存字符串 rowKey；这里统一处理 DOM id、rowKey 序列化和从当前 rowModel 找回
+ * 业务行数据的逻辑。
+ */
 /** 为展开面板生成稳定的 DOM id，优先复用 tableId。 */
 export function getStableExpandPanelId(tableId: string | undefined, reactId: string) {
   const stableId = reactId.replace(/[:]/g, '');

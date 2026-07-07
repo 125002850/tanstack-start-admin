@@ -28,6 +28,13 @@ import {
 } from '@/components/ui/table/feedback/data-table-status';
 import { useDataTableCellSelection } from '@/components/ui/table/core/use-data-table-cell-selection';
 
+/**
+ * DataTable 的 tbody 渲染层。
+ *
+ * 这里负责空态/状态行、普通行渲染、行虚拟化、列虚拟化、固定列视觉层、
+ * 行点击展开以及单元格复制反馈。核心原则是：表体只消费 TanStack row/cell，
+ * 不修改上层 table state。
+ */
 interface DataTableBodyProps<TData> {
   table: TanstackTable<TData>;
   emptyMessage: React.ReactNode;
@@ -59,6 +66,7 @@ const ROW_EXPAND_IGNORE_SELECTOR = [
 const DATA_TABLE_BODY_CELL_CLASS_NAME =
   'relative px-[15px] py-2 outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out data-[cell-selected=true]:bg-primary/5 data-[cell-selected=true]:outline-primary data-[cell-selected=true]:shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--primary)_20%,transparent)]';
 
+/** 行展开点击需要避开按钮、链接、表单控件等交互元素。 */
 function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: HTMLElement) {
   if (!(target instanceof HTMLElement) || !currentTarget.contains(target)) {
     return true;
@@ -67,10 +75,12 @@ function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: 
   return Boolean(target.closest(ROW_EXPAND_IGNORE_SELECTOR));
 }
 
+/** 虚拟行脱离原生表格布局后，必须从真实 th 读取列宽来对齐 td。 */
 function measureHeaderWidths(headerRow: HTMLTableRowElement): number[] {
   return Array.from(headerRow.querySelectorAll('th')).map((th) => th.offsetWidth);
 }
 
+/** 宽度数组相同则复用旧 state，减少 ResizeObserver 高频回调导致的重复渲染。 */
 function areColumnWidthsEqual(current: number[], next: number[]): boolean {
   if (current.length !== next.length) {
     return false;
@@ -85,6 +95,7 @@ function areColumnWidthsEqual(current: number[], next: number[]): boolean {
   return true;
 }
 
+/** 固定列单元格向外偏移 1px，覆盖表格边框缝隙，避免滚动时出现细白线。 */
 function offsetPinnedCellByOnePixel(offset: CSSProperties['left']): CSSProperties['left'] {
   if (typeof offset === 'number') {
     return offset - 1;
@@ -102,6 +113,7 @@ function offsetPinnedCellByOnePixel(offset: CSSProperties['left']): CSSPropertie
   return `calc(${offset} - 1px)`;
 }
 
+/** 表体固定列样式在公共 fixed 样式基础上修正左右偏移。 */
 function getBodyCellPinningStyles<TData>(cell: Cell<TData, unknown>): CSSProperties {
   const pinningStyles = getCommonPinningStyles({ column: cell.column });
   const pinnedSide = cell.column.getIsPinned();
@@ -123,6 +135,12 @@ function getBodyCellPinningStyles<TData>(cell: Cell<TData, unknown>): CSSPropert
   return pinningStyles;
 }
 
+/**
+ * 固定列单元格的视觉层。
+ *
+ * 背景层、hover/selected 覆盖层和阴影层需要和内容分离，否则 sticky 单元格在滚动、
+ * 选中和 hover 状态叠加时容易出现背景穿透或阴影被内容遮挡。
+ */
 function renderDataTableCellSurface<TData>(cell: Cell<TData, unknown>, content: React.ReactNode) {
   const pinnedSide = cell.column.getIsPinned();
 
@@ -167,6 +185,7 @@ function renderDataTableCellSurface<TData>(cell: Cell<TData, unknown>, content: 
   );
 }
 
+/** 列虚拟化单元格需要显式锁定宽度，不能再依赖 colgroup。 */
 function getColumnVirtualCellWidthStyle(size: number): React.CSSProperties {
   return {
     width: size,
@@ -189,16 +208,17 @@ export function DataTableBody<TData>({
   getExpandRowKey
 }: DataTableBodyProps<TData>) {
   const prevKeyRef = useRef('');
+  // 运行时异常时关闭虚拟化，回退到普通 tbody，保证数据仍可见。
   const [runtimeFallback, setRuntimeFallback] = useState(false);
   const { getCellSelectionProps } = useDataTableCellSelection<TData>({
     shouldIgnoreTarget: shouldIgnoreRowExpandTarget
   });
 
-  // Measured column widths from the real header cells — the single source of
-  // truth for virtualized td widths (which sit outside the table flow).
+  // 从真实表头测得的列宽是虚拟 td 的唯一宽度来源；虚拟 td 已脱离表格流。
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
 
   const rows = table.getRowModel().rows;
+  // 行数达到阈值、环境支持并且没有运行时回退时才启用行虚拟化。
   const shouldVirtualize =
     typeof window !== 'undefined' &&
     virtualization?.enabled === true &&
@@ -226,10 +246,9 @@ export function DataTableBody<TData>({
     rowVirtualizer.measure();
   }, [rowVirtualizer, rows.length, scrollViewportRef, shouldVirtualize]);
 
-  // ── Measure actual header widths ──
-  // ResizeObserver on each <th> catches all width changes (column resize,
-  // window resize, toggling). No columnSizing dependency needed — the RO
-  // handles everything.
+  // 测量真实表头宽度。
+  // 对每个 <th> 绑定 ResizeObserver 可以覆盖列宽拖拽、窗口尺寸变化和列显隐，
+  // 因此这里不需要额外依赖 columnSizing state。
   useLayoutEffect(() => {
     const headerRow = headerRowRef.current;
     if (!headerRow) return;
@@ -257,6 +276,7 @@ export function DataTableBody<TData>({
 
   const handleRowClick = useCallback(
     (event: React.MouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
+      // 行展开只响应空白区域/普通单元格点击，避免和行操作、链接、输入控件抢事件。
       if (shouldIgnoreRowExpandTarget(event.target, event.currentTarget)) {
         return;
       }
@@ -273,6 +293,7 @@ export function DataTableBody<TData>({
 
   const handleRowKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLTableRowElement>, row: Row<TData>) => {
+      // 可展开行提供键盘 Enter/Space 触发，保持鼠标点击和键盘访问一致。
       if (event.key !== 'Enter' && event.key !== ' ') {
         return;
       }
@@ -311,7 +332,7 @@ export function DataTableBody<TData>({
     [getExpandRowKey, onRowClick]
   );
 
-  // Scroll reset — useLayoutEffect for pre-paint timing (Task 3 fix)
+  // 分页、排序、筛选变化后回到顶部；useLayoutEffect 保证在浏览器绘制前完成滚动复位。
   useLayoutEffect(() => {
     const key = `${pagination.pageIndex}-${pagination.pageSize}-${JSON.stringify(sorting)}-${JSON.stringify(columnFilters)}`;
     if (prevKeyRef.current && prevKeyRef.current !== key) {
@@ -321,7 +342,7 @@ export function DataTableBody<TData>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.pageIndex, pagination.pageSize, sorting, columnFilters]);
 
-  // KeepAlive hidden guard: freeze when viewport rect is 0x0 (Task 3 fix)
+  // KeepAlive 隐藏保护：当 viewport 被隐藏到 0x0 时暂停测量，重新可见后强制 measure。
   const frozenRef = useRef(false);
   useLayoutEffect(() => {
     const el = scrollViewportRef.current;
@@ -346,7 +367,7 @@ export function DataTableBody<TData>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollViewportRef.current]);
 
-  // Emit enabled event on first virtual render
+  // 首次进入虚拟渲染时记录事件，方便测试和运行时诊断。
   const enabledEmittedRef = useRef(false);
   const renderColumnVirtualSpacer = useCallback(
     (side: 'left' | 'right', size: number, isVirtualRow: boolean) => {
@@ -374,6 +395,7 @@ export function DataTableBody<TData>({
   );
   const renderColumnVirtualCell = useCallback(
     (row: Row<TData>, item: DataTableColumnRenderItem<TData>, isVirtualRow: boolean) => {
+      // leafIndex 指向完整可见列数组，列虚拟化时只能渲染窗口内对应的 cell。
       const cell = row.getVisibleCells()[item.leafIndex] as Cell<TData, unknown> | undefined;
       if (!cell) return null;
       const pinningStyles = getBodyCellPinningStyles(cell);
@@ -417,6 +439,7 @@ export function DataTableBody<TData>({
 
       return (
         <>
+          {/* 固定列始终渲染；只有中间滚动区按虚拟窗口裁剪。 */}
           {columnVirtualWindow.leftItems.map((item) =>
             renderColumnVirtualCell(row, item, isVirtualRow)
           )}
@@ -439,10 +462,12 @@ export function DataTableBody<TData>({
   );
 
   if (status) {
+    // 状态行（空、错误、引导等）放在 tbody 中，保持表格语义和 colSpan。
     return <DataTableStatus status={status} colSpan={table.getAllColumns().length} />;
   }
 
   if (!rows.length) {
+    // 没有状态配置时使用基础空态，避免调用方必须为每张表写 empty state。
     return (
       <TableBody>
         <TableRow>
@@ -464,6 +489,7 @@ export function DataTableBody<TData>({
     }
 
     try {
+      // 虚拟行使用绝对定位撑开 tbody，总高度由 virtualizer 计算。
       const virtualItems = rowVirtualizer.getVirtualItems();
       const totalSize = rowVirtualizer.getTotalSize();
       const firstIndex = virtualItems[0]?.index ?? 0;
@@ -540,8 +566,8 @@ export function DataTableBody<TData>({
                             alignItems: 'center',
                             height: '100%',
                             ...pinningStyles,
-                            // Measured header width wins over pinning's configured size.
-                            // Fallback chain: measured → pinned configured → column default.
+                            // 真实表头宽度优先于固定列配置宽度。
+                            // 回退链路：测量宽度 → fixed 样式宽度 → column 默认宽度。
                             width:
                               thWidth ??
                               (pinningStyles.width as number | undefined) ??
@@ -563,6 +589,7 @@ export function DataTableBody<TData>({
         </TableBody>
       );
     } catch {
+      // react-virtual 在极端布局/浏览器场景可能抛错；这里回退普通渲染并通知调用方。
       setRuntimeFallback(true);
       emitDataTableVirtualEvent({ event: 'runtime-error' });
       virtualization?.onVirtualizationFallback?.('runtime-error');
@@ -570,6 +597,7 @@ export function DataTableBody<TData>({
   }
 
   return (
+    // 普通渲染路径仍支持列虚拟化；此时行不脱离表格流，只裁剪中间列窗口。
     <TableBody
       data-column-virtual-enabled={columnVirtualWindow?.enabled ? 'true' : undefined}
       data-column-virtual-count={

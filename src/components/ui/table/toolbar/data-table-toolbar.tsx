@@ -14,6 +14,12 @@ import { Icons } from '@/components/icons';
 import type { DataTableFacetedFilterLabels } from '@/components/ui/table/filters/data-table-faceted-filter';
 import type { DataTableViewOptionsLabels } from '@/components/ui/table/toolbar/data-table-view-options';
 
+/**
+ * DataTable 筛选工具栏。
+ *
+ * 它读取每一列的 column.meta.variant，并按 variant 分派到文本、数值、范围、日期或枚举控件。
+ * 工具栏只维护 UI 渲染，真正的 columnFilters state 仍由 TanStack table 管理。
+ */
 export interface DataTableToolbarLabels {
   queryingText?: string;
   resetFiltersAriaLabel?: string;
@@ -38,6 +44,7 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
 
+  // 只有 getCanFilter 的列会进入工具栏；filter=false 的列已在 column options 阶段关闭。
   const columns = table.getAllColumns().filter((column) => column.getCanFilter());
 
   const onReset = React.useCallback(() => {
@@ -98,8 +105,10 @@ function DataTableToolbarFilter<TData>({
     const onFilterRender = React.useCallback(() => {
       if (!columnMeta?.variant) return null;
 
+      // variant 是 DataTable DSL 写入的筛选控件类型，和后端 DSL 支持范围不是完全一一对应。
       switch (columnMeta.variant) {
         case 'text':
+          // 文本筛选做去抖，避免输入每个字符都立即触发表格查询。
           return (
             <DebouncedFilterInput
               placeholder={columnMeta.placeholder ?? columnLabel}
@@ -110,6 +119,7 @@ function DataTableToolbarFilter<TData>({
           );
 
         case 'number':
+          // 数字输入保留为字符串写入 filter state，由后续序列化层决定如何解释。
           return (
             <div className='relative'>
               <DebouncedFilterInput
@@ -177,6 +187,7 @@ function DebouncedFilterInput({
   debounceMs = 300,
   ...inputProps
 }: DebouncedFilterInputProps) {
+  // 本地输入值立即响应，外部 onChange 按 debounceMs 延迟提交到 column filter。
   const inputBindings = useDebouncedInput({
     value: externalValue,
     onChange,

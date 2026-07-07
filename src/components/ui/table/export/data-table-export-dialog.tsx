@@ -12,6 +12,12 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
+/**
+ * DataTable 导出范围选择弹窗。
+ *
+ * 当全量结果超过单次导出上限时，调用方可以让用户选择起止序号导出 CSV；
+ * 如果提供 onPackageExport，则额外显示打包导出入口。
+ */
 export const DATA_TABLE_EXPORT_MAX_ROWS = 5000;
 
 export interface DataTableExportRange {
@@ -19,6 +25,7 @@ export interface DataTableExportRange {
   end: number;
 }
 
+/** 对外可覆写的弹窗文案；description 是函数以便动态展示 total/maxRows。 */
 export interface DataTableExportDialogLabels {
   title?: string;
   description?: (total: number, maxRows: number) => string;
@@ -46,6 +53,7 @@ function getExportRangeCount(range: DataTableExportRange) {
   return range.end - range.start + 1;
 }
 
+/** 只接受正整数序号，避免小数、负数、科学计数法等输入穿透到后端请求。 */
 function parsePositiveInteger(value: string) {
   if (!/^\d+$/.test(value.trim())) {
     return undefined;
@@ -55,6 +63,7 @@ function parsePositiveInteger(value: string) {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
+/** 校验导出起止序号：必须在总数内、顺序正确且不超过单次导出上限。 */
 function validateRange(startValue: string, endValue: string, total: number, maxRows: number) {
   const start = parsePositiveInteger(startValue);
   const end = parsePositiveInteger(endValue);
@@ -96,6 +105,7 @@ export function DataTableExportDialog({
   const [endValue, setEndValue] = React.useState(String(Math.min(total, maxRows)));
 
   React.useEffect(() => {
+    // 每次打开弹窗都回到默认区间，避免沿用上一次导出的旧输入。
     if (!open) return;
     setStartValue('1');
     setEndValue(String(Math.min(total, maxRows)));
@@ -109,10 +119,12 @@ export function DataTableExportDialog({
   const isSubmitting = rangeSubmitting || packageSubmitting;
   const packageUnavailableText = labels?.packageUnavailableText ?? '当前页面暂不支持打包导出。';
   const defaultDescription = onPackageExport
-    ? `当前结果共 ${total} 条。可选择区间导出 CSV，单次最多 ${maxRows} 条；也可打包导出全部结果（ZIP）。`
+    ? // 打包导出可用时说明 ZIP 路径；否则只提示区间 CSV 导出。
+      `当前结果共 ${total} 条。可选择区间导出 CSV，单次最多 ${maxRows} 条；也可打包导出全部结果（ZIP）。`
     : `当前结果共 ${total} 条。可选择区间导出 CSV，单次最多 ${maxRows} 条。`;
 
   const handleConfirmRange = React.useCallback(async () => {
+    // 有校验错误或调用方未提供区间导出时，确认按钮不会触发请求。
     if ('error' in validation || !onConfirmRange) return;
     await onConfirmRange({ start: validation.start, end: validation.end });
   }, [onConfirmRange, validation]);

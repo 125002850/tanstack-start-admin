@@ -11,8 +11,17 @@ import {
 import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
 import { downloadFileFromUrl } from '@/lib/download-file';
 
+/**
+ * DataTable 导出操作 hook。
+ *
+ * 生成可直接传给 DataTableActionsBar 的“导出”下拉操作，并按总数自动选择：
+ * - 选中行导出；
+ * - 小数据量直接导出全部；
+ * - 大数据量弹出区间/打包导出弹窗。
+ */
 export type { DataTableExportRange } from '@/components/ui/table/export/data-table-export-dialog';
 
+/** 后端导出接口的最小返回结构：下载地址必需，文件名可选。 */
 export interface DataTableExportResponse {
   downloadUrl?: string | null;
   fileName?: string | null;
@@ -29,6 +38,7 @@ export interface DataTableExportRequestOptions {
   chunkSize?: number;
 }
 
+/** 把业务请求与通用导出选项组合，便于后端识别区间或打包模式。 */
 export type DataTableExportRequestWithOptions<TRequest> = TRequest & DataTableExportRequestOptions;
 
 type ExportSubmitter<TRequest> = (
@@ -71,6 +81,7 @@ interface UseDataTableExportActionsOptions<TData, TRequest, TSelectedKey> {
 
 type PendingExportAction = 'range' | 'package' | null;
 
+/** UI 区间是 1-based 序号，直接映射为后端请求可读的 startRow/endRow。 */
 export function toDataTableExportRequestRange(
   range: DataTableExportRange
 ): DataTableExportRequestRange {
@@ -80,6 +91,7 @@ export function toDataTableExportRequestRange(
   };
 }
 
+/** 给任意业务请求追加区间导出参数。 */
 export function withDataTableExportRange<TRequest extends object>(
   request: TRequest,
   range: DataTableExportRange
@@ -90,6 +102,7 @@ export function withDataTableExportRange<TRequest extends object>(
   };
 }
 
+/** 给任意业务请求追加打包导出参数；默认 chunkSize 与单次最大导出数一致。 */
 export function withDataTablePackageMode<TRequest extends object>(
   request: TRequest,
   chunkSize = DATA_TABLE_EXPORT_MAX_ROWS
@@ -130,6 +143,7 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
         const data = await submit(request);
 
         if (!data?.downloadUrl) {
+          // 后端成功响应但没有下载地址时，不假定成功，直接提示用户。
           toast.error(missingDownloadUrlMessage);
           return false;
         }
@@ -138,6 +152,7 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
         toast.success(successMessage);
         return true;
       } catch {
+        // 具体错误提示由调用路径决定；这里返回 false，让上层控制 toast 文案。
         return false;
       }
     },
@@ -149,6 +164,7 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
       const keys = getSelectedKeys(selectedRows);
 
       if (keys.length === 0) {
+        // 选中行可能被过滤成无效 key，例如缺少业务主键。
         toast.error(messages?.selectedEmpty ?? '未选中有效记录');
         return;
       }
@@ -169,6 +185,7 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
 
   const handleExportAll = React.useCallback(async () => {
     if (total > maxRows) {
+      // 超过单次上限时进入区间/打包弹窗，避免一次请求过大。
       setDialogOpen(true);
       return;
     }
@@ -186,6 +203,7 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
         const request = await buildRangeRequest(range);
 
         if (!request) {
+          // buildRangeRequest 可返回空值表示当前区间无数据或业务方主动取消。
           toast.error(messages?.rangeEmpty ?? '所选区间没有可导出的记录');
           return;
         }
@@ -212,6 +230,7 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
       const request = await packageExport.buildRequest();
 
       if (!request) {
+        // 打包导出也允许调用方在运行时判断“当前无可导出数据”。
         toast.error(messages?.rangeEmpty ?? '当前结果没有可导出的记录');
         return;
       }
@@ -251,6 +270,7 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
           {
             label: '导出选中',
             icon: <Icons.fileTypeCsv className='size-3.5' />,
+            // 没有选中行时隐藏“导出选中”，减少无效操作入口。
             hidden: (ctx) => !showSelectedAction || ctx.selectedRows.length === 0,
             callback: async (ctx) => {
               await handleExportSelected(ctx.selectedRows);

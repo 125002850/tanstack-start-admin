@@ -2,6 +2,12 @@ import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { createPortal } from 'react-dom';
 
+/**
+ * DataTable 专用单例 Tooltip Provider。
+ *
+ * 单元格很多时，如果每个文本都各自挂一个 Radix Tooltip，会产生大量 DOM 和事件开销。
+ * 这里通过一个隐藏的 ghost trigger 复用同一个 Tooltip Content，按 hover 的单元格移动位置。
+ */
 interface CellTooltipContextValue {
   showTooltip: (trigger: HTMLElement, content: string) => void;
   hideTooltip: (trigger?: HTMLElement, options?: { immediate?: boolean }) => void;
@@ -9,6 +15,7 @@ interface CellTooltipContextValue {
 
 const CellTooltipContext = React.createContext<CellTooltipContextValue | null>(null);
 
+/** 供文本单元格读取共享 tooltip 控制器；没有 Provider 时组件会自然退化为只截断。 */
 export function useCellTooltip() {
   return React.useContext(CellTooltipContext);
 }
@@ -21,6 +28,7 @@ export function DataTableCellTooltipProvider({ children }: { children: React.Rea
   const hideTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const closeTooltip = React.useCallback(() => {
+    // 关闭时清空 activeTrigger，防止延迟 hide 误关掉后续 hover 的单元格。
     clearTimeout(hideTimerRef.current);
     activeTriggerRef.current = null;
     setOpen(false);
@@ -33,6 +41,7 @@ export function DataTableCellTooltipProvider({ children }: { children: React.Rea
     const ghost = ghostRef.current;
     if (!ghost) return;
 
+    // ghost trigger 的矩形模拟真实单元格文本位置，Radix 仍负责浮层定位和碰撞处理。
     ghost.style.left = `${rect.left}px`;
     ghost.style.top = `${rect.top}px`;
     ghost.style.width = `${rect.width}px`;
@@ -46,6 +55,7 @@ export function DataTableCellTooltipProvider({ children }: { children: React.Rea
   const hideTooltip = React.useCallback(
     (trigger?: HTMLElement, options?: { immediate?: boolean }) => {
       if (trigger && activeTriggerRef.current !== trigger) {
+        // 延迟关闭期间如果用户移到了其他单元格，旧 trigger 不能关闭新 tooltip。
         return;
       }
 
@@ -68,6 +78,7 @@ export function DataTableCellTooltipProvider({ children }: { children: React.Rea
   );
 
   React.useEffect(() => {
+    // 任意祖先滚动都会让 trigger 坐标失效，直接关闭最稳妥。
     const handleScroll = () => closeTooltip();
     window.addEventListener('scroll', handleScroll, true);
     return () => window.removeEventListener('scroll', handleScroll, true);
@@ -98,6 +109,7 @@ export function DataTableCellTooltipProvider({ children }: { children: React.Rea
           {typeof document === 'undefined'
             ? null
             : createPortal(
+                // Radix Tooltip 需要 Trigger；这里用不可见 ghost 作为共享锚点。
                 <TooltipPrimitive.Trigger asChild>
                   <div
                     ref={ghostRef}

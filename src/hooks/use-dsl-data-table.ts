@@ -24,6 +24,12 @@ import {
   type QueryOptionsFactory
 } from './use-dsl-data-table.dsl';
 
+/**
+ * 基于 DSL 后端查询的 DataTable hook。
+ *
+ * 在 useDataTable 之上接入 React Query：根据分页、排序和 columnFilters 构建后端请求，
+ * 查询结果再映射回 DataTable 所需的 data/total，同时提供刷新按钮所需状态。
+ */
 type QueryStateSubset<TQueryData, TError> = Pick<
   UseQueryResult<TQueryData, TError>,
   'data' | 'isFetching' | 'error' | 'isError' | 'refetch'
@@ -34,6 +40,7 @@ type RefreshBehavior<TError> = {
   onError?: (error: TError) => void | Promise<void>;
 };
 
+/** 创建默认刷新行为：成功/失败时用 sonner toast 提示。 */
 export function createDefaultRefreshBehavior<TError = Error>(options?: {
   successMessage?: string;
   errorMessage?: string;
@@ -81,6 +88,7 @@ type UseDslDataTableResult<TData, TQueryData, TError> = ReturnType<typeof useDat
 
 const warnedUnsupportedFilterVariants = new Set<string>();
 
+/** 默认假定后端返回 `{ list, total }`，缺失时回退为空列表和 0。 */
 function defaultMapQueryData<TData, TQueryData>(
   data: TQueryData | undefined
 ): PaginatedResponse<TData> {
@@ -92,6 +100,7 @@ function defaultMapQueryData<TData, TQueryData>(
   };
 }
 
+/** 解析 ColumnDef 的稳定 ID，优先 id，其次 accessorKey。 */
 function getColumnId<TData>(column: ColumnDef<TData>): string | null {
   if (typeof column.id === 'string' && column.id.length > 0) {
     return column.id;
@@ -108,6 +117,7 @@ function getColumnId<TData>(column: ColumnDef<TData>): string | null {
   return null;
 }
 
+/** 开发环境提示 DSL 无法自动序列化的筛选类型，避免筛选 UI 看似生效但请求无条件。 */
 function warnUnsupportedDslFilterVariants<TData>({
   tableId,
   columns
@@ -173,6 +183,7 @@ export function useDslDataTable<
   TQueryData,
   TError
 > {
+  // pageSize 有本地偏好，isReady 前不发起 query，避免先用默认值请求再立刻改 pageSize。
   const { isReady, pageSize, setPageSize } = useDataTablePageSize({ tableId });
   const [resolvedData, setResolvedData] = React.useState<PaginatedResponse<TData>>({
     list: [],
@@ -199,6 +210,7 @@ export function useDslDataTable<
     initialState:
       defaultSort.length > 0
         ? {
+            // defaultSort 只在 initialState 没有 sorting 时生效，避免覆盖调用方显式排序。
             ...initialState,
             sorting: initialState?.sorting ?? defaultSort
           }
@@ -210,6 +222,7 @@ export function useDslDataTable<
   const columnFilters = table.getState().columnFilters;
 
   const request = React.useMemo(
+    // request 是 queryKey/queryFn 的输入，必须只由可序列化表格状态和列 meta 推导。
     () =>
       buildDataTableDslRequest({
         columns,
@@ -232,6 +245,7 @@ export function useDslDataTable<
   const canRefresh = isReady && (options.enabled ?? true);
 
   const resolvedMapQueryData = React.useMemo(
+    // mapQueryData 允许适配非标准后端结构，例如 data.records/data.total。
     () => mapQueryData ?? defaultMapQueryData<TData, TQueryData>,
     [mapQueryData]
   );
@@ -246,6 +260,7 @@ export function useDslDataTable<
       return;
     }
 
+    // 只有 query 真正有数据时才更新 resolvedData，placeholderData 期间保留上一批表格数据。
     setResolvedData((current) =>
       current === mappedData ||
       (current.total === mappedData.total && current.list === mappedData.list)
@@ -273,6 +288,7 @@ export function useDslDataTable<
     return {
       isRefreshing: !isReady || query.isFetching,
       onRefresh: async () => {
+        // 手动刷新走 query.refetch，并把成功/失败交给 refreshBehavior 处理。
         const result = await query.refetch();
 
         if (result.error) {

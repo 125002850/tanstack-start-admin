@@ -3,6 +3,12 @@ import { TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
+/**
+ * DataTable 状态展示组件。
+ *
+ * empty/error/onboarding 渲染为表体内联状态，保留 table colSpan；permission 渲染为占满区域的
+ * 独立卡片，适合权限不足时替代表格主体。
+ */
 export type DataTableStatusType = 'onboarding' | 'empty' | 'error' | 'permission';
 
 export interface DataTableStatusAction {
@@ -71,6 +77,7 @@ const STATUS_DEFAULTS: Record<
   }
 };
 
+/** 卡片状态用于 permission 这类不适合放入 tbody 的整区块提示。 */
 function StatusCard({ config, className }: DataTableStatusCardProps) {
   const defaults = STATUS_DEFAULTS[config.type];
   const title = config.title ?? defaults.title;
@@ -110,6 +117,7 @@ function StatusCard({ config, className }: DataTableStatusCardProps) {
   );
 }
 
+/** 内联状态保持表格语义，适合空态、错误和初始化引导。 */
 function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
   const defaults = STATUS_DEFAULTS[config.type];
   const title = config.title ?? defaults.title;
@@ -145,6 +153,7 @@ function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
 }
 
 export function DataTableStatus({ status: config, colSpan = 1, className }: DataTableStatusProps) {
+  // switch 保持 exhaustive 检查，新增状态类型时 TypeScript 会提示补渲染分支。
   switch (config.type) {
     case 'onboarding':
     case 'empty':

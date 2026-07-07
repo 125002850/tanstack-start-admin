@@ -11,6 +11,12 @@ import {
 import { DataTableOverflowTooltipText } from '@/components/ui/table/cells/data-table-overflow-tooltip-text';
 import { cn } from '@/lib/utils';
 
+/**
+ * 标准 DataTable 列头。
+ *
+ * 当列可排序或可隐藏时渲染 DropdownMenu；否则只渲染带溢出 Tooltip 的纯文本表头。
+ * 排序状态直接调用 TanStack column API，隐藏列通过列面板/列头菜单共用同一状态。
+ */
 export interface DataTableColumnHeaderLabels {
   ascText?: string;
   descText?: string;
@@ -46,6 +52,7 @@ export function DataTableColumnHeader<TData, TValue>({
   ...props
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column.getCanSort() && !column.getCanHide()) {
+    // 不可交互表头保持最小 DOM，避免给读屏器暴露无意义菜单按钮。
     return (
       <div className={cn('min-w-0 max-w-full', className)}>
         <DataTableOverflowTooltipText value={title}>{title}</DataTableOverflowTooltipText>
@@ -62,6 +69,7 @@ export function DataTableColumnHeader<TData, TValue>({
         )}
         {...props}
       >
+        {/* 表头标题可能很长，始终用统一的溢出 Tooltip 包裹。 */}
         <DataTableOverflowTooltipText value={title} className='min-w-0 flex-1'>
           {title}
         </DataTableOverflowTooltipText>

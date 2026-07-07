@@ -30,6 +30,12 @@ import { moveDataTableColumnOrder } from '@/lib/data-table-state-persistence';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
 
+/**
+ * DataTable 列显示/排序面板。
+ *
+ * 面板支持列显隐和中间列拖拽排序；固定列和不允许重排的列只显示显隐状态。
+ * 拖拽结束时只更新 table.setColumnOrder，持久化由 useTableState 负责。
+ */
 export interface DataTableViewOptionsLabels {
   toggleColumnsAriaLabel?: string;
   buttonText?: string;
@@ -60,14 +66,22 @@ function toggleColumnVisibility<TData>(column: Column<TData>) {
   column.toggleVisibility(!column.getIsVisible());
 }
 
+/** columnPanelVisible=false 的列不进入显示列面板。 */
 function isColumnPanelVisible<TData>(column: Column<TData>) {
   return column.getCanHide() && column.columnDef.meta?.columnPanelVisible !== false;
 }
 
+/** 只有面板可见且未显式禁止重排的列才允许拖拽。 */
 function canReorderInColumnPanel<TData>(column: Column<TData>) {
   return isColumnPanelVisible(column) && column.columnDef.meta?.columnPanelReorder !== false;
 }
 
+/**
+ * 处理 CommandItem 的显隐切换。
+ *
+ * Radix/cmdk 的 onSelect 和 pointer 事件会在拖拽后交错触发，这里用 ignore/suppress
+ * 两套短生命周期标记，避免“拖动列顺序”被误判成“切换列显隐”。
+ */
 function useColumnVisibilityToggle<TData>(
   column: Column<TData>,
   isColumnOrderDragSuppressed?: () => boolean
@@ -99,6 +113,7 @@ function useColumnVisibilityToggle<TData>(
   const handlePointerUpCapture = React.useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       if (isColumnOrderDragSuppressed?.()) {
+        // 当前 pointerUp 来自拖拽释放，吞掉即将到来的 select。
         event.preventDefault();
         event.stopPropagation();
         ignoreNextSelectRef.current = true;
@@ -110,6 +125,7 @@ function useColumnVisibilityToggle<TData>(
 
       const target = event.target as HTMLElement | null;
       if (target?.closest('[data-slot="data-table-view-option-drag-handle"]')) {
+        // 单独点击拖拽手柄不切换显隐。
         return;
       }
 
@@ -150,6 +166,7 @@ function DataTableViewOptionItem<TData>({
 }: DataTableViewOptionItemProps<TData>) {
   const label = getDataTableColumnLabel(column, table);
 
+  // 根据是否允许拖拽选择 Sortable 或 Static 版本，二者共享显隐切换 hook。
   if (draggable) {
     return (
       <SortableDataTableViewOptionItem
@@ -214,6 +231,7 @@ function SortableDataTableViewOptionItem<TData>({
     isDragging
   } = useSortable({ id: column.id });
 
+  // dnd-kit transform 只作用于外层 div，CommandItem 内部仍保持可选中结构。
   const style = React.useMemo<React.CSSProperties>(
     () => ({
       opacity: isDragging ? 0.6 : undefined,
@@ -266,6 +284,7 @@ export function DataTableViewOptions<TData>({
   iconOnly = false,
   className
 }: DataTableViewOptionsProps<TData>) {
+  // 拖拽期间用于通知 useColumnVisibilityToggle 不要处理紧随其后的 select。
   const columnDragSuppressedRef = React.useRef(false);
   const columnDragSuppressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const columns = [
@@ -273,6 +292,7 @@ export function DataTableViewOptions<TData>({
     ...table.getCenterLeafColumns(),
     ...table.getRightLeafColumns()
   ].filter((column) => typeof column.accessorFn !== 'undefined' && isColumnPanelVisible(column));
+  // 只允许中间区域可重排列在面板中排序；固定列顺序由 pinning 规则决定。
   const draggableColumnIds = table
     .getCenterLeafColumns()
     .filter((column) => typeof column.accessorFn !== 'undefined' && canReorderInColumnPanel(column))
@@ -306,6 +326,7 @@ export function DataTableViewOptions<TData>({
     }
 
     columnDragSuppressTimerRef.current = setTimeout(() => {
+      // 延后一轮事件循环再清除，覆盖 dnd-kit 释放后的合成 select。
       columnDragSuppressedRef.current = false;
       columnDragSuppressTimerRef.current = null;
     }, 0);
@@ -331,6 +352,7 @@ export function DataTableViewOptions<TData>({
     }
 
     table.setColumnOrder(
+      // moveDataTableColumnOrder 保持其他列相对顺序，只移动被拖拽列。
       moveDataTableColumnOrder(
         table.getAllLeafColumns().map((column) => column.id),
         activeId,

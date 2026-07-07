@@ -11,12 +11,19 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 
+/**
+ * 行级操作渲染组件。
+ *
+ * 前 N 个 action 直接展示为图标按钮，超出的 action 收进“更多”菜单；每个 action 可以
+ * 根据当前行动态 disabled/hidden，也可以走删除确认或打开 Sheet 表单。
+ */
 const DATA_TABLE_ROW_ACTION_BUTTON_SIZE = 32;
 const DATA_TABLE_ROW_ACTION_GAP = 2;
 const DATA_TABLE_ROW_ACTION_CELL_PADDING_X = 32;
 
 export const DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE = 3;
 
+/** 行操作的 UI 配置；Sheet 用于把当前行数据交给抽屉/弹层表单。 */
 export interface DataTableRowAction<TData> {
   label: string;
   icon: React.ReactNode;
@@ -49,6 +56,7 @@ function resolveRowActionValue<TData, TValue>(
   return typeof value === 'function' ? (value as (row: TData) => TValue)(row) : value;
 }
 
+/** 根据可见操作数量预估操作列宽度，保证固定操作列不因按钮数量变化抖动。 */
 export function getDataTableRowActionsColumnWidth(
   actionCount: number,
   maxVisible = DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE
@@ -78,8 +86,7 @@ export function DataTableRowActions<TData>({
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const { withConfirm, confirmDialog } = useConfirmAction<[DataTableRowAction<TData>, TData]>();
 
-  // When sheet closes, wait for the CSS exit animation to finish before unmounting.
-  // This avoids a hardcoded setTimeout and stays in sync with any animation duration changes.
+  // Sheet 关闭后等待 CSS 退出动画结束再卸载，避免硬编码 setTimeout 并保持动画时长同步。
   React.useEffect(() => {
     if (!sheetOpen && sheetAction) {
       const handleAnimationEnd = (e: AnimationEvent) => {
@@ -106,6 +113,7 @@ export function DataTableRowActions<TData>({
       }
 
       if (action.confirmDelete) {
+        // 删除确认由 useConfirmAction 统一渲染；实际删除逻辑仍来自 action.onClick。
         withConfirm({
           title: (currentAction) => currentAction.confirmDelete?.title ?? '确认删除',
           description: (currentAction, currentRow) =>
@@ -119,6 +127,7 @@ export function DataTableRowActions<TData>({
         return;
       }
       if (action.Sheet) {
+        // 有 Sheet 的 action 不立即执行 onClick，而是把当前 action 作为待渲染表单。
         setSheetAction(action);
         setSheetOpen(true);
         return;
@@ -129,6 +138,7 @@ export function DataTableRowActions<TData>({
   );
 
   const resolvedActions = React.useMemo(
+    // hidden 支持按行动态判断，因此必须在每次 row/actions 变化时重新过滤。
     () => actions.filter((action) => !resolveRowActionValue(action.hidden ?? false, row)),
     [actions, row]
   );

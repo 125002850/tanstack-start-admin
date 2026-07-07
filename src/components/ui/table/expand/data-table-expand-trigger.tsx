@@ -4,6 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
+/**
+ * 行展开相关的轻量交互控件。
+ *
+ * DataTable 当前主要通过整行点击展开；Trigger 和 ResizeHandle 保留给需要显式按钮或
+ * 主表/详情面板分屏调整的场景。
+ */
 interface DataTableExpandTriggerProps {
   expanded: boolean;
   panelId: string;
@@ -39,6 +45,7 @@ export function DataTableExpandTrigger({
       data-slot='data-table-expand-trigger'
       data-row-expand-ignore
       onClick={(event) => {
+        // 展开按钮本身不能冒泡到行点击，否则会触发两次展开逻辑。
         event.stopPropagation();
         onPressed();
       }}
@@ -61,6 +68,7 @@ export function DataTableExpandResizeHandle({
   onPointerDown
 }: DataTableExpandResizeHandleProps) {
   return (
+    // role=separator + aria-valuenow 让屏幕阅读器理解这是可调整的水平分隔条。
     <div
       role='separator'
       tabIndex={0}

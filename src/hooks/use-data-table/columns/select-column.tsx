@@ -5,6 +5,11 @@ import { cn } from '@/lib/utils';
 
 import { DATA_TABLE_SELECT_COLUMN_ID, DATA_TABLE_SELECT_COLUMN_WIDTH } from '../constants';
 
+/**
+ * DataTable 自动生成的选择列。
+ *
+ * 选择状态使用 TanStack rowSelection；当前实现默认只表达当前页选择，不做跨页全选语义。
+ */
 function SelectControl({
   ariaLabel,
   checked,
@@ -39,6 +44,7 @@ function SelectControl({
         className
       )}
       onClick={(event) => {
+        // 选择列不能触发行点击展开。
         event.stopPropagation();
         onToggle();
       }}
@@ -67,6 +73,7 @@ export function createSelectColumn<TData>(): ColumnDef<TData> {
     enableHiding: false,
     enableColumnFilter: false,
     header: ({ table }) => {
+      // 表头 checkbox 只控制当前页 rows，符合服务端分页下的安全默认语义。
       const checked =
         table.getIsAllPageRowsSelected() ||
         (table.getIsSomePageRowsSelected() ? 'indeterminate' : false);

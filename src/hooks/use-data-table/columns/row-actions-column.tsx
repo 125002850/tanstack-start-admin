@@ -11,6 +11,11 @@ import { DATA_TABLE_PINNED_SHADOWS } from '@/lib/data-table';
 
 import { DATA_TABLE_ACTIONS_COLUMN_ID } from '../constants';
 
+/**
+ * 根据 rowActions 自动生成固定宽度操作列。
+ *
+ * 宽度由操作数量推导，并把 min/max/size 设为同一个值，确保用户列宽缓存不会改变操作列。
+ */
 export function createRowActionsColumn<TData>(
   rowActions: Array<DataTableRowAction<TData>>
 ): ColumnDef<TData> {
@@ -34,6 +39,7 @@ export function createRowActionsColumn<TData>(
     enableSorting: false,
     enableResizing: false,
     meta: {
+      // 操作列通常固定在右侧，显式给出 pinned shadow，保证滚动边界清晰。
       pinningShadow: DATA_TABLE_PINNED_SHADOWS
     }
   };

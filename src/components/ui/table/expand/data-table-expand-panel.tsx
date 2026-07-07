@@ -5,6 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ExpandConfigEdge, ExpandTabEdge } from '@/types/data-table';
 import { Icons } from '@/components/icons';
 
+/**
+ * 行展开详情面板。
+ *
+ * 面板使用 tabs 承载一行数据的多个详情视图；禁用的 tab 会在当前行上下文中过滤掉，
+ * 激活态指示器通过测量当前 trigger 实现，避免 Tabs 默认样式和项目视觉冲突。
+ */
 interface DataTableExpandPanelProps<TData> {
   panelId: string;
   row: TData;
@@ -18,6 +24,7 @@ function isTabDisabled<TData>(tab: ExpandTabEdge<TData>, row: TData) {
   return typeof tab.disabled === 'function' ? tab.disabled(row) : tab.disabled === true;
 }
 
+/** 按当前行过滤可用 tab，保证 disabled(row) 可以表达行级权限或状态限制。 */
 export function getAvailableExpandTabs<TData>(expandConfig: ExpandConfigEdge<TData>, row: TData) {
   return expandConfig.tabs.filter((tab) => !isTabDisabled(tab, row));
 }
@@ -35,6 +42,7 @@ export function DataTableExpandPanel<TData>({
   const [indicatorStyle, setIndicatorStyle] = React.useState<React.CSSProperties>({ opacity: 0 });
 
   const updateTabIndicator = React.useCallback(() => {
+    // 指示器不参与布局，只跟随当前 active trigger 的位置和尺寸。
     const tabsList = tabsListRef.current;
     const activeTrigger = Array.from(
       tabsList?.querySelectorAll<HTMLElement>('[data-expand-tab-trigger]') ?? []
@@ -69,6 +77,7 @@ export function DataTableExpandPanel<TData>({
   }, [activeTab]);
 
   React.useLayoutEffect(() => {
+    // 每次布局后同步一次，覆盖 activeTab 变化和首屏挂载。
     updateTabIndicator();
   });
 
@@ -78,6 +87,7 @@ export function DataTableExpandPanel<TData>({
 
     window.addEventListener('resize', updateTabIndicator);
 
+    // tab 文案、换行或容器尺寸变化时，ResizeObserver 会重新定位指示器。
     if (typeof ResizeObserver === 'undefined') {
       return () => {
         window.removeEventListener('resize', updateTabIndicator);

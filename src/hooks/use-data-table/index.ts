@@ -47,10 +47,18 @@ import { resolveDataTableRowId, stringifyDataTableRowId } from './row-id';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
 import { useTableState } from './use-table-state';
 
+/**
+ * DataTable 的核心状态装配 hook。
+ *
+ * 它在 TanStack useReactTable 外包一层项目约定：
+ * 工具列注入、行号/选择/操作列固定规则、列宽/列顺序/排序持久化、服务端分页、
+ * 行展开状态和选中行便捷 API。
+ */
 function getPageCount(totalCount: number, pageSize: number) {
   return Math.max(1, Math.ceil(totalCount / pageSize) || 1);
 }
 
+/** 行号列需要在数据引用变化前保留旧 pagination，用于渲染中的当前页编号稳定。 */
 function usePaginationForRenderedData<TData>(
   data: TData[],
   pagination: PaginationState
@@ -136,10 +144,12 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   } = props;
 
   const instanceId = React.useId();
+  // 展开面板 id 优先来自 tableId；无 tableId 时用 React id 兜底并移除冒号。
   const expandPanelId = expandConfig ? getStableExpandPanelId(tableId, instanceId) : null;
   const [expandedRowKey, setExpandedRowKey] = React.useState<string | null>(null);
 
   const normalizedColumns = React.useMemo<Array<ColumnDef<TData>>>(
+    // 手写 actions 列也会被规范化为不可 resize，保持和自动生成操作列一致。
     () => columns.map((column) => normalizeActionColumn(column)),
     [columns]
   );
@@ -147,6 +157,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const hasGeneratedRowActionsColumn = !!rowActions?.length;
 
   const baseColumns = React.useMemo<Array<ColumnDef<TData>>>(
+    // 如果传入 rowActions，就移除业务方同名 actions 列，避免重复操作列。
     () =>
       normalizedColumns.filter(
         (column) => !hasGeneratedRowActionsColumn || column.id !== DATA_TABLE_ACTIONS_COLUMN_ID
@@ -154,6 +165,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     [hasGeneratedRowActionsColumn, normalizedColumns]
   );
   const hasManualSelectColumn = React.useMemo(
+    // 业务方手写 select 列时，不再自动注入选择列。
     () => baseColumns.some((column) => column.id === DATA_TABLE_SELECT_COLUMN_ID),
     [baseColumns]
   );
@@ -182,6 +194,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   ]);
 
   const fixedWidthColumnSizing = React.useMemo(
+    // 固定宽度工具列的 sizing 不写入持久化，避免用户缓存覆盖固定尺寸。
     () => getFixedWidthColumnSizing(resolvedColumns),
     [resolvedColumns]
   );
@@ -201,6 +214,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     }
 
     const columnPinning = resolveUtilityColumnPinning(initialState?.columnPinning, {
+      // 工具列 pinning 优先于业务初始 pinning，确保序号/选择/操作列位置稳定。
       hasPinnedActionsColumn,
       actionColumnPin,
       showRowNumberColumn,
@@ -218,6 +232,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       ...initialState,
       columnPinning,
       columnOrder: normalizeGeneratedColumnOrder(initialState?.columnOrder, {
+        // 生成列必须排在业务列前面，持久化顺序恢复时也要重新规整。
         showRowNumberColumn,
         hasSelectColumn
       }),
@@ -227,6 +242,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   }, [actionColumnPin, hasPinnedActionsColumn, hasSelectColumn, initialState, showRowNumberColumn]);
 
   const resolvedStorageMode: ColumnResizeStorageMode = React.useMemo(
+    // 单表可覆盖存储模式，未传时使用全局 DataTable 配置。
     () =>
       (props.columnResizeStorage ?? dataTableConfig.columnResizeStorage) as ColumnResizeStorageMode,
     [props.columnResizeStorage]
@@ -286,6 +302,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   const rowNumberPagination = usePaginationForRenderedData(tableProps.data, pagination);
 
   React.useEffect(() => {
+    // 高级筛选入口已暂停，开发环境提示迁移但不影响普通 columnFilters。
     if (!import.meta.env.DEV || deprecatedEnableAdvancedFilter === undefined) {
       return;
     }
@@ -305,6 +322,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   }, [deprecatedEnableAdvancedFilter, tableId]);
 
   React.useEffect(() => {
+    // 选择列启用但没有稳定 row id 时，只能做当前页范围选择，开发环境给出提示。
     if (!import.meta.env.DEV || !showSelectColumn || getRowId || rowId !== undefined) {
       return;
     }
@@ -335,6 +353,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     }
 
     if (typeof totalCount === 'number') {
+      // 服务端分页常见场景：只传 totalCount，由 hook 按当前 pageSize 推导页数。
       return getPageCount(totalCount, pagination.pageSize);
     }
 
@@ -364,6 +383,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       rowNumberDisplayMode,
       rowNumberPagination,
       dataTableColumnOrder: {
+        // 列面板通过 meta 调用 reset，不需要知道持久化实现细节。
         hasCustomOrder: hasCustomColumnOrder,
         reset: resetColumnOrder
       }
@@ -379,6 +399,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       columnSizing
     },
     defaultColumn: {
+      // 默认关闭列筛选，只有 DSL/业务显式 filter 的列才出现在工具栏。
       minSize: 80,
       size: 150,
       ...tableProps.defaultColumn,
@@ -418,6 +439,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
         });
 
   React.useEffect(() => {
+    // 当前页数据变化后，如果展开行已不在 rowModel 中，自动关闭详情面板。
     if (expandedRowKey && !expandedRow) {
       setExpandedRowKey(null);
     }
@@ -433,6 +455,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   });
 
   const getSelectedRows = React.useCallback(() => getSelectedPageRows(table), [table]);
+  // selectedRows/selectedRowIds 都只表达当前已加载 rowModel，不表达跨页选择。
   const selectedRows = getSelectedRows();
   const selectedRowIds = table
     .getRowModel()

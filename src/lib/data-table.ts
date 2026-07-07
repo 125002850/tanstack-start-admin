@@ -3,6 +3,11 @@ import type { Column, Table } from '@tanstack/react-table';
 
 import { dataTableConfig } from '@/config/data-table';
 
+/**
+ * DataTable UI 层通用工具。
+ *
+ * 包含固定列阴影、sticky 样式、筛选操作符映射和“当前页选中行”读取。
+ */
 const DATA_TABLE_PINNED_SHADOW_COLOR =
   'var(--data-table-pinned-shadow-color, color-mix(in oklch, var(--foreground) 8%, transparent))';
 const DATA_TABLE_PINNED_SHADOW_SOFT_COLOR =
@@ -16,6 +21,7 @@ export const DATA_TABLE_PINNED_SHADOWS = {
   right: `-8px 0 16px -15px ${DATA_TABLE_PINNED_SHADOW_COLOR}, -18px 0 28px -26px ${DATA_TABLE_PINNED_SHADOW_SOFT_COLOR}`
 } as const;
 
+/** 固定列边界阴影的伪层样式，覆盖在单元格边缘外侧。 */
 export function getColumnPinningShadowOverlayStyle(edge: 'left' | 'right'): React.CSSProperties {
   return edge === 'right'
     ? {
@@ -30,6 +36,7 @@ export function getColumnPinningShadowOverlayStyle(edge: 'left' | 'right'): Reac
       };
 }
 
+/** 只在固定区域边界列绘制阴影；内部固定列不重复绘制。 */
 export function getColumnPinningShadow<TData>({
   column
 }: {
@@ -56,6 +63,7 @@ export function getColumnPinningShadow<TData>({
   return undefined;
 }
 
+/** 固定列的公共 sticky 样式；普通列不写 width，交给 colgroup/table-layout 控制。 */
 export function getCommonPinningStyles<TData>({
   column
 }: {
@@ -63,9 +71,8 @@ export function getCommonPinningStyles<TData>({
 }): React.CSSProperties {
   const isPinned = column.getIsPinned();
 
-  // Pinned columns need explicit width + sticky positioning for the pinning
-  // offset calculations. Non-pinned cells rely on <colgroup> + table-layout:fixed
-  // for column widths — setting width here would conflict with border-box sizing.
+  // 固定列需要显式 width + sticky，TanStack 才能正确计算左右偏移。
+  // 非固定列依赖 <colgroup> + table-layout: fixed；这里写 width 会和 border-box 计算冲突。
   if (isPinned) {
     return {
       boxShadow: getColumnPinningShadow({ column }),
@@ -81,6 +88,7 @@ export function getCommonPinningStyles<TData>({
   return {};
 }
 
+/** 根据筛选控件类型返回高级筛选操作符集合。 */
 export function getFilterOperators(filterVariant: FilterVariant) {
   const operatorMap: Record<FilterVariant, { label: string; value: FilterOperator }[]> = {
     text: dataTableConfig.textOperators,
@@ -96,6 +104,7 @@ export function getFilterOperators(filterVariant: FilterVariant) {
   return operatorMap[filterVariant] ?? dataTableConfig.textOperators;
 }
 
+/** 返回当前 rowModel 中被选中的业务行；服务端分页下只代表当前已加载页。 */
 export function getSelectedPageRows<TData>(table: Table<TData>): TData[] {
   const rowSelection = table.getState().rowSelection ?? {};
   const rows = table.getRowModel().rows;
@@ -115,6 +124,7 @@ export function getSelectedPageRows<TData>(table: Table<TData>): TData[] {
   return selectedRows;
 }
 
+/** 只统计当前 rowModel 的选中数量，避免 rowSelection 中残留跨页/旧页 id 影响展示。 */
 export function getSelectedPageRowCount<TData>(table: Table<TData>): number {
   const rowSelection = table.getState().rowSelection ?? {};
   const rows = table.getRowModel().rows;

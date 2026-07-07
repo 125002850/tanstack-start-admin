@@ -10,6 +10,12 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
 
+/**
+ * 数值范围筛选控件。
+ *
+ * filter value 使用 `[min, max]` 二元数组；可从 column.meta.range 指定固定边界，
+ * 未指定时尝试读取 TanStack faceted min/max，最后回退到 0-100。
+ */
 interface Range {
   min: number;
   max: number;
@@ -26,6 +32,7 @@ function getIsValidRange(value: unknown): value is RangeValue {
   );
 }
 
+/** 根据范围大小估算 slider step，避免大范围下拖动过于细碎。 */
 function getStepFromRangeSize(rangeSize: number) {
   if (rangeSize <= 20) {
     return 1;
@@ -58,8 +65,10 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
     let maxValue = 100;
 
     if (defaultRange && getIsValidRange(defaultRange)) {
+      // 显式配置优先，适合后端固定取值区间。
       [minValue, maxValue] = defaultRange;
     } else {
+      // 否则尝试使用 TanStack faceted 值，适合前端已加载全量数据的场景。
       const values = column.getFacetedMinMaxValues();
       if (values && Array.isArray(values) && values.length === 2) {
         const [facetMinValue, facetMaxValue] = values;
@@ -77,6 +86,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
   }, [column, defaultRange]);
 
   const range = React.useMemo((): RangeValue => {
+    // 未筛选时 slider 展示完整边界，但不写入 column filter。
     return columnFilterValue ?? [min, max];
   }, [columnFilterValue, min, max]);
 
@@ -87,6 +97,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
   const onFromInputChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const numValue = Number(event.target.value);
+      // from 不能超过当前 to，也不能超出全局 min/max。
       if (!Number.isNaN(numValue) && numValue >= min && numValue <= range[1]) {
         column.setFilterValue([numValue, range[1]]);
       }
@@ -97,6 +108,7 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
   const onToInputChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const numValue = Number(event.target.value);
+      // to 不能小于当前 from，也不能超出全局 min/max。
       if (!Number.isNaN(numValue) && numValue <= max && numValue >= range[0]) {
         column.setFilterValue([range[0], numValue]);
       }

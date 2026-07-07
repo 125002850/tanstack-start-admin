@@ -8,6 +8,12 @@ import type {
   FilterVariant
 } from '@/types/data-table';
 
+/**
+ * DataTable ColumnDef 选项合并器。
+ *
+ * 负责把 DSL 层的筛选配置、后端查询 meta、列面板行为和 TanStack 原生列配置合并成
+ * ColumnDef 可识别的字段，避免业务侧直接操作 columnDef.meta 的内部结构。
+ */
 type DataTableColumnMeta<TData, TValue> = NonNullable<ColumnDef<TData, TValue>['meta']>;
 type DataTableColumnQueryMeta<TData, TValue> = DataTableColumnMeta<TData, TValue>['query'];
 
@@ -54,6 +60,7 @@ const FILTER_VARIANT_META = {
   boolean: 'boolean'
 } satisfies Record<DataTableColumnFilterVariant, FilterVariant>;
 
+/** 未显式传 placeholder 时，根据筛选类型和列名生成后台场景可读的占位文案。 */
 function inferFilterPlaceholder(variant: DataTableColumnFilterVariant, title: string) {
   switch (variant) {
     case 'text':
@@ -72,6 +79,7 @@ function inferFilterPlaceholder(variant: DataTableColumnFilterVariant, title: st
   }
 }
 
+/** 将 DSL 的 filter 配置转换为 DataTableToolbar 能识别的 column.meta 字段。 */
 function resolveFilterMeta<TData, TValue>(
   title: string,
   options: DataTableColumnOptions<TData, TValue>
@@ -83,6 +91,7 @@ function resolveFilterMeta<TData, TValue>(
   }
 
   const range =
+    // 目前数值范围筛选只接受 number，Date 范围留给 date/dateRange 自己处理。
     typeof filterMin === 'number' && typeof filterMax === 'number'
       ? ([filterMin, filterMax] satisfies [number, number])
       : undefined;
@@ -96,6 +105,7 @@ function resolveFilterMeta<TData, TValue>(
   };
 }
 
+/** 判断是否声明了任何后端 DSL 查询相关配置。 */
 function hasQueryOptions<TData, TValue>(options: DataTableColumnOptions<TData, TValue>) {
   return Boolean(
     options.dsl?.filterField ||
@@ -106,6 +116,7 @@ function hasQueryOptions<TData, TValue>(options: DataTableColumnOptions<TData, T
   );
 }
 
+/** 将 dsl 字段标准化到 meta.query，useDslDataTable 会从这里读取序列化规则。 */
 function resolveQueryMeta<TData, TValue>(
   options: DataTableColumnOptions<TData, TValue>
 ): DataTableColumnQueryMeta<TData, TValue> | undefined {
@@ -122,6 +133,7 @@ function resolveQueryMeta<TData, TValue>(
   };
 }
 
+/** filter=false 时移除由 DSL 管理的 meta 字段，避免调用方残留旧筛选配置。 */
 function stripDslManagedMeta<TData, TValue>(
   meta: ColumnDef<TData, TValue>['meta']
 ): DataTableColumnMeta<TData, TValue> {
@@ -140,6 +152,7 @@ function stripDslManagedMeta<TData, TValue>(
   return nextMeta;
 }
 
+/** 合并最终 meta：label、筛选 UI、后端查询和列面板配置都在这里落位。 */
 function resolveMeta<TData, TValue>(
   title: string,
   defaults: DataTableColumnResolvedDefaults,
@@ -152,6 +165,7 @@ function resolveMeta<TData, TValue>(
   return {
     ...baseMeta,
     label:
+      // meta.label 显式传入时优先，否则使用 DSL title 作为列面板/拖拽显示名。
       typeof baseMeta.label === 'string' && baseMeta.label.trim().length > 0
         ? baseMeta.label
         : title,
@@ -163,6 +177,7 @@ function resolveMeta<TData, TValue>(
   };
 }
 
+/** 解析 ColumnDef 原生配置和 meta，供 field/badge/actions/custom DSL 共用。 */
 export function resolveDataTableColumnOptions<TData, TValue>({
   title,
   defaults,

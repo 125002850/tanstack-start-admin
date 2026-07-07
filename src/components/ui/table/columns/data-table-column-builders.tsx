@@ -46,6 +46,12 @@ import type {
 type BadgeVariant = ComponentProps<typeof Badge>['variant'];
 type DataTableColumn<TData> = ColumnDef<TData>;
 
+/**
+ * createDataTableColumnDsl 的全局选项。
+ *
+ * fieldFormatters 用于跨字段统一格式化；customTypes 用于扩展内置 type 注册表，
+ * fallbackFormatValue 则兜底所有普通字段的空值和基础展示。
+ */
 interface DataTableColumnDslOptions<TData> {
   fieldFormatters?: Array<DataTableFieldFormatterRule<TData>>;
   fallbackFormatValue?: DataTableFieldFormatter<TData>;
@@ -64,6 +70,7 @@ interface BaseColumnOptions<TData, TValue = unknown> {
   cellClassName?: string;
 }
 
+/** 普通字段列配置：负责 accessorKey、筛选/排序 DSL、类型默认值和 cell 渲染。 */
 interface FieldColumnOptions<TData, TKey extends DataTableColumnKey<TData>>
   extends BaseColumnOptions<TData, TData[TKey]>, DataTableColumnOptions<TData, TData[TKey]> {
   type?: DataTableColumnValueType;
@@ -73,6 +80,7 @@ interface FieldColumnOptions<TData, TKey extends DataTableColumnKey<TData>>
   headerClassName?: string;
 }
 
+/** badge 列配置：适合状态、枚举、标签类字段，展示为 shadcn Badge。 */
 interface BadgeDslColumnOptions<TData, TKey extends DataTableColumnKey<TData>>
   extends BaseColumnOptions<TData, TData[TKey]>, DataTableColumnOptions<TData, TData[TKey]> {
   format?: (value: TData[TKey], row: TData) => unknown;
@@ -81,6 +89,7 @@ interface BadgeDslColumnOptions<TData, TKey extends DataTableColumnKey<TData>>
   headerClassName?: string;
 }
 
+/** 操作列配置：把行操作声明转换为固定宽度的 action cell。 */
 interface ActionsDslColumnOptions<TData> extends DataTableColumnPanelOptions {
   id?: string;
   title?: string;
@@ -94,6 +103,7 @@ interface ActionsDslColumnOptions<TData> extends DataTableColumnPanelOptions {
   header?: ColumnHeader<TData>;
 }
 
+/** 自定义列配置：调用方完全接管 accessorFn/cell，但仍复用列面板和筛选 meta 合并。 */
 interface CustomDslColumnOptions<TData, TValue> extends DataTableColumnOptions<TData, TValue> {
   id: string;
   title: string;
@@ -102,12 +112,19 @@ interface CustomDslColumnOptions<TData, TValue> extends DataTableColumnOptions<T
   header?: ColumnHeader<TData>;
 }
 
+/** 抹平 ColumnDef 的 TValue 泛型，方便 DSL 返回统一的 ColumnDef<TData>[]。 */
 function eraseDataTableColumnValue<TData, TValue>(
   column: ColumnDef<TData, TValue>
 ): DataTableColumn<TData> {
   return column as DataTableColumn<TData>;
 }
 
+/**
+ * 创建 DataTable 列声明 DSL。
+ *
+ * DSL 的目标是把列宽、类型、格式化、筛选、复制值、列面板行为和后端查询 meta
+ * 收敛到一处声明，避免业务页面直接拼装大量 TanStack ColumnDef 细节。
+ */
 export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptions<TData> = {}) {
   const {
     fieldFormatters = [],
@@ -116,6 +133,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
   } = options;
   const resolvedCustomTypes = validateDataTableColumnTypeRegistry(customTypes);
 
+  /** 根据字段 key 选择匹配的格式化规则；没有规则时走 fallback。 */
   function formatField<TKey extends DataTableColumnKey<TData>>(key: TKey, row: TData) {
     const value = row[key] as DataTableFieldValue<TData>;
     const formatter = fieldFormatters.find((rule) => hasFormatterKey(rule.keys, key));
@@ -143,6 +161,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       type,
       resolvedCustomTypes
     );
+    // 类型默认值先给出对齐、列宽和复制值，调用方 options 再做覆盖。
     const resolvedCellClassName = cn(
       getDataTableAlignClassName(typeDefaults.align),
       typeDefaults.cellClassName,
@@ -155,6 +174,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     );
     const resolvedMeta = typeDefaults.copyValue
       ? {
+          // copyValue 放进 meta，单元格复制逻辑会优先读取它。
           copyValue: typeDefaults.copyValue,
           ...columnOptions.meta
         }
@@ -165,10 +185,12 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
       cell: (context) => {
         if (renderCell) {
+          // renderCell 优先级最高，调用方完全控制展示。
           return renderCell(context);
         }
 
         if (typeDefaults.renderCell) {
+          // 自定义/内置 type 可以接管 cell 渲染，例如复杂布尔态或文件尺寸。
           return typeDefaults.renderCell(context);
         }
 
@@ -176,8 +198,10 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
         const row = context.row.original;
         const formatter = format ?? formatValue;
         const enumLabel =
+          // enum 类型优先从 filterOptions 里解析 label，保证筛选选项和展示文案一致。
           type === 'enum' ? resolveDataTableEnumLabel(value, columnOptions) : undefined;
         const formattedValue =
+          // 展示值优先级：列级 formatter -> enum label -> 类型默认 formatter -> 全局字段 formatter。
           formatter?.(value, row) ??
           enumLabel ??
           typeDefaults.formatValue?.(value, row) ??
@@ -228,6 +252,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       cell: ({ row }) => {
         const value = row.original[key];
         const label = nullableText(formatter ? formatter(value, row.original) : value);
+        // 空值保持纯文本占位，不渲染空 Badge，避免状态列误传达“有一个标签”。
         if (label === '-') return '-';
         const resolvedVariant =
           typeof variant === 'function' ? variant(value, row.original) : variant;
@@ -251,6 +276,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       ...columnOptions
     } = actionsOptions;
     const resolveActions = createDataTableRowActionsResolver(actionOptions);
+    // 操作列默认不参与筛选/隐藏/重排，但仍允许调用方覆盖宽度范围和 meta。
     const resolvedOptions = resolveDataTableColumnOptions<TData, unknown>({
       title,
       defaults: {
@@ -279,6 +305,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
   ): DataTableColumn<TData> {
     const { id, title, accessorFn, cell, header, ...columnOptions } = customOptions;
     const resolvedOptions = resolveDataTableColumnOptions<TData, TValue>({
+      // 自定义列使用 CUSTOM defaults，仍可声明 filter/dsl/columnPanel 等统一选项。
       title,
       defaults: CUSTOM_COLUMN_DEFAULTS,
       options: columnOptions

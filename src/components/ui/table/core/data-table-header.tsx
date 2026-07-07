@@ -21,8 +21,16 @@ import { getDataTableColumnLabel } from '@/lib/data-table-column-label';
 import { cn } from '@/lib/utils';
 import type { DataTableColumnRenderItem, DataTableColumnVirtualWindow } from '@/types/data-table';
 
+/**
+ * 表头渲染层。
+ *
+ * 同时支持普通表头、固定列、列虚拟化、列宽拖拽和表头列顺序拖拽。表头负责输出
+ * aria-sort、sticky top 和拖拽 overlay 所需的数据属性；排序/显隐菜单由列 header
+ * 自身组件处理。
+ */
 const HEADER_ROW_HEIGHT_PX = 40;
 const HEADER_STICKY_TOP_OFFSET_PX = -1;
+// 这些工具列的顺序由 useDataTable 统一管理，不能被用户拖到业务列中间。
 const NON_REORDERABLE_COLUMN_IDS = new Set([
   DATA_TABLE_ROW_NUMBER_COLUMN_ID,
   DATA_TABLE_SELECT_COLUMN_ID,
@@ -58,11 +66,13 @@ function getColumnVirtualCellWidthStyle(size: number): React.CSSProperties {
   };
 }
 
+/** 纯文本表头才包裹溢出 Tooltip；自定义 JSX 表头保持调用方原始结构。 */
 function isTextLikeHeaderNode(content: React.ReactNode): content is string | number | bigint {
   const type = typeof content;
   return type === 'string' || type === 'number' || type === 'bigint';
 }
 
+/** 渲染表头内容，并为普通文本补充统一的截断和 Tooltip 行为。 */
 function renderHeaderContent<TData>(header: Header<TData, unknown>) {
   const content = flexRender(header.column.columnDef.header, header.getContext());
 
@@ -75,14 +85,17 @@ function renderHeaderContent<TData>(header: Header<TData, unknown>) {
   return content;
 }
 
+/** 只有非固定、非工具列允许调整顺序。 */
 export function getCanReorderColumn<TData>(column: Column<TData, unknown>) {
   return !column.getIsPinned() && !NON_REORDERABLE_COLUMN_IDS.has(column.id);
 }
 
+/** 拖拽 overlay 和无障碍文本需要稳定列名，优先使用 meta.label。 */
 function getHeaderLabel<TData>(header: Header<TData, unknown>) {
   return getDataTableColumnLabel(header.column, header.getContext().table);
 }
 
+/** 多级表头按行号累加 sticky top，固定列提升 z-index 避免被普通表头覆盖。 */
 function getStickyHeaderCellStyles<TData>(
   header: Header<TData, unknown>,
   rowIndex: number,
@@ -98,6 +111,7 @@ function getStickyHeaderCellStyles<TData>(
   };
 }
 
+/** 仅在相邻非固定列之间绘制短分隔线，减少固定列边界处的视觉噪声。 */
 function getHeaderClassName<TData>(
   header: Header<TData, unknown>,
   separatorColumnIds: Set<string>
@@ -109,6 +123,7 @@ function getHeaderClassName<TData>(
   );
 }
 
+/** 把 TanStack 的排序状态转换为原生 aria-sort，提升读屏器可理解性。 */
 function getHeaderAriaSort<TData>(header: Header<TData, unknown>) {
   if (!header.column.getCanSort()) {
     return undefined;
@@ -120,6 +135,7 @@ function getHeaderAriaSort<TData>(header: Header<TData, unknown>) {
   return 'none';
 }
 
+/** 列拖拽时显示的浮层，宽度沿用原表头宽度，避免拖动时内容重排。 */
 export function DataTableHeaderDragOverlay<TData>({
   header,
   width
@@ -138,6 +154,7 @@ export function DataTableHeaderDragOverlay<TData>({
   );
 }
 
+/** 静态表头单元格：适用于不可拖拽列或分组表头。 */
 function StaticDataTableHeaderCell<TData>({
   header,
   className,
@@ -160,6 +177,7 @@ function StaticDataTableHeaderCell<TData>({
   );
 }
 
+/** 可排序拖拽表头：只把内部 activator 绑定到 dnd-kit，保留 th 本身的表格语义。 */
 function SortableDataTableHeaderCell<TData>({
   header,
   className,
@@ -213,6 +231,7 @@ export function DataTableHeader<TData>({
   headerRowRef,
   onHeaderClickCapture
 }: DataTableHeaderProps<TData>) {
+  // 列虚拟化只支持单层叶子表头，因此这里建立 columnId -> header 的快速映射。
   const flatHeaderGroup = table.getHeaderGroups()[0];
   const headerByColumnId = new Map(
     flatHeaderGroup?.headers.map((header) => [header.column.id, header]) ?? []
@@ -225,6 +244,7 @@ export function DataTableHeader<TData>({
     const header = headerByColumnId.get(item.columnId);
     if (!header) return null;
     const pinningStyles = getCommonPinningStyles({ column: header.column });
+    // 中间虚拟列脱离 colgroup，需要在 th 上显式声明宽度；固定列仍走 sticky 样式。
     const widthStyles = options?.virtualizedCenter ? getColumnVirtualCellWidthStyle(item.size) : {};
     const headerStyle = getStickyHeaderCellStyles(header, 0, {
       ...pinningStyles,
@@ -255,6 +275,7 @@ export function DataTableHeader<TData>({
     if (size <= 0) return null;
 
     return (
+      // spacer 用于补齐虚拟窗口前后的水平滚动距离，不承载真实列内容。
       <TableHead
         key={`column-virtual-spacer-${side}`}
         aria-hidden='true'
@@ -273,6 +294,7 @@ export function DataTableHeader<TData>({
   return (
     <TableHeader className='bg-muted'>
       {shouldVirtualizeColumns && flatHeaderGroup ? (
+        // 列虚拟化路径：固定列始终渲染，中间列只渲染 virtualizer 窗口。
         <TableRow key={flatHeaderGroup.id} ref={headerRowRef}>
           {columnVirtualWindow.leftItems.map((item) => renderHeaderCell(item))}
           {renderHeaderSpacer('left', columnVirtualWindow.virtualPaddingLeft)}
@@ -283,6 +305,7 @@ export function DataTableHeader<TData>({
           {columnVirtualWindow.rightItems.map((item) => renderHeaderCell(item))}
         </TableRow>
       ) : (
+        // 普通路径保留 TanStack 原始 headerGroups，支持多级/分组表头。
         table.getHeaderGroups().map((headerGroup, headerGroupIndex) => (
           <TableRow key={headerGroup.id} ref={headerRowRef}>
             {headerGroup.headers.map((header) => {

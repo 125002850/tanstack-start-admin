@@ -9,6 +9,12 @@ import type {
 
 import type { DataTableDslOperator, FilterVariant } from '@/types/data-table';
 
+/**
+ * DataTable DSL 请求构建器。
+ *
+ * 该文件把 TanStack Table 的 pagination/sorting/columnFilters 转换为后端分页 DSL：
+ * pageNo/pageSize、condition 条件树和 sort 数组。它只支持项目明确约定的筛选类型。
+ */
 export interface PaginatedResponse<TData> {
   list?: TData[];
   total?: number;
@@ -73,6 +79,7 @@ const DATE_VARIANT_OPERATORS = {
   dateRange: ['GT', 'GTE', 'LT', 'LTE', 'BETWEEN'] as const
 } satisfies Partial<Record<FilterVariant, readonly DataTableDslOperator[]>>;
 
+/** 自动 DSL 当前只支持文本/枚举/日期类筛选，数值 range 等仅作为前端 UI 状态。 */
 export const DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS = [
   'text',
   'select',
@@ -105,6 +112,7 @@ function warn(message: string, details?: Record<string, unknown>) {
   console.warn(`[useDslDataTable.dsl] ${message}`, details ?? {});
 }
 
+/** 解析 ColumnDef 的稳定 ID；accessorFn 列必须显式 id，否则无法安全序列化查询字段。 */
 function getColumnId<TData>(column: ColumnDef<TData>): string | null {
   if (typeof column.id === 'string' && column.id.length > 0) {
     return column.id;
@@ -121,6 +129,7 @@ function getColumnId<TData>(column: ColumnDef<TData>): string | null {
   return null;
 }
 
+/** 建立 columnId -> ColumnDef 映射，并在开发环境提示无法序列化的 accessorFn 列。 */
 function resolveColumns<TData>(
   columns: Array<ColumnDef<TData>>
 ): Map<string, ResolvedColumn<TData>> {
@@ -148,6 +157,7 @@ function resolveColumns<TData>(
   return resolved;
 }
 
+/** 将字符串/数字筛选值归一化为非空字符串。 */
 function normalizeStringValue(value: unknown): string | undefined {
   if (typeof value === 'string') {
     const normalized = value.trim();
@@ -161,6 +171,7 @@ function normalizeStringValue(value: unknown): string | undefined {
   return undefined;
 }
 
+/** 将单值或数组值归一化为字符串数组，并剔除空值。 */
 function normalizeStringArray(value: unknown): string[] {
   let values: unknown[];
 
@@ -177,6 +188,7 @@ function normalizeStringArray(value: unknown): string[] {
     .filter((item): item is string => Boolean(item));
 }
 
+/** 支持毫秒时间戳字符串/数字和可被 Date 解析的字符串。 */
 function parseTimestamp(value: unknown): Date | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
     const date = new Date(value);
@@ -197,6 +209,7 @@ function parseTimestamp(value: unknown): Date | undefined {
   return undefined;
 }
 
+/** 后端 DSL 当前使用 `yyyy-MM-dd HH:mm:ss` 字符串，不携带时区偏移。 */
 function formatDateTimeWithOffset(date: Date): string {
   return format(date, 'yyyy-MM-dd HH:mm:ss');
 }
@@ -210,6 +223,7 @@ function toEndOfDay(date: Date): string {
 }
 
 function getDefaultOperatorForVariant(variant: SupportedFilterVariant): DataTableDslOperator {
+  // 默认操作符和筛选控件语义保持一致：文本模糊、单选等值、多选 IN、日期整天范围。
   switch (variant) {
     case 'text':
       return 'CONTAINS';
@@ -234,6 +248,7 @@ export function isDataTableDslOperatorCompatibleWithVariant(
   return Boolean((allowed as readonly DataTableDslOperator[] | undefined)?.includes(operator));
 }
 
+/** 判断筛选 variant 是否支持自动 DSL 序列化。 */
 export function isDataTableDslFilterVariantSupported(
   variant: FilterVariant | undefined
 ): variant is SupportedFilterVariant {
@@ -265,6 +280,7 @@ function resolveOperator(
   return fallback;
 }
 
+/** 将单个 column filter 转换为 DSL condition；空值或不支持类型返回 undefined。 */
 function buildFilterCondition<TData>(
   filter: ColumnFiltersState[number],
   resolvedColumns: Map<string, ResolvedColumn<TData>>
@@ -282,7 +298,8 @@ function buildFilterCondition<TData>(
 
   const field = meta?.query?.filterField ?? resolvedColumn.id;
   const filterValue = meta?.query?.serializeFilter
-    ? meta.query.serializeFilter(filter.value, resolvedColumn.column as never)
+    ? // 列级 serializeFilter 可把 UI 值转换成后端需要的值，例如枚举 code 或时间戳。
+      meta.query.serializeFilter(filter.value, resolvedColumn.column as never)
     : filter.value;
 
   if (variant === 'text' || variant === 'select') {
@@ -315,6 +332,7 @@ function buildFilterCondition<TData>(
     }
 
     return {
+      // 单日期按整天 BETWEEN 查询，避免只命中具体毫秒时间点。
       nodeType: 'dateTime',
       field,
       op: 'BETWEEN',
@@ -334,6 +352,7 @@ function buildFilterCondition<TData>(
 
     if (from && to) {
       return {
+        // 双端日期范围包含 from 当天开始到 to 当天结束。
         nodeType: 'dateTime',
         field,
         op: 'BETWEEN',
@@ -344,6 +363,7 @@ function buildFilterCondition<TData>(
 
     if (from) {
       return {
+        // 只有开始日期时，转换为大于等于当天开始。
         nodeType: 'dateTime',
         field,
         op: 'GTE',
@@ -352,6 +372,7 @@ function buildFilterCondition<TData>(
     }
 
     return {
+      // 只有结束日期时，转换为小于等于当天结束。
       nodeType: 'dateTime',
       field,
       op: 'LTE',
@@ -362,6 +383,7 @@ function buildFilterCondition<TData>(
   return undefined;
 }
 
+/** 将 TanStack sorting 转换为后端 sort；没有有效排序时使用 defaultRequestSort。 */
 function buildSort<TData>(
   sorting: SortingState,
   resolvedColumns: Map<string, ResolvedColumn<TData>>,
@@ -387,6 +409,7 @@ function buildSort<TData>(
   return defaultRequestSort && defaultRequestSort.length > 0 ? defaultRequestSort : undefined;
 }
 
+/** 把 baseCondition 和当前筛选条件合并成 AND 条件树。 */
 function buildCondition<TData>({
   columnFilters,
   resolvedColumns,
@@ -401,6 +424,7 @@ function buildCondition<TData>({
     .filter((condition): condition is DataTableDslCondition => Boolean(condition));
 
   if (filterConditions.length === 0) {
+    // 无筛选时直接返回 baseCondition，避免多包一层空 compose。
     return baseCondition;
   }
 
@@ -411,6 +435,7 @@ function buildCondition<TData>({
   };
 }
 
+/** 构建最终分页 DSL 请求对象。 */
 export function buildDataTableDslRequest<TData>({
   columns,
   pagination,

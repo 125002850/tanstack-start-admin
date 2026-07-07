@@ -28,6 +28,7 @@ export function useColumnSizingPersistence<TData>({
   const initialTableIdRef = React.useRef(tableId);
 
   React.useEffect(() => {
+    // tableId 是存储 key 的组成部分，运行中变化会导致读写错位，开发环境提示调用方修正。
     if (
       import.meta.env.DEV &&
       tableId !== initialTableIdRef.current &&
@@ -44,6 +45,7 @@ export function useColumnSizingPersistence<TData>({
   const prevSizingRef = React.useRef<ColumnSizingState>({});
 
   React.useEffect(() => {
+    // 记录初始列宽，用于拖拽结束后判断哪些列真的发生了变化。
     prevSizingRef.current = table.getState().columnSizing;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -57,6 +59,7 @@ export function useColumnSizingPersistence<TData>({
     prevIsResizingRef.current = isResizingColumn;
 
     if (wasResizing && !isResizing) {
+      // 只在“从拖拽中 -> 拖拽结束”这个边沿做持久化，避免拖拽过程中高频写 storage。
       const currentSizing = table.getState().columnSizing;
       const sanitizedSizing = omitFixedWidthColumnSizing(currentSizing) ?? {};
 
@@ -66,6 +69,7 @@ export function useColumnSizingPersistence<TData>({
 
       if (onColumnResizeEnd) {
         const prev = prevSizingRef.current;
+        // 回调只通知实际变化过的列，调用方不需要自己 diff。
         for (const [key, width] of Object.entries(sanitizedSizing)) {
           if (typeof width === 'number' && prev[key] !== width) {
             onColumnResizeEnd(key, width);
@@ -83,6 +87,7 @@ export function useColumnSizingPersistence<TData>({
       clearDataTableColumnSizing(tableId, resolvedStorageMode);
     }
 
+    // reset 后恢复 initialState 中的非固定列列宽，同时同步 prevSizingRef。
     const nextColumnSizing = omitFixedWidthColumnSizing(resolvedInitialColumnSizing) ?? {};
     setColumnSizing(nextColumnSizing);
     prevSizingRef.current = nextColumnSizing;

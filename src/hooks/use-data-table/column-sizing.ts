@@ -6,6 +6,12 @@ import {
   DATA_TABLE_SELECT_COLUMN_ID
 } from './constants';
 
+/**
+ * DataTable 列宽辅助函数。
+ *
+ * 工具列（序号、选择、操作）通常是固定宽度，不应该被用户拖拽缓存覆盖；
+ * 这些 helper 负责识别固定列宽并从 columnSizing 中剔除对应项。
+ */
 function getColumnDefId<TData>(column: ColumnDef<TData>): string | undefined {
   if (typeof column.id === 'string') {
     return column.id;
@@ -18,6 +24,7 @@ function getColumnDefId<TData>(column: ColumnDef<TData>): string | undefined {
   return undefined;
 }
 
+/** 找出 min/max/size 完全相同且不可 resize 的固定宽度列。 */
 export function getFixedWidthColumnSizing<TData>(
   columns: Array<ColumnDef<TData>>
 ): ColumnSizingState {
@@ -39,6 +46,7 @@ export function getFixedWidthColumnSizing<TData>(
   }, {});
 }
 
+/** 从持久化或 state 中移除项目约定的固定工具列宽度。 */
 export function omitFixedWidthColumnSizing(
   columnSizing?: ColumnSizingState
 ): ColumnSizingState | undefined {

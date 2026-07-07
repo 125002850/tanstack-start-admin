@@ -14,8 +14,14 @@ import { Icons } from '@/components/icons';
 import { getSelectedPageRows } from '@/lib/data-table';
 import { cn } from '@/lib/utils';
 
-// ── Types ────────────────────────────────────────────────────────────
+/**
+ * 表格顶部/底部批量操作栏。
+ *
+ * action 支持静态配置，也支持基于当前 table 与选中行的动态 disabled/hidden/className；
+ * 有 children 的 action 渲染为下拉菜单，没有 children 的 action 渲染为普通按钮。
+ */
 
+/** 每个操作回调收到的上下文，selectedRows 默认只代表当前已加载页。 */
 export interface DataTableActionContext<TData> {
   table: Table<TData>;
   selectedRows: TData[];
@@ -40,8 +46,7 @@ export interface DataTableActionsBarProps<TData> {
   getSelectedRows?: () => TData[];
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
+/** 统一解析静态值和基于上下文的函数值。 */
 function resolveValue<T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: T | ((ctx: DataTableActionContext<any>) => T),
@@ -54,6 +59,7 @@ function resolveValue<T>(
     : value;
 }
 
+/** danger 类型默认映射为 destructive，普通 action 默认使用 outline。 */
 function getActionButtonVariant<TData>(
   action: DataTableAction<TData>
 ): 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' {
@@ -64,6 +70,7 @@ function getActionButtonVariant<TData>(
   return action.variant ?? 'outline';
 }
 
+/** DropdownMenuItem 只支持 default/destructive，所以这里收敛 Button variant。 */
 function getActionMenuItemVariant<TData>(
   action: DataTableAction<TData>
 ): 'default' | 'destructive' {
@@ -74,6 +81,7 @@ function getActionMenuItemVariant<TData>(
   return 'default';
 }
 
+/** 父级 action 如果所有子项都隐藏，则整个入口也不渲染。 */
 function hasVisibleChildren<TData>(
   action: DataTableAction<TData>,
   ctx: DataTableActionContext<TData>
@@ -85,6 +93,7 @@ function hasVisibleChildren<TData>(
   return action.children.some((child) => !resolveValue(child.hidden ?? false, ctx));
 }
 
+/** outline 按钮之间不加分隔符，混入强调按钮时用分隔符提高识别度。 */
 function shouldRenderActionSeparator<TData>(
   previousAction: DataTableAction<TData>,
   currentAction: DataTableAction<TData>
@@ -95,14 +104,13 @@ function shouldRenderActionSeparator<TData>(
   );
 }
 
-// ── Component ────────────────────────────────────────────────────────
-
 export function DataTableActionsBar<TData>({
   table,
   actions,
   className,
   getSelectedRows
 }: DataTableActionsBarProps<TData>) {
+  // 允许调用方传 getSelectedRows，以便和外部选择模型保持一致。
   const ctx: DataTableActionContext<TData> = {
     table,
     selectedRows: getSelectedRows ? getSelectedRows() : getSelectedPageRows(table)
@@ -130,8 +138,7 @@ export function DataTableActionsBar<TData>({
   );
 }
 
-// ── Action Item ──────────────────────────────────────────────────────
-
+/** 单个顶层 action；异步 callback 会自动进入 loading，并阻止重复点击。 */
 function ActionItem<TData>({
   action,
   ctx
@@ -156,7 +163,7 @@ function ActionItem<TData>({
     }
   }, [action, isLoading, ctx]);
 
-  // Dropdown: has children
+  // 有 children 的 action 作为下拉入口，子项自己处理 loading 和 disabled。
   if (action.children && action.children.length > 0) {
     const visibleChildren = action.children.filter(
       (child) => !resolveValue(child.hidden ?? false, ctx)
@@ -197,7 +204,7 @@ function ActionItem<TData>({
     );
   }
 
-  // Regular button
+  // 无 children 的 action 作为普通按钮。
   return (
     <Button
       variant={getActionButtonVariant(action)}
@@ -213,8 +220,7 @@ function ActionItem<TData>({
   );
 }
 
-// ── Dropdown Action Item ─────────────────────────────────────────────
-
+/** 下拉菜单 action：onSelect 中 preventDefault，避免菜单在异步任务前自动关闭造成反馈丢失。 */
 function DropdownActionItem<TData>({
   action,
   ctx,

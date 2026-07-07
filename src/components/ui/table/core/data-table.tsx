@@ -41,9 +41,17 @@ import { useDataTableColumnDnd } from '@/components/ui/table/dnd/use-data-table-
 import { useDataTableExpandPanel } from '@/components/ui/table/expand/use-data-table-expand-panel';
 import { useDataTableVirtualization } from '@/components/ui/table/virtualization/use-data-table-virtualization';
 
+/**
+ * DataTable 的主渲染组件。
+ *
+ * 该组件不负责请求数据，也不直接维护 TanStack Table 的业务状态；它消费外部传入的
+ * table 实例和少量 UI 配置，把工具栏操作、列拖拽、虚拟滚动、固定列、分页、加载骨架
+ * 与行展开面板组装成完整表格界面。
+ */
 const DATA_TABLE_SKELETON_MAX_COLUMN_COUNT = 10;
 const DATA_TABLE_SKELETON_MAX_FILTER_COUNT = 8;
 
+/** 控制加载骨架的可选参数；列数和筛选数未传时会从 table 当前状态推导。 */
 export type DataTableLoadingSkeletonConfig = Omit<
   DataTableSkeletonProps,
   'columnCount' | 'filterCount' | 'withViewOptions'
@@ -78,10 +86,18 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   expandPanelId?: string | null;
 }
 
+/** 把自动推导的骨架数量限制在合理范围，避免宽表/多筛选条件渲染过多占位元素。 */
 function getBoundedPositiveCount(value: number, max: number) {
   return Math.max(1, Math.min(value, max));
 }
 
+/**
+ * 根据真实表格状态推导骨架屏参数。
+ *
+ * - 可见列数决定骨架列数，但最多展示 10 列，保持加载态轻量。
+ * - 可筛选列数决定工具栏占位数量，但最多展示 8 个。
+ * - view options 和分页默认跟随真实表格能力，避免加载态和完成态布局跳动。
+ */
 function getDataTableLoadingSkeletonProps<TData>({
   table,
   hasViewOptions,
@@ -134,11 +150,14 @@ export function DataTable<TData>({
   onExpandedRowKeyChange,
   expandPanelId
 }: DataTableProps<TData>) {
+  // ScrollArea 的 viewport 是行/列虚拟化共同依赖的滚动容器。
   const scrollViewportRef = React.useRef<HTMLDivElement>(null);
+  // 表头行用于表体虚拟行测量真实列宽，尤其在 fixed table layout 下避免宽度漂移。
   const headerRowRef = React.useRef<HTMLTableRowElement>(null);
 
   const rows = table.getRowModel().rows;
   const columnFilters = table.getState().columnFilters;
+  // 只把有实际值的筛选计入状态判断；空字符串、空数组都视为未筛选。
   const hasFilters = columnFilters.some((filter) => {
     const value = filter.value;
     if (value === '' || value === null || value === undefined) return false;
@@ -152,6 +171,7 @@ export function DataTable<TData>({
     isLoading
   });
 
+  // 虚拟化 hook 同时返回行虚拟化配置、列虚拟窗口和 Safari 固定列兼容开关。
   const {
     ariaRowCount,
     centerVisibleLeafColumns,
@@ -166,6 +186,7 @@ export function DataTable<TData>({
     virtualization,
     scrollViewportRef
   });
+  // 固定列宽度用于定位横向滚动条，让滚动条不覆盖左/右固定列。
   const pinnedLeftWidth = table
     .getLeftVisibleLeafColumns()
     .reduce((total, column) => total + column.getSize(), 0);
@@ -173,6 +194,7 @@ export function DataTable<TData>({
     .getRightVisibleLeafColumns()
     .reduce((total, column) => total + column.getSize(), 0);
   const isFlatLeafHeader = table.getHeaderGroups().length === 1;
+  // 只有单层叶子表头才启用表头列拖拽，分组表头会由 header 结构保护而回退为静态表头。
   const {
     activeColumnDrag,
     activeDragHeader,
@@ -202,6 +224,7 @@ export function DataTable<TData>({
   const resolvedTableActions = React.useMemo(() => {
     if (!onRefresh) return tableActions;
 
+    // 刷新动作由 DataTable 统一注入到操作栏前方，业务方无需在每个表格重复声明。
     const refreshAction: DataTableAction<TData> = {
       label: '刷新列表',
       icon: <Icons.chevronsDown className='size-3.5' />,
@@ -220,6 +243,7 @@ export function DataTable<TData>({
     ? getDataTableLoadingSkeletonProps({ table, hasViewOptions, loadingSkeleton })
     : null;
   const pageRows = rows;
+  // 选择统计优先使用外部受控值；未受控时只统计当前已加载页，避免误表达跨页全选。
   const resolvedSelectedRowCount =
     selectedRowCount ??
     (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
@@ -255,8 +279,10 @@ export function DataTable<TData>({
   );
   let topPanelStyle: React.CSSProperties | undefined;
   if (isExpandLayoutActive && expandSplitLayout?.isConstrained) {
+    // 用户或配置已经指定主表高度时，用固定 flex-basis 保持上下分屏比例稳定。
     topPanelStyle = { flex: `0 0 ${expandSplitLayout.topPx}px` };
   } else if (isExpandLayoutActive) {
+    // 未受约束时让主表自然吃满剩余空间，详情面板按内容和可用高度展示。
     topPanelStyle = { flex: '1 1 0%' };
   }
 
@@ -269,6 +295,7 @@ export function DataTable<TData>({
       data-table-resize-overlay-root
       className={isExpandLayoutActive ? 'h-full rounded-lg' : 'absolute inset-0 rounded-lg'}
     >
+      {/* 表格本体始终放在 ScrollArea 内，列宽预览、虚拟化和固定列阴影都以它为坐标系。 */}
       <ScrollArea
         className='h-full w-full'
         horizontalScrollbarProps={{
@@ -298,6 +325,7 @@ export function DataTable<TData>({
             onDragCancel={handleColumnDragCancel}
           >
             <SortableContext items={sortableColumnIds} strategy={horizontalListSortingStrategy}>
+              {/* fixed table layout 配合 colgroup/虚拟列宽，保证列宽由 TanStack state 控制。 */}
               <Table
                 aria-rowcount={ariaRowCount}
                 data-column-virtual-enabled={shouldVirtualizeColumns ? 'true' : undefined}
@@ -333,6 +361,7 @@ export function DataTable<TData>({
                   onRowClick={
                     expandConfig
                       ? (rowKey) => {
+                          // 点击当前已展开行不重复触发，避免关闭/重开造成详情面板闪烁。
                           if (rowKey === expandedRowKey) {
                             return;
                           }
@@ -348,6 +377,7 @@ export function DataTable<TData>({
             </SortableContext>
             <DragOverlay>
               {activeDragHeader ? (
+                // 拖拽 overlay 使用原始表头宽度，减少拖动时的视觉跳动。
                 <DataTableHeaderDragOverlay
                   header={activeDragHeader}
                   width={activeColumnDrag?.width ?? null}
@@ -363,6 +393,7 @@ export function DataTable<TData>({
   return (
     <div className='flex flex-1 flex-col gap-3'>
       {resolvedStatus?.type === 'permission' ? (
+        // 权限态通常需要占满表格区域，以卡片方式展示，比嵌入 tbody 更清晰。
         <DataTableStatus status={resolvedStatus} className='flex-1' />
       ) : (
         <>
@@ -420,6 +451,7 @@ export function DataTable<TData>({
             expandedRow &&
             expandPanelId ? (
               <>
+                {/* 分屏 handle 同时支持鼠标拖拽和键盘 Arrow/Home/End 调整。 */}
                 <DataTableExpandResizeHandle
                   min={expandSplitLayout.minTopPx}
                   max={expandSplitLayout.maxTopPx}

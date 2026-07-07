@@ -2,6 +2,12 @@ import type { ColumnDef, PaginationState, Row, Table } from '@tanstack/react-tab
 
 import { DATA_TABLE_ROW_NUMBER_COLUMN_ID, DATA_TABLE_ROW_NUMBER_COLUMN_WIDTH } from '../constants';
 
+/**
+ * DataTable 自动生成的序号列。
+ *
+ * 默认按当前页和可见行位置连续编号；也可通过 rowNumberDisplayMode='original'
+ * 让编号跟随原始数据数组索引，适合展示后端原始排序。
+ */
 export type RowNumberDisplayMode = 'static' | 'original';
 
 export interface RowNumberColumnMeta {
@@ -20,6 +26,7 @@ function estimateRowNumberWidth(totalCount?: number): number {
 }
 
 function getVisibleRowIndex<TData>(table: Table<TData>, row: Row<TData>): number {
+  // 过滤/排序后的 rowModel 位置优先；找不到时退回 TanStack Row 的原始 index。
   const visibleIndex = table.getRowModel().rows.findIndex((visibleRow) => visibleRow.id === row.id);
   return visibleIndex >= 0 ? visibleIndex : row.index;
 }
@@ -39,6 +46,7 @@ export function createRowNumberColumn<TData>(totalCount?: number): ColumnDef<TDa
       const displayMode = meta.rowNumberDisplayMode ?? 'static';
       const { pageIndex, pageSize } = meta.rowNumberPagination ?? table.getState().pagination;
       const rowIndex = displayMode === 'original' ? row.index : getVisibleRowIndex(table, row);
+      // static 模式叠加 pageIndex/pageSize，服务端分页时也能显示全局连续序号。
       const rowNumber =
         displayMode === 'original' ? rowIndex + 1 : pageIndex * pageSize + rowIndex + 1;
 

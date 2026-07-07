@@ -9,16 +9,24 @@ import type { Header } from '@tanstack/react-table';
 
 import { clampWidth, calculateOverlayLeft } from '@/lib/data-table-column-resize-overlay';
 
+/**
+ * 列宽拖拽 handle。
+ *
+ * TanStack Table 负责最终 columnSizing 状态；本组件额外创建一个轻量 overlay，提供拖拽中
+ * 的实时宽度预览，并在 Escape 时恢复拖拽前宽度。
+ */
 interface DataTableColumnResizeHandleProps<TData> {
   header: Header<TData, unknown>;
 }
 
+/** 创建 overlay 需要的三个 DOM 锚点：表格外层、滚动视口和当前 th。 */
 interface ResizeOverlayHost {
   overlayRoot: HTMLElement;
   scrollViewport: HTMLElement;
   headerCell: HTMLTableCellElement;
 }
 
+/** 一次拖拽会话内稳定不变的起点和宽度边界。 */
 interface ResizePreviewSession {
   startX: number;
   startWidth: number;

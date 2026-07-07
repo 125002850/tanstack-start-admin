@@ -10,12 +10,20 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { formatDateOnly } from '@/lib/format';
 
+/**
+ * 日期/日期范围筛选控件。
+ *
+ * 单日期在 column filter 中保存为毫秒时间戳；范围筛选保存为 `[from, to]`，其中任意一端
+ * 可以为空。useDslDataTable 会在后端请求阶段再把这些时间戳转换为日开始/日结束。
+ */
 type DateSelection = Date[] | DateRange;
 
+/** react-day-picker 的 range 值是对象，single/multiple 日期值是数组。 */
 function getIsDateRange(value: DateSelection): value is DateRange {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 
+/** 兼容字符串和数字时间戳，非法值返回 undefined 而不是 Invalid Date。 */
 function parseAsDate(timestamp: number | string | undefined): Date | undefined {
   if (!timestamp) return undefined;
   const numericTimestamp = typeof timestamp === 'string' ? Number(timestamp) : timestamp;
@@ -23,6 +31,7 @@ function parseAsDate(timestamp: number | string | undefined): Date | undefined {
   return !Number.isNaN(date.getTime()) ? date : undefined;
 }
 
+/** TanStack column filter value 可能来自 URL/缓存/手写代码，这里统一收敛为数组。 */
 function parseColumnFilterValue(value: unknown) {
   if (value === null || value === undefined) {
     return [];
@@ -58,6 +67,7 @@ export function DataTableDateFilter<TData>({
   const columnFilterValue = column.getFilterValue();
 
   const selectedDates = React.useMemo<DateSelection>(() => {
+    // multiple=true 表示日期范围；false 表示单日期。
     if (!columnFilterValue) {
       return multiple ? { from: undefined, to: undefined } : [];
     }
@@ -83,10 +93,12 @@ export function DataTableDateFilter<TData>({
       }
 
       if (multiple && !('getTime' in date)) {
+        // 范围筛选写入 [from, to]，缺失端保持 undefined，方便后续序列化为 GTE/LTE。
         const from = date.from?.getTime();
         const to = date.to?.getTime();
         column.setFilterValue(from || to ? [from, to] : undefined);
       } else if (!multiple && 'getTime' in date) {
+        // 单日期直接保存当天时间戳，DSL 层负责扩展为整天 BETWEEN。
         column.setFilterValue(date.getTime());
       }
     },
@@ -103,6 +115,7 @@ export function DataTableDateFilter<TData>({
   );
 
   const hasValue = React.useMemo(() => {
+    // Button 的 data-active 只在真正有日期值时打开，空范围不算有效筛选。
     if (multiple) {
       if (!getIsDateRange(selectedDates)) return false;
       return selectedDates.from || selectedDates.to;

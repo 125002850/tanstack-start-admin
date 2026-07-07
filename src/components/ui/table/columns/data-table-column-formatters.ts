@@ -7,6 +7,12 @@ import {
   nullableYesNo
 } from '@/lib/display-formatters';
 
+/**
+ * DataTable 字段格式化规则集合。
+ *
+ * createDataTableColumnDsl 可以接收这些 rule：当字段 key 命中 keys 时，统一应用金额、
+ * 日期、整数、百分比等展示格式，未命中时再走 fallbackFormatValue。
+ */
 export type DataTableColumnKey<TData> = Extract<keyof TData, string>;
 export type DataTableFieldValue<TData> = TData[DataTableColumnKey<TData>];
 export type DataTableFieldFormatter<TData> = (
@@ -23,6 +29,7 @@ export interface DataTableFieldFormatterRule<TData> {
   formatValue: DataTableFieldFormatter<TData>;
 }
 
+/** keys 支持数组或 Set，这里统一判断某个字段是否命中格式化规则。 */
 export function hasFormatterKey<TData>(
   keys: DataTableFieldFormatterKeys<TData>,
   key: DataTableColumnKey<TData>
@@ -31,6 +38,7 @@ export function hasFormatterKey<TData>(
   return (keys as ReadonlySet<keyof TData>).has(key);
 }
 
+/** 创建单条字段格式化规则，避免每个 formatter 重复拼装对象。 */
 function createFieldFormatterRule<TData>(
   keys: DataTableFieldFormatterKeys<TData>,
   formatValue: DataTableFieldFormatter<TData>
@@ -38,6 +46,7 @@ function createFieldFormatterRule<TData>(
   return { keys, formatValue };
 }
 
+/** 常用列格式化规则工厂；返回值需要传入 createDataTableColumnDsl({ fieldFormatters })。 */
 export const dataTableColumnFormatters = {
   money<TData>(keys: DataTableFieldFormatterKeys<TData>) {
     return createFieldFormatterRule<TData>(keys, (value) =>

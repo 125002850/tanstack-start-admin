@@ -9,6 +9,12 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
+/**
+ * DataTable 加载骨架屏。
+ *
+ * 外形尽量贴近真实 DataTable：筛选区、显示列按钮、表头、表体和分页栏都可按需开启。
+ * DataTable 主组件会根据真实列数/筛选数自动推导参数，调用方也可显式覆盖。
+ */
 export interface DataTableSkeletonProps extends React.ComponentProps<'div'> {
   columnCount: number;
   rowCount?: number;
@@ -30,6 +36,7 @@ export function DataTableSkeleton({
   className,
   ...props
 }: DataTableSkeletonProps) {
+  // cellWidths 可传少量模板宽度，这里按列数循环展开，便于制造更自然的占位宽度。
   const cozyCellWidths = Array.from(
     { length: columnCount },
     (_, index) => cellWidths[index % cellWidths.length] ?? 'auto'

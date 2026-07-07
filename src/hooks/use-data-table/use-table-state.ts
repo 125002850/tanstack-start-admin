@@ -58,6 +58,7 @@ export function useTableState<TData>({
   externalOnColumnOrderChange: UseDataTableProps<TData>['onColumnOrderChange'];
   fixedWidthColumnSizing: ColumnSizingState;
 }) {
+  // rowSelection、columnVisibility、columnPinning 都保持纯内存状态，不做持久化。
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
     resolvedInitialState?.rowSelection ?? {}
   );
@@ -71,6 +72,7 @@ export function useTableState<TData>({
     normalizeColumnOrder(resolvedInitialState?.columnOrder) ?? []
   );
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
+    // 列顺序优先恢复缓存；没有缓存时才使用 initialState。
     const cachedOrder = tableId
       ? loadDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode)
       : [];
@@ -80,12 +82,14 @@ export function useTableState<TData>({
   });
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => ({
     ...resolvedInitialState?.columnSizing,
+    // 持久化列宽不能覆盖固定宽度工具列，所以恢复时先做 omitFixedWidthColumnSizing。
     ...omitFixedWidthColumnSizing(
       tableId ? loadDataTableColumnSizing(tableId, resolvedStorageMode) : {}
     )
   }));
   const initialSortingRef = React.useRef<SortingState>(resolvedInitialState?.sorting ?? []);
   const [sorting, setSorting] = React.useState<SortingState>(() => {
+    // 排序缓存和 initialState 二选一，缓存表示用户已经做过显式调整。
     const cachedSorting = tableId
       ? readDataTableSorting(tableId, resolvedSortingStorageMode)
       : null;
@@ -98,6 +102,7 @@ export function useTableState<TData>({
       if (!tableId || resolvedColumnOrderStorageMode === false) return;
 
       if (areDataTableColumnOrdersEqual(nextColumnOrder, initialColumnOrderRef.current)) {
+        // 回到初始顺序时删除缓存，避免 localStorage 长期保留无意义数据。
         clearDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode);
         return;
       }
@@ -116,6 +121,7 @@ export function useTableState<TData>({
             : updaterOrValue;
         const next = normalizeColumnOrder(nextRaw) ?? [];
 
+        // 先持久化再更新本地 state，确保外部回调读到的是同一个 next。
         persistColumnOrder(next);
         return next;
       });
@@ -131,6 +137,7 @@ export function useTableState<TData>({
     }
 
     const nextColumnOrder = initialColumnOrderRef.current;
+    // reset 同时通知外部受控监听方，保持内部/外部列顺序一致。
     setColumnOrder(nextColumnOrder);
     externalOnColumnOrderChange?.(nextColumnOrder);
   }, [externalOnColumnOrderChange, resolvedColumnOrderStorageMode, tableId]);
@@ -142,11 +149,13 @@ export function useTableState<TData>({
           ? (updaterOrValue as (prev: ColumnSizingState) => ColumnSizingState)(prev)
           : updaterOrValue;
 
+      // 固定宽度工具列的列宽由定义决定，用户拖拽/缓存都不能覆盖。
       return omitFixedWidthColumnSizing(next) ?? {};
     });
   }, []);
 
   React.useEffect(() => {
+    // resolvedColumns 变化后重新剔除固定宽度列，防止旧缓存污染新列结构。
     setColumnSizing((prev) => omitFixedWidthColumnSizing(prev) ?? prev);
   }, [fixedWidthColumnSizing]);
 
@@ -158,6 +167,7 @@ export function useTableState<TData>({
   }));
 
   React.useEffect(() => {
+    // 受控 pageSize 改变时同步到 pagination，但保留当前 pageIndex。
     setPagination((prev) => {
       if (prev.pageSize === perPage) return prev;
       return { ...prev, pageSize: perPage };
@@ -169,6 +179,7 @@ export function useTableState<TData>({
       setPagination((prev) => {
         const next = typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue;
         if (next.pageSize !== prev.pageSize) {
+          // pageSize 变化向上传递，由调用方决定是否持久化或同步 URL。
           onPageSizeChange?.(next.pageSize);
         }
         return next;
@@ -182,6 +193,7 @@ export function useTableState<TData>({
       if (!tableId || resolvedSortingStorageMode === false) return;
 
       if (areDataTableSortingStatesEqual(nextSorting, initialSortingRef.current)) {
+        // 排序回到初始值时清缓存，避免默认排序被永久写死。
         clearDataTableSorting(tableId, resolvedSortingStorageMode);
         return;
       }
@@ -218,6 +230,7 @@ export function useTableState<TData>({
     }
 
     previousRowSelectionScopeKeyRef.current = rowSelectionScopeKey;
+    // 数据上下文切换后清空选择，避免把上一批数据的 row id 套到当前列表。
     setRowSelection({});
   }, [rowSelectionScopeKey]);
 

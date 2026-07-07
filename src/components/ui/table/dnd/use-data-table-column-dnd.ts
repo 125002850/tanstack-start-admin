@@ -12,6 +12,12 @@ import * as React from 'react';
 import { getCanReorderColumn } from '@/components/ui/table/core/data-table-header';
 import { moveDataTableColumnOrder } from '@/lib/data-table-state-persistence';
 
+/**
+ * 表头列顺序拖拽 hook。
+ *
+ * 只允许中间区域的可重排列参与拖拽；左/右固定列以及工具列由表格状态统一管理。
+ * 拖拽结束后只更新 TanStack columnOrder，持久化由 useTableState 接管。
+ */
 const COLUMN_ORDER_LONG_PRESS_DELAY_MS = 180;
 const COLUMN_ORDER_LONG_PRESS_TOLERANCE_PX = 8;
 const COLUMN_ORDER_LONG_PRESS_TOUCH_TOLERANCE_PX = 12;
@@ -25,6 +31,7 @@ export function useDataTableColumnDnd<TData>({
   centerVisibleLeafColumns: Array<Column<TData>>;
   isFlatLeafHeader: boolean;
 }) {
+  // dnd-kit 拖拽结束时可能紧接着触发 click capture，这里用短生命周期标记吞掉误点击。
   const suppressHeaderClickRef = React.useRef(false);
   const suppressHeaderClickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activeColumnDrag, setActiveColumnDrag] = React.useState<{
@@ -55,6 +62,7 @@ export function useDataTableColumnDnd<TData>({
   }, []);
 
   const sortableColumnIds = React.useMemo(() => {
+    // 分组/多层表头不启用拖拽，避免 header colSpan 与叶子列顺序不一致。
     if (!isFlatLeafHeader) return [];
 
     const draggableColumnIds = centerVisibleLeafColumns
@@ -69,6 +77,7 @@ export function useDataTableColumnDnd<TData>({
     : undefined;
 
   const armSuppressHeaderClick = React.useCallback(() => {
+    // setTimeout(0) 只跨过当前事件循环，足以覆盖拖拽释放后的合成点击。
     suppressHeaderClickRef.current = true;
 
     if (suppressHeaderClickTimerRef.current !== null) {
@@ -107,6 +116,7 @@ export function useDataTableColumnDnd<TData>({
       const activeRect = event.active.rect.current.initial;
       setActiveColumnDrag({
         columnId,
+        // overlay 宽度取起始矩形，避免拖动过程中因为表格布局变化而抖动。
         width: activeRect?.width ? Math.round(activeRect.width) : null
       });
       armSuppressHeaderClick();
@@ -131,6 +141,7 @@ export function useDataTableColumnDnd<TData>({
       }
 
       const currentColumnOrder = table.getAllLeafColumns().map((column) => column.id);
+      // moveDataTableColumnOrder 保持原数组中其他列顺序不变，只移动 activeId。
       const nextColumnOrder = moveDataTableColumnOrder(currentColumnOrder, activeId, overId);
 
       table.setColumnOrder(nextColumnOrder);

@@ -13,6 +13,12 @@ import { getSelectedPageRowCount } from '@/lib/data-table';
 import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table-state-persistence';
 import { cn } from '@/lib/utils';
 
+/**
+ * DataTable 底部分页栏。
+ *
+ * 该组件直接操作 TanStack table 的 pagination API，并把“当前页选择数”和“总条数”
+ * 分开处理，避免服务端分页场景下把当前页 rows.length 误当作全量总数。
+ */
 export interface DataTablePaginationLabels {
   selectedRowsText?: (selectedCount: number, totalCount: number) => string;
   totalRowsText?: (totalCount: number) => string;
@@ -45,6 +51,7 @@ export function DataTablePagination<TData>({
   className,
   ...props
 }: DataTablePaginationProps<TData>) {
+  // 文案全部支持外部覆盖，默认值保持中文后台语境。
   const selectedRowsText =
     labels?.selectedRowsText ??
     ((selectedCount: number, totalCount: number) => `已选择 ${selectedCount} / ${totalCount} 行`);
@@ -52,6 +59,7 @@ export function DataTablePagination<TData>({
     labels?.totalRowsText ?? ((totalCount: number) => `共 ${totalCount} 条数据`);
   const pageText =
     labels?.pageText ?? ((page: number, totalPages: number) => `第 ${page} / ${totalPages} 页`);
+  // selectedRowCount 一旦受控，selectedTotalRowCount 优先配合外部 totalRowCount 使用。
   const isSelectedRowCountControlled = selectedRowCount !== undefined;
   const resolvedSelectedRowCount =
     selectedRowCount ??
@@ -85,6 +93,7 @@ export function DataTablePagination<TData>({
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
+              // pageSize 变化会通过 useDataTable/useTableState 同步到持久化层。
               table.setPageSize(Number(value));
             }}
           >

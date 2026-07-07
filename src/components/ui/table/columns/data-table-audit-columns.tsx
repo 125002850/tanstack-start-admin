@@ -2,6 +2,12 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 
+/**
+ * 常见审计字段列定义。
+ *
+ * 该 helper 面向 createBy/createTime/updateBy/updateTime 这类后端通用字段，把创建/更新人
+ * 和时间合并成两列，避免每个管理页面重复写同样的 cell 布局。
+ */
 export interface AuditFields {
   createBy?: number | null;
   createTime?: string | null;

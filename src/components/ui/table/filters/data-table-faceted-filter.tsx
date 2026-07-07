@@ -18,6 +18,12 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
 
+/**
+ * 枚举/多选筛选控件。
+ *
+ * column filter value 统一保存为字符串数组：单选也使用 `[value]`，这样 toolbar、DSL
+ * 序列化和 Badge 摘要可以共用同一种数据形态。
+ */
 export interface DataTableFacetedFilterLabels {
   clearFilterAriaLabel?: (title?: string) => string;
   selectedSummaryText?: (count: number) => string;
@@ -44,6 +50,7 @@ export function DataTableFacetedFilter<TData, TValue>({
   const [open, setOpen] = React.useState(false);
 
   const columnFilterValue = column?.getFilterValue();
+  // Set 只作为渲染和切换时的本地结构，写回 column 时仍转换为数组。
   const selectedValues = React.useMemo(
     () => new Set(Array.isArray(columnFilterValue) ? columnFilterValue : []),
     [columnFilterValue]
@@ -54,6 +61,7 @@ export function DataTableFacetedFilter<TData, TValue>({
       if (!column) return;
 
       if (multiple) {
+        // 多选：切换当前 option，并在没有任何值时清空 filter。
         const newSelectedValues = new Set(selectedValues);
         if (isSelected) {
           newSelectedValues.delete(option.value);
@@ -63,6 +71,7 @@ export function DataTableFacetedFilter<TData, TValue>({
         const filterValues = Array.from(newSelectedValues);
         column.setFilterValue(filterValues.length ? filterValues : undefined);
       } else {
+        // 单选：再次点击已选项表示清空；选择新值后立即关闭 popover。
         column.setFilterValue(isSelected ? undefined : [option.value]);
         setOpen(false);
       }

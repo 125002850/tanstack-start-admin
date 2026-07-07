@@ -1,8 +1,9 @@
 const DEFAULT_MIN_SIZE = 80;
 
 /**
- * Clamp a preview width to column min/max constraints.
- * Pure function — no DOM access.
+ * 将拖拽预览宽度限制在列 min/max 范围内。
+ *
+ * 这是无 DOM 访问的纯函数，方便单元测试覆盖列宽边界。
  */
 export function clampWidth(
   startWidth: number,
@@ -19,18 +20,18 @@ export function clampWidth(
 }
 
 export interface OverlayPositionParams {
-  /** The column th's left edge relative to viewport */
+  /** 当前 th 相对 viewport 的左边界。 */
   columnLeft: number;
-  /** The overlay root's left edge relative to viewport */
+  /** overlay root 相对 viewport 的左边界。 */
   rootLeft: number;
-  /** The scroll viewport's current scrollLeft (horizontal scroll offset) */
+  /** 横向滚动容器当前 scrollLeft。 */
   scrollLeft: number;
 }
 
 /**
- * Calculate the overlay's left offset relative to the overlay root.
- * Accounts for horizontal scroll so the overlay stays aligned with the column
- * when the user has scrolled right.
+ * 计算 overlay 相对 overlay root 的 left。
+ *
+ * 需要加上 scrollLeft，否则用户横向滚动后预览层会停留在可视区域坐标，而不是列的真实位置。
  */
 export function calculateOverlayLeft(params: OverlayPositionParams): number {
   return params.columnLeft - params.rootLeft + params.scrollLeft;

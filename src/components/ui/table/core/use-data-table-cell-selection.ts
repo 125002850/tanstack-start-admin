@@ -12,6 +12,12 @@ import {
   DATA_TABLE_ROW_NUMBER_COLUMN_ID
 } from '@/hooks/use-data-table/constants';
 
+/**
+ * 单元格点击选择与复制反馈。
+ *
+ * 该 hook 不修改 TanStack rowSelection；它维护一套独立的“当前复制单元格”状态：
+ * 点击普通业务单元格后，用户按 Cmd/Ctrl+C 会把该单元格文本写入剪贴板，并触发短暂闪烁。
+ */
 const DATA_TABLE_CELL_SELECTION_CHANGE_EVENT = 'data-table-cell-selection-change';
 const DATA_TABLE_CELL_COPY_FEEDBACK_DURATION_MS = 960;
 
@@ -43,6 +49,7 @@ type UseDataTableCellSelectionOptions = {
 
 let activeCellSelectionOwner: symbol | null = null;
 
+/** 广播当前拥有单元格复制焦点的表格实例，保证页面上多个 DataTable 互斥。 */
 function emitDataTableCellSelectionChange(owner: symbol | null) {
   if (typeof window === 'undefined') {
     return;
@@ -55,6 +62,7 @@ function emitDataTableCellSelectionChange(owner: symbol | null) {
   );
 }
 
+/** 工具列、行号列和固定列不参与单元格复制选择，避免和操作/固定区交互冲突。 */
 function canSelectDataTableCell<TData>(cell: Cell<TData, unknown>): boolean {
   const columnId = cell.column.id;
 
@@ -65,10 +73,12 @@ function canSelectDataTableCell<TData>(cell: Cell<TData, unknown>): boolean {
   );
 }
 
+/** 统一换行符，防止不同浏览器 innerText 产生 CRLF 差异。 */
 function normalizeDataTableCellClipboardText(value: unknown): string {
   return String(value ?? '').replace(/\r\n?/g, '\n');
 }
 
+/** 优先使用列 meta.copyValue；未提供时退回到单元格 DOM 文本。 */
 function getDataTableCellClipboardText<TData>(
   cellElement: HTMLTableCellElement,
   cell: Cell<TData, unknown>
@@ -86,11 +96,13 @@ function getDataTableCellClipboardText<TData>(
   return normalizeDataTableCellClipboardText(text);
 }
 
+/** 如果用户已经手动框选文本，则尊重原生复制，不抢 clipboard。 */
 function hasUserTextSelection(): boolean {
   const selection = document.getSelection();
   return Boolean(selection && !selection.isCollapsed && selection.toString().length > 0);
 }
 
+/** 输入框、textarea、select 和 contenteditable 内的复制必须交给控件自身处理。 */
 function isEditableCopyTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -114,6 +126,7 @@ function isEditableCopyTarget(target: EventTarget | null): boolean {
 export function useDataTableCellSelection<TData>({
   shouldIgnoreTarget
 }: UseDataTableCellSelectionOptions = {}) {
+  // ownerRef 是当前 hook 实例的唯一身份，用于跨表格协调复制焦点。
   const ownerRef = useRef(Symbol('data-table-cell-selection'));
   const copyFeedbackTimeoutRef = useRef<number | null>(null);
   const nextCopyFeedbackRunRef = useRef<DataTableCellCopyFeedbackState['run']>('a');
@@ -131,6 +144,7 @@ export function useDataTableCellSelection<TData>({
 
   const flashCopiedCell = useCallback(
     (cellId: string) => {
+      // run 在 a/b 间切换，让同一个单元格连续复制时也能重新触发 CSS 动画。
       clearCopyFeedbackTimeout();
       const run = nextCopyFeedbackRunRef.current;
       nextCopyFeedbackRunRef.current = run === 'a' ? 'b' : 'a';
@@ -151,6 +165,7 @@ export function useDataTableCellSelection<TData>({
 
   const handleCellClick = useCallback(
     (event: ReactMouseEvent<HTMLTableCellElement>, cell: Cell<TData, unknown>) => {
+      // 行展开、按钮等交互目标可通过 shouldIgnoreTarget 阻止单元格选中。
       if (shouldIgnoreTarget?.(event.target, event.currentTarget)) {
         return;
       }
@@ -188,6 +203,7 @@ export function useDataTableCellSelection<TData>({
 
   useEffect(() => {
     const handleSelectionChange = (event: Event) => {
+      // 其他 DataTable 获得单元格焦点时，当前表格同步清空高亮。
       const detail = (event as CustomEvent<DataTableCellSelectionChangeDetail>).detail;
       if (detail?.owner !== ownerRef.current) {
         setActiveCell(null);
@@ -216,6 +232,7 @@ export function useDataTableCellSelection<TData>({
 
   useEffect(() => {
     const handleCopy = (event: ClipboardEvent) => {
+      // 只有当前 hook 实例持有复制焦点时才接管 copy 事件。
       if (activeCellSelectionOwner !== ownerRef.current || !activeCell) {
         return;
       }

@@ -8,8 +8,15 @@ import {
 } from '@/lib/data-table-expand-split';
 import type { ExpandConfigEdge } from '@/types/data-table';
 
+/**
+ * 行展开面板的布局与交互状态 hook。
+ *
+ * 它负责 active tab 解析、主表/详情面板分屏尺寸计算、ResizeObserver 测量、
+ * 拖拽调整和键盘调整。展开的行 key 仍由 useDataTable 暴露给外层控制。
+ */
 const FALLBACK_EXPAND_HOST_HEIGHT = 800;
 
+/** 当前 active tab 不可用时，按 defaultTab -> 第一个可用 tab 的顺序回退。 */
 function resolveExpandActiveTabId<TData>(
   expandConfig: ExpandConfigEdge<TData>,
   row: TData,
@@ -45,6 +52,7 @@ export function useDataTableExpandPanel<TData>({
   isExpanded: boolean;
   onExpandedRowKeyChange?: (rowKey: string | null) => void;
 }) {
+  // 三个 DOM 引用分别用于测量宿主高度、直接调整主表高度和统计分页区占用高度。
   const expandHostRef = React.useRef<HTMLDivElement>(null);
   const topPanelRef = React.useRef<HTMLDivElement>(null);
   const paginationRef = React.useRef<HTMLDivElement>(null);
@@ -62,6 +70,7 @@ export function useDataTableExpandPanel<TData>({
   const [isDragging, setIsDragging] = React.useState(false);
   const expandTableSizing = expandConfig?.tableSizing ?? DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING;
   const expandSplitLayout = React.useMemo(
+    // 只有真正展开时才计算分屏布局；未展开时返回 null，避免无意义测量。
     () =>
       isExpanded
         ? resolveExpandSplitLayout({
@@ -89,6 +98,7 @@ export function useDataTableExpandPanel<TData>({
   );
 
   React.useEffect(() => {
+    // 换行或 tabs 可用性变化时，activeTab 需要重新校准。
     if (!expandConfig || !expandedRow) {
       setActiveExpandTab(null);
       return;
@@ -108,6 +118,7 @@ export function useDataTableExpandPanel<TData>({
     }
 
     const measure = () => {
+      // getBoundingClientRect 更接近真实布局；clientHeight 和 fallback 只作为兜底。
       const nextHeight =
         Math.round(hostElement.getBoundingClientRect().height) ||
         hostElement.clientHeight ||
@@ -117,6 +128,7 @@ export function useDataTableExpandPanel<TData>({
 
       const paginationEl = paginationRef.current;
       if (paginationEl) {
+        // 分页区域属于主表区下方开销，详情分屏高度需要扣掉它。
         const paginationHeight = Math.round(paginationEl.getBoundingClientRect().height);
         setExpandOverheadPx((current) =>
           current === paginationHeight ? current : paginationHeight
@@ -154,6 +166,7 @@ export function useDataTableExpandPanel<TData>({
       }
 
       const deltaY = event.clientY - dragState.startY;
+      // 拖拽过程中直接写 DOM style，避免高频 setState 造成表格重渲染。
       const clampedTopPx = Math.min(
         Math.max(dragState.startTopPx + deltaY, dragState.minTopPx),
         dragState.maxTopPx
@@ -166,6 +179,7 @@ export function useDataTableExpandPanel<TData>({
     const handlePointerUp = () => {
       const dragState = dragStateRef.current;
       if (dragState) {
+        // 拖拽结束后再写入 React state，作为下一次布局计算的 requestedTopPx。
         setRequestedSplitTopPx(parseInt(dragState.topPanel.style.height, 10));
       }
       dragStateRef.current = null;
@@ -195,6 +209,7 @@ export function useDataTableExpandPanel<TData>({
       let nextTopPx: number | null = null;
 
       switch (event.key) {
+        // 键盘调整使用固定步长，Home/End 对应允许范围边界。
         case 'ArrowUp':
           nextTopPx = expandSplitLayout.topPx - DATA_TABLE_EXPAND_KEYBOARD_STEP_PX;
           break;
@@ -234,6 +249,7 @@ export function useDataTableExpandPanel<TData>({
       const topEl = topPanelRef.current;
       if (!topEl) return;
 
+      // 记录拖拽起点和边界，pointermove 中只基于这份快照计算高度。
       setIsDragging(true);
       dragStateRef.current = {
         startY: event.clientY,

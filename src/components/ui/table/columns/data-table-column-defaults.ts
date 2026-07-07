@@ -1,5 +1,11 @@
 import type { DataTableColumnResolvedDefaults } from '@/components/ui/table/columns/data-table-column-options';
 
+/**
+ * DataTable DSL 各类列的默认行为。
+ *
+ * 这些默认值最终会被 resolveDataTableColumnOptions 合并进 TanStack ColumnDef；
+ * 业务列默认可在列面板显示/排序，操作列默认固定尺寸且不参与筛选、隐藏或拖拽。
+ */
 export const FIELD_COLUMN_DEFAULTS = {
   enableSorting: false,
   columnPanelVisible: true,
