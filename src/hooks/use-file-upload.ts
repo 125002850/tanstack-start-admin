@@ -2,10 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import {
-  uploadFileObjectMutationOptions,
-  type StoredFileRspDTO
-} from '@/lib/api/clients/service';
+import { uploadFileObjectMutationOptions, type StoredFileRspDTO } from '@/lib/api/clients/service';
 
 type FileUploadToastMessages = {
   loading: string;
@@ -36,7 +33,10 @@ const ALLOWED_EXTENSIONS = [
   '.csv'
 ];
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const DEFAULT_MAX_FILE_SIZE_MIB = 20;
+const BYTES_PER_KIBIBYTE = 1024;
+const BYTES_PER_MEBIBYTE = BYTES_PER_KIBIBYTE * BYTES_PER_KIBIBYTE;
+const MAX_FILE_SIZE = DEFAULT_MAX_FILE_SIZE_MIB * BYTES_PER_MEBIBYTE;
 
 const defaultToastMessages: FileUploadToastMessages = {
   loading: '附件上传中...',
@@ -44,7 +44,13 @@ const defaultToastMessages: FileUploadToastMessages = {
   error: '附件上传失败'
 };
 
-export function useFileUpload({ bizPath, objectKey, toastMessages, accept, maxSize }: UseFileUploadOptions) {
+export function useFileUpload({
+  bizPath,
+  objectKey,
+  toastMessages,
+  accept,
+  maxSize
+}: UseFileUploadOptions) {
   const uploadMutation = useMutation(uploadFileObjectMutationOptions());
   const messages = useMemo(
     () => ({
@@ -54,15 +60,13 @@ export function useFileUpload({ bizPath, objectKey, toastMessages, accept, maxSi
     [toastMessages]
   );
 
-      const allowedExtensions = useMemo(
-    () => (accept?.length ? accept : ALLOWED_EXTENSIONS),
-    [accept]
-  );
+  const allowedExtensions = useMemo(() => (accept?.length ? accept : ALLOWED_EXTENSIONS), [accept]);
 
   const resolvedMaxSize = maxSize ?? MAX_FILE_SIZE;
-  const sizeLabel = resolvedMaxSize >= 1024 * 1024
-    ? `${resolvedMaxSize / (1024 * 1024)}MB`
-    : `${Math.round(resolvedMaxSize / 1024)}KB`;
+  const sizeLabel =
+    resolvedMaxSize >= BYTES_PER_MEBIBYTE
+      ? `${resolvedMaxSize / BYTES_PER_MEBIBYTE}MB`
+      : `${Math.round(resolvedMaxSize / BYTES_PER_KIBIBYTE)}KB`;
 
   const upload = useCallback(
     (file: File) => {

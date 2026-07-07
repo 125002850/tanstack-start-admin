@@ -91,6 +91,37 @@ function AutocompleteInputInner<TItem>(
     [forwardedRef, setTriggerNode]
   );
 
+  const renderCommandContent = () => {
+    if (loading) {
+      return <CommandEmpty>{loadingText}</CommandEmpty>;
+    }
+
+    if (!hasItems) {
+      return <CommandEmpty>{empty}</CommandEmpty>;
+    }
+
+    return (
+      <CommandGroup>
+        {items.map((item, index) => {
+          const itemValue = itemToValue(item);
+          return (
+            <CommandItem
+              key={getItemKey?.(item, index) ?? itemValue}
+              value={itemValue}
+              aria-label={getItemAriaLabel?.(item, index) ?? itemValue}
+              onSelect={() => {
+                onSelect(item);
+                setOpen(false);
+              }}
+            >
+              {renderItem(item, index)}
+            </CommandItem>
+          );
+        })}
+      </CommandGroup>
+    );
+  };
+
   return (
     <Command
       label={commandLabel}
@@ -122,30 +153,7 @@ function AutocompleteInputInner<TItem>(
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <CommandList onMouseDown={(event) => event.preventDefault()}>
-            {loading ? (
-              <CommandEmpty>{loadingText}</CommandEmpty>
-            ) : hasItems ? (
-              <CommandGroup>
-                {items.map((item, index) => {
-                  const itemValue = itemToValue(item);
-                  return (
-                    <CommandItem
-                      key={getItemKey?.(item, index) ?? itemValue}
-                      value={itemValue}
-                      aria-label={getItemAriaLabel?.(item, index) ?? itemValue}
-                      onSelect={() => {
-                        onSelect(item);
-                        setOpen(false);
-                      }}
-                    >
-                      {renderItem(item, index)}
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
-            ) : (
-              <CommandEmpty>{empty}</CommandEmpty>
-            )}
+            {renderCommandContent()}
           </CommandList>
         </PopoverContent>
       </Popover>

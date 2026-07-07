@@ -3,21 +3,35 @@ import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
 import { cn } from '@/lib/utils';
 
+type ScrollAreaScrollbarProps = React.ComponentProps<
+  typeof ScrollAreaPrimitive.ScrollAreaScrollbar
+> & {
+  [key: `data-${string}`]: string | number | undefined;
+};
+
 type ScrollAreaProps = React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  horizontalScrollbarProps?: ScrollAreaScrollbarProps;
   viewportProps?: React.ComponentProps<typeof ScrollAreaPrimitive.Viewport> & {
     [key: `data-${string}`]: string | number | undefined;
   };
   viewportRef?: React.Ref<HTMLDivElement>;
+  verticalScrollbarProps?: ScrollAreaScrollbarProps;
 };
 
 function ScrollArea({
   className,
   children,
+  horizontalScrollbarProps,
   viewportProps,
   viewportRef,
+  verticalScrollbarProps,
   ...props
 }: ScrollAreaProps) {
   const { className: viewportClassName, ...restViewportProps } = viewportProps ?? {};
+  const { className: horizontalScrollbarClassName, ...restHorizontalScrollbarProps } =
+    horizontalScrollbarProps ?? {};
+  const { className: verticalScrollbarClassName, ...restVerticalScrollbarProps } =
+    verticalScrollbarProps ?? {};
 
   return (
     <ScrollAreaPrimitive.Root
@@ -36,18 +50,18 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
-      <ScrollBar orientation='horizontal' />
+      <ScrollBar className={verticalScrollbarClassName} {...restVerticalScrollbarProps} />
+      <ScrollBar
+        orientation='horizontal'
+        className={horizontalScrollbarClassName}
+        {...restHorizontalScrollbarProps}
+      />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   );
 }
 
-function ScrollBar({
-  className,
-  orientation = 'vertical',
-  ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+function ScrollBar({ className, orientation = 'vertical', ...props }: ScrollAreaScrollbarProps) {
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
       data-slot='scroll-area-scrollbar'

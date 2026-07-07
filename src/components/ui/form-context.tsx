@@ -54,9 +54,10 @@ const FormItemContext = React.createContext<FormItemContextValue>({});
 function withFormItemContext<P extends object>(Component: React.ComponentType<P>) {
   function FormItemComponent(props: P) {
     const id = React.useId();
+    const formItemContextValue = React.useMemo(() => ({ id }), [id]);
 
     return (
-      <FormItemContext.Provider value={{ id }}>
+      <FormItemContext.Provider value={formItemContextValue}>
         <Component {...props} />
       </FormItemContext.Provider>
     );
@@ -105,6 +106,7 @@ const useFieldContext = () => {
 function FieldSet({ className, children, ...props }: React.ComponentProps<'fieldset'>) {
   const parentContext = React.useContext(FormItemContext);
   const id = React.useId();
+  const formItemContextValue = React.useMemo(() => ({ id }), [id]);
   const fieldSet = (
     <DefaultFieldSet className={cn('grid gap-1', className)} {...props}>
       {children}
@@ -115,7 +117,9 @@ function FieldSet({ className, children, ...props }: React.ComponentProps<'field
     return fieldSet;
   }
 
-  return <FormItemContext.Provider value={{ id }}>{fieldSet}</FormItemContext.Provider>;
+  return (
+    <FormItemContext.Provider value={formItemContextValue}>{fieldSet}</FormItemContext.Provider>
+  );
 }
 
 function Field({
@@ -323,6 +327,7 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
     const form = useFormContext();
     const id = React.useId();
     const FieldSlot = form.Field as unknown as FormFieldSlot;
+    const formItemContextValue = React.useMemo(() => ({ id }), [id]);
     return (
       <FieldSlot
         name={name}
@@ -333,7 +338,7 @@ function createFormField<P extends object>(FieldComponent: React.ComponentType<P
         defaultValue={defaultValue}
       >
         {(fieldApi) => (
-          <FormItemContext.Provider value={{ id }}>
+          <FormItemContext.Provider value={formItemContextValue}>
             <fieldContext.Provider value={fieldApi}>
               <FieldComponent {...(props as unknown as P)} />
             </fieldContext.Provider>

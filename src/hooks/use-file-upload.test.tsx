@@ -61,7 +61,7 @@ describe('useFileUpload', () => {
 
   it('uploads a file with bizPath and objectKey through the generated mutation', async () => {
     const storedFile: StoredFileRspDTO = {
-      objectKey: 'framework/upload-demo/a.pdf',
+      objectKey: 'postloan/track-record/a.pdf',
       originUrl: 'https://cdn.example.com/a.pdf',
       fileName: 'a.pdf',
       contentType: 'application/pdf',
@@ -71,7 +71,7 @@ describe('useFileUpload', () => {
     const file = new File(['abc'], 'a.pdf', { type: 'application/pdf' });
 
     const { result } = renderHook(
-      () => useFileUpload({ bizPath: 'framework/upload-demo', objectKey: 'custom/a.pdf' }),
+      () => useFileUpload({ bizPath: 'postloan/track-record', objectKey: 'custom/a.pdf' }),
       { wrapper: createWrapper() }
     );
 
@@ -84,13 +84,13 @@ describe('useFileUpload', () => {
     expect(mocks.uploadFileObjectMutationOptions).toHaveBeenCalledTimes(1);
     expect(mocks.mutationFn).toHaveBeenCalledWith(
       {
-      params: {
-        bizPath: 'framework/upload-demo',
-        objectKey: 'custom/a.pdf'
-      },
-      body: {
-        file
-      }
+        params: {
+          bizPath: 'postloan/track-record',
+          objectKey: 'custom/a.pdf'
+        },
+        body: {
+          file
+        }
       },
       expect.any(Object)
     );
@@ -100,7 +100,7 @@ describe('useFileUpload', () => {
     mocks.mutationFn.mockResolvedValue({ fileName: 'a.pdf' });
     const file = new File(['abc'], 'a.pdf', { type: 'application/pdf' });
 
-    const { result } = renderHook(() => useFileUpload({ bizPath: 'framework/upload-demo' }), {
+    const { result } = renderHook(() => useFileUpload({ bizPath: 'postloan/track-record' }), {
       wrapper: createWrapper()
     });
 
@@ -128,7 +128,7 @@ describe('useFileUpload', () => {
     const { result } = renderHook(
       () =>
         useFileUpload({
-          bizPath: 'framework/upload-demo',
+          bizPath: 'postloan/track-record',
           toastMessages: {
             loading: '正在上传',
             success: '上传完成',
