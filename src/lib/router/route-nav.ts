@@ -82,6 +82,7 @@ export function buildNavGroupsFromRoutes<TRoutes extends object>(routesById: TRo
       url: fullPath,
       linkable: nav.linkable ?? nav.kind !== 'container',
       shortcut: nav.shortcut,
+      menuKey: nav.menuKey,
       icon: nav.icon,
       items: (childrenByParentPath.get(entry.normalizedPath) ?? [])
         .toSorted((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))

@@ -23,5 +23,11 @@ export const Route = createFileRoute('/dashboard/chat')({
 });
 
 function ChatPage() {
-  return <WorkspacePageBoundary tabId='/dashboard/chat' render={() => <ChatViewPage />} />;
+  // Chat owns a full-height messenger layout and intentionally does not use PageContainer.
+  return (
+    <WorkspacePageBoundary
+      render={() => <ChatViewPage />}
+      renderWhenDisabled={() => <ChatViewPage />}
+    />
+  );
 }

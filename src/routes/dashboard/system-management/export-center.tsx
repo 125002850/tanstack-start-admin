@@ -1,13 +1,10 @@
 import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
 
-import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
 const ExportCenterManagementPage = lazyRouteComponent(
   () => import('@/features/export-center/components/export-center-management-page')
-);
-const ExportCenterScreen = lazyRouteComponent(
-  () => import('@/features/export-center/components/export-center-screen')
 );
 
 const meta = defineRouteMeta({
@@ -32,11 +29,5 @@ export const Route = createFileRoute('/dashboard/system-management/export-center
 });
 
 function ExportCenterPage() {
-  return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/system-management/export-center'
-      render={() => <ExportCenterScreen />}
-      renderWhenDisabled={() => <ExportCenterManagementPage />}
-    />
-  );
+  return <WorkspacePageRoute render={() => <ExportCenterManagementPage />} />;
 }

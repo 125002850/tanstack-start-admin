@@ -86,7 +86,16 @@ const keepAliveFalsePaths = new Set([
   '/src/routes/dashboard/index.tsx'
 ]);
 
-const workspaceDisabledFallbackPaths = new Set([
+const standardWorkspacePageRoutePaths = new Set([
+  '/src/routes/dashboard/overview.tsx',
+  '/src/routes/dashboard/kanban.tsx',
+  '/src/routes/dashboard/notifications.tsx',
+  '/src/routes/dashboard/elements/icons.tsx',
+  '/src/routes/dashboard/forms/basic.tsx',
+  '/src/routes/dashboard/forms/multi-step.tsx',
+  '/src/routes/dashboard/forms/sheet-form.tsx',
+  '/src/routes/dashboard/forms/advanced.tsx',
+  '/src/routes/dashboard/forms/overlay-contract.tsx',
   '/src/routes/dashboard/system-management/dictionaries.tsx',
   '/src/routes/dashboard/system-management/export-center.tsx'
 ]);
@@ -217,60 +226,85 @@ describe('dashboard route inventory', () => {
     }
   });
 
-  it('infrastructure WorkspacePageBoundary routes declare a disabled-mode render fallback', () => {
-    for (const filePath of workspaceDisabledFallbackPaths) {
+  it('standard workspace pages use WorkspacePageRoute for container and disabled-mode rendering', () => {
+    for (const filePath of standardWorkspacePageRoutePaths) {
       const routePath = extractRoutePath(filePath);
       expect(routeSources[filePath], `${routePath} route source missing`).toBeDefined();
-      expect(
-        routeSources[filePath],
-        `${routePath} must pass renderWhenDisabled for workspace-off direct rendering`
-      ).toContain('renderWhenDisabled');
-    }
-  });
+      const normalizedSource = normalizeSource(routeSources[filePath]);
 
-  it('WorkspacePageBoundary routes keep lifecycle flags in route metadata', () => {
-    for (const [filePath, source] of Object.entries(routeSources)) {
-      const normalizedSource = normalizeSource(source);
-      if (!normalizedSource.includes('WorkspacePageBoundary')) continue;
-
+      expect(normalizedSource, `${routePath} must use WorkspacePageRoute`).toContain(
+        'WorkspacePageRoute'
+      );
       expect(
         normalizedSource,
-        `${extractRoutePath(filePath)} must not pass keepAlive/closable to WorkspacePageBoundary`
-      ).not.toMatch(/<WorkspacePageBoundary\b[^>]*(?:keepAlive|closable)=/);
+        `${routePath} should not hand-roll WorkspacePageBoundary container routing`
+      ).not.toContain('<WorkspacePageBoundary');
     }
-
-    expect(getClosable(routeModules['/src/routes/dashboard/overview.tsx'])).toBe(false);
   });
 
-  it('WorkspacePageBoundary Screen render routes declare a disabled-mode fallback', () => {
+  it('workspace route components keep lifecycle flags in route metadata', () => {
     for (const [filePath, source] of Object.entries(routeSources)) {
       const normalizedSource = normalizeSource(source);
-      if (!/render=\{\(\) => <[A-Z][A-Za-z0-9]*Screen\b/.test(normalizedSource)) {
+      if (
+        !normalizedSource.includes('WorkspacePageBoundary') &&
+        !normalizedSource.includes('WorkspacePageRoute')
+      ) {
         continue;
       }
 
       expect(
         normalizedSource,
-        `${extractRoutePath(filePath)} renders a Screen and must pass renderWhenDisabled`
-      ).toContain('renderWhenDisabled=');
+        `${extractRoutePath(filePath)} must not pass keepAlive/closable to workspace route components`
+      ).not.toMatch(/<WorkspacePage(?:Boundary|Route)\b[^>]*(?:keepAlive|closable)=/);
+    }
+
+    expect(getClosable(routeModules['/src/routes/dashboard/overview.tsx'])).toBe(false);
+  });
+
+  it('dashboard workspace route components derive tabId from the current route path', () => {
+    for (const [filePath, source] of Object.entries(routeSources)) {
+      const normalizedSource = normalizeSource(source);
+      if (
+        !normalizedSource.includes('WorkspacePageBoundary') &&
+        !normalizedSource.includes('WorkspacePageRoute')
+      ) {
+        continue;
+      }
+
+      expect(
+        normalizedSource,
+        `${extractRoutePath(filePath)} should use the implicit current-route tabId`
+      ).not.toMatch(/<WorkspacePage(?:Boundary|Route)\b[^>]*\btabId=/);
     }
   });
 
-  it('dictionaries route separates workspace screen and disabled direct page body', () => {
+  it('dashboard routes no longer hand-roll PageContainer-only Screen wrappers', () => {
+    for (const [filePath, source] of Object.entries(routeSources)) {
+      const normalizedSource = normalizeSource(source);
+      expect(
+        normalizedSource,
+        `${extractRoutePath(filePath)} should use WorkspacePageRoute instead of route-local Screen render wrappers`
+      ).not.toMatch(/render=\{\(\) => <[A-Z][A-Za-z0-9]*Screen\b/);
+    }
+  });
+
+  it('dictionaries route uses WorkspacePageRoute with the management page body', () => {
     const source = routeSources['/src/routes/dashboard/system-management/dictionaries.tsx'];
     expect(source).toBeDefined();
 
     const normalizedSource = normalizeSource(source);
-    expect(normalizedSource).toContain('render={() => <DictionaryManagementScreen />}');
-    expect(normalizedSource).toContain('renderWhenDisabled={() => <DictionaryManagementPage />}');
+    expect(normalizedSource).toContain('WorkspacePageRoute');
+    expect(normalizedSource).toContain('render={() => <DictionaryManagementPage />}');
+    expect(normalizedSource).not.toContain('DictionaryManagementScreen');
   });
 
-  it('export center route separates workspace screen and disabled direct page body', () => {
+  it('export center route uses WorkspacePageRoute with the management page body', () => {
     const source = routeSources['/src/routes/dashboard/system-management/export-center.tsx'];
     expect(source).toBeDefined();
 
     const normalizedSource = normalizeSource(source);
-    expect(normalizedSource).toContain('render={() => <ExportCenterScreen />}');
-    expect(normalizedSource).toContain('renderWhenDisabled={() => <ExportCenterManagementPage />}');
+    expect(normalizedSource).toContain('WorkspacePageRoute');
+    expect(normalizedSource).toContain('render={() => <ExportCenterManagementPage />}');
+    expect(normalizedSource).not.toContain('ExportCenterScreen');
   });
 });

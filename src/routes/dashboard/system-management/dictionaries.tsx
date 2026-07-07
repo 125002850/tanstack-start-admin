@@ -1,13 +1,10 @@
 import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
 
-import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
 const DictionaryManagementPage = lazyRouteComponent(
   () => import('@/features/dictionaries/components/dictionary-management-page')
-);
-const DictionaryManagementScreen = lazyRouteComponent(
-  () => import('@/features/dictionaries/components/dictionary-management-screen')
 );
 
 const meta = defineRouteMeta({
@@ -32,11 +29,5 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 });
 
 function DictionariesPage() {
-  return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/system-management/dictionaries'
-      render={() => <DictionaryManagementScreen />}
-      renderWhenDisabled={() => <DictionaryManagementPage />}
-    />
-  );
+  return <WorkspacePageRoute render={() => <DictionaryManagementPage />} />;
 }

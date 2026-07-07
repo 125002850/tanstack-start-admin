@@ -1,7 +1,6 @@
 import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
-import PageContainer from '@/components/layout/page-container';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
-import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 
 const DemoForm = lazyRouteComponent(() => import('@/components/forms/demo-form'));
 
@@ -25,15 +24,5 @@ export const Route = createFileRoute('/dashboard/forms/basic')({
 });
 
 function BasicFormPage() {
-  return (
-    <WorkspacePageBoundary tabId='/dashboard/forms/basic' render={() => <BasicFormContent />} />
-  );
-}
-
-function BasicFormContent() {
-  return (
-    <PageContainer>
-      <DemoForm />
-    </PageContainer>
-  );
+  return <WorkspacePageRoute render={() => <DemoForm />} />;
 }

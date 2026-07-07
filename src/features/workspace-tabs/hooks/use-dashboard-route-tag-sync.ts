@@ -122,8 +122,7 @@ export function useDashboardRouteTagSync(enabled = true) {
   const location = useRouterState({ select: (s) => s.location });
   const prevHref = useRef<string | null>(null);
   const prevEnabled = useRef(enabled);
-  const useIsomorphicLayoutEffect =
-    typeof window === 'undefined' ? useEffect : useLayoutEffect;
+  const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
   useIsomorphicLayoutEffect(() => {
     if (!enabled && prevEnabled.current) {
@@ -183,17 +182,18 @@ export function useDashboardRouteTagSync(enabled = true) {
       normalizedPathname,
       router.routesByPath as unknown as Record<string, unknown>
     );
+    if (!match) {
+      clearActiveWorkspaceRoute();
+      return;
+    }
 
-    const wsConfig = resolveRouteWorkspaceConfig(
-      match?.pattern ?? normalizedPathname,
-      match?.staticData
-    );
+    const wsConfig = resolveRouteWorkspaceConfig(match.pattern, match.staticData);
     if (!wsConfig.tagEnabled) {
       clearActiveWorkspaceRoute();
       return;
     }
 
-    const title = resolveRouteTagTitle(match?.staticData, normalizedPathname);
+    const title = resolveRouteTagTitle(match.staticData, normalizedPathname);
     const id = tagIdFromPathname(normalizedPathname);
     const closable = wsConfig.closable;
 

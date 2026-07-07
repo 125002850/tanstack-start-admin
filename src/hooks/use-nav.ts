@@ -1,37 +1,30 @@
 import { useMemo } from 'react';
 import type { NavItem, NavGroup } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { getLoginInfoQueryOptions } from '@/lib/api/sso/queries';
+import {
+  collectVisibleMenuKeys,
+  filterNavGroupsByMenuKeys,
+  filterNavItemsByMenuKeys
+} from '@/lib/router/nav-permissions';
 
-/**
- * Hook to filter navigation items
- * RBAC has been removed — returns all items as-is
- */
-export function useFilteredNavItems(items: NavItem[]) {
-  return useMemo(() => {
-    return items.map((item) => {
-      if (item.items && item.items.length > 0) {
-        return { ...item, items: [...item.items] };
-      }
-      return item;
-    });
-  }, [items]);
+function useAllowedMenuKeys() {
+  const { data: loginUser } = useQuery(getLoginInfoQueryOptions());
+
+  return useMemo(() => collectVisibleMenuKeys(loginUser?.menuData), [loginUser?.menuData]);
 }
 
-/**
- * Hook to filter navigation groups
- */
-export function useFilteredNavGroups(groups: NavGroup[]) {
-  const allItems = useMemo(() => groups.flatMap((g) => g.items), [groups]);
-  const filteredItems = useFilteredNavItems(allItems);
+export function useFilteredNavItems(items: NavItem[]) {
+  const allowedMenuKeys = useAllowedMenuKeys();
 
-  return useMemo(() => {
-    const filteredSet = new Set(filteredItems.map((item) => item.id));
-    return groups
-      .map((group) => ({
-        ...group,
-        items: filteredItems.filter((item) =>
-          group.items.some((gi) => gi.id === item.id && filteredSet.has(gi.id))
-        )
-      }))
-      .filter((group) => group.items.length > 0);
-  }, [groups, filteredItems]);
+  return useMemo(() => filterNavItemsByMenuKeys(items, allowedMenuKeys), [items, allowedMenuKeys]);
+}
+
+export function useFilteredNavGroups(groups: NavGroup[]) {
+  const allowedMenuKeys = useAllowedMenuKeys();
+
+  return useMemo(
+    () => filterNavGroupsByMenuKeys(groups, allowedMenuKeys),
+    [groups, allowedMenuKeys]
+  );
 }

@@ -1,9 +1,10 @@
 import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
-import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 
-const OverviewContent = lazyRouteComponent(
-  () => import('@/features/overview/components/overview-page')
+const OverviewManagementPage = lazyRouteComponent(
+  () => import('@/features/overview/components/overview-page'),
+  'OverviewManagementPage'
 );
 
 const meta = defineRouteMeta({
@@ -26,5 +27,5 @@ export const Route = createFileRoute('/dashboard/overview')({
 });
 
 function OverviewPage() {
-  return <WorkspacePageBoundary tabId='/dashboard/overview' render={() => <OverviewContent />} />;
+  return <WorkspacePageRoute render={() => <OverviewManagementPage />} />;
 }

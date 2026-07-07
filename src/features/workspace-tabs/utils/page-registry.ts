@@ -47,7 +47,10 @@ export const useWorkspacePageRegistryStore = create<WorkspacePageRegistryState>(
         }
       }
 
-      if (!changed && Object.keys(nextDescriptors).length === Object.keys(state.descriptors).length) {
+      if (
+        !changed &&
+        Object.keys(nextDescriptors).length === Object.keys(state.descriptors).length
+      ) {
         return state;
       }
 

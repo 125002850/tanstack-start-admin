@@ -6,6 +6,7 @@ export interface NavItem {
   url: string;
   linkable?: boolean;
   shortcut?: [string, string];
+  menuKey?: string;
   icon?: keyof typeof Icons;
   items?: NavItem[];
 }

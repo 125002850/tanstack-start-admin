@@ -27,10 +27,13 @@ const OPEN_CONTENT_SELECTOR = [
   '[data-slot="dropdown-menu-content"][data-state="open"]',
   '[data-slot="dropdown-menu-sub-content"][data-state="open"]',
   '[data-slot="select-content"][data-state="open"]',
+  '[data-slot="tooltip-content"][data-state]:not([data-state="closed"])',
+  '[data-slot="data-table-cell-tooltip-content"][data-state]:not([data-state="closed"])',
   '[data-slot="combobox-content"][data-open]',
   '[role="dialog"][data-state="open"]',
   '[role="menu"][data-state="open"]',
-  '[role="listbox"][data-state="open"]'
+  '[role="listbox"][data-state="open"]',
+  '[role="tooltip"][data-state]:not([data-state="closed"])'
 ].join(',');
 
 const CONTROLLED_TRIGGER_SELECTOR = '[aria-controls]';

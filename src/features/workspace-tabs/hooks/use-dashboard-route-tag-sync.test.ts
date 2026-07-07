@@ -42,7 +42,7 @@ const mockRoutesByPath = {
       }
     }
   },
-  '/dashboard/system-management/dictionaries': {
+  '/dashboard/users': {
     options: {
       staticData: {
         label: '用户管理',
@@ -159,18 +159,18 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
   });
 
   it('sets the synced route as the active tab', () => {
-    mockPathname = '/dashboard/system-management/dictionaries';
+    mockPathname = '/dashboard/users';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    expect(state.activeId).toBe('/dashboard/system-management/dictionaries');
-    expect(state.tabs['/dashboard/system-management/dictionaries']).toBeDefined();
+    expect(state.activeId).toBe('/dashboard/users');
+    expect(state.tabs['/dashboard/users']).toBeDefined();
   });
 
   it('uses route metadata for closable', () => {
-    mockPathname = '/dashboard/system-management/dictionaries';
+    mockPathname = '/dashboard/users';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    expect(state.tabs['/dashboard/system-management/dictionaries']?.closable).toBe(false);
+    expect(state.tabs['/dashboard/users']?.closable).toBe(false);
   });
 
   it('skips the layout route /dashboard', () => {
@@ -229,12 +229,13 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
     expect(detailTab.keepAlive).toBe(true);
   });
 
-  it('uses pathname as title when no staticData matches', () => {
+  it('does not create a tab when no dashboard route matches', () => {
     mockPathname = '/dashboard/unknown-page';
     render(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
-    const tab = state.tabs['/dashboard/unknown-page'];
-    expect(tab).toBeDefined();
-    expect(tab.title).toBe('/dashboard/unknown-page');
+    expect(state.tabs['/dashboard/unknown-page']).toBeUndefined();
+    expect(state.tabs['/dashboard/overview']).toBeDefined();
+    expect(state.openedOrder).toEqual(['/dashboard/overview']);
+    expect(state.activeId).toBeNull();
   });
 });

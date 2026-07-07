@@ -1,7 +1,6 @@
 import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
-import PageContainer from '@/components/layout/page-container';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
-import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 
 const AdvancedFormPatterns = lazyRouteComponent(
   () => import('@/features/forms/components/advanced-form-patterns')
@@ -26,18 +25,5 @@ export const Route = createFileRoute('/dashboard/forms/advanced')({
 });
 
 function AdvancedFormPage() {
-  return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/forms/advanced'
-      render={() => <AdvancedFormContent />}
-    />
-  );
-}
-
-function AdvancedFormContent() {
-  return (
-    <PageContainer>
-      <AdvancedFormPatterns />
-    </PageContainer>
-  );
+  return <WorkspacePageRoute render={() => <AdvancedFormPatterns />} />;
 }

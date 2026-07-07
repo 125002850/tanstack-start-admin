@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import PageContainer from '@/components/layout/page-container';
-import { WorkspacePageBoundary } from '@/features/workspace-tabs/components/workspace-page-boundary';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 import { WorkspaceOverlayContractPage } from '@/features/workspace-tabs/components/workspace-overlay-contract-page';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
 
@@ -25,17 +24,9 @@ export const Route = createFileRoute('/dashboard/forms/overlay-contract')({
 
 function OverlayContractPage() {
   return (
-    <WorkspacePageBoundary
-      tabId='/dashboard/forms/overlay-contract'
-      render={() => <OverlayContractContent />}
+    <WorkspacePageRoute
+      render={() => <WorkspaceOverlayContractPage />}
+      pageContainerProps={{ pageTitle: '浮层契约' }}
     />
-  );
-}
-
-function OverlayContractContent() {
-  return (
-    <PageContainer pageTitle='浮层契约'>
-      <WorkspaceOverlayContractPage />
-    </PageContainer>
   );
 }

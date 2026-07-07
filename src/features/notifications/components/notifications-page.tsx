@@ -14,7 +14,7 @@ const actionRoutes: Record<string, string> = {
   'open-chat': '/dashboard/chat'
 };
 
-export default function NotificationsPage() {
+export function NotificationsManagementPage() {
   const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
   const router = useRouter();
   const count = unreadCount();
@@ -58,15 +58,14 @@ export default function NotificationsPage() {
   };
 
   return (
-    <PageContainer
-      pageHeaderAction={
-        count > 0 ? (
+    <div className='flex flex-col gap-4'>
+      {count > 0 ? (
+        <div className='flex justify-end'>
           <Button variant='outline' size='sm' onClick={markAllAsRead}>
             Mark all as read
           </Button>
-        ) : undefined
-      }
-    >
+        </div>
+      ) : null}
       <Tabs defaultValue='all'>
         <TabsList>
           <TabsTrigger value='all'>All ({notifications.length})</TabsTrigger>
@@ -83,6 +82,14 @@ export default function NotificationsPage() {
           {renderList(readNotifications)}
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+export default function NotificationsScreen() {
+  return (
+    <PageContainer>
+      <NotificationsManagementPage />
     </PageContainer>
   );
 }
