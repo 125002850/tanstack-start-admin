@@ -1,3 +1,5 @@
+import { HTTP_STATUS_FORBIDDEN } from '../../http-status';
+
 export interface LoginForbiddenErrorOptions {
   message?: string;
   loginUrl?: string;
@@ -5,7 +7,7 @@ export interface LoginForbiddenErrorOptions {
 }
 
 export class LoginForbiddenError extends Error {
-  readonly status = 403;
+  readonly status = HTTP_STATUS_FORBIDDEN;
   readonly loginUrl?: string;
   readonly logoutUrl?: string;
 
@@ -22,5 +24,5 @@ export function isLoginForbiddenError(error: unknown): error is LoginForbiddenEr
   if (!error || typeof error !== 'object') return false;
 
   const record = error as Record<string, unknown>;
-  return record.name === 'LoginForbiddenError' && record.status === 403;
+  return record.name === 'LoginForbiddenError' && record.status === HTTP_STATUS_FORBIDDEN;
 }

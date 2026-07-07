@@ -8,13 +8,35 @@ import {
 } from '@oig/react-query-generator/core';
 import { toast } from 'sonner';
 
+import {
+  HTTP_STATUS_BAD_GATEWAY,
+  HTTP_STATUS_GATEWAY_TIMEOUT,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  HTTP_STATUS_NOT_FOUND,
+  HTTP_STATUS_REQUEST_TIMEOUT,
+  HTTP_STATUS_SERVICE_UNAVAILABLE,
+  HTTP_STATUS_TOO_EARLY,
+  HTTP_STATUS_TOO_MANY_REQUESTS
+} from './http-status';
+
 let queryClient: QueryClient | undefined;
 
-const RETRYABLE_HTTP_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+const RETRYABLE_HTTP_STATUS = new Set([
+  HTTP_STATUS_REQUEST_TIMEOUT,
+  HTTP_STATUS_TOO_EARLY,
+  HTTP_STATUS_TOO_MANY_REQUESTS,
+  HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  HTTP_STATUS_BAD_GATEWAY,
+  HTTP_STATUS_SERVICE_UNAVAILABLE,
+  HTTP_STATUS_GATEWAY_TIMEOUT
+]);
 const MAX_QUERY_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 1000;
 const MAX_RETRY_DELAY_MS = 30_000;
-const NON_RETRYABLE_BUSINESS_CODES = new Set([404]);
+const NON_RETRYABLE_BUSINESS_CODES = new Set([HTTP_STATUS_NOT_FOUND]);
+const DEFAULT_STALE_TIME_SECONDS = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const DEFAULT_QUERY_STALE_TIME_MS = DEFAULT_STALE_TIME_SECONDS * MILLISECONDS_PER_SECOND;
 
 function getErrorStatus(error: unknown): number | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
@@ -83,7 +105,7 @@ function getRetryAfterDelay(error: unknown): number | undefined {
 
   const seconds = Number(retryAfter);
   if (Number.isFinite(seconds) && seconds >= 0) {
-    return seconds * 1000;
+    return seconds * MILLISECONDS_PER_SECOND;
   }
 
   const retryAt = Date.parse(retryAfter);
@@ -144,7 +166,7 @@ export function getQueryClient() {
     queryClient = new QueryClient({
       defaultOptions: {
         queries: {
-          staleTime: 60 * 1000,
+          staleTime: DEFAULT_QUERY_STALE_TIME_MS,
           retry(failureCount, error) {
             if (!isRetryableError(error)) return false;
             return failureCount < MAX_QUERY_RETRIES;

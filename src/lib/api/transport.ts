@@ -6,6 +6,7 @@ import {
 
 import { handleUnauthorized } from './sso/session';
 import { createAuthHeaders, refreshTokenFromResponse } from './sso/set-headers';
+import { HTTP_STATUS_UNAUTHORIZED } from '../http-status';
 
 const transport = createTransport({ defaultCredentials: 'same-origin' });
 
@@ -25,7 +26,7 @@ transport.registerMiddleware(async (context, next) => {
     refreshTokenFromResponse(response);
     return response;
   } catch (error) {
-    if (error instanceof HttpError && error.status === 401) {
+    if (error instanceof HttpError && error.status === HTTP_STATUS_UNAUTHORIZED) {
       handleUnauthorized();
     }
     throw error;

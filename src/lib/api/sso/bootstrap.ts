@@ -1,5 +1,6 @@
 import { createAuthHeaders, refreshTokenFromResponse } from './set-headers';
 import { getLogoutUrl, preserveLoginQueryFromCurrentUrl, setLogoutUrl } from './session';
+import { HTTP_STATUS_UNAUTHORIZED } from '../../http-status';
 
 const TOKEN_KEY = 'sso_token';
 
@@ -54,7 +55,7 @@ export async function bootstrapRequest(url: string, init?: RequestInit): Promise
     headers
   });
 
-  if (response.status === 401) {
+  if (response.status === HTTP_STATUS_UNAUTHORIZED) {
     removeToken();
 
     const cachedLogoutUrl = getLogoutUrl();

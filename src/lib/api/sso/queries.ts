@@ -5,9 +5,15 @@ import { bootstrapRequest, collectSsoRedirectUrls } from './bootstrap';
 import { LoginForbiddenError } from './errors';
 import { setLoginUserId, setLogoutUrl } from './session';
 import type { LoginUserData, LoginUserRsp } from './type';
+import { HTTP_STATUS_FORBIDDEN } from '../../http-status';
 import { transportProfile } from '../clients/service/generated/runtime';
 
 export const getLoginInfoQueryKey = ['sso', 'login-info'] as const;
+const LOGIN_INFO_STALE_TIME_MINUTES = 5;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const LOGIN_INFO_STALE_TIME_MS =
+  LOGIN_INFO_STALE_TIME_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
 
 function joinApiPath(basePath: string, path: `/${string}`): string {
   const normalizedBasePath = basePath === '/' ? '' : basePath.replace(/\/+$/, '');
@@ -66,7 +72,7 @@ export const getLoginInfoQueryOptions = () =>
         { signal }
       );
 
-      if (resp.status === 403) {
+      if (resp.status === HTTP_STATUS_FORBIDDEN) {
         throwLoginForbidden(await readJsonBody(resp));
       }
 
@@ -79,7 +85,7 @@ export const getLoginInfoQueryOptions = () =>
 
       const json = (await resp.json()) as LoginInfoResponseBody;
 
-      if (getBodyStatus(json) === 403) {
+      if (getBodyStatus(json) === HTTP_STATUS_FORBIDDEN) {
         throwLoginForbidden(json);
       }
 
@@ -93,7 +99,7 @@ export const getLoginInfoQueryOptions = () =>
       setLoginUserId(data.userId);
       return data;
     },
-    staleTime: 5 * 60 * 1000
+    staleTime: LOGIN_INFO_STALE_TIME_MS
   });
 
 export function ensureSsoLoginInfo(queryClient: QueryClient) {

@@ -2,6 +2,7 @@ const TOKEN_KEY = 'sso_token';
 const LOGOUT_URL_KEY = 'sso_logout_url';
 const USER_ID_KEY = 'sso_user_id';
 const LOGIN_RETURN_SEARCH_KEY = 'sso_login_return_search';
+const BEARER_PREFIX = 'bearer ';
 
 function isBrowser() {
   return typeof window !== 'undefined';
@@ -11,8 +12,8 @@ function normalizeToken(raw: string): string {
   const trimmed = raw.trim();
   if (trimmed.length === 0) return '';
   const lowered = trimmed.toLowerCase();
-  if (lowered.startsWith('bearer ')) {
-    return trimmed.slice(7);
+  if (lowered.startsWith(BEARER_PREFIX)) {
+    return trimmed.slice(BEARER_PREFIX.length);
   }
   return trimmed;
 }
