@@ -161,3 +161,22 @@
     --shadow-2xl: var(--shadow-2xl);
   }
 }
+
+[data-theme='whatsapp'] {
+  --data-table-select-border: color-mix(in oklch, var(--input) 42%, var(--primary) 58%);
+  --data-table-select-background: color-mix(in oklch, var(--card) 94%, var(--secondary) 6%);
+  --data-table-select-shadow: color-mix(in oklch, var(--border) 50%, var(--primary) 50%);
+}
+
+[data-theme='whatsapp'].dark {
+  --data-table-select-border: color-mix(in oklch, var(--input) 42%, var(--primary) 58%);
+  --data-table-select-background: color-mix(in oklch, var(--card) 86%, var(--secondary) 14%);
+  --data-table-select-shadow: color-mix(in oklch, var(--border) 48%, var(--primary) 52%);
+}
+
+[data-theme='whatsapp']
+  :where([data-slot='data-table-select-hitbox'][aria-checked='false'] > span) {
+  border-color: var(--data-table-select-border);
+  background-color: var(--data-table-select-background);
+  box-shadow: 0 0 0 1px var(--data-table-select-shadow);
+}

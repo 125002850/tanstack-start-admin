@@ -73,9 +73,19 @@ const DATE_VARIANT_OPERATORS = {
   dateRange: ['GT', 'GTE', 'LT', 'LTE', 'BETWEEN'] as const
 } satisfies Partial<Record<FilterVariant, readonly DataTableDslOperator[]>>;
 
-type SupportedFilterVariant =
-  | keyof typeof TEXT_VARIANT_OPERATORS
-  | keyof typeof DATE_VARIANT_OPERATORS;
+export const DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS = [
+  'text',
+  'select',
+  'multiSelect',
+  'date',
+  'dateRange'
+] as const satisfies readonly FilterVariant[];
+
+type SupportedFilterVariant = (typeof DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS)[number];
+
+const DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANT_SET = new Set<FilterVariant>(
+  DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS
+);
 
 type BuildDataTableDslRequestOptions<TData> = {
   columns: Array<ColumnDef<TData>>;
@@ -152,11 +162,15 @@ function normalizeStringValue(value: unknown): string | undefined {
 }
 
 function normalizeStringArray(value: unknown): string[] {
-  const values = Array.isArray(value)
-    ? value
-    : value === undefined || value === null
-      ? []
-      : [value];
+  let values: unknown[];
+
+  if (Array.isArray(value)) {
+    values = value;
+  } else if (value === undefined || value === null) {
+    values = [];
+  } else {
+    values = [value];
+  }
 
   return values
     .map((item) => normalizeStringValue(item))
@@ -220,6 +234,12 @@ export function isDataTableDslOperatorCompatibleWithVariant(
   return Boolean((allowed as readonly DataTableDslOperator[] | undefined)?.includes(operator));
 }
 
+export function isDataTableDslFilterVariantSupported(
+  variant: FilterVariant | undefined
+): variant is SupportedFilterVariant {
+  return Boolean(variant && DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANT_SET.has(variant));
+}
+
 function resolveOperator(
   variant: SupportedFilterVariant,
   operatorOverride: DataTableDslOperator | undefined,
@@ -256,37 +276,40 @@ function buildFilterCondition<TData>(
 
   const meta = resolvedColumn.column.meta;
   const variant = meta?.variant;
-  if (!variant) {
+  if (!isDataTableDslFilterVariantSupported(variant)) {
     return undefined;
   }
 
-  const field = resolvedColumn.id;
+  const field = meta?.query?.filterField ?? resolvedColumn.id;
+  const filterValue = meta?.query?.serializeFilter
+    ? meta.query.serializeFilter(filter.value, resolvedColumn.column as never)
+    : filter.value;
 
   if (variant === 'text' || variant === 'select') {
     const value =
       variant === 'select'
-        ? normalizeStringArray(filter.value)[0]
-        : normalizeStringValue(filter.value);
+        ? normalizeStringArray(filterValue)[0]
+        : normalizeStringValue(filterValue);
     if (!value) {
       return undefined;
     }
 
-    const op = resolveOperator(variant, meta.query?.operator, field);
+    const op = resolveOperator(variant, meta?.query?.operator, field);
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], value };
   }
 
   if (variant === 'multiSelect') {
-    const values = normalizeStringArray(filter.value);
+    const values = normalizeStringArray(filterValue);
     if (values.length === 0) {
       return undefined;
     }
 
-    const op = resolveOperator(variant, meta.query?.operator, field);
+    const op = resolveOperator(variant, meta?.query?.operator, field);
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], values };
   }
 
   if (variant === 'date') {
-    const date = parseTimestamp(filter.value);
+    const date = parseTimestamp(filterValue);
     if (!date) {
       return undefined;
     }
@@ -301,7 +324,7 @@ function buildFilterCondition<TData>(
   }
 
   if (variant === 'dateRange') {
-    const [fromRaw, toRaw] = Array.isArray(filter.value) ? filter.value : [filter.value, undefined];
+    const [fromRaw, toRaw] = Array.isArray(filterValue) ? filterValue : [filterValue, undefined];
     const from = parseTimestamp(fromRaw);
     const to = parseTimestamp(toRaw);
 
@@ -351,8 +374,10 @@ function buildSort<TData>(
         return undefined;
       }
 
+      const field = resolvedColumn.column.meta?.query?.sortField ?? resolvedColumn.id;
+
       return {
-        field: resolvedColumn.id,
+        field,
         direction: sort.desc ? 'DESC' : 'ASC'
       } satisfies DataTableDslSortItem;
     })

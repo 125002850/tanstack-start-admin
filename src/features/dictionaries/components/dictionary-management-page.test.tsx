@@ -207,6 +207,28 @@ function getTextConditionValue(condition: DataTableDslCondition | undefined): st
   return undefined;
 }
 
+function findTextCondition(
+  condition: DataTableDslCondition | undefined,
+  field: string
+): Extract<DataTableDslCondition, { nodeType: 'text' }> | undefined {
+  if (!condition) {
+    return undefined;
+  }
+
+  if (condition.nodeType === 'text' && condition.field === field) {
+    return condition;
+  }
+
+  if (condition.nodeType === 'compose') {
+    for (const child of condition.children) {
+      const found = findTextCondition(child, field);
+      if (found) return found;
+    }
+  }
+
+  return undefined;
+}
+
 describe('DictionaryManagementPage', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
 
@@ -395,6 +417,47 @@ describe('DictionaryManagementPage', () => {
     await waitFor(() => {
       expect(typeRequests.at(-1)).toMatchObject({
         keyword: 'payment'
+      });
+    });
+  });
+
+  it('serializes dictionary item filters with the selected type scope', async () => {
+    const itemRequests: DictionaryItemRequest[] = [];
+
+    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+      async (_request: DictionaryTypeRequest) => PAGE_ONE_TYPES.slice(0, 1)
+    );
+    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+      async (request: DictionaryItemRequest) => {
+        itemRequests.push(request);
+
+        return {
+          total: 1,
+          list: ITEMS_BY_TYPE.payment
+        };
+      }
+    );
+
+    const user = userEvent.setup();
+    render(<DictionaryManagementPage />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('已支付')).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByPlaceholderText('搜索字典项编码'), 'paid');
+
+    await waitFor(() => {
+      const condition = itemRequests.at(-1)?.condition;
+      expect(findTextCondition(condition, 'dictTypeCode')).toMatchObject({
+        field: 'dictTypeCode',
+        op: 'EQ',
+        value: 'payment'
+      });
+      expect(findTextCondition(condition, 'dictItemCode')).toMatchObject({
+        field: 'dictItemCode',
+        op: 'CONTAINS',
+        value: 'paid'
       });
     });
   });

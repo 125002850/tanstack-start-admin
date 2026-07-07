@@ -5,9 +5,10 @@ import type {
   ColumnOrderStorageMode,
   ColumnResizeStorageMode,
   ExpandConfigEdge,
-  ExtendedColumnSort
+  ExtendedColumnSort,
+  SortingStorageMode
 } from '@/types/data-table';
-import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
+import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
 import type { RowNumberDisplayMode } from './columns/row-number-column';
 
 /** 服务端查询参数，与 `apiFiltersBuilder` 的返回值类型一致。 */
@@ -52,7 +53,11 @@ export interface UseDataTableProps<TData> extends Omit<
   throttleMs?: number;
   /** 是否在查询参数为空时清除默认值。 */
   clearOnDefault?: boolean;
-  /** 是否启用高级筛选模式。 */
+  /**
+   * 是否启用高级筛选模式。
+   *
+   * @deprecated 高级筛选闭环已暂停使用；普通 `columnFilters` 会继续生效。
+   */
   enableAdvancedFilter?: boolean;
   /** 受控的每页条数，覆盖默认值。 */
   pageSize?: number;
@@ -68,8 +73,11 @@ export interface UseDataTableProps<TData> extends Omit<
    */
   tableId: string;
   /**
-   * 行 ID 来源。未传时默认读取 `row.id`，字段值为空时回退为 `${tableId}-${index}`。
-   * 传入函数时由函数完整生成行 ID。
+   * 行 ID 来源。未传时默认读取 `row.id`，字段值为空、非有限数字或不存在时回退为
+   * `${tableId}-${index}`；子行回退为 `${parent.id}-${index}`。
+   *
+   * 启用选择列时，建议传入稳定的 `rowId` 或 `getRowId`。默认选择语义只覆盖当前已加载页，
+   * `selectedRows`、`selectedRowIds` 和 `getSelectedRows()` 都不会表达跨页全量选择。
    */
   rowId?: DataTableRowId<TData>;
   /**
@@ -86,6 +94,13 @@ export interface UseDataTableProps<TData> extends Omit<
    * - `false` — 禁用持久化
    */
   columnOrderStorage?: ColumnOrderStorageMode;
+  /**
+   * 排序持久化存储模式。
+   * - `'localStorage'` — 持久存储（默认）
+   * - `'sessionStorage'` — 会话存储
+   * - `false` — 禁用持久化
+   */
+  sortingStorage?: SortingStorageMode;
   /** 列宽拖拽结束时的回调，仅在列宽实际变化时触发。 */
   onColumnResizeEnd?: (columnKey: string, width: number) => void;
   /** 是否在表格首列显示行号列。默认 `true`。 */
@@ -96,7 +111,7 @@ export interface UseDataTableProps<TData> extends Omit<
    * - `'original'`：跟随原始数据数组索引，不叠加分页偏移
    */
   rowNumberDisplayMode?: RowNumberDisplayMode;
-  /** 是否自动注入多选列。默认 `false`。 */
+  /** 是否自动注入多选列。默认 `false`。选中统计默认是当前页范围。 */
   showSelectColumn?: boolean;
   /** 行选中态所属的数据上下文 key；变化时会自动清空当前选中。 */
   rowSelectionScopeKey?: string | number | null;

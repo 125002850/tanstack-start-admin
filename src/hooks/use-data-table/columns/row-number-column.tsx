@@ -11,12 +11,12 @@ export interface RowNumberColumnMeta {
 
 /**
  * 估算序号列宽度。每位数约 10px（text-sm tabular-nums 含字间距余量），
- * 加上 24px 水平内边距（p-2 各 8px + 列分隔线余量）。
+ * 加上 30px 水平内边距（data-table-body-cell 的 px-[15px] 各 15px）。
  */
 function estimateRowNumberWidth(totalCount?: number): number {
   if (!totalCount || totalCount <= 0) return DATA_TABLE_ROW_NUMBER_COLUMN_WIDTH;
   const digits = String(totalCount).length;
-  return Math.max(DATA_TABLE_ROW_NUMBER_COLUMN_WIDTH, digits * 10 + 24);
+  return Math.max(DATA_TABLE_ROW_NUMBER_COLUMN_WIDTH, digits * 10 + 30);
 }
 
 function getVisibleRowIndex<TData>(table: Table<TData>, row: Row<TData>): number {

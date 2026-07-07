@@ -1,6 +1,13 @@
 import type { DataTableConfig } from '@/config/data-table';
 import type { FilterItemSchema } from '@/lib/parsers';
-import type { Column, ColumnSort, PaginationState, RowData } from '@tanstack/react-table';
+import type {
+  CellContext,
+  Column,
+  ColumnSort,
+  PaginationState,
+  Row,
+  RowData
+} from '@tanstack/react-table';
 
 declare module '@tanstack/react-table' {
   // biome-ignore lint/correctness/noUnusedVariables: Interface type parameters required by @tanstack/react-table
@@ -10,6 +17,9 @@ declare module '@tanstack/react-table' {
     variant?: FilterVariant;
     query?: {
       operator?: DataTableDslOperator;
+      filterField?: string;
+      sortField?: string;
+      serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
     };
     options?: Option[];
     range?: [number, number];
@@ -17,6 +27,10 @@ declare module '@tanstack/react-table' {
     icon?: React.FC<React.SVGProps<SVGSVGElement>>;
     pinningShadow?: Partial<Record<'left' | 'right', string>>;
     cellOwnsTooltip?: boolean;
+    copyValue?: (value: TValue, row: TData) => unknown;
+    columnMenuVisible?: boolean;
+    columnPanelVisible?: boolean;
+    columnPanelReorder?: boolean;
   }
 
   // biome-ignore lint/correctness/noUnusedVariables: Interface type parameters required by @tanstack/react-table
@@ -48,6 +62,84 @@ export type DataTableDslOperator =
   | 'LTE'
   | 'BETWEEN';
 
+export type DataTableColumnFilterVariant =
+  | 'text'
+  | 'select'
+  | 'multiSelect'
+  | 'date'
+  | 'dateRange'
+  | 'number'
+  | 'numberRange'
+  | 'boolean';
+
+export type DataTableFilterOption = Option;
+
+export interface DataTableColumnFilterOptions {
+  filter?: false | DataTableColumnFilterVariant;
+  filterPlaceholder?: string;
+  filterOptions?: readonly DataTableFilterOption[];
+  filterMin?: number | Date;
+  filterMax?: number | Date;
+  filterUnit?: string;
+}
+
+export interface DataTableColumnDslQueryOptions<TData, TValue> {
+  dsl?: {
+    filterField?: string;
+    sortField?: string;
+    filterOperator?: DataTableDslOperator;
+    serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
+  };
+}
+
+export interface DataTableColumnPanelOptions {
+  columnMenuVisible?: boolean;
+  columnPanelVisible?: boolean;
+  columnPanelReorder?: boolean;
+}
+
+export type BuiltInColumnValueType =
+  | 'text'
+  | 'longText'
+  | 'number'
+  | 'int'
+  | 'decimal'
+  | 'money'
+  | 'percent'
+  | 'date'
+  | 'dateTime'
+  | 'boolean'
+  | 'enum'
+  | 'fileSize';
+
+export type DataTableColumnValueType = BuiltInColumnValueType | (string & {});
+
+export interface DataTableColumnTypeDefinition<TData, TValue> {
+  formatValue?: (value: TValue, row: TData) => React.ReactNode;
+  copyValue?: (value: TValue, row: TData) => unknown;
+  renderCell?: (context: CellContext<TData, TValue>) => React.ReactNode;
+  size?: number;
+  minSize?: number;
+  maxSize?: number;
+  align?: 'left' | 'center' | 'right';
+  cellClassName?: string;
+  headerClassName?: string;
+}
+
+export interface DataTableRowActionSelectContext<TData> {
+  row: TData;
+  tableRow: Row<TData>;
+}
+
+export interface DataTableRowActionOption<TData> {
+  id: string;
+  label: string;
+  icon?: React.ReactNode | React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  disabled?: boolean | ((row: TData) => boolean);
+  hidden?: boolean | ((row: TData) => boolean);
+  onSelect?: (context: DataTableRowActionSelectContext<TData>) => void | Promise<void>;
+}
+
 export interface ExtendedColumnSort<TData> extends Omit<ColumnSort, 'id'> {
   id: Extract<keyof TData, string>;
 }
@@ -56,8 +148,10 @@ export interface ExtendedColumnFilter<TData> extends FilterItemSchema {
   id: Extract<keyof TData, string>;
 }
 
-export type ColumnResizeStorageMode = 'localStorage' | 'sessionStorage' | false;
-export type ColumnOrderStorageMode = ColumnResizeStorageMode;
+export type DataTableStateStorageMode = 'localStorage' | 'sessionStorage' | false;
+export type ColumnResizeStorageMode = DataTableStateStorageMode;
+export type ColumnOrderStorageMode = DataTableStateStorageMode;
+export type SortingStorageMode = DataTableStateStorageMode;
 
 export interface DataTableColumnOrderMeta {
   hasCustomOrder: boolean;

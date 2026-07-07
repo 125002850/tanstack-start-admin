@@ -8,7 +8,9 @@ import type {
 
 import type { DataTableDslCondition } from './use-dsl-data-table.dsl';
 import {
+  DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS,
   buildDataTableDslRequest,
+  isDataTableDslFilterVariantSupported,
   isDataTableDslOperatorCompatibleWithVariant
 } from './use-dsl-data-table.dsl';
 
@@ -32,7 +34,7 @@ const columns: Array<ColumnDef<DictionaryTypeRow>> = [
     header: '字典类型名称',
     enableColumnFilter: true,
     enableSorting: true,
-    meta: { variant: 'text', label: '字典类型名称', query: { operator: 'EQ' } } as never
+    meta: { variant: 'text', label: '字典类型名称', query: { operator: 'EQ' } }
   },
   {
     accessorKey: 'createTime',
@@ -113,6 +115,46 @@ describe('use-dsl-data-table.dsl', () => {
     });
 
     expect(request.sort).toEqual([{ field: 'createTime', direction: 'DESC' }]);
+  });
+
+  it('uses dsl filter field, sort field, and serializeFilter during request serialization', () => {
+    const request = buildDataTableDslRequest({
+      columns: [
+        {
+          accessorKey: 'dictTypeCode',
+          header: '编码',
+          enableColumnFilter: true,
+          enableSorting: true,
+          meta: {
+            variant: 'text',
+            label: '编码',
+            query: {
+              filterField: 'customer_code',
+              sortField: 'customer_code_sort',
+              operator: 'EQ',
+              serializeFilter: (value) => String(value).trim().toUpperCase()
+            }
+          }
+        }
+      ],
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [{ id: 'dictTypeCode', desc: false }],
+      columnFilters: [{ id: 'dictTypeCode', value: ' pay ' }]
+    });
+
+    expect(request.sort).toEqual([{ field: 'customer_code_sort', direction: 'ASC' }]);
+    expect(request.condition).toEqual({
+      nodeType: 'compose',
+      logic: 'AND',
+      children: [
+        {
+          nodeType: 'text',
+          field: 'customer_code',
+          op: 'EQ',
+          value: 'PAY'
+        }
+      ]
+    });
   });
 
   it('omits text and multi-select filters after empty normalization', () => {
@@ -264,7 +306,7 @@ describe('use-dsl-data-table.dsl', () => {
           accessorKey: 'dictTypeCode',
           header: '编码',
           enableColumnFilter: true,
-          meta: { variant: 'text', label: '编码', query: { operator: 'BETWEEN' } } as never
+          meta: { variant: 'text', label: '编码', query: { operator: 'BETWEEN' } }
         }
       ],
       pagination: { pageIndex: 0, pageSize: 10 },
@@ -292,5 +334,55 @@ describe('use-dsl-data-table.dsl', () => {
     expect(isDataTableDslOperatorCompatibleWithVariant('dateRange', 'BETWEEN')).toBe(true);
     expect(isDataTableDslOperatorCompatibleWithVariant('text', 'BETWEEN')).toBe(false);
     expect(isDataTableDslOperatorCompatibleWithVariant('multiSelect', 'EQ')).toBe(false);
+  });
+
+  it('declares the filter variants supported by automatic DSL serialization', () => {
+    expect(DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS).toEqual([
+      'text',
+      'select',
+      'multiSelect',
+      'date',
+      'dateRange'
+    ]);
+
+    expect(isDataTableDslFilterVariantSupported('text')).toBe(true);
+    expect(isDataTableDslFilterVariantSupported('dateRange')).toBe(true);
+    expect(isDataTableDslFilterVariantSupported('number')).toBe(false);
+    expect(isDataTableDslFilterVariantSupported('range')).toBe(false);
+    expect(isDataTableDslFilterVariantSupported('boolean')).toBe(false);
+  });
+
+  it('does not serialize numeric or boolean UI-only filter variants into DSL conditions', () => {
+    const request = buildDataTableDslRequest({
+      columns: [
+        {
+          accessorKey: 'id',
+          header: 'ID',
+          enableColumnFilter: true,
+          meta: { variant: 'number', label: 'ID' }
+        },
+        {
+          accessorKey: 'dictTypeCode',
+          header: '范围',
+          enableColumnFilter: true,
+          meta: { variant: 'range', label: '范围', range: [0, 100] }
+        },
+        {
+          accessorKey: 'dictTypeName',
+          header: '启用状态',
+          enableColumnFilter: true,
+          meta: { variant: 'boolean', label: '启用状态' }
+        }
+      ],
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [
+        { id: 'id', value: 42 },
+        { id: 'dictTypeCode', value: [10, 20] },
+        { id: 'dictTypeName', value: true }
+      ]
+    });
+
+    expect(request.condition).toBeUndefined();
   });
 });

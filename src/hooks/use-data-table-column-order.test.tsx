@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { useDataTable } from '@/hooks/use-data-table';
-import { saveColumnOrder } from '@/lib/data-table-column-order-storage';
+import { saveDataTableColumnOrder } from '@/lib/data-table-state-persistence';
 
 type TestRow = { id: number; name: string };
 
@@ -52,7 +52,7 @@ describe('useDataTable column order persistence', () => {
   afterEach(cleanup);
 
   it('hydrates column order from localStorage', () => {
-    saveColumnOrder(TABLE_ID, ['name', 'id'], 'localStorage');
+    saveDataTableColumnOrder(TABLE_ID, ['name', 'id'], 'localStorage');
 
     render(<ColumnOrderInspector />);
 

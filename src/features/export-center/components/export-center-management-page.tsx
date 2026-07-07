@@ -7,21 +7,21 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { DataTable } from '@/components/ui/table/data-table';
+import { DataTable } from '@/components/ui/table/core/data-table';
 import type {
   DataTableAction,
   DataTableActionContext
-} from '@/components/ui/table/data-table-actions-bar';
-import { auditColumns } from '@/components/ui/table/data-table-audit-columns';
+} from '@/components/ui/table/actions/data-table-actions-bar';
+import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
 import {
-  dataTableColumns,
+  createDataTableColumnDsl,
   dataTableHeader,
   dataTableTextCell
-} from '@/components/ui/table/data-table-column-factory';
-import { DataTableLinkButtonCell } from '@/components/ui/table/data-table-link-button-cell';
-import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
-import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
-import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
+} from '@/components/ui/table/columns/data-table-column-factory';
+import { DataTableLinkButtonCell } from '@/components/ui/table/cells/data-table-link-button-cell';
+import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
+import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
+import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { useDict } from '@/hooks/use-dict';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
@@ -62,6 +62,8 @@ const EXPORT_RECORD_STATUS_NAME_VARIANTS = {
 } satisfies Record<string, React.ComponentProps<typeof Badge>['variant']>;
 
 type ExportRecordRecord = ExportRecordRspDTO;
+
+const columnDsl = createDataTableColumnDsl<ExportRecordRecord>();
 
 interface CachedDownloadUrl {
   url: string;
@@ -184,23 +186,15 @@ function getColumns(
         );
       }
     },
-    dataTableColumns.text<ExportRecordRecord, 'exportBizName'>('exportBizName', '导出业务', {
+    columnDsl.field('exportBizName', '导出业务', {
       size: 180,
-      enableColumnFilter: true,
-      meta: {
-        variant: 'text',
-        label: '导出业务',
-        placeholder: '搜索导出业务'
-      }
+      filter: 'text',
+      filterPlaceholder: '搜索导出业务'
     }),
-    dataTableColumns.text<ExportRecordRecord, 'querySnapshotSummary'>(
-      'querySnapshotSummary',
-      '导出摘要',
-      {
-        size: 180,
-        cellClassName: 'max-w-[180px]'
-      }
-    ),
+    columnDsl.field('querySnapshotSummary', '导出摘要', {
+      size: 180,
+      cellClassName: 'max-w-[180px]'
+    }),
     {
       accessorKey: 'status',
       header: ({ column }) => dataTableHeader(column, '状态'),
@@ -212,10 +206,11 @@ function getColumns(
         return <Badge variant={getStatusBadgeVariant(row.original)}>{label}</Badge>;
       }
     },
-    dataTableColumns.text<ExportRecordRecord, 'fileType'>('fileType', '类型', {
+    columnDsl.field('fileType', '类型', {
       size: 100
     }),
-    dataTableColumns.fileSize<ExportRecordRecord, 'fileSize'>('fileSize', '大小', {
+    columnDsl.field('fileSize', '大小', {
+      type: 'fileSize',
       size: 100
     }),
     {
@@ -540,7 +535,6 @@ export default function ExportCenterManagementPage() {
   );
 
   const rowCount = table.getRowModel().rows.length;
-  const columnFilters = table.getState().columnFilters;
   const isInitialLoading = queryState.isFetching && !queryState.data;
 
   if (isInitialLoading && rowCount === 0) {
@@ -580,7 +574,6 @@ export default function ExportCenterManagementPage() {
                 };
               }
             }}
-            statusDeps={[rowCount, columnFilters, isInitialLoading]}
           >
             <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
           </DataTable>

@@ -37,6 +37,12 @@ export function nullablePercent(value: number | null | undefined) {
   return formatPercent(value ?? undefined);
 }
 
+export function nullableRawPercent(value: unknown) {
+  if (value == null || value === '') return '-';
+  if (typeof value === 'number') return `${value.toLocaleString('zh-CN')}%`;
+  return String(value);
+}
+
 export function nullableDecimal(value: unknown, maximumFractionDigits = 3) {
   if (value == null || value === '') return '-';
   if (typeof value === 'number') {

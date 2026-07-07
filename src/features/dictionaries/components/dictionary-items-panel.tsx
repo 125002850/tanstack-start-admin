@@ -5,12 +5,13 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { DataTable } from '@/components/ui/table/data-table';
+import { DataTable } from '@/components/ui/table/core/data-table';
 import type {
   DataTableAction,
   DataTableActionContext
-} from '@/components/ui/table/data-table-actions-bar';
-import type { DataTableRowAction } from '@/components/ui/table/data-table-row-action';
+} from '@/components/ui/table/actions/data-table-actions-bar';
+import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
+import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslCondition } from '@/hooks/use-dsl-data-table.dsl';
@@ -165,6 +166,7 @@ export function DictionaryItemsPanel({
       mapQueryData,
       showRowNumberColumn: false,
       showSelectColumn: true,
+      rowId: 'id',
       rowSelectionScopeKey: record?.dictTypeCode ?? null,
       rowActions,
       refreshBehavior: {
@@ -178,7 +180,6 @@ export function DictionaryItemsPanel({
     refetchRef.current = queryState.refetch;
   });
 
-  const rowCount = table.getRowModel().rows.length;
   const isInitialLoading = queryState.isFetching && !queryState.data;
 
   React.useEffect(() => {
@@ -248,7 +249,7 @@ export function DictionaryItemsPanel({
           isLoading={isInitialLoading}
           getSelectedRows={getSelectedRows}
           {...refreshProps}
-          getStatusConfig={({ rows, isLoading }) => {
+          getStatusConfig={({ rows, hasFilters, isLoading }) => {
             if (!record) {
               return {
                 type: 'onboarding',
@@ -257,11 +258,20 @@ export function DictionaryItemsPanel({
               };
             }
             if (!rows.length && !isLoading) {
+              if (hasFilters) {
+                return {
+                  type: 'empty',
+                  title: '未找到匹配的字典项',
+                  description: '尝试调整字典项编码或名称筛选条件。'
+                };
+              }
+
               return { type: 'empty', title: '当前字典类型暂无字典项', description: '' };
             }
           }}
-          statusDeps={[record, rowCount, queryState.isFetching]}
-        />
+        >
+          <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
+        </DataTable>
       </CardContent>
     </Card>
   );

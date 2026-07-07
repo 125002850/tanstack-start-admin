@@ -158,6 +158,53 @@
   }
 }
 
+[data-theme='astro-vista'] {
+  --data-table-pinned-background: color-mix(in oklch, var(--card) 92%, var(--accent) 8%);
+  --data-table-pinned-selected-background: color-mix(in oklch, var(--card) 80%, var(--accent) 20%);
+  --data-table-expanded-background: var(--accent);
+  --data-table-select-border: color-mix(in oklch, var(--input) 58%, var(--accent-foreground) 42%);
+  --data-table-select-background: color-mix(in oklch, var(--card) 96%, var(--accent) 4%);
+  --data-table-select-shadow: color-mix(in oklch, var(--border) 55%, var(--accent-foreground) 45%);
+}
+
+[data-theme='astro-vista'].dark {
+  --data-table-pinned-background: color-mix(in oklch, var(--card) 88%, var(--accent) 12%);
+  --data-table-pinned-selected-background: color-mix(in oklch, var(--card) 74%, var(--accent) 26%);
+  --data-table-expanded-background: var(--accent);
+  --data-table-select-border: color-mix(in oklch, var(--input) 50%, var(--accent-foreground) 50%);
+  --data-table-select-background: color-mix(in oklch, var(--card) 90%, var(--accent) 10%);
+  --data-table-select-shadow: color-mix(in oklch, var(--border) 50%, var(--accent-foreground) 50%);
+}
+
+[data-theme='astro-vista']
+  :where([data-slot='table-cell'].bg-background, [data-slot='data-table-pinned-cell-base']) {
+  background-color: var(--data-table-pinned-background);
+}
+
+[data-theme='astro-vista']
+  :where(
+    [data-slot='table-row'][data-state='selected'] [data-slot='table-cell'].bg-background,
+    [data-slot='table-row'][data-state='selected'] [data-slot='data-table-pinned-cell-overlay']
+  ) {
+  background-color: var(--data-table-pinned-selected-background);
+}
+
+[data-theme='astro-vista']
+  :where(
+    [data-slot='table-row'][data-expanded='true'] [data-slot='table-cell'],
+    [data-slot='table-row'][data-expanded='true'] [data-slot='data-table-pinned-cell-base'],
+    [data-slot='table-row'][data-expanded='true'] [data-slot='data-table-pinned-cell-overlay']
+  ) {
+  background-color: var(--data-table-expanded-background);
+}
+
+[data-theme='astro-vista']
+  :where([data-slot='data-table-select-hitbox'][aria-checked='false'] > span) {
+  border-color: var(--data-table-select-border);
+  background-color: var(--data-table-select-background);
+  box-shadow: 0 0 0 1px var(--data-table-select-shadow);
+}
+
 [data-theme='astro-vista'] :where(.data-table-filter-control) {
   border-color: color-mix(in oklch, var(--border) 82%, var(--accent-foreground) 18%);
   background-color: color-mix(in oklch, var(--popover) 92%, var(--accent) 8%);
@@ -179,7 +226,6 @@
   box-shadow: var(--shadow-lg);
 }
 
-[data-theme='astro-vista']
-  :where(.data-table-filter-popover [data-slot='command-input-wrapper']) {
+[data-theme='astro-vista'] :where(.data-table-filter-popover [data-slot='command-input-wrapper']) {
   background-color: color-mix(in oklch, var(--background) 90%, var(--accent) 10%);
 }

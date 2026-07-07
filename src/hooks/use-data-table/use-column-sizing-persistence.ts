@@ -2,9 +2,9 @@ import type { ColumnSizingState, Table } from '@tanstack/react-table';
 import * as React from 'react';
 
 import {
-  clearColumnSizing,
-  saveColumnSizing
-} from '@/lib/data-table-column-resize-storage';
+  clearDataTableColumnSizing,
+  saveDataTableColumnSizing
+} from '@/lib/data-table-state-persistence';
 import type { ColumnResizeStorageMode } from '@/types/data-table';
 
 import { omitFixedWidthColumnSizing } from './column-sizing';
@@ -61,7 +61,7 @@ export function useColumnSizingPersistence<TData>({
       const sanitizedSizing = omitFixedWidthColumnSizing(currentSizing) ?? {};
 
       if (tableId && resolvedStorageMode !== false) {
-        saveColumnSizing(tableId, sanitizedSizing as Record<string, number>, resolvedStorageMode);
+        saveDataTableColumnSizing(tableId, sanitizedSizing, resolvedStorageMode);
       }
 
       if (onColumnResizeEnd) {
@@ -80,7 +80,7 @@ export function useColumnSizingPersistence<TData>({
 
   const resetColumnSizing = React.useCallback(() => {
     if (tableId) {
-      clearColumnSizing(tableId, resolvedStorageMode);
+      clearDataTableColumnSizing(tableId, resolvedStorageMode);
     }
 
     const nextColumnSizing = omitFixedWidthColumnSizing(resolvedInitialColumnSizing) ?? {};

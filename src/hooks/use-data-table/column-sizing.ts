@@ -18,7 +18,9 @@ function getColumnDefId<TData>(column: ColumnDef<TData>): string | undefined {
   return undefined;
 }
 
-export function getFixedWidthColumnSizing<TData>(columns: Array<ColumnDef<TData>>): ColumnSizingState {
+export function getFixedWidthColumnSizing<TData>(
+  columns: Array<ColumnDef<TData>>
+): ColumnSizingState {
   return columns.reduce<ColumnSizingState>((acc, column) => {
     const columnId = getColumnDefId(column);
 

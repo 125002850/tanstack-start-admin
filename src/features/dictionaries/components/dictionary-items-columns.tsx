@@ -1,25 +1,28 @@
 import { StatusToggleBadge } from '@/components/ui/status-toggle-badge';
 import type { DictionaryItemRecord } from '../api/types';
 import type { ColumnDef } from '@tanstack/react-table';
-import { auditColumns } from '@/components/ui/table/data-table-audit-columns';
-import { dataTableHeader } from '@/components/ui/table/data-table-column-factory';
+import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
+import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
+
+const columnDsl = createDataTableColumnDsl<DictionaryItemRecord>();
 
 export function dictionaryItemColumns(
   onToggleStatus: (record: DictionaryItemRecord) => void
 ): ColumnDef<DictionaryItemRecord>[] {
   return [
-    {
-      accessorKey: 'dictItemCode',
-      header: ({ column }) => dataTableHeader(column, '字典项编码'),
-      cell: ({ row }) => <span className='font-medium'>{row.original.dictItemCode}</span>
-    },
-    {
-      accessorKey: 'dictItemName',
-      header: ({ column }) => dataTableHeader(column, '字典项名称')
-    },
-    {
-      accessorKey: 'status',
-      header: '状态',
+    columnDsl.field('dictItemCode', '字典项编码', {
+      filter: 'text',
+      filterPlaceholder: '搜索字典项编码',
+      renderCell: ({ row }) => <span className='font-medium'>{row.original.dictItemCode}</span>
+    }),
+    columnDsl.field('dictItemName', '字典项名称', {
+      filter: 'text',
+      filterPlaceholder: '搜索字典项名称'
+    }),
+    columnDsl.custom({
+      id: 'status',
+      title: '状态',
+      accessorFn: (record) => record.status,
       cell: ({ row }) => (
         <StatusToggleBadge
           status={row.original.status}
@@ -27,20 +30,16 @@ export function dictionaryItemColumns(
           getVariant={(enabled) => (enabled ? undefined : 'secondary')}
         />
       )
-    },
-    {
-      accessorKey: 'sort',
-      header: '排序'
-    },
-    {
-      accessorKey: 'remark',
-      header: '备注',
-      cell: ({ row }) => (
+    }),
+    columnDsl.field('sort', '排序', { type: 'number' }),
+    columnDsl.field('remark', '备注', {
+      type: 'longText',
+      renderCell: ({ row }) => (
         <span className='text-muted-foreground max-w-[260px] whitespace-normal'>
           {row.original.remark || '-'}
         </span>
       )
-    },
+    }),
     ...auditColumns<DictionaryItemRecord>()
   ];
 }

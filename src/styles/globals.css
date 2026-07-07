@@ -48,6 +48,67 @@
   }
 }
 
+@property --data-table-cell-copy-flash-primary-mix {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 5%;
+}
+
+@keyframes data-table-cell-copy-flash-a {
+  0% {
+    --data-table-cell-copy-flash-primary-mix: 5%;
+  }
+  6% {
+    --data-table-cell-copy-flash-primary-mix: 32%;
+  }
+  18% {
+    --data-table-cell-copy-flash-primary-mix: 26%;
+  }
+  100% {
+    --data-table-cell-copy-flash-primary-mix: 5%;
+  }
+}
+
+@keyframes data-table-cell-copy-flash-b {
+  0% {
+    --data-table-cell-copy-flash-primary-mix: 5%;
+  }
+  6% {
+    --data-table-cell-copy-flash-primary-mix: 32%;
+  }
+  18% {
+    --data-table-cell-copy-flash-primary-mix: 26%;
+  }
+  100% {
+    --data-table-cell-copy-flash-primary-mix: 5%;
+  }
+}
+
+[data-slot='table-cell'][data-cell-copy-flash='true'] {
+  --data-table-cell-copy-flash-primary-mix: 5%;
+  background-color: color-mix(
+    in oklch,
+    var(--primary) var(--data-table-cell-copy-flash-primary-mix),
+    transparent
+  );
+  animation-duration: 960ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-slot='table-cell'][data-cell-copy-flash-run='a'] {
+  animation-name: data-table-cell-copy-flash-a;
+}
+
+[data-slot='table-cell'][data-cell-copy-flash-run='b'] {
+  animation-name: data-table-cell-copy-flash-b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='table-cell'][data-cell-copy-flash='true'] {
+    animation-duration: 1ms;
+  }
+}
+
 /* View Transition Wave Effect */
 ::view-transition-old(root),
 ::view-transition-new(root) {

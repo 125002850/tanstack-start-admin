@@ -28,10 +28,12 @@ export function isDataTableVirtualizationEnabled(): boolean {
   return isBrowserSupportedForVirtualization();
 }
 
-type DataTableGateFallbackReason = Exclude<
-  DataTableVirtualizationFallbackReason,
-  'runtime-error'
->;
+/** @deprecated Use `isDataTableVirtualizationEnabled()` instead. */
+export function isProductTableVirtualizationEnabled(): boolean {
+  return isDataTableVirtualizationEnabled();
+}
+
+type DataTableGateFallbackReason = Exclude<DataTableVirtualizationFallbackReason, 'runtime-error'>;
 
 interface DataTableVirtualizationResolution {
   gateReason?: DataTableGateFallbackReason;
@@ -78,7 +80,8 @@ export function resolveDataTableVirtualizationOptions(
 ): DataTableVirtualizationResolution {
   const mode = resolveDataTableVirtualizationMode(virtualization);
   const columnMode = resolveDataTableColumnVirtualizationMode(virtualization);
-  const config = typeof virtualization === 'object' && virtualization !== null ? virtualization : undefined;
+  const config =
+    typeof virtualization === 'object' && virtualization !== null ? virtualization : undefined;
 
   if (mode === 'off') {
     return {
@@ -203,5 +206,6 @@ export const dataTableConfig = {
   ] as const,
   joinOperators: ['and', 'or'] as const,
   columnResizeStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false,
-  columnOrderStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false
+  columnOrderStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false,
+  sortingStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false
 };

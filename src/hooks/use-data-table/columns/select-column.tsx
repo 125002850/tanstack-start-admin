@@ -18,6 +18,13 @@ function SelectControl({
 }) {
   const isChecked = checked === true;
   const isIndeterminate = checked === 'indeterminate';
+  let indicator = null;
+
+  if (isIndeterminate) {
+    indicator = <Icons.minus className='size-3' />;
+  } else if (isChecked) {
+    indicator = <Icons.check className='size-3.5' />;
+  }
 
   return (
     <button
@@ -38,16 +45,12 @@ function SelectControl({
     >
       <span
         className={cn(
-          'border-input dark:bg-input/30 flex size-4 shrink-0 items-center justify-center rounded-[4px] border cursor-pointer shadow-xs transition-shadow group-focus-visible:border-ring group-focus-visible:ring-ring/50 group-focus-visible:ring-[3px]',
+          'border-border bg-background flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border-2 shadow-sm transition-[background-color,border-color,box-shadow] group-hover:border-foreground/70 group-focus-visible:border-ring group-focus-visible:ring-ring/50 group-focus-visible:ring-[3px]',
           (isChecked || isIndeterminate) &&
-            'border-primary bg-primary text-primary-foreground dark:bg-primary'
+            'border-primary bg-primary text-primary-foreground group-hover:border-primary dark:bg-primary'
         )}
       >
-        {isIndeterminate ? (
-          <Icons.minus className='size-3' />
-        ) : isChecked ? (
-          <Icons.check className='size-3.5' />
-        ) : null}
+        {indicator}
       </span>
     </button>
   );

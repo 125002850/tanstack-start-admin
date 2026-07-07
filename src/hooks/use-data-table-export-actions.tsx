@@ -7,11 +7,11 @@ import {
   DataTableExportDialog,
   type DataTableExportDialogLabels,
   type DataTableExportRange
-} from '@/components/ui/table/data-table-export-dialog';
-import type { DataTableAction } from '@/components/ui/table/data-table-actions-bar';
+} from '@/components/ui/table/export/data-table-export-dialog';
+import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
 import { downloadFileFromUrl } from '@/lib/download-file';
 
-export type { DataTableExportRange } from '@/components/ui/table/data-table-export-dialog';
+export type { DataTableExportRange } from '@/components/ui/table/export/data-table-export-dialog';
 
 export interface DataTableExportResponse {
   downloadUrl?: string | null;

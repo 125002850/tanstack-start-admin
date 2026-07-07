@@ -11,15 +11,23 @@ import {
 } from '@tanstack/react-table';
 import * as React from 'react';
 
-import { DEFAULT_DATA_TABLE_PAGE_SIZE } from '@/lib/data-table-page-size';
-import { loadColumnSizing } from '@/lib/data-table-column-resize-storage';
 import {
-  areColumnOrdersEqual,
-  clearColumnOrder,
-  loadColumnOrder,
-  saveColumnOrder
-} from '@/lib/data-table-column-order-storage';
-import type { ColumnOrderStorageMode, ColumnResizeStorageMode } from '@/types/data-table';
+  areDataTableColumnOrdersEqual,
+  areDataTableSortingStatesEqual,
+  clearDataTableColumnOrder,
+  clearDataTableSorting,
+  DEFAULT_DATA_TABLE_PAGE_SIZE,
+  loadDataTableColumnOrder,
+  loadDataTableColumnSizing,
+  readDataTableSorting,
+  saveDataTableColumnOrder,
+  saveDataTableSorting
+} from '@/lib/data-table-state-persistence';
+import type {
+  ColumnOrderStorageMode,
+  ColumnResizeStorageMode,
+  SortingStorageMode
+} from '@/types/data-table';
 
 import { omitFixedWidthColumnSizing } from './column-sizing';
 import type { UseDataTableProps } from './types';
@@ -29,11 +37,11 @@ export function useTableState<TData>({
   resolvedInitialState,
   controlledPageSize,
   onPageSizeChange,
-  enableAdvancedFilter,
   tableId,
   rowSelectionScopeKey,
   resolvedStorageMode,
   resolvedColumnOrderStorageMode,
+  resolvedSortingStorageMode,
   normalizeColumnOrder,
   externalOnColumnOrderChange,
   fixedWidthColumnSizing
@@ -41,11 +49,11 @@ export function useTableState<TData>({
   resolvedInitialState: UseDataTableProps<TData>['initialState'];
   controlledPageSize: number | undefined;
   onPageSizeChange: ((pageSize: number) => void) | undefined;
-  enableAdvancedFilter: boolean;
   tableId: string | undefined;
   rowSelectionScopeKey: UseDataTableProps<TData>['rowSelectionScopeKey'];
   resolvedStorageMode: ColumnResizeStorageMode;
   resolvedColumnOrderStorageMode: ColumnOrderStorageMode;
+  resolvedSortingStorageMode: SortingStorageMode;
   normalizeColumnOrder: (columnOrder: ColumnOrderState | undefined) => ColumnOrderState | undefined;
   externalOnColumnOrderChange: UseDataTableProps<TData>['onColumnOrderChange'];
   fixedWidthColumnSizing: ColumnSizingState;
@@ -63,26 +71,38 @@ export function useTableState<TData>({
     normalizeColumnOrder(resolvedInitialState?.columnOrder) ?? []
   );
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
-    const cachedOrder = tableId ? loadColumnOrder(tableId, resolvedColumnOrderStorageMode) : [];
+    const cachedOrder = tableId
+      ? loadDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode)
+      : [];
     const initialOrder = cachedOrder.length > 0 ? cachedOrder : initialColumnOrderRef.current;
 
     return normalizeColumnOrder(initialOrder) ?? [];
   });
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() => ({
     ...resolvedInitialState?.columnSizing,
-    ...omitFixedWidthColumnSizing(tableId ? loadColumnSizing(tableId, resolvedStorageMode) : {})
+    ...omitFixedWidthColumnSizing(
+      tableId ? loadDataTableColumnSizing(tableId, resolvedStorageMode) : {}
+    )
   }));
+  const initialSortingRef = React.useRef<SortingState>(resolvedInitialState?.sorting ?? []);
+  const [sorting, setSorting] = React.useState<SortingState>(() => {
+    const cachedSorting = tableId
+      ? readDataTableSorting(tableId, resolvedSortingStorageMode)
+      : null;
+
+    return cachedSorting ?? initialSortingRef.current;
+  });
 
   const persistColumnOrder = React.useCallback(
     (nextColumnOrder: ColumnOrderState) => {
       if (!tableId || resolvedColumnOrderStorageMode === false) return;
 
-      if (areColumnOrdersEqual(nextColumnOrder, initialColumnOrderRef.current)) {
-        clearColumnOrder(tableId, resolvedColumnOrderStorageMode);
+      if (areDataTableColumnOrdersEqual(nextColumnOrder, initialColumnOrderRef.current)) {
+        clearDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode);
         return;
       }
 
-      saveColumnOrder(tableId, nextColumnOrder, resolvedColumnOrderStorageMode);
+      saveDataTableColumnOrder(tableId, nextColumnOrder, resolvedColumnOrderStorageMode);
     },
     [resolvedColumnOrderStorageMode, tableId]
   );
@@ -107,7 +127,7 @@ export function useTableState<TData>({
 
   const resetColumnOrder = React.useCallback(() => {
     if (tableId) {
-      clearColumnOrder(tableId, resolvedColumnOrderStorageMode);
+      clearDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode);
     }
 
     const nextColumnOrder = initialColumnOrderRef.current;
@@ -157,13 +177,34 @@ export function useTableState<TData>({
     [onPageSizeChange]
   );
 
-  const [sorting, setSorting] = React.useState<SortingState>(resolvedInitialState?.sorting ?? []);
+  const persistSorting = React.useCallback(
+    (nextSorting: SortingState) => {
+      if (!tableId || resolvedSortingStorageMode === false) return;
 
-  const onSortingChange = React.useCallback((updaterOrValue: Updater<SortingState>) => {
-    setSorting((prev) =>
-      typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
-    );
-  }, []);
+      if (areDataTableSortingStatesEqual(nextSorting, initialSortingRef.current)) {
+        clearDataTableSorting(tableId, resolvedSortingStorageMode);
+        return;
+      }
+
+      saveDataTableSorting(tableId, nextSorting, resolvedSortingStorageMode);
+    },
+    [resolvedSortingStorageMode, tableId]
+  );
+
+  const onSortingChange = React.useCallback(
+    (updaterOrValue: Updater<SortingState>) => {
+      setSorting((prev) => {
+        const next =
+          typeof updaterOrValue === 'function'
+            ? (updaterOrValue as (prev: SortingState) => SortingState)(prev)
+            : updaterOrValue;
+
+        persistSorting(next);
+        return next;
+      });
+    },
+    [persistSorting]
+  );
 
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     resolvedInitialState?.columnFilters ?? []
@@ -180,15 +221,11 @@ export function useTableState<TData>({
     setRowSelection({});
   }, [rowSelectionScopeKey]);
 
-  const onColumnFiltersChange = React.useCallback(
-    (updaterOrValue: Updater<ColumnFiltersState>) => {
-      if (enableAdvancedFilter) return;
-      setColumnFilters((prev) =>
-        typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
-      );
-    },
-    [enableAdvancedFilter]
-  );
+  const onColumnFiltersChange = React.useCallback((updaterOrValue: Updater<ColumnFiltersState>) => {
+    setColumnFilters((prev) =>
+      typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
+    );
+  }, []);
 
   return {
     rowSelection,
@@ -200,7 +237,10 @@ export function useTableState<TData>({
     columnOrder,
     onColumnOrderChange,
     resetColumnOrder,
-    hasCustomColumnOrder: !areColumnOrdersEqual(columnOrder, initialColumnOrderRef.current),
+    hasCustomColumnOrder: !areDataTableColumnOrdersEqual(
+      columnOrder,
+      initialColumnOrderRef.current
+    ),
     columnSizing,
     setColumnSizing,
     onColumnSizingChange,

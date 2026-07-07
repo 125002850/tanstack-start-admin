@@ -350,6 +350,56 @@ describe('useDslDataTable', () => {
     });
   });
 
+  it('warns once when a filterable DSL column uses an unsupported filter variant', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const queryFactory = vi.fn((request) =>
+      queryOptions({
+        queryKey: ['dictionary-types', request],
+        queryFn: async () => ({
+          list: [],
+          total: 0
+        })
+      })
+    ) as unknown as QueryOptionsFactory<DictionaryTypeRow>;
+    const unsupportedColumns: Array<ColumnDef<DictionaryTypeRow>> = [
+      ...columns,
+      {
+        accessorKey: 'id',
+        header: 'ID',
+        enableColumnFilter: true,
+        meta: { variant: 'number', label: 'ID' }
+      }
+    ];
+
+    const { rerender } = renderHook(
+      ({ tableId }) =>
+        useDslDataTable({
+          tableId,
+          columns: unsupportedColumns,
+          queryOptions: queryFactory
+        }),
+      {
+        wrapper: createWrapper(),
+        initialProps: { tableId: 'dictionary-types' }
+      }
+    );
+
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    expect(warn.mock.calls[0]?.[0]).toContain('[useDslDataTable]');
+    expect(warn.mock.calls[0]?.[1]).toMatchObject({
+      tableId: 'dictionary-types',
+      columnId: 'id',
+      variant: 'number'
+    });
+
+    rerender({ tableId: 'dictionary-types' });
+
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
   it('builds refreshProps and dispatches refresh success/error callbacks', async () => {
     let shouldFail = false;
     const onSuccess = vi.fn();

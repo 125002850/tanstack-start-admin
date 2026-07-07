@@ -12,7 +12,6 @@ import {
 import type {
   ColumnFiltersState,
   PaginationState,
-  Row,
   SortingState,
   TableOptions
 } from '@tanstack/react-table';
@@ -20,7 +19,11 @@ import * as React from 'react';
 
 import { dataTableConfig } from '@/config/data-table';
 import { getSelectedPageRows } from '@/lib/data-table';
-import type { ColumnOrderStorageMode, ColumnResizeStorageMode } from '@/types/data-table';
+import type {
+  ColumnOrderStorageMode,
+  ColumnResizeStorageMode,
+  SortingStorageMode
+} from '@/types/data-table';
 
 import { getFixedWidthColumnSizing, omitFixedWidthColumnSizing } from './column-sizing';
 import {
@@ -40,6 +43,7 @@ import {
 import { createRowActionsColumn } from './columns/row-actions-column';
 import { createRowNumberColumn } from './columns/row-number-column';
 import { createSelectColumn } from './columns/select-column';
+import { resolveDataTableRowId, stringifyDataTableRowId } from './row-id';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
 import { useTableState } from './use-table-state';
 
@@ -62,21 +66,8 @@ function usePaginationForRenderedData<TData>(
   return paginationRef.current;
 }
 
-function stringifyResolvedRowId(value: unknown) {
-  if (typeof value === 'string') {
-    return value.length > 0 ? value : null;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? String(value) : null;
-  }
-
-  return null;
-}
-
-function getFallbackRowId<TData>(tableId: string, index: number, parent?: Row<TData>) {
-  return parent ? `${parent.id}-${index}` : `${tableId}-${index}`;
-}
+const warnedSelectionFallbackTableIds = new Set<string>();
+const warnedAdvancedFilterTableIds = new Set<string>();
 
 /**
  * 构建 API 查询参数的工厂函数。自动将 {@link ColumnFiltersState} 映射为后端接受的键值对。
@@ -128,7 +119,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     totalCount,
     initialState,
     debounceMs = DEBOUNCE_MS,
-    enableAdvancedFilter = false,
+    enableAdvancedFilter: deprecatedEnableAdvancedFilter,
     pageSize: controlledPageSize,
     onPageSizeChange,
     showRowNumberColumn = true,
@@ -245,6 +236,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       (props.columnOrderStorage ?? dataTableConfig.columnOrderStorage) as ColumnOrderStorageMode,
     [props.columnOrderStorage]
   );
+  const resolvedSortingStorageMode: SortingStorageMode = React.useMemo(
+    () => (props.sortingStorage ?? dataTableConfig.sortingStorage) as SortingStorageMode,
+    [props.sortingStorage]
+  );
   const normalizeColumnOrder = React.useCallback(
     (columnOrder: Array<string> | undefined) =>
       normalizeGeneratedColumnOrder(columnOrder, {
@@ -278,17 +273,61 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     resolvedInitialState,
     controlledPageSize,
     onPageSizeChange,
-    enableAdvancedFilter,
     tableId,
     rowSelectionScopeKey: props.rowSelectionScopeKey,
     resolvedStorageMode,
     resolvedColumnOrderStorageMode,
+    resolvedSortingStorageMode,
     normalizeColumnOrder,
     externalOnColumnOrderChange,
     fixedWidthColumnSizing
   });
 
   const rowNumberPagination = usePaginationForRenderedData(tableProps.data, pagination);
+
+  React.useEffect(() => {
+    if (!import.meta.env.DEV || deprecatedEnableAdvancedFilter === undefined) {
+      return;
+    }
+
+    if (warnedAdvancedFilterTableIds.has(tableId)) {
+      return;
+    }
+
+    warnedAdvancedFilterTableIds.add(tableId);
+    console.warn(
+      '[useDataTable] enableAdvancedFilter is deprecated and currently paused; ordinary columnFilters remain active.',
+      {
+        tableId,
+        status: 'deprecated'
+      }
+    );
+  }, [deprecatedEnableAdvancedFilter, tableId]);
+
+  React.useEffect(() => {
+    if (!import.meta.env.DEV || !showSelectColumn || getRowId || rowId !== undefined) {
+      return;
+    }
+
+    const usesIndexFallback = tableProps.data.some((row) => {
+      const value = (row as Record<PropertyKey, unknown>).id;
+      return stringifyDataTableRowId(value) === null;
+    });
+
+    if (!usesIndexFallback || warnedSelectionFallbackTableIds.has(tableId)) {
+      return;
+    }
+
+    warnedSelectionFallbackTableIds.add(tableId);
+    console.warn(
+      '[useDataTable] Select column is using page-scoped selection with index fallback row ids.',
+      {
+        tableId,
+        rowIdSource: 'index-fallback',
+        selectionScope: 'page'
+      }
+    );
+  }, [getRowId, rowId, showSelectColumn, tableId, tableProps.data]);
 
   const resolvedPageCount = React.useMemo(() => {
     if (typeof explicitPageCount === 'number') {
@@ -303,19 +342,15 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   }, [explicitPageCount, pagination.pageSize, totalCount]);
 
   const resolvedGetRowId = React.useCallback<NonNullable<TableOptions<TData>['getRowId']>>(
-    (row, index, parent) => {
-      if (getRowId) {
-        return getRowId(row, index, parent);
-      }
-
-      if (typeof rowId === 'function') {
-        return String(rowId(row, index, parent));
-      }
-
-      const value = (row as Record<PropertyKey, unknown>)[rowId ?? 'id'];
-
-      return stringifyResolvedRowId(value) ?? getFallbackRowId(tableId, index, parent);
-    },
+    (row, index, parent) =>
+      resolveDataTableRowId({
+        tableId,
+        row,
+        index,
+        parent,
+        rowId,
+        getRowId
+      }),
     [getRowId, rowId, tableId]
   );
 
@@ -399,6 +434,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
   const getSelectedRows = React.useCallback(() => getSelectedPageRows(table), [table]);
   const selectedRows = getSelectedRows();
+  const selectedRowIds = table
+    .getRowModel()
+    .rows.filter((row) => row.getIsSelected())
+    .map((row) => row.id);
   const clearSelectedRows = React.useCallback(() => {
     setRowSelection({});
   }, [setRowSelection]);
@@ -406,6 +445,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
   return {
     table,
     selectedRows,
+    selectedRowIds,
     getSelectedRows,
     clearSelectedRows,
     debounceMs,

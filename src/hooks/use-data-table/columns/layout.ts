@@ -57,8 +57,7 @@ export function resolveUtilityColumnPinning(
     hasSelectColumn: boolean;
   }
 ): ColumnPinningState | undefined {
-  const { hasPinnedActionsColumn, actionColumnPin, showRowNumberColumn, hasSelectColumn } =
-    options;
+  const { hasPinnedActionsColumn, actionColumnPin, showRowNumberColumn, hasSelectColumn } = options;
 
   if (!hasPinnedActionsColumn && !showRowNumberColumn && !hasSelectColumn) {
     return columnPinning;

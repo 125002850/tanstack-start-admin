@@ -7,7 +7,10 @@ export function getStableExpandPanelId(tableId: string | undefined, reactId: str
 }
 
 /** 统一把行主键解析成字符串，方便展开状态比较。 */
-export function getExpandRowKeyValue<TData>(row: TData, rowKey: keyof TData & string): string | null {
+export function getExpandRowKeyValue<TData>(
+  row: TData,
+  rowKey: keyof TData & string
+): string | null {
   const value = row[rowKey];
 
   if (typeof value === 'string' || typeof value === 'number') {

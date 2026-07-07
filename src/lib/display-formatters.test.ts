@@ -5,6 +5,7 @@ import {
   nullableDateTime,
   nullableDecimal,
   nullableFileSize,
+  nullableRawPercent,
   nullableText,
   nullableTrimmedText,
   nullableYesNo
@@ -31,6 +32,12 @@ describe('display-formatters', () => {
     expect(nullableDecimal(12.34567)).toBe('12.346');
     expect(nullableYesNo(1)).toBe('是');
     expect(nullableYesNo(0)).toBe('否');
+  });
+
+  it('formats raw percent values without scaling', () => {
+    expect(nullableRawPercent(null)).toBe('-');
+    expect(nullableRawPercent(12.5)).toBe('12.5%');
+    expect(nullableRawPercent('8%')).toBe('8%');
   });
 
   it('ignores dict fallbacks that equal the raw code', () => {

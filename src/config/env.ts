@@ -16,7 +16,10 @@ function getEnvBool(name: string, defaultValue: boolean): boolean {
 }
 
 /** 所有 VITE_* 环境变量集中定义于此，禁止其他文件直接读取 import.meta.env.VITE_* */
-const dataTableVirtualization = getEnvBool('VITE_ENABLE_DATA_TABLE_VIRTUALIZATION', true);
+const dataTableVirtualization = getEnvBool(
+  'VITE_ENABLE_DATA_TABLE_VIRTUALIZATION',
+  getEnvBool('VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION', true)
+);
 
 export const env = {
   /** 是否启用工作区页签（默认开启） */
@@ -24,6 +27,8 @@ export const env = {
 
   /** 是否启用通用 DataTable 虚拟滚动（默认开启） */
   dataTableVirtualization,
+  /** 兼容旧命名，供历史调用方过渡使用 */
+  productTableVirtualization: dataTableVirtualization,
   ssoClientID: getEnvVar('VITE_APP_SSO_CLIENT_ID'),
   ssoServiceID: getEnvVar('VITE_APP_SSO_SERVICE_ID'),
   ssoServiceCode: getEnvVar('VITE_APP_SSO_SERVICE_CODE')

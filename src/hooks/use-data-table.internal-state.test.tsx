@@ -7,12 +7,13 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, act, cleanup, waitFor } from '@testing-library/react';
 import * as React from 'react';
 import { flexRender, type ColumnDef } from '@tanstack/react-table';
-import type { ExtendedColumnSort } from '@/types/data-table';
+import type { ExtendedColumnSort, SortingStorageMode } from '@/types/data-table';
 import {
   getDataTableRowActionsColumnWidth,
   type DataTableRowAction
-} from '@/components/ui/table/data-table-row-action';
+} from '@/components/ui/table/actions/data-table-row-action';
 import type { RowNumberDisplayMode } from '@/hooks/use-data-table/columns/row-number-column';
+import { resolveDataTableRowId } from '@/hooks/use-data-table/row-id';
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
@@ -63,18 +64,24 @@ const data: TestRow[] = [
 ];
 
 function InternalStateTester({
+  tableId = 'internal-state-tester',
   pageSize,
   onPageSizeChange,
   initialSorting = [],
-  totalCount
+  sortingStorage,
+  totalCount,
+  enableAdvancedFilter
 }: {
+  tableId?: string;
   pageSize?: number;
   onPageSizeChange?: (size: number) => void;
   initialSorting?: Array<{ id: string; desc: boolean }>;
+  sortingStorage?: SortingStorageMode;
   totalCount?: number;
+  enableAdvancedFilter?: boolean;
 }) {
   const { table } = useDataTable({
-    tableId: 'internal-state-tester',
+    tableId,
     columns,
     data,
     ...(typeof totalCount === 'number'
@@ -82,6 +89,8 @@ function InternalStateTester({
       : { pageCount: Math.ceil(data.length / (pageSize ?? 10)) }),
     pageSize,
     onPageSizeChange,
+    sortingStorage,
+    enableAdvancedFilter,
     initialState:
       initialSorting.length > 0
         ? { sorting: initialSorting as ExtendedColumnSort<TestRow>[] }
@@ -128,6 +137,15 @@ function InternalStateTester({
         onClick: () => table.setSorting([{ id: 'name', desc: true }])
       },
       'Sort'
+    ),
+    React.createElement(
+      'button',
+      {
+        key: 'clear-sort',
+        'data-testid': 'clear-sort',
+        onClick: () => table.setSorting([])
+      },
+      'Clear sort'
     ),
     React.createElement(
       'button',
@@ -393,7 +411,7 @@ function ExpandStateInspector({
 }
 
 function SelectedRowsInspector() {
-  const { table, selectedRows, getSelectedRows, clearSelectedRows } = useDataTable({
+  const { table, selectedRows, selectedRowIds, getSelectedRows, clearSelectedRows } = useDataTable({
     tableId: 'selected-rows-inspector',
     columns,
     data,
@@ -411,6 +429,11 @@ function SelectedRowsInspector() {
       'span',
       { key: 'selected-rows-method', 'data-testid': 'selected-rows-method' },
       JSON.stringify(getSelectedRows().map((row) => row.id))
+    ),
+    React.createElement(
+      'span',
+      { key: 'selected-row-ids', 'data-testid': 'selected-row-ids' },
+      JSON.stringify(selectedRowIds)
     ),
     React.createElement(
       'button',
@@ -471,6 +494,43 @@ afterEach(() => {
 });
 
 describe('useDataTable — internal-state mode (default)', () => {
+  it('resolves data-table row ids as a pure helper', () => {
+    expect(resolveDataTableRowId({ tableId: 'orders', row: { id: 'row-1' }, index: 0 })).toBe(
+      'row-1'
+    );
+    expect(resolveDataTableRowId({ tableId: 'orders', row: { id: 42 }, index: 0 })).toBe('42');
+    expect(resolveDataTableRowId({ tableId: 'orders', row: { id: '' }, index: 1 })).toBe(
+      'orders-1'
+    );
+    expect(resolveDataTableRowId({ tableId: 'orders', row: { id: Number.NaN }, index: 2 })).toBe(
+      'orders-2'
+    );
+    expect(
+      resolveDataTableRowId({
+        tableId: 'orders',
+        row: { id: null },
+        index: 3,
+        parentId: 'parent-row'
+      })
+    ).toBe('parent-row-3');
+    expect(
+      resolveDataTableRowId({
+        tableId: 'orders',
+        row: { code: 'customer-001' },
+        rowId: 'code',
+        index: 0
+      })
+    ).toBe('customer-001');
+    expect(
+      resolveDataTableRowId({
+        tableId: 'orders',
+        row: { name: 'Alice' },
+        rowId: (row) => `fn-${row.name}`,
+        index: 0
+      })
+    ).toBe('fn-Alice');
+  });
+
   it('resolves row ids from default id, rowId key, rowId function, and table fallback', () => {
     type RowIdTestRow = {
       id?: number | null;
@@ -595,16 +655,52 @@ describe('useDataTable — internal-state mode (default)', () => {
     expect(sort).toEqual([{ id: 'name', desc: true }]);
   });
 
-  it('clears sort when setting empty array', () => {
-    render(React.createElement(InternalStateTester));
+  it('persists sorting by tableId across remounts', () => {
+    render(React.createElement(InternalStateTester, { tableId: 'sorting-persisted' }));
     act(() => {
       screen.getByTestId('sort-name').click();
     });
 
-    // Re-render with a fresh component that has no sort
     cleanup();
-    render(React.createElement(InternalStateTester));
+    render(React.createElement(InternalStateTester, { tableId: 'sorting-persisted' }));
+    expect(screen.getByTestId('sort').textContent).toBe(
+      JSON.stringify([{ id: 'name', desc: true }])
+    );
+  });
+
+  it('does not persist sorting when sortingStorage is false', () => {
+    render(
+      React.createElement(InternalStateTester, {
+        tableId: 'sorting-disabled',
+        sortingStorage: false
+      })
+    );
+    act(() => {
+      screen.getByTestId('sort-name').click();
+    });
+
+    cleanup();
+    render(
+      React.createElement(InternalStateTester, {
+        tableId: 'sorting-disabled',
+        sortingStorage: false
+      })
+    );
     expect(screen.getByTestId('sort').textContent).toBe('[]');
+  });
+
+  it('clears persisted sorting when sorting returns to initial state', () => {
+    render(React.createElement(InternalStateTester, { tableId: 'sorting-cleared' }));
+    act(() => {
+      screen.getByTestId('sort-name').click();
+    });
+    expect(localStorage.getItem('data-table:sorting-cleared:sorting')).not.toBeNull();
+
+    act(() => {
+      screen.getByTestId('clear-sort').click();
+    });
+
+    expect(localStorage.getItem('data-table:sorting-cleared:sorting')).toBeNull();
   });
 
   it('filters by column on user interaction', () => {
@@ -616,12 +712,79 @@ describe('useDataTable — internal-state mode (default)', () => {
     expect(filters).toEqual([{ id: 'name', value: 'Alice' }]);
   });
 
+  it('keeps column filter updates active when enableAdvancedFilter is true', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    render(
+      React.createElement(InternalStateTester, {
+        tableId: 'advanced-filter-update',
+        enableAdvancedFilter: true
+      })
+    );
+    act(() => {
+      screen.getByTestId('filter-name').click();
+    });
+
+    const filters = JSON.parse(screen.getByTestId('filters').textContent!);
+    expect(filters).toEqual([{ id: 'name', value: 'Alice' }]);
+
+    warn.mockRestore();
+  });
+
+  it('warns once when enableAdvancedFilter is passed', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { rerender } = render(
+      React.createElement(InternalStateTester, {
+        tableId: 'advanced-filter-warning',
+        enableAdvancedFilter: true
+      })
+    );
+
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    rerender(
+      React.createElement(InternalStateTester, {
+        tableId: 'advanced-filter-warning',
+        enableAdvancedFilter: true
+      })
+    );
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain('enableAdvancedFilter');
+    expect(warn.mock.calls[0]?.[1]).toMatchObject({
+      tableId: 'advanced-filter-warning',
+      status: 'deprecated'
+    });
+
+    warn.mockRestore();
+  });
+
   it('initializes sorting from initialState', () => {
     render(
       React.createElement(InternalStateTester, {
         initialSorting: [{ id: 'name', desc: true }]
       })
     );
+    const sort = JSON.parse(screen.getByTestId('sort').textContent!);
+    expect(sort).toEqual([{ id: 'name', desc: true }]);
+  });
+
+  it('prefers persisted sorting over initialState for the same tableId', () => {
+    localStorage.setItem(
+      'data-table:sorting-overrides-initial:sorting',
+      JSON.stringify({ version: 1, sorting: [{ id: 'name', desc: true }] })
+    );
+
+    render(
+      React.createElement(InternalStateTester, {
+        tableId: 'sorting-overrides-initial',
+        initialSorting: [{ id: 'id', desc: false }]
+      })
+    );
+
     const sort = JSON.parse(screen.getByTestId('sort').textContent!);
     expect(sort).toEqual([{ id: 'name', desc: true }]);
   });
@@ -725,9 +888,9 @@ describe('useDataTable — internal-state mode (default)', () => {
   it('keeps dynamic row-number column width fixed across size/min/max', () => {
     render(React.createElement(RowNumberColumnInspector, { totalCount: 100000 }));
 
-    expect(screen.getByTestId('first-size').textContent).toBe('84');
-    expect(screen.getByTestId('first-min-size').textContent).toBe('84');
-    expect(screen.getByTestId('first-max-size').textContent).toBe('84');
+    expect(screen.getByTestId('first-size').textContent).toBe('90');
+    expect(screen.getByTestId('first-min-size').textContent).toBe('90');
+    expect(screen.getByTestId('first-max-size').textContent).toBe('90');
   });
 
   it('keeps static row numbers tied to the rendered data while the next page is loading', () => {
@@ -875,6 +1038,7 @@ describe('useDataTable — internal-state mode (default)', () => {
 
     expect(screen.getByTestId('selected-rows').textContent).toBe('[]');
     expect(screen.getByTestId('selected-rows-method').textContent).toBe('[]');
+    expect(screen.getByTestId('selected-row-ids').textContent).toBe('[]');
 
     act(() => {
       screen.getByTestId('select-all').click();
@@ -882,6 +1046,7 @@ describe('useDataTable — internal-state mode (default)', () => {
 
     expect(screen.getByTestId('selected-rows').textContent).toBe('[1,2,3,4]');
     expect(screen.getByTestId('selected-rows-method').textContent).toBe('[1,2,3,4]');
+    expect(screen.getByTestId('selected-row-ids').textContent).toBe('["1","2","3","4"]');
 
     act(() => {
       screen.getByTestId('clear-selected').click();
@@ -889,6 +1054,38 @@ describe('useDataTable — internal-state mode (default)', () => {
 
     expect(screen.getByTestId('selected-rows').textContent).toBe('[]');
     expect(screen.getByTestId('selected-rows-method').textContent).toBe('[]');
+    expect(screen.getByTestId('selected-row-ids').textContent).toBe('[]');
+  });
+
+  it('warns when selectable rows fall back to index-based row ids', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    function UnstableSelectableInspector() {
+      useDataTable({
+        tableId: 'unstable-selectable',
+        columns,
+        data: [{ id: Number.NaN, name: 'Invalid row id' }],
+        pageCount: 1,
+        showSelectColumn: true
+      });
+
+      return null;
+    }
+
+    render(React.createElement(UnstableSelectableInspector));
+
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    expect(warn.mock.calls[0]?.[0]).toContain('[useDataTable]');
+    expect(warn.mock.calls[0]?.[1]).toMatchObject({
+      tableId: 'unstable-selectable',
+      rowIdSource: 'index-fallback',
+      selectionScope: 'page'
+    });
+
+    warn.mockRestore();
   });
 
   it('clears row selection when rowSelectionScopeKey changes', () => {
