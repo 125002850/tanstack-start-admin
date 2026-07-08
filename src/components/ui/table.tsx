@@ -42,10 +42,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   return (
     <tr
       data-slot='table-row'
-      className={cn(
-        'group data-[state=selected]:bg-muted border-b transition-colors',
-        className
-      )}
+      className={cn('group data-[state=selected]:bg-muted transition-colors', className)}
       {...props}
     />
   );

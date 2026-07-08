@@ -64,7 +64,7 @@ const ROW_EXPAND_IGNORE_SELECTOR = [
   '[role="checkbox"]'
 ].join(',');
 const DATA_TABLE_BODY_CELL_CLASS_NAME =
-  'relative px-[15px] py-2 outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out data-[cell-selected=true]:bg-primary/5 data-[cell-selected=true]:outline-primary data-[cell-selected=true]:shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--primary)_20%,transparent)]';
+  'relative select-none px-[15px] py-2 outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out data-[cell-selected=true]:bg-primary/5 data-[cell-selected=true]:outline-primary';
 
 /** 行展开点击需要避开按钮、链接、表单控件等交互元素。 */
 function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: HTMLElement) {

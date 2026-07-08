@@ -58,16 +58,14 @@ export function SelectField({
         >
           <SelectTrigger
             id={field.name}
+            className='w-full min-w-0'
             aria-label={label}
             aria-describedby={field.formMessageId}
             aria-invalid={field.isInvalid}
           >
             <SelectValue placeholder={placeholder} />
             {showClear && (
-              <SelectClear
-                aria-label={`清除${label}`}
-                onClear={() => field.handleChange('')}
-              />
+              <SelectClear aria-label={`清除${label}`} onClear={() => field.handleChange('')} />
             )}
           </SelectTrigger>
           <SelectContent>

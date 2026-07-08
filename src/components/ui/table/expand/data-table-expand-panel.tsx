@@ -107,10 +107,14 @@ export function DataTableExpandPanel<TData>({
     <div
       id={panelId}
       data-slot='data-table-expand-panel'
-      className='bg-background flex flex-col overflow-hidden rounded-lg border'
+      className='bg-background flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border'
     >
-      <Tabs value={activeTab} onValueChange={onActiveTabChange} className='flex flex-col gap-0'>
-        <div className='flex items-center gap-3 border-b px-4 py-2'>
+      <Tabs
+        value={activeTab}
+        onValueChange={onActiveTabChange}
+        className='flex min-h-0 min-w-0 flex-1 flex-col gap-0'
+      >
+        <div className='flex shrink-0 items-center gap-3 border-b px-4 py-2'>
           <TabsList ref={tabsListRef} className='relative isolate h-auto flex-wrap gap-1 p-1'>
             <span
               aria-hidden='true'
@@ -141,9 +145,16 @@ export function DataTableExpandPanel<TData>({
             <Icons.close className='size-4' />
           </Button>
         </div>
-        <div className='px-4 py-4'>
+        <div
+          data-slot='data-table-expand-panel-content'
+          className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-4'
+        >
           {availableTabs.map((tab) => (
-            <TabsContent key={tab.id} value={tab.id} className='mt-0 min-w-0 outline-none'>
+            <TabsContent
+              key={tab.id}
+              value={tab.id}
+              className='mt-0 min-h-0 min-w-0 flex-1 overflow-hidden outline-none'
+            >
               {tab.render(row)}
             </TabsContent>
           ))}
