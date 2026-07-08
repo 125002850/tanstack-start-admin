@@ -14,7 +14,7 @@ const meta = defineRouteMeta({
     visible: true,
     group: 'systemManagement',
     order: 10,
-    menuKey: 'dict-management',
+    menuKey: 'mdm_dict',
     icon: 'databaseCog',
     shortcut: ['d', 'm']
   },

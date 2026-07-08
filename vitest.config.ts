@@ -10,7 +10,14 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['src/test/setup.ts'],
-    exclude: ['.agents/**', '.claude/**', 'e2e', 'node_modules'],
+    exclude: [
+      '.agents/**',
+      '.claude/**',
+      '.opencode/**',
+      'e2e/**',
+      'node_modules/**',
+      '**/node_modules/**'
+    ],
     clearMocks: true,
     server: {
       deps: {

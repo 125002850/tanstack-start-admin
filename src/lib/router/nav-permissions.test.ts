@@ -18,24 +18,35 @@ describe('nav permissions', () => {
   it('collects visible menu keys recursively', () => {
     const keys = collectVisibleMenuKeys([
       {
-        code: 'admin:dict-management',
-        hiddenFlag: 'N',
+        menuCode: 'dict-management',
+        menuKey: 'dict-management',
+        hidden: false,
+        status: 'ENABLED',
         children: []
       },
       {
-        code: 'admin:hidden-parent',
-        hiddenFlag: 'Y',
+        menuCode: 'hidden-parent',
+        hidden: true,
+        status: 'ENABLED',
         children: [
           {
-            code: 'admin:user-role-rel',
-            hiddenFlag: 'N',
+            menuCode: 'user-role-rel',
+            menuKey: 'user-role-rel',
+            hidden: false,
+            status: 'ENABLED',
             children: []
           }
         ]
       },
       {
-        code: 'admin:report-summary',
-        hiddenFlag: 'Y',
+        menuCode: 'report-summary',
+        hidden: true,
+        children: []
+      },
+      {
+        menuCode: 'disabled-menu',
+        hidden: false,
+        status: 'DISABLED',
         children: []
       }
     ]);

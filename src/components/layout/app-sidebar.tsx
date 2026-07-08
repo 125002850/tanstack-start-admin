@@ -18,8 +18,8 @@ import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { SsoAvatarSkeleton, SsoTextSkeleton } from '@/components/ui/sso-skeleton';
-import { getLoginInfoQueryOptions } from '@/lib/api/sso/queries';
-import { logout } from '@/lib/api/sso/session';
+import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
+import { logout } from '@/lib/api/iam/session';
 import {
   Sidebar,
   SidebarContent,
@@ -313,10 +313,10 @@ export default function AppSidebar() {
     [router.routesById]
   );
   const filteredGroups = useFilteredNavGroups(navGroups);
-  const { data: loginUser, isLoading } = useQuery(getLoginInfoQueryOptions());
+  const { data: me, isLoading } = useQuery(getIamMeQueryOptions());
 
   const handleLogout = () => {
-    logout();
+    void logout();
   };
 
   return (
@@ -374,10 +374,10 @@ export default function AppSidebar() {
                       </div>
                       <div className='grid flex-1 text-left text-sm leading-tight'>
                         <span className='truncate font-medium'>
-                          {loginUser?.realName || loginUser?.userName || '用户'}
+                          {me?.staff.staffName || me?.staff.username || '用户'}
                         </span>
                         <span className='text-muted-foreground truncate text-xs'>
-                          {loginUser?.phone || '-'}
+                          {me?.staff.phone || me?.staff.email || '-'}
                         </span>
                       </div>
                     </>

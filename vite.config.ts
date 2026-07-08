@@ -77,22 +77,30 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const appGateway = process.env.APP_GATEWAY ?? env.APP_GATEWAY ?? '';
   const proxyUrl = process.env.PROXY_URL ?? env.PROXY_URL;
+  const proxy =
+    proxyUrl && appGateway
+      ? {
+          [appGateway]: {
+            target: proxyUrl,
+            changeOrigin: true
+          },
+          ...(appGateway === '/api'
+            ? {}
+            : {
+                '/api': {
+                  target: proxyUrl,
+                  changeOrigin: true
+                }
+              })
+        }
+      : undefined;
 
   return {
     base: normalizeBasePath(process.env.APP_BASE_PATH ?? env.APP_BASE_PATH),
     server: {
       host: '0.0.0.0',
       port: 3000,
-      ...(appGateway && proxyUrl
-        ? {
-            proxy: {
-              [appGateway]: {
-                target: proxyUrl,
-                changeOrigin: true
-              }
-            }
-          }
-        : {}),
+      ...(proxy ? { proxy } : {}),
       allowedHosts: ['louise-outlets-off-ambient.trycloudflare.com']
     },
     plugins: [

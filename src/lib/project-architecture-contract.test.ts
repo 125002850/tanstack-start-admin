@@ -136,7 +136,10 @@ describe('project architecture contracts', () => {
   });
 
   it('keeps API calls on the shared transport boundary', () => {
-    const allowedFetchCallers = new Set(['src/lib/api/sso/bootstrap.ts']);
+    const allowedFetchCallers = new Set([
+      'src/lib/api/iam/request.ts',
+      'src/lib/api/sso/bootstrap.ts'
+    ]);
     const directFetchViolations = collectSourceFiles()
       .filter((path) => {
         const projectPath = toProjectPath(path);

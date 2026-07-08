@@ -16,13 +16,9 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 const mockLogout = vi.fn();
-vi.mock('@/lib/api/sso/session', () => ({
+vi.mock('@/lib/api/iam/session', () => ({
   logout: () => mockLogout(),
   handleUnauthorized: vi.fn()
-}));
-
-vi.mock('@/lib/api/sso/set-headers', () => ({
-  setHeader: () => new Headers()
 }));
 
 vi.mock('@/hooks/use-nav', () => ({
@@ -48,13 +44,7 @@ vi.mock('@/components/ui/sidebar', () => ({
     React.createElement('div', null, children),
   SidebarMenuItem: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
-  SidebarMenuButton: ({
-    children,
-    className
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) =>
+  SidebarMenuButton: ({ children, className }: { children: React.ReactNode; className?: string }) =>
     React.createElement('button', { 'data-testid': 'sidebar-menu-button', className }, children),
   SidebarMenuSub: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
@@ -123,7 +113,9 @@ async function renderSidebar(queryClient: QueryClient) {
   const { default: AppSidebar } = await import('./app-sidebar');
 
   return render(
-    React.createElement(QueryClientProvider, { client: queryClient },
+    React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
       React.createElement(AppSidebar)
     )
   );
@@ -139,15 +131,29 @@ describe('app-sidebar auth footer', () => {
         queries: { retry: false }
       }
     });
-    // Pre-populate login info to avoid loading state in success tests
-    queryClient.setQueryData(['sso', 'login-info'], {
-      userId: '1',
-      userName: 'admin',
-      realName: '管理员',
-      phone: '13800138000',
-      menuData: [],
-      loginUrl: 'https://sso/login',
-      logoutUrl: 'https://sso/logout'
+    // Pre-populate current staff to avoid loading state in success tests.
+    queryClient.setQueryData(['iam', 'me'], {
+      staff: {
+        staffId: '1',
+        username: 'admin',
+        staffName: '管理员',
+        phone: '13800138000',
+        status: 'ENABLED'
+      },
+      roles: [],
+      permissions: [],
+      menus: [],
+      dataScopeSummary: {
+        effectiveType: 'ALL',
+        includeSelf: true,
+        description: '全部数据'
+      },
+      dataScope: {
+        effectiveType: 'ALL',
+        includeSelf: true,
+        description: '全部数据'
+      },
+      mustChangePassword: false
     });
   });
 
@@ -177,10 +183,15 @@ describe('app-sidebar auth footer', () => {
   });
 
   it('falls back to userName when realName is empty', async () => {
-    queryClient.setQueryData(['sso', 'login-info'], {
-      ...queryClient.getQueryData(['sso', 'login-info'])!,
-      realName: '',
-      phone: ''
+    queryClient.setQueryData(['iam', 'me'], {
+      ...(queryClient.getQueryData(['iam', 'me']) as Record<string, unknown>),
+      staff: {
+        staffId: '1',
+        username: 'admin',
+        staffName: '',
+        phone: '',
+        status: 'ENABLED'
+      }
     });
 
     await renderSidebar(queryClient);
@@ -198,9 +209,9 @@ describe('app-sidebar auth footer', () => {
     await user.click(trigger);
 
     // Click logout button
-    const logoutButton = screen.getAllByTestId('dropdown-item').find(
-      (el) => el.textContent?.includes('退出登录')
-    );
+    const logoutButton = screen
+      .getAllByTestId('dropdown-item')
+      .find((el) => el.textContent?.includes('退出登录'));
     expect(logoutButton).toBeDefined();
     await user.click(logoutButton!);
 

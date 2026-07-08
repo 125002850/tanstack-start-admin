@@ -2,7 +2,11 @@ import type { NavGroup, NavItem } from '@/types';
 
 export interface MenuPermissionNode {
   code?: string | null;
+  menuCode?: string | null;
+  menuKey?: string | null;
+  hidden?: boolean | null;
   hiddenFlag?: string | null;
+  status?: string | null;
   children?: readonly MenuPermissionNode[] | null;
 }
 
@@ -14,7 +18,14 @@ export function normalizeMenuKey(value: string): string {
 }
 
 function isVisibleMenuNode(node: MenuPermissionNode): boolean {
-  return node.hiddenFlag?.trim().toUpperCase() !== 'Y';
+  if (node.hidden === true) return false;
+  if (node.hiddenFlag?.trim().toUpperCase() === 'Y') return false;
+  if (node.status?.trim().toUpperCase() === 'DISABLED') return false;
+  return true;
+}
+
+function getMenuNodeKey(node: MenuPermissionNode): string {
+  return node.menuKey ?? node.menuCode ?? node.code ?? '';
 }
 
 export function collectVisibleMenuKeys(
@@ -27,7 +38,7 @@ export function collectVisibleMenuKeys(
 
     for (const node of nodes) {
       if (isVisibleMenuNode(node)) {
-        const key = normalizeMenuKey(node.code ?? '');
+        const key = normalizeMenuKey(getMenuNodeKey(node));
         if (key) keys.add(key);
       }
 

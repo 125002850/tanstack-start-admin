@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import SignInViewPage from '@/features/auth/components/sign-in-view';
+import ChangeRequiredPasswordView from '@/features/auth/components/change-required-password-view';
 import { ensureIamMe } from '@/lib/api/iam/queries';
 import { isAuthRequiredError } from '@/lib/api/iam/errors';
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
@@ -10,25 +10,27 @@ function validateRedirectSearch(search: Record<string, unknown>): { redirect?: s
   };
 }
 
-export const Route = createFileRoute('/auth/sign-in/')({
+export const Route = createFileRoute('/auth/password/change-required')({
   validateSearch: validateRedirectSearch,
   head: () => ({
-    meta: [{ title: '登录' }]
+    meta: [{ title: '修改密码' }]
   }),
-  beforeLoad: async ({ context }) => {
+  loader: async ({ context, location }) => {
     try {
       const me = await ensureIamMe(context.queryClient);
-      if (me.mustChangePassword) {
+      if (!me.mustChangePassword) {
+        throw redirect({ to: resolveDashboardHomeHref() });
+      }
+      return me;
+    } catch (error) {
+      if (isAuthRequiredError(error)) {
         throw redirect({
-          to: '/auth/password/change-required',
-          search: { redirect: resolveDashboardHomeHref() }
+          to: '/auth/sign-in',
+          search: { redirect: `${location.pathname}${location.searchStr}` }
         });
       }
-      throw redirect({ to: resolveDashboardHomeHref() });
-    } catch (error) {
-      if (isAuthRequiredError(error)) return;
       throw error;
     }
   },
-  component: SignInViewPage
+  component: ChangeRequiredPasswordView
 });

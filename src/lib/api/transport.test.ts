@@ -1,197 +1,205 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTransport, HttpError } from '@oig/react-query-generator/core';
+import {
+  createTransport,
+  HttpError,
+  type TransportInstance
+} from '@oig/react-query-generator/core';
 
-const mockSession = {
+const mockIamSession = vi.hoisted(() => ({
+  ensureFreshAccessToken: vi.fn<() => Promise<string | null>>(),
   getAuthHeader: vi.fn<() => string | null>(),
-  getLoginUserId: vi.fn<() => string | null>(),
-  setAuthHeader: vi.fn<(token: string) => void>(),
-  handleUnauthorized: vi.fn<() => void>()
-};
-
-vi.mock('./sso/session', () => ({
-  getAuthHeader: () => mockSession.getAuthHeader(),
-  getLoginUserId: () => mockSession.getLoginUserId(),
-  setAuthHeader: (token: string) => mockSession.setAuthHeader(token),
-  handleUnauthorized: () => mockSession.handleUnauthorized()
+  handleUnauthorized: vi.fn<() => void>(),
+  refreshIamSession: vi.fn<() => Promise<unknown>>()
 }));
 
-vi.mock('./sso/set-headers', () => ({
-  createAuthHeaders: (init?: HeadersInit) => {
+vi.mock('./iam/session', () => mockIamSession);
+
+function isIamAuthEndpoint(url: string): boolean {
+  return /\/api\/iam\/auth\/(?:login|refresh|logout|password\/change)(?:[?#]|$)/.test(url);
+}
+
+function registerIamTransportMiddlewares(transport: TransportInstance) {
+  function withAuthHeader(init?: HeadersInit): Headers {
     const headers = new Headers(init);
-    const token = mockSession.getAuthHeader();
-    const userId = mockSession.getLoginUserId();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    if (userId) {
-      headers.set('X-User-Id', userId);
+    const authHeader = mockIamSession.getAuthHeader();
+    if (authHeader) {
+      headers.set('Authorization', authHeader);
     }
     return headers;
-  },
-  refreshTokenFromResponse: (response: unknown) => {
-    const h = (response as Record<string, unknown>)?.headers;
-    if (h && typeof (h as Headers).get === 'function') {
-      const newToken = (h as Headers).get('authorization');
-      if (newToken) mockSession.setAuthHeader(newToken);
-    }
   }
-}));
 
-describe('transport auth pipeline', () => {
+  transport.registerMiddleware(async (context, next) => {
+    if (!isIamAuthEndpoint(context.url)) {
+      await mockIamSession.ensureFreshAccessToken();
+    }
+
+    return next({
+      ...context,
+      options: {
+        ...context.options,
+        headers: withAuthHeader(context.options.headers)
+      }
+    });
+  });
+
+  transport.registerMiddleware(async (context, next) => {
+    try {
+      return await next(context);
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 401 && !isIamAuthEndpoint(context.url)) {
+        try {
+          await mockIamSession.refreshIamSession();
+          return await next({
+            ...context,
+            options: {
+              ...context.options,
+              headers: withAuthHeader(context.options.headers)
+            }
+          });
+        } catch (refreshError) {
+          mockIamSession.handleUnauthorized();
+          throw refreshError;
+        }
+      } else if (error instanceof HttpError && error.status === 401) {
+        mockIamSession.handleUnauthorized();
+      }
+      throw error;
+    }
+  });
+}
+
+describe('transport IAM auth pipeline', () => {
   let originalFetch: typeof fetch;
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
     vi.clearAllMocks();
+    mockIamSession.ensureFreshAccessToken.mockResolvedValue('access-token');
+    mockIamSession.getAuthHeader.mockReturnValue('Bearer access-token');
+    mockIamSession.refreshIamSession.mockResolvedValue({
+      accessToken: 'new-access-token',
+      refreshToken: 'new-refresh-token',
+      accessTokenExpiresAt: '2026-07-08T12:00:00.000Z',
+      tokenType: 'Bearer'
+    });
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });
 
-  function createAuthTransport() {
+  it('injects bearer token from IAM session into normal requests', async () => {
+    let capturedHeaders: Headers | undefined;
+    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
+      capturedHeaders = new Headers((init as RequestInit)?.headers);
+      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+
     const transport = createTransport();
+    registerIamTransportMiddlewares(transport);
+    await transport.customInstance('http://test/api/dict/list', { method: 'POST' });
 
-    transport.registerMiddleware(async (context, next) => {
-      const { createAuthHeaders } = await import('./sso/set-headers');
-      return next({
-        ...context,
-        options: {
-          ...context.options,
-          headers: createAuthHeaders(context.options.headers)
-        }
-      });
-    });
-
-    transport.registerMiddleware(async (context, next) => {
-      try {
-        const response = await next(context);
-        const token = extractAuthHeader(response);
-        if (token) {
-          mockSession.setAuthHeader(token);
-        }
-        return response;
-      } catch (error) {
-        if (error instanceof HttpError && error.status === 401) {
-          mockSession.handleUnauthorized();
-        }
-        throw error;
-      }
-    });
-
-    return transport;
-  }
-
-  it('injects auth header from session into requests', async () => {
-    mockSession.getAuthHeader.mockReturnValue('jwt-token-value');
-    mockSession.getLoginUserId.mockReturnValue(null);
-
-    let capturedHeaders: Headers | undefined;
-    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
-      capturedHeaders = new Headers((init as RequestInit)?.headers);
-      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
-    });
-
-    const transport = createAuthTransport();
-    await transport.customInstance('http://test/api', { method: 'GET' });
-
-    expect(mockSession.getAuthHeader).toHaveBeenCalled();
-    expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-token-value');
+    expect(mockIamSession.ensureFreshAccessToken).toHaveBeenCalledOnce();
+    expect(capturedHeaders?.get('Authorization')).toBe('Bearer access-token');
   });
 
-  it('injects user id header from login session into requests', async () => {
-    mockSession.getAuthHeader.mockReturnValue('jwt-token-value');
-    mockSession.getLoginUserId.mockReturnValue('10086');
+  it('skips preflight refresh for auth endpoints', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+      );
 
-    let capturedHeaders: Headers | undefined;
-    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
-      capturedHeaders = new Headers((init as RequestInit)?.headers);
-      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
-    });
+    const transport = createTransport();
+    registerIamTransportMiddlewares(transport);
+    await transport.customInstance('/api/iam/auth/login', { method: 'POST' });
 
-    const transport = createAuthTransport();
-    await transport.customInstance('http://test/api', { method: 'GET' });
-
-    expect(mockSession.getLoginUserId).toHaveBeenCalled();
-    expect(capturedHeaders?.get('X-User-Id')).toBe('10086');
+    expect(mockIamSession.ensureFreshAccessToken).not.toHaveBeenCalled();
   });
 
-  it('skips auth header injection when no token stored', async () => {
-    mockSession.getAuthHeader.mockReturnValue(null);
-    mockSession.getLoginUserId.mockReturnValue(null);
-
-    let capturedHeaders: Headers | undefined;
-    globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
-      capturedHeaders = new Headers((init as RequestInit)?.headers);
-      return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
-    });
-
-    const transport = createAuthTransport();
-    await transport.customInstance('http://test/api', { method: 'GET' });
-
-    expect(capturedHeaders?.has('Authorization')).toBe(false);
-  });
-
-  it('refreshes auth header from successful response', async () => {
-    mockSession.getAuthHeader.mockReturnValue(null);
-
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('{}', {
-        status: 200,
-        headers: { Authorization: 'Bearer refreshed-token' }
+  it('refreshes once and replays a normal request after 401', async () => {
+    const capturedHeaders: Array<string | null> = [];
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementationOnce(async (_url, init) => {
+        capturedHeaders.push(new Headers((init as RequestInit)?.headers).get('Authorization'));
+        return new Response('Unauthorized', { status: 401, statusText: 'Unauthorized' });
       })
-    );
+      .mockImplementationOnce(async (_url, init) => {
+        capturedHeaders.push(new Headers((init as RequestInit)?.headers).get('Authorization'));
+        return new Response('{"code":200,"msg":"ok","data":{"ok":true}}', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      });
 
-    const transport = createAuthTransport();
-    await transport.customInstance('http://test/api', { method: 'GET' });
+    mockIamSession.getAuthHeader
+      .mockReturnValueOnce('Bearer old-access-token')
+      .mockReturnValueOnce('Bearer new-access-token');
 
-    expect(mockSession.setAuthHeader).toHaveBeenCalledWith('Bearer refreshed-token');
+    const transport = createTransport();
+    registerIamTransportMiddlewares(transport);
+    await transport.customInstance('/api/dict/list', { method: 'POST' });
+
+    expect(mockIamSession.refreshIamSession).toHaveBeenCalledOnce();
+    expect(mockIamSession.handleUnauthorized).not.toHaveBeenCalled();
+    expect(capturedHeaders).toEqual(['Bearer old-access-token', 'Bearer new-access-token']);
   });
 
-  it('calls handleUnauthorized on 401 and re-throws', async () => {
-    mockSession.getAuthHeader.mockReturnValue('Bearer expired-token');
+  it('does not refresh recursively for auth endpoint 401', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response('Unauthorized', { status: 401, statusText: 'Unauthorized' }));
 
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('Unauthorized', { status: 401, statusText: 'Unauthorized' })
+    const transport = createTransport();
+    registerIamTransportMiddlewares(transport);
+    const error = await transport.customInstance('/api/iam/auth/refresh', { method: 'POST' }).then(
+      () => null,
+      (caught) => caught
     );
 
-    const transport = createAuthTransport();
-
-    const error = await transport.customInstance('http://test/api', { method: 'GET' })
-      .then(() => null, (e) => e);
-
     expect(error).toBeInstanceOf(HttpError);
-    expect((error as HttpError).status).toBe(401);
-    expect(mockSession.handleUnauthorized).toHaveBeenCalledOnce();
+    expect(mockIamSession.refreshIamSession).not.toHaveBeenCalled();
+    expect(mockIamSession.handleUnauthorized).toHaveBeenCalledOnce();
   });
 
-  it('re-throws non-401 errors without calling handleUnauthorized', async () => {
-    mockSession.getAuthHeader.mockReturnValue('Bearer valid-token');
+  it('handles unauthorized when refresh replay cannot recover', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response('Unauthorized', { status: 401, statusText: 'Unauthorized' }));
+    mockIamSession.refreshIamSession.mockRejectedValue(new Error('refresh failed'));
 
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
+    const transport = createTransport();
+    registerIamTransportMiddlewares(transport);
+    const error = await transport.customInstance('/api/dict/list', { method: 'POST' }).then(
+      () => null,
+      (caught) => caught
     );
 
-    const transport = createAuthTransport();
-
-    const error = await transport.customInstance('http://test/api', { method: 'GET' })
-      .then(() => null, (e) => e);
-
-    expect(error).toBeInstanceOf(HttpError);
-    expect((error as HttpError).status).toBe(500);
-    expect(mockSession.handleUnauthorized).not.toHaveBeenCalled();
+    expect(error).toEqual(new Error('refresh failed'));
+    expect(mockIamSession.handleUnauthorized).toHaveBeenCalledOnce();
   });
 });
 
 describe('production transport module integration', () => {
-  let capturedHeaders: Headers | undefined;
+  let originalFetch: typeof fetch;
 
-  it('exports a working factory that injects token from session', async () => {
-    mockSession.getAuthHeader.mockReturnValue('jwt-from-production');
-    mockSession.getLoginUserId.mockReturnValue('42');
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+    vi.clearAllMocks();
+    mockIamSession.ensureFreshAccessToken.mockResolvedValue('access-token');
+    mockIamSession.getAuthHeader.mockReturnValue('Bearer production-token');
+  });
 
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.resetModules();
+  });
+
+  it('exports a generated-client factory that injects IAM bearer token', async () => {
+    let capturedHeaders: Headers | undefined;
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
       capturedHeaders = new Headers((init as RequestInit)?.headers);
       return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -202,20 +210,6 @@ describe('production transport module integration', () => {
 
     await client('/api/endpoint');
 
-    expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-from-production');
-    expect(capturedHeaders?.get('X-User-Id')).toBe('42');
+    expect(capturedHeaders?.get('Authorization')).toBe('Bearer production-token');
   });
 });
-
-  function extractAuthHeader(response: unknown): string | null {
-    const headers = (response as Record<string, unknown>)?.headers;
-    if (!headers) return null;
-    if (typeof (headers as Headers).get === 'function') {
-      return (headers as Headers).get('authorization');
-    }
-    const obj = headers as Record<string, string>;
-    for (const key of Object.keys(obj)) {
-      if (key.toLowerCase() === 'authorization') return obj[key];
-    }
-    return null;
-  }

@@ -39,20 +39,41 @@ function createWrapper() {
     }
   });
 
-  queryClient.setQueryData(['sso', 'login-info'], {
-    userId: '1',
-    userName: 'admin',
-    realName: '管理员',
-    phone: '13800138000',
-    loginUrl: 'https://sso/login',
-    logoutUrl: 'https://sso/logout',
-    menuData: [
+  queryClient.setQueryData(['iam', 'me'], {
+    staff: {
+      staffId: '1',
+      username: 'admin',
+      staffName: '管理员',
+      phone: '13800138000',
+      status: 'ENABLED'
+    },
+    roles: [],
+    permissions: [],
+    menus: [
       {
-        code: 'admin:dict-management',
-        hiddenFlag: 'N',
+        menuId: 'dict',
+        menuCode: 'dict-management',
+        menuKey: 'dict-management',
+        menuName: '字典管理',
+        menuType: 'MENU',
+        sortOrder: 10,
+        hidden: false,
+        cached: false,
+        status: 'ENABLED',
         children: []
       }
-    ]
+    ],
+    dataScopeSummary: {
+      effectiveType: 'ALL',
+      includeSelf: true,
+      description: '全部数据'
+    },
+    dataScope: {
+      effectiveType: 'ALL',
+      includeSelf: true,
+      description: '全部数据'
+    },
+    mustChangePassword: false
   });
 
   return function Wrapper({ children }: { children: React.ReactNode }) {

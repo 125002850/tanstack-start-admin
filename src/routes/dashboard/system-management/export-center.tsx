@@ -14,7 +14,7 @@ const meta = defineRouteMeta({
     visible: true,
     group: 'systemManagement',
     order: 20,
-    menuKey: 'export-center',
+    menuKey: 'export_center',
     icon: 'download',
     shortcut: ['e', 'c']
   },

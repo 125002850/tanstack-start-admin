@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { NavItem, NavGroup } from '@/types';
 import { useQuery } from '@tanstack/react-query';
-import { getLoginInfoQueryOptions } from '@/lib/api/sso/queries';
+import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
 import {
   collectVisibleMenuKeys,
   filterNavGroupsByMenuKeys,
@@ -9,9 +9,9 @@ import {
 } from '@/lib/router/nav-permissions';
 
 function useAllowedMenuKeys() {
-  const { data: loginUser } = useQuery(getLoginInfoQueryOptions());
+  const { data: me } = useQuery(getIamMeQueryOptions());
 
-  return useMemo(() => collectVisibleMenuKeys(loginUser?.menuData), [loginUser?.menuData]);
+  return useMemo(() => collectVisibleMenuKeys(me?.menus), [me?.menus]);
 }
 
 export function useFilteredNavItems(items: NavItem[]) {

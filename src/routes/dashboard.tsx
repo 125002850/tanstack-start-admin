@@ -2,6 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import {
   createFileRoute,
   Outlet,
+  redirect,
   useRouter,
   type ErrorComponentProps
 } from '@tanstack/react-router';
@@ -18,9 +19,8 @@ import { WorkspaceViewport } from '@/features/workspace-tabs/components/workspac
 import { useWorkspaceDevtools } from '@/features/workspace-tabs/lib/workspace-devtools';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useDashboardRouteTagSync } from '@/features/workspace-tabs/hooks/use-dashboard-route-tag-sync';
-import { ensureSsoLoginInfo } from '@/lib/api/sso/queries';
-import { isLoginForbiddenError } from '@/lib/api/sso/errors';
-import { LoginForbiddenPage } from '@/features/auth/components/login-forbidden-page';
+import { ensureIamMe } from '@/lib/api/iam/queries';
+import { isAuthRequiredError, isPasswordChangeRequiredError } from '@/lib/api/iam/errors';
 import { baseConfig } from '@/config';
 
 const meta = defineRouteMeta({
@@ -41,7 +41,32 @@ export const Route = createFileRoute('/dashboard')({
       { name: 'robots', content: 'noindex, nofollow' }
     ]
   }),
-  loader: ({ context }) => ensureSsoLoginInfo(context.queryClient),
+  loader: async ({ context, location }) => {
+    try {
+      const me = await ensureIamMe(context.queryClient);
+      if (me.mustChangePassword) {
+        throw redirect({
+          to: '/auth/password/change-required',
+          search: { redirect: `${location.pathname}${location.searchStr}` }
+        });
+      }
+      return me;
+    } catch (error) {
+      if (isAuthRequiredError(error)) {
+        throw redirect({
+          to: '/auth/sign-in',
+          search: { redirect: `${location.pathname}${location.searchStr}` }
+        });
+      }
+      if (isPasswordChangeRequiredError(error)) {
+        throw redirect({
+          to: '/auth/password/change-required',
+          search: { redirect: `${location.pathname}${location.searchStr}` }
+        });
+      }
+      throw error;
+    }
+  },
   errorComponent: DashboardErrorComponent,
   component: DashboardLayout
 });
@@ -52,10 +77,6 @@ function getErrorMessage(error: unknown): string {
 }
 
 function DashboardErrorComponent({ error, reset }: ErrorComponentProps) {
-  if (isLoginForbiddenError(error)) {
-    return <LoginForbiddenPage message={error.message} logoutUrl={error.logoutUrl} />;
-  }
-
   return (
     <DefaultErrorPage
       code='500'

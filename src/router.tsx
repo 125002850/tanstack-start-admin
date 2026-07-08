@@ -6,7 +6,6 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { Icons } from '@/components/icons';
 import { DefaultErrorPage } from '@/components/layout/default-error-page';
 import { getQueryClient } from '@/lib/query-client';
-import { hydrateFromUrl } from '@/lib/api/sso/session';
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import { routeTree } from './routeTree.gen';
 
@@ -65,8 +64,6 @@ function DefaultRouterNotFoundComponent() {
 }
 
 export function createRouter() {
-  hydrateFromUrl();
-
   const queryClient = getQueryClient();
   const basepath = getRouterBasepath();
 
