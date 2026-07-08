@@ -79,9 +79,11 @@ const allPaths = Object.keys(routeModules);
 // Routes that explicitly opt out of keepAlive (keepAlive=false) with documented reasons:
 // - forms/index: 重定向路由，无实际页面内容
 // - system-management/index: 重定向路由，无实际页面内容
+// - iam/index: 重定向路由，无实际页面内容
 // - dashboard/index: 重定向路由，无实际页面内容
 const keepAliveFalsePaths = new Set([
   '/src/routes/dashboard/system-management/index.tsx',
+  '/src/routes/dashboard/iam/index.tsx',
   '/src/routes/dashboard/forms/index.tsx',
   '/src/routes/dashboard/index.tsx'
 ]);
@@ -97,7 +99,15 @@ const standardWorkspacePageRoutePaths = new Set([
   '/src/routes/dashboard/forms/advanced.tsx',
   '/src/routes/dashboard/forms/overlay-contract.tsx',
   '/src/routes/dashboard/system-management/dictionaries.tsx',
-  '/src/routes/dashboard/system-management/export-center.tsx'
+  '/src/routes/dashboard/system-management/export-center.tsx',
+  '/src/routes/dashboard/iam/staff.tsx',
+  '/src/routes/dashboard/iam/dept.tsx',
+  '/src/routes/dashboard/iam/role.tsx',
+  '/src/routes/dashboard/iam/menu.tsx',
+  '/src/routes/dashboard/iam/log/login.tsx',
+  '/src/routes/dashboard/iam/log/operation.tsx',
+  '/src/routes/dashboard/account/profile.tsx',
+  '/src/routes/dashboard/account/password.tsx'
 ]);
 
 // Hidden development/demo routes remain addressable for deep links and local UI checks,
@@ -132,6 +142,15 @@ describe('dashboard route inventory', () => {
         '/dashboard/system-management/',
         '/dashboard/system-management/dictionaries',
         '/dashboard/system-management/export-center',
+        '/dashboard/iam/',
+        '/dashboard/iam/staff',
+        '/dashboard/iam/dept',
+        '/dashboard/iam/role',
+        '/dashboard/iam/menu',
+        '/dashboard/iam/log/login',
+        '/dashboard/iam/log/operation',
+        '/dashboard/account/profile',
+        '/dashboard/account/password',
         '/dashboard/forms/',
         '/dashboard/forms/basic',
         '/dashboard/forms/multi-step',

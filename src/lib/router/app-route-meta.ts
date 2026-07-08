@@ -4,8 +4,9 @@ import type { InfobarContent } from '@/components/ui/infobar';
 export const NAV_GROUP_META = {
   overview: { label: '概览', order: 10 },
   components: { label: '组件', order: 20 },
-  systemManagement: { label: '系统管理', order: 30 },
-  account: { label: '账户', order: 40 }
+  iam: { label: '权限管理', order: 30 },
+  systemManagement: { label: '系统管理', order: 40 },
+  account: { label: '账户', order: 50 }
 } as const;
 
 export type AppNavGroupKey = keyof typeof NAV_GROUP_META;
@@ -50,6 +51,8 @@ export interface AppRouteStaticData {
   title?: string;
   breadcrumb?: AppBreadcrumbData;
   nav?: AppNavStaticData;
+  requiredPermission?: string;
+  requiredAnyPermissions?: string[];
   page?: AppPageData;
   workspace?: AppRouteWorkspaceData;
 }
