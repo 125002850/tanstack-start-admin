@@ -94,6 +94,8 @@ const DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANT_SET = new Set<FilterVariant>(
   DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS
 );
 
+const MAX_SEMICOLON_TEXT_VALUES = 50;
+
 type BuildDataTableDslRequestOptions<TData> = {
   columns: Array<ColumnDef<TData>>;
   pagination: PaginationState;
@@ -320,17 +322,30 @@ function buildFilterCondition<TData>(
     }
 
     const op = resolveOperator(variant, meta?.query?.operator, field);
-    if (op === 'CONTAINS' && value.includes(';')) {
+    if (variant === 'text' && op === 'CONTAINS' && value.includes(';')) {
       const values = splitSemicolonTextValues(value);
       if (values.length === 0) {
         return undefined;
       }
 
-      if (values.length >= 2) {
+      const limitedValues =
+        values.length > MAX_SEMICOLON_TEXT_VALUES
+          ? values.slice(0, MAX_SEMICOLON_TEXT_VALUES)
+          : values;
+
+      if (values.length > MAX_SEMICOLON_TEXT_VALUES) {
+        warn('Truncating semicolon-separated text filter values.', {
+          field,
+          count: values.length,
+          max: MAX_SEMICOLON_TEXT_VALUES
+        });
+      }
+
+      if (limitedValues.length >= 2) {
         return {
           nodeType: 'compose',
           logic: 'OR',
-          children: values.map((item) => ({
+          children: limitedValues.map((item) => ({
             nodeType: 'text',
             field,
             op,
@@ -339,7 +354,7 @@ function buildFilterCondition<TData>(
         };
       }
 
-      return { nodeType: 'text', field, op, value: values[0]! };
+      return { nodeType: 'text', field, op, value: limitedValues[0]! };
     }
 
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], value };
