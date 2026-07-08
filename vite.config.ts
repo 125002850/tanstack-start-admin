@@ -73,6 +73,10 @@ function normalizeBasePath(value: string | undefined) {
   return `${basePath.replace(/\/+$/, '')}/`;
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const appGateway = process.env.APP_GATEWAY ?? env.APP_GATEWAY ?? '';
@@ -82,7 +86,9 @@ export default defineConfig(({ mode }) => {
       ? {
           [appGateway]: {
             target: proxyUrl,
-            changeOrigin: true
+            changeOrigin: true,
+            rewrite: (path: string) =>
+              path.replace(new RegExp(`^${escapeRegExp(appGateway)}`), '') || '/'
           },
           ...(appGateway === '/api'
             ? {}
