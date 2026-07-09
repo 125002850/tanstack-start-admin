@@ -73,48 +73,23 @@ export function isDataTableVirtualizationEnabled(): boolean {
 }
 ```
 
-## 请求头与共享 Transport
+## 请求、认证与共享 Transport
 
-认证环境值由 `env.ts` 提供；请求头组装位于 `src/lib/api/sso/set-headers.ts`：
+当前主线使用本地 IAM 登录链路，不再维护 `src/lib/api/sso/*` 运行时代码。
 
-```ts
-function buildHeaders(headers?: HeadersInit): Headers {
-  const merged = new Headers(headers);
+运行时边界：
 
-  if (env.ssoServiceID) {
-    merged.set('service-id', env.ssoServiceID);
-  }
+- `src/lib/api/transport.ts`：OpenAPI generated client 的唯一共享 transport，统一注入 `Authorization`，并在 401 时触发 refresh / logout。
+- `src/lib/api/iam/session.ts`：维护 access token、refresh token、登出跳转和密码修改后的 token 更新。
+- `src/lib/api/iam/request.ts`：本地 IAM `/api/iam/*` 信封接口的手写请求边界，负责 `fetch`、超时、JSON 解码和业务错误转换。
+- `src/lib/api/iam/queries.ts`：维护 `iam/me` 查询、权限快照和当前账号归一化。
 
-  if (env.ssoClientID) {
-    merged.set('client-id', env.ssoClientID);
-  }
+约束：
 
-  if (env.ssoServiceCode) {
-    merged.set('service-code', env.ssoServiceCode);
-  }
-
-  return merged;
-}
-
-export function createAuthHeaders(init?: HeadersInit): Headers {
-  const headers = buildHeaders(init);
-  const token = getAuthHeader();
-
-  if (token) {
-    headers.set('Authorization', token);
-  }
-
-  return headers;
-}
-```
-
-所有 HTTP 请求必须复用项目共享 transport：
-
-- `src/lib/api/transport.ts` 创建唯一 transport 并注册请求、响应 middleware。
-- 请求 middleware 调用 `createAuthHeaders()` 注入 SSO 头与 Authorization。
-- 响应 middleware 调用 `refreshTokenFromResponse()`，并集中处理 HTTP 401。
-- `createApiClientCustomInstance` 由同一 transport 工厂创建。
-- 除 `src/lib/api/sso/bootstrap.ts` 这类登录引导请求外，业务和通用 API 代码禁止直接调用 `fetch`。
+- generated API、业务 query/mutation 和页面代码必须优先复用共享 transport 或 `iamRequest()`，禁止在边界外散落 `fetch`。
+- 当前仓库允许直接调用 `fetch` 的 runtime 边界只有 `src/lib/api/iam/request.ts`；新增例外前必须同步调整契约测试。
+- `transport.ts` 的 request middleware 只负责注入 `Authorization` 和 token freshness，不再拼装 `service-id` / `client-id` / `service-code` 一类 SSO 头。
+- 401 处理统一收敛到 `transport.ts` 与 `iam/session.ts`；页面层不要自行复制 refresh、清 token 或重定向逻辑。
 - `pnpm codegen` 只调用 `openapi-client generate`，禁止在业务仓库增加生成后 patch 脚本。
 - 生成后的 `openapi/.generated/*-orval-mutator.ts` 由 `openapi-client` 按约定导入 `src/lib/api/transport.ts`，只创建带 `basePath` 的实例。
 - 生成后的 `src/lib/api/clients/*/generated/**/*.ts` 由 `openapi-client` 自动带上 `// @ts-nocheck`。

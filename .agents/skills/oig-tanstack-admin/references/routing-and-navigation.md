@@ -44,11 +44,12 @@ export const Route = createFileRoute('/dashboard/users')({
 - `title`：浏览器文档标题。`defineRouteMeta()` 自动生成 `head()`；未提供时回退到 `label`。
 - `breadcrumb.label`：面包屑文案。
 - `breadcrumb.to`：可选的自定义 breadcrumb 链接目标。
+- `requiredPermission` / `requiredAnyPermissions`：dashboard 路由权限元数据；由 `/dashboard` 根路由统一调用 `ensureDashboardRouteAccess()` 校验，页面 route 不再手写 `ensureIamPermission()`。
 
 ### `nav`
 
 - `visible`：是否进入主导航。
-- `group`：顶部分组，当前为 `overview | components | systemManagement | followWorkbench | riskSummary | account`。
+- `group`：顶部分组，当前为 `overview | components | iam | systemManagement | account`。
 - `order`：分组内排序权重，数值越小越靠前。
 - `icon`：`Icons` 对象中的图标键。
 - `shortcut`：KBar 快捷键。
@@ -72,6 +73,7 @@ export const Route = createFileRoute('/dashboard/users')({
 - 禁止重新维护中心化导航配置。
 - 容器菜单通过 `nav.kind === 'container'` 和 `nav.parentId` 建树，禁止通过 URL 前缀隐式推断。
 - `linkable: false` 不生成 KBar action，也不渲染为侧边栏跳转链接。
+- `nav.menuKey` 基于 IAM 菜单树节点的 `menuKey / menuCode / code` 过滤；不要再引用历史 `menuData` 语义。
 
 页面标题规则：
 
@@ -96,3 +98,4 @@ export const Route = createFileRoute('/dashboard/users')({
 - 浏览器标题与页面内标题不同时，分别使用顶层 `title` 和 `PageContainer.pageTitle`。
 - 外部链接使用普通 `<a href>`，禁止使用 TanStack Router `Link`。
 - 特殊 `head()` 逻辑应在 route 文件中显式扩展，禁止反向修改通用消费端。
+- `account/profile` 与 `account/password` 在当前主线是隐藏兼容重定向路由；真实入口在侧边栏账号菜单的 Sheet，不要把它们重新恢复为可导航 workspace 页面。
