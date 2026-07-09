@@ -94,7 +94,7 @@ const DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANT_SET = new Set<FilterVariant>(
   DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS
 );
 
-const MAX_SEMICOLON_TEXT_VALUES = 50;
+const DATA_TABLE_DSL_MAX_SEMICOLON_TEXT_VALUES = 1000;
 
 type BuildDataTableDslRequestOptions<TData> = {
   columns: Array<ColumnDef<TData>>;
@@ -196,6 +196,20 @@ function splitSemicolonTextValues(value: string): string[] {
     .split(';')
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
+}
+
+function limitSemicolonTextValues(values: string[], field: string): string[] {
+  if (values.length <= DATA_TABLE_DSL_MAX_SEMICOLON_TEXT_VALUES) {
+    return values;
+  }
+
+  warn('Truncating semicolon-separated IN text filter values.', {
+    field,
+    count: values.length,
+    max: DATA_TABLE_DSL_MAX_SEMICOLON_TEXT_VALUES
+  });
+
+  return values.slice(0, DATA_TABLE_DSL_MAX_SEMICOLON_TEXT_VALUES);
 }
 
 /** 支持毫秒时间戳字符串/数字和可被 Date 解析的字符串。 */
@@ -323,38 +337,12 @@ function buildFilterCondition<TData>(
 
     const op = resolveOperator(variant, meta?.query?.operator, field);
     if (variant === 'text' && op === 'CONTAINS' && value.includes(';')) {
-      const values = splitSemicolonTextValues(value);
+      const values = limitSemicolonTextValues(splitSemicolonTextValues(value), field);
       if (values.length === 0) {
         return undefined;
       }
 
-      const limitedValues =
-        values.length > MAX_SEMICOLON_TEXT_VALUES
-          ? values.slice(0, MAX_SEMICOLON_TEXT_VALUES)
-          : values;
-
-      if (values.length > MAX_SEMICOLON_TEXT_VALUES) {
-        warn('Truncating semicolon-separated text filter values.', {
-          field,
-          count: values.length,
-          max: MAX_SEMICOLON_TEXT_VALUES
-        });
-      }
-
-      if (limitedValues.length >= 2) {
-        return {
-          nodeType: 'compose',
-          logic: 'OR',
-          children: limitedValues.map((item) => ({
-            nodeType: 'text',
-            field,
-            op,
-            value: item
-          }))
-        };
-      }
-
-      return { nodeType: 'text', field, op, value: limitedValues[0]! };
+      return { nodeType: 'text', field, op: 'IN', values };
     }
 
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], value };

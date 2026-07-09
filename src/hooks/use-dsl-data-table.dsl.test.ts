@@ -157,7 +157,7 @@ describe('use-dsl-data-table.dsl', () => {
     });
   });
 
-  it('expands semicolon-separated CONTAINS text values into an inner OR compose node', () => {
+  it('serializes semicolon-separated CONTAINS text values as an IN text node', () => {
     const request = buildDataTableDslRequest({
       columns: [
         {
@@ -186,22 +186,10 @@ describe('use-dsl-data-table.dsl', () => {
       logic: 'AND',
       children: [
         {
-          nodeType: 'compose',
-          logic: 'OR',
-          children: [
-            {
-              nodeType: 'text',
-              field: 'staffCode',
-              op: 'CONTAINS',
-              value: '1'
-            },
-            {
-              nodeType: 'text',
-              field: 'staffCode',
-              op: 'CONTAINS',
-              value: '2'
-            }
-          ]
+          nodeType: 'text',
+          field: 'staffCode',
+          op: 'IN',
+          values: ['1', '2']
         },
         {
           nodeType: 'text',
@@ -213,7 +201,7 @@ describe('use-dsl-data-table.dsl', () => {
     });
   });
 
-  it('keeps CONTAINS text filters as single text nodes when semicolon parsing finds one value', () => {
+  it('serializes single semicolon text values as single-value IN text nodes', () => {
     const request = buildDataTableDslRequest({
       columns,
       pagination: { pageIndex: 0, pageSize: 10 },
@@ -228,14 +216,14 @@ describe('use-dsl-data-table.dsl', () => {
         {
           nodeType: 'text',
           field: 'dictTypeCode',
-          op: 'CONTAINS',
-          value: 'payment'
+          op: 'IN',
+          values: ['payment']
         }
       ]
     });
   });
 
-  it('truncates semicolon-separated CONTAINS text values at 50 items and warns', () => {
+  it('truncates semicolon-separated IN text values at 1000 items and warns', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const request = buildDataTableDslRequest({
       columns: [
@@ -251,23 +239,24 @@ describe('use-dsl-data-table.dsl', () => {
       columnFilters: [
         {
           id: 'staffCode',
-          value: Array.from({ length: 55 }, (_, index) => String(index + 1)).join(';')
+          value: Array.from({ length: 1005 }, (_, index) => String(index + 1)).join(';')
         }
       ]
     });
 
     const condition = request.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>;
-    const orNode = condition.children[0] as Extract<DataTableDslCondition, { nodeType: 'compose' }>;
+    const inNode = condition.children[0] as Extract<DataTableDslCondition, { nodeType: 'text' }>;
 
-    expect(orNode.children).toHaveLength(50);
-    expect(orNode.children[0]).toMatchObject({ field: 'staffCode', value: '1' });
-    expect(orNode.children[49]).toMatchObject({ field: 'staffCode', value: '50' });
+    expect(inNode.op).toBe('IN');
+    expect(inNode.values).toHaveLength(1000);
+    expect(inNode.values?.[0]).toBe('1');
+    expect(inNode.values?.[999]).toBe('1000');
     expect(warn).toHaveBeenCalledWith(
-      '[useDslDataTable.dsl] Truncating semicolon-separated text filter values.',
+      '[useDslDataTable.dsl] Truncating semicolon-separated IN text filter values.',
       {
         field: 'staffCode',
-        count: 55,
-        max: 50
+        count: 1005,
+        max: 1000
       }
     );
 
