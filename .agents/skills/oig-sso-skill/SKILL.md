@@ -1,6 +1,6 @@
 ---
 name: oig-sso-skill
-description: 本仓库 AI Playwright 测试 SSO 登录态 SOP。处理本地 localhost:3000、playwright/.auth、Skill 内置 auth-sso-local/run-ai-e2e 脚本、SSO wildcard 跳转、测试环境回跳改写或登录态失效时必须使用。
+description: 本仓库 AI Playwright 测试 SSO 登录态 SOP。处理本地 localhost:3000、playwright/.auth、Skill 内置 auth-sso-local/run-ai-e2e 脚本、SSO wildcard 跳转、本地回跳改写或登录态失效时必须使用。
 ---
 
 # OIG SSO Skill
@@ -22,7 +22,7 @@ description: 本仓库 AI Playwright 测试 SSO 登录态 SOP。处理本地 loc
 ## 诊断规则
 
 - 看到 `OIG统一登录认证平台`：登录态未加载或已失效，先跑 `bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh`。
-- URL 停在 `http://192.168.186.148:30227/track-bench-admin/...`：远端回跳没有被替换到 localhost，检查 `scripts/record-auth.mjs` 的回调改写逻辑。
+- URL 停在远端业务系统地址而不是 `http://localhost:3000`：回跳没有被替换到本地，检查 `scripts/record-auth.mjs` 的回调改写逻辑。
 - URL 含 `https://*.ksout.oigit.com/login/loginView` 或 `http://caweb-auth-master.../login/loginView`：SSO 跳转修正失效，检查 `.agents/skills/oig-sso-skill/scripts/sso-login-redirect-patch.mjs`。
 - 页面显示 404 但侧栏已显示登录用户：这不是 SSO 失败，通常是测试访问了当前真实路由中不存在的旧路径。
 - `run-ai-e2e.sh` 默认只跑 `@ai-sso`；如需跑其他用例，用 `PLAYWRIGHT_AI_GREP='@workspace-v2' bash .agents/skills/oig-sso-skill/scripts/run-ai-e2e.sh`。

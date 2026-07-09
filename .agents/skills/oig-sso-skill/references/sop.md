@@ -51,7 +51,7 @@ bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh
 2. 打开测试 SSO 入口 `https://caweb-auth-master.ksout.oigit.com/sso/logout?clientId=2064249343121747970`。
 3. 将 SSO 的异常跳转统一修正到 `https://caweb-auth-master.ksout.oigit.com/login/loginView`。
 4. 自动填账号密码登录。
-5. 将测试环境回跳地址 `http://192.168.186.148:30227/track-bench-admin/...` 改写为 `http://localhost:3000/...`。
+5. 将远端业务系统回跳地址改写为 `http://localhost:3000/...`。
 6. 保存登录态到 `playwright/.auth/user.json`。
 
 默认使用 headless 浏览器；需要观察登录过程时执行：
