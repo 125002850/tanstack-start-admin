@@ -70,6 +70,7 @@ openapi/snapshots/*.tmp.json
 # clerk configuration (can include secrets)
 /.clerk/
 .playwright-mcp
+playwright/.auth/
 .output-flag-off
 .output-flag-on
 .output-playwright-default

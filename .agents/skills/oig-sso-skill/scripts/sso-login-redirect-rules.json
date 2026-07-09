@@ -1,0 +1,8 @@
+{
+  "authHost": "caweb-auth-master.ksout.oigit.com",
+  "loginViewPath": "/login/loginView",
+  "ssoLoginPath": "/sso/login",
+  "ssoLogoutPath": "/sso/logout",
+  "wildcardLoginViewHosts": ["*.ksout.oigit.com", "%2a.ksout.oigit.com"],
+  "ticketCookieName": "ticket-id-test"
+}
