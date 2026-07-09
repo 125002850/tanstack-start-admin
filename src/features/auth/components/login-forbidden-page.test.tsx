@@ -3,10 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginForbiddenPage } from './login-forbidden-page';
 
-const mockLogout = vi.hoisted(() => vi.fn<(redirectUrl?: string | null) => void>());
+const mockLogout = vi.hoisted(() => vi.fn<() => void>());
 
-vi.mock('@/lib/api/sso/session', () => ({
-  logout: (redirectUrl?: string | null) => mockLogout(redirectUrl)
+vi.mock('@/lib/api/iam/session', () => ({
+  logout: () => mockLogout()
 }));
 
 describe('LoginForbiddenPage', () => {
@@ -16,7 +16,7 @@ describe('LoginForbiddenPage', () => {
   });
 
   it('renders forbidden guidance with current-theme components', () => {
-    render(<LoginForbiddenPage message='没有访问该资源的权限' logoutUrl='https://sso/logout' />);
+    render(<LoginForbiddenPage message='没有访问该资源的权限' />);
 
     expect(screen.getByRole('heading', { name: '无权限访问' })).toBeInTheDocument();
     expect(screen.getByTestId('default-error-illustration')).toHaveAttribute(
@@ -27,11 +27,11 @@ describe('LoginForbiddenPage', () => {
     expect(screen.getByRole('button', { name: /退出登录/ })).toBeInTheDocument();
   });
 
-  it('logs out to the provided logoutUrl', () => {
-    render(<LoginForbiddenPage logoutUrl='https://sso/logout' />);
+  it('logs out through IAM session', () => {
+    render(<LoginForbiddenPage />);
 
     fireEvent.click(screen.getByRole('button', { name: /退出登录/ }));
 
-    expect(mockLogout).toHaveBeenCalledWith('https://sso/logout');
+    expect(mockLogout).toHaveBeenCalledOnce();
   });
 });

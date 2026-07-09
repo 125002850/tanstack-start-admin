@@ -1,13 +1,12 @@
 import { Icons } from '@/components/icons';
 import { DefaultErrorPage } from '@/components/layout/default-error-page';
-import { logout } from '@/lib/api/sso/session';
+import { logout } from '@/lib/api/iam/session';
 
 interface LoginForbiddenPageProps {
   message?: string;
-  logoutUrl?: string | null;
 }
 
-export function LoginForbiddenPage({ message, logoutUrl }: LoginForbiddenPageProps) {
+export function LoginForbiddenPage({ message }: LoginForbiddenPageProps) {
   return (
     <DefaultErrorPage
       code='403'
@@ -18,7 +17,7 @@ export function LoginForbiddenPage({ message, logoutUrl }: LoginForbiddenPagePro
       action={{
         label: '退出登录',
         icon: Icons.logout,
-        onClick: () => logout(logoutUrl)
+        onClick: () => void logout()
       }}
     />
   );

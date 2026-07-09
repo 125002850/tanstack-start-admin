@@ -1,32 +1,26 @@
-import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
-import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
-
-const AccountProfilePage = lazyRouteComponent(
-  () => import('@/features/iam/components/account-pages'),
-  'AccountProfilePage'
-);
+import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
+import { createRedirectWithSearch } from '@/lib/router/redirect-search';
 
 const meta = defineRouteMeta({
   label: '个人资料',
   title: '账户：个人资料',
   nav: {
-    visible: true,
+    visible: false,
     group: 'account',
     order: 10,
-    icon: 'account',
-    shortcut: ['a', 'p']
+    icon: 'account'
   },
   workspace: {
-    refreshPolicy: 'query-invalidate'
+    keepAlive: false,
+    tagEnabled: false
   }
 });
 
 export const Route = createFileRoute('/dashboard/account/profile')({
   ...meta,
-  component: ProfileRoute
+  beforeLoad: ({ location }) => {
+    throw redirect(createRedirectWithSearch(resolveDashboardHomeHref(), location));
+  }
 });
-
-function ProfileRoute() {
-  return <WorkspacePageRoute render={() => <AccountProfilePage />} />;
-}

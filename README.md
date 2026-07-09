@@ -54,7 +54,7 @@
 
 - **工作区页签系统**，支持多页签打开、拖拽排序、LRU 淘汰、页面注册表、统一 WorkspacePageRoute 入口和浮层清理
 
-- **系统管理导航**，提供系统管理和基础设置入口，并支持基于 SSO `menuData` 的可选菜单权限过滤
+- **系统管理导航**，提供系统管理和基础设置入口，并支持基于 IAM 菜单树 `menuKey` 的可选菜单权限过滤
 
 - **命令面板**（Cmd+K），用于快速导航
 
@@ -274,11 +274,11 @@ function DictionariesPage() {
 - `visible`
   是否进入主导航派生。
 - `group`
-  顶部分组键，当前固定为 `overview | components | systemManagement | account`。
+  顶部分组键，当前固定为 `overview | components | iam | systemManagement | account`。
 - `order`
   当前分组内的排序权重，数值越小越靠前。
 - `menuKey`
-  可选权限键。声明后侧边栏和 KBar 会使用 SSO `menuData.code` 过滤该菜单；未声明 `menuKey` 的菜单默认显示。
+  可选菜单权限键。声明后侧边栏和 KBar 会使用 IAM 菜单树节点的 `menuKey/menuCode/code` 过滤该菜单；未声明 `menuKey` 的菜单默认显示。
 - `icon`
   对应 `Icons` 表中的图标键。
 - `shortcut`
@@ -314,7 +314,7 @@ function DictionariesPage() {
 - 侧边栏和 KBar 都从 Router 的 `routesById` + `staticData.nav` 派生，不再维护中心化导航配置。
 - 容器菜单依赖 `nav.kind === 'container'` 和子项的 `nav.parentId` 建树，不通过 URL 前缀做隐式推断。
 - `linkable: false` 的节点不会生成可执行 KBar action，也不会在侧边栏中渲染成跳转链接。
-- 声明 `nav.menuKey` 的节点会根据 SSO `menuData` 过滤；无 `menuKey` 的框架、示例或公共页面不受权限过滤影响。
+- 声明 `nav.menuKey` 的节点会根据 IAM 菜单树过滤；无 `menuKey` 的框架、示例或公共页面不受权限过滤影响。
 
 #### WorkspacePageRoute
 
@@ -415,36 +415,13 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 编译时不可变：纯 SPA 下 `VITE_*` 在构建时静态替换，不可运行时修改
 - `VITE_ENABLE_DATA_TABLE_VIRTUALIZATION` 是通用 DataTable 虚拟滚动开关；历史变量 `VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION` 仅作为未设置新变量时的兼容 fallback。
 
-### 请求头注入
+### 请求与登录态
 
-认证相关的环境值仍由 `env.ts` 提供，但请求头组装集中放在 `src/lib/api/sso/`，并由共享 transport 统一调用：
+本地 IAM 运行链路由 `src/lib/api/iam/` 和共享 transport 维护：
 
-```ts
-// src/lib/api/sso/set-headers.ts
-export function setSsoHeaders(headers?: HeadersInit): Headers {
-  const merged = new Headers(headers);
-
-  if (env.ssoServiceID) {
-    merged.set('service-id', env.ssoServiceID);
-  }
-
-  if (env.ssoClientID) {
-    merged.set('client-id', env.ssoClientID);
-  }
-
-  if (env.ssoServiceCode) {
-    merged.set('service-code', env.ssoServiceCode);
-  }
-
-  return merged;
-}
-```
-
-所有 HTTP 请求都复用项目自维护的共享 transport：
-
-- `src/lib/api/transport.ts`：集中创建请求实例并调用 `setSsoHeaders()`
-- `src/lib/api/sso/session.ts`：维护 SSO 会话状态
-- `src/lib/api/sso/bootstrap.ts`：负责启动阶段的 SSO 初始化
+- `src/lib/api/transport.ts`：统一创建请求实例、注入 `Authorization`、处理 401 刷新与登出跳转。
+- `src/lib/api/iam/session.ts`：维护 access token、refresh token、改密后 token 更新和登出清理。
+- `src/lib/api/iam/queries.ts`：维护 `iam/me` 查询、当前账号信息归一化和权限快照缓存。
 
 OpenAPI client 当前仍保留在 `src/lib/api/clients/service/`，后续可在后端框架抽离完成后重新生成干净 client。
 

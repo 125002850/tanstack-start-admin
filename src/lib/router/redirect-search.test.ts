@@ -6,7 +6,7 @@ describe('createRedirectWithSearch', () => {
   it('keeps the current route search object when creating redirect options', () => {
     const search = {
       customerCode: 'C001',
-      source: 'sso'
+      source: 'auth'
     };
 
     expect(createRedirectWithSearch('/dashboard/overview', { search })).toEqual({

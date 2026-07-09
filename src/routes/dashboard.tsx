@@ -1,9 +1,7 @@
-import { QueryClientProvider } from '@tanstack/react-query';
 import {
   createFileRoute,
   Outlet,
   redirect,
-  useRouter,
   type ErrorComponentProps
 } from '@tanstack/react-router';
 import { Icons } from '@/components/icons';
@@ -19,13 +17,13 @@ import { WorkspaceViewport } from '@/features/workspace-tabs/components/workspac
 import { useWorkspaceDevtools } from '@/features/workspace-tabs/lib/workspace-devtools';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useDashboardRouteTagSync } from '@/features/workspace-tabs/hooks/use-dashboard-route-tag-sync';
-import { ensureIamMe } from '@/lib/api/iam/queries';
 import {
   isAuthRequiredError,
   isPasswordChangeRequiredError,
   isPermissionDeniedError
 } from '@/lib/api/iam/errors';
 import { baseConfig } from '@/config';
+import { ensureDashboardRouteAccess } from '@/lib/router/dashboard-route-guard';
 
 const meta = defineRouteMeta({
   label: '工作台',
@@ -45,9 +43,12 @@ export const Route = createFileRoute('/dashboard')({
       { name: 'robots', content: 'noindex, nofollow' }
     ]
   }),
-  loader: async ({ context, location }) => {
+  beforeLoad: async ({ context, location, matches }) => {
     try {
-      const me = await ensureIamMe(context.queryClient);
+      const me = await ensureDashboardRouteAccess({
+        queryClient: context.queryClient,
+        matches
+      });
       if (me.mustChangePassword) {
         throw redirect({
           to: '/auth/password/change-required',
@@ -115,8 +116,6 @@ function DashboardErrorComponent({ error, reset }: ErrorComponentProps) {
 }
 
 function DashboardLayout() {
-  const router = useRouter();
-  const queryClient = router.options.context.queryClient;
   const workspaceEnabled = isWorkspaceTabsEnabled();
   useDashboardRouteTagSync(workspaceEnabled);
   useWorkspaceDevtools(workspaceEnabled);
@@ -128,10 +127,8 @@ function DashboardLayout() {
         <SidebarInset>
           <Header />
           <InfobarProvider defaultOpen={false}>
-            <QueryClientProvider client={queryClient}>
-              {workspaceEnabled && <WorkspaceViewport />}
-              <Outlet />
-            </QueryClientProvider>
+            {workspaceEnabled && <WorkspaceViewport />}
+            <Outlet />
             <InfoSidebar side='right' />
           </InfobarProvider>
         </SidebarInset>

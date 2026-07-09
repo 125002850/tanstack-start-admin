@@ -136,10 +136,7 @@ describe('project architecture contracts', () => {
   });
 
   it('keeps API calls on the shared transport boundary', () => {
-    const allowedFetchCallers = new Set([
-      'src/lib/api/iam/request.ts',
-      'src/lib/api/sso/bootstrap.ts'
-    ]);
+    const allowedFetchCallers = new Set(['src/lib/api/iam/request.ts']);
     const directFetchViolations = collectSourceFiles()
       .filter((path) => {
         const projectPath = toProjectPath(path);
@@ -154,5 +151,64 @@ describe('project architecture contracts', () => {
 
     expect(existsSync(resolve(PROJECT_ROOT, 'src/lib/api-client.ts'))).toBe(false);
     expect(directFetchViolations).toEqual([]);
+  });
+
+  it('centralizes dashboard route permission checks in the requiredPermission guard', () => {
+    const dashboardSource = readProjectFile('src/routes/dashboard.tsx');
+    const guardSource = readProjectFile('src/lib/router/dashboard-route-guard.ts');
+    const dashboardRouteFiles = collectFiles(resolve(SRC_ROOT, 'routes/dashboard'), (path) =>
+      path.endsWith('.tsx')
+    );
+    const protectedRouteFiles = dashboardRouteFiles
+      .filter((path) =>
+        /required(?:Permission|AnyPermissions)\s*:/.test(readFileSync(path, 'utf8'))
+      )
+      .map(toProjectPath);
+    const permissionMetaOutsideDashboard = collectFiles(resolve(SRC_ROOT, 'routes'), (path) =>
+      path.endsWith('.tsx')
+    )
+      .filter((path) =>
+        /required(?:Permission|AnyPermissions)\s*:/.test(readFileSync(path, 'utf8'))
+      )
+      .map(toProjectPath)
+      .filter((path) => !path.startsWith('src/routes/dashboard/'));
+    const decentralizedGuardViolations = dashboardRouteFiles
+      .filter((path) => /ensure(?:Any)?IamPermission\s*\(/.test(readFileSync(path, 'utf8')))
+      .map(toProjectPath);
+
+    expect(protectedRouteFiles.length).toBeGreaterThan(0);
+    expect(normalizeSource(dashboardSource)).toMatch(
+      /beforeLoad:\s*async\s*\([^)]*\)\s*=>\s*\{[^}]*ensureDashboardRouteAccess/
+    );
+    expect(guardSource).toContain('requiredPermission');
+    expect(guardSource).toContain('requiredAnyPermissions');
+    expect(permissionMetaOutsideDashboard).toEqual([]);
+    expect(decentralizedGuardViolations).toEqual([]);
+  });
+
+  it('does not mount app-level QueryClientProvider manually', () => {
+    const violations = collectSourceFiles()
+      .filter((path) => {
+        const projectPath = toProjectPath(path);
+        return !projectPath.endsWith('.test.ts') && !projectPath.endsWith('.test.tsx');
+      })
+      .filter((path) => /\bQueryClientProvider\b/.test(readFileSync(path, 'utf8')))
+      .map(toProjectPath);
+
+    expect(violations).toEqual([]);
+  });
+
+  it('keeps historical SSO terms out of runtime source files', () => {
+    const ssoRuntimePattern =
+      /@\/lib\/api\/sso|\/api\/sso|sso[-_/]|Sso[A-Z]|SSO|menuData|X-User-Id|VITE_APP_SSO/;
+    const violations = collectSourceFiles()
+      .filter((path) => {
+        const projectPath = toProjectPath(path);
+        return !projectPath.endsWith('.test.ts') && !projectPath.endsWith('.test.tsx');
+      })
+      .filter((path) => ssoRuntimePattern.test(readFileSync(path, 'utf8')))
+      .map(toProjectPath);
+
+    expect(violations).toEqual([]);
   });
 });

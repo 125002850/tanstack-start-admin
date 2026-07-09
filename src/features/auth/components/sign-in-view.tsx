@@ -8,7 +8,7 @@ export default function SignInViewPage() {
       <div className='relative hidden h-full flex-col p-10 lg:flex dark:border-r'>
         <div className='absolute inset-0 bg-sidebar' />
         <div className='text-sidebar-foreground relative z-20 flex items-center text-lg font-medium'>
-          管理后台
+          管理后台架构
         </div>
         <InteractiveGridPattern
           className={cn(

@@ -78,8 +78,26 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
     React.createElement('div', { 'data-testid': 'dropdown-content' }, children),
   DropdownMenuGroup: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
-  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) =>
-    React.createElement('button', { 'data-testid': 'dropdown-item', onClick }, children),
+  DropdownMenuItem: ({
+    children,
+    onClick,
+    onSelect
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    onSelect?: (event: { preventDefault: () => void }) => void;
+  }) =>
+    React.createElement(
+      'button',
+      {
+        'data-testid': 'dropdown-item',
+        onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+          onSelect?.({ preventDefault: () => event.preventDefault() });
+          onClick?.();
+        }
+      },
+      children
+    ),
   DropdownMenuLabel: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
   DropdownMenuSeparator: () => React.createElement('hr', null),
@@ -87,11 +105,24 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
     React.createElement('div', { 'data-testid': 'dropdown-trigger' }, children)
 }));
 
-vi.mock('@/components/ui/sso-skeleton', () => ({
-  SsoSkeleton: () => React.createElement('div', { 'data-testid': 'sso-skeleton' }),
-  SsoAvatarSkeleton: () => React.createElement('div', { 'data-testid': 'sso-avatar-skeleton' }),
-  SsoTextSkeleton: () => React.createElement('div', { 'data-testid': 'sso-text-skeleton' }),
-  SsoMenuSkeleton: () => React.createElement('div', { 'data-testid': 'sso-menu-skeleton' })
+vi.mock('@/components/ui/sheet', () => ({
+  Sheet: ({ children, open }: { children: React.ReactNode; open?: boolean }) =>
+    open ? React.createElement('div', { 'data-testid': 'sheet' }, children) : null,
+  SheetContent: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('section', null, children),
+  SheetDescription: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('p', null, children),
+  SheetHeader: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('div', null, children),
+  SheetTitle: ({ children }: { children: React.ReactNode }) =>
+    React.createElement('h2', null, children)
+}));
+
+vi.mock('@/components/ui/auth-skeleton', () => ({
+  AuthSkeleton: () => React.createElement('div', { 'data-testid': 'auth-skeleton' }),
+  AuthAvatarSkeleton: () => React.createElement('div', { 'data-testid': 'auth-avatar-skeleton' }),
+  AuthTextSkeleton: () => React.createElement('div', { 'data-testid': 'auth-text-skeleton' }),
+  AuthMenuSkeleton: () => React.createElement('div', { 'data-testid': 'auth-menu-skeleton' })
 }));
 
 vi.mock('../icons', () => ({
@@ -100,6 +131,8 @@ vi.mock('../icons', () => ({
     logo: () => React.createElement('span', null, 'logo-icon'),
     chevronsDown: () => React.createElement('span', null, 'chevron-icon'),
     notification: () => React.createElement('span', null, 'notification-icon'),
+    profile: () => React.createElement('span', null, 'profile-icon'),
+    lock: () => React.createElement('span', null, 'lock-icon'),
     logout: () => React.createElement('span', null, 'logout-icon'),
     arrowRight: () => React.createElement('span', null, 'arrow-icon')
   }
@@ -176,8 +209,8 @@ describe('app-sidebar auth footer', () => {
     await renderSidebar(queryClient);
 
     // Loading state shows skeleton placeholders
-    expect(screen.getByTestId('sso-avatar-skeleton')).toBeDefined();
-    expect(screen.getAllByTestId('sso-text-skeleton').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('auth-avatar-skeleton')).toBeDefined();
+    expect(screen.getAllByTestId('auth-text-skeleton').length).toBeGreaterThan(0);
 
     cleanup();
   });
@@ -216,5 +249,28 @@ describe('app-sidebar auth footer', () => {
     await user.click(logoutButton!);
 
     expect(mockLogout).toHaveBeenCalledOnce();
+  });
+
+  it('opens account profile and password sheets from the user menu', async () => {
+    const user = userEvent.setup();
+    await renderSidebar(queryClient);
+
+    const profileButton = screen
+      .getAllByTestId('dropdown-item')
+      .find((el) => el.textContent?.includes('个人资料'));
+    expect(profileButton).toBeDefined();
+    await user.click(profileButton!);
+
+    expect(screen.getByRole('heading', { name: '个人资料' })).toBeDefined();
+    expect(screen.getByText('查看当前登录账号的员工信息、角色和数据权限。')).toBeDefined();
+
+    const passwordButton = screen
+      .getAllByTestId('dropdown-item')
+      .find((el) => el.textContent?.includes('修改密码'));
+    expect(passwordButton).toBeDefined();
+    await user.click(passwordButton!);
+
+    expect(screen.getByRole('heading', { name: '修改密码' })).toBeDefined();
+    expect(screen.getByText('更新当前账号的登录密码。')).toBeDefined();
   });
 });

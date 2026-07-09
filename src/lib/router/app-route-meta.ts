@@ -15,7 +15,7 @@ export interface AppNavStaticData {
   visible: boolean;
   group: AppNavGroupKey;
   order: number;
-  // Stable permission key used to match SSO menuData.code.
+  // Stable menu key used to match IAM menu tree nodes.
   menuKey?: string;
   kind?: 'container';
   parentId?: string;

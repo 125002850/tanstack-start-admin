@@ -29,7 +29,7 @@ function getMenuNodeKey(node: MenuPermissionNode): string {
 }
 
 export function collectVisibleMenuKeys(
-  menuData: readonly MenuPermissionNode[] | null | undefined
+  menuTree: readonly MenuPermissionNode[] | null | undefined
 ): Set<string> {
   const keys = new Set<string>();
 
@@ -46,7 +46,7 @@ export function collectVisibleMenuKeys(
     }
   }
 
-  visit(menuData);
+  visit(menuTree);
   return keys;
 }
 

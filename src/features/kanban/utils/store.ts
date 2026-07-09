@@ -76,7 +76,7 @@ const initialColumns: Record<string, Task[]> = {
   done: [
     {
       id: '6',
-      title: 'SSO integration with Okta',
+      title: 'Identity provider integration',
       priority: 'high',
       assignee: 'Jordan Kim',
       dueDate: '2026-03-22'

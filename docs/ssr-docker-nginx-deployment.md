@@ -72,9 +72,6 @@ export K8S_PROJECT=front
 export DEPLOYMENT_NAME=tanstack-start-admin-v1
 export VITE_ENABLE_WORKSPACE_TABS=1
 export VITE_ENABLE_DATA_TABLE_VIRTUALIZATION=1
-export VITE_APP_SSO_CLIENT_ID=
-export VITE_APP_SSO_SERVICE_ID=
-export VITE_APP_SSO_SERVICE_CODE=
 ```
 
 说明：
@@ -100,7 +97,7 @@ Dockerfile 使用 multi-stage：
 生产镜像默认约定：
 
 - `APP_BASE_PATH=/tanstack-start-admin`：前端公共路径，用于 Vite 静态资源 URL 和 TanStack Router `basepath`
-- `APP_GATEWAY=/admin-api`：后端接口网关前缀，用于 OpenAPI codegen 和 SSO 查询路径
+- `APP_GATEWAY=/admin-api`：后端接口网关前缀，用于 OpenAPI codegen 和运行时 API 代理
 
 这两个变量职责不同，不能互相替代。前端页面访问路径是 `/tanstack-start-admin/`，后端接口路径是 `/admin-api/...`。
 

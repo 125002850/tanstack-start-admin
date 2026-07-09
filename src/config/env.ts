@@ -28,8 +28,5 @@ export const env = {
   /** 是否启用通用 DataTable 虚拟滚动（默认开启） */
   dataTableVirtualization,
   /** 兼容旧命名，供历史调用方过渡使用 */
-  productTableVirtualization: dataTableVirtualization,
-  ssoClientID: getEnvVar('VITE_APP_SSO_CLIENT_ID'),
-  ssoServiceID: getEnvVar('VITE_APP_SSO_SERVICE_ID'),
-  ssoServiceCode: getEnvVar('VITE_APP_SSO_SERVICE_CODE')
+  productTableVirtualization: dataTableVirtualization
 } as const;

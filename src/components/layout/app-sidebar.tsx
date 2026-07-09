@@ -1,5 +1,12 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle
+} from '@/components/ui/sheet';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -17,9 +24,13 @@ import { useLocation, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import { Icons } from '../icons';
-import { SsoAvatarSkeleton, SsoTextSkeleton } from '@/components/ui/sso-skeleton';
+import { AuthAvatarSkeleton, AuthTextSkeleton } from '@/components/ui/auth-skeleton';
 import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
 import { logout } from '@/lib/api/iam/session';
+import {
+  AccountPasswordForm,
+  AccountProfileDetails
+} from '@/features/iam/components/account-pages';
 import {
   Sidebar,
   SidebarContent,
@@ -37,6 +48,8 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 import { baseConfig } from '@/config';
+
+type AccountSheet = 'profile' | 'password';
 
 function normalizePath(path: string): string {
   if (path === '/') return path;
@@ -314,10 +327,15 @@ export default function AppSidebar() {
   );
   const filteredGroups = useFilteredNavGroups(navGroups);
   const { data: me, isLoading } = useQuery(getIamMeQueryOptions());
+  const [accountSheet, setAccountSheet] = React.useState<AccountSheet | null>(null);
 
   const handleLogout = () => {
     void logout();
   };
+
+  const closeAccountSheet = React.useCallback(() => {
+    setAccountSheet(null);
+  }, []);
 
   return (
     <Sidebar variant='inset' collapsible='icon'>
@@ -361,10 +379,10 @@ export default function AppSidebar() {
                 >
                   {isLoading ? (
                     <>
-                      <SsoAvatarSkeleton size={32} />
+                      <AuthAvatarSkeleton size={32} />
                       <div className='grid flex-1 gap-1'>
-                        <SsoTextSkeleton width='60%' className='h-3' />
-                        <SsoTextSkeleton width='80%' className='h-2.5' />
+                        <AuthTextSkeleton width='60%' className='h-3' />
+                        <AuthTextSkeleton width='80%' className='h-2.5' />
                       </div>
                     </>
                   ) : (
@@ -392,20 +410,54 @@ export default function AppSidebar() {
                 sideOffset={4}
               >
                 <DropdownMenuGroup>
+                  <DropdownMenuItem onSelect={() => setAccountSheet('profile')}>
+                    <Icons.profile className='size-4' />
+                    个人资料
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setAccountSheet('password')}>
+                    <Icons.lock className='size-4' />
+                    修改密码
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => router.navigate({ to: '/dashboard/notifications' })}
                   >
-                    <Icons.notification className='mr-2 h-4 w-4' />
+                    <Icons.notification className='size-4' />
                     通知
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
-                  <Icons.logout className='mr-2 h-4 w-4' />
+                  <Icons.logout className='size-4' />
                   退出登录
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Sheet
+              open={accountSheet === 'profile'}
+              onOpenChange={(open) => setAccountSheet(open ? 'profile' : null)}
+            >
+              <SheetContent className='w-full overflow-hidden sm:max-w-2xl'>
+                <SheetHeader>
+                  <SheetTitle>个人资料</SheetTitle>
+                  <SheetDescription>查看当前登录账号的员工信息、角色和数据权限。</SheetDescription>
+                </SheetHeader>
+                <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
+                  <AccountProfileDetails />
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Sheet
+              open={accountSheet === 'password'}
+              onOpenChange={(open) => setAccountSheet(open ? 'password' : null)}
+            >
+              <SheetContent autoFocusFirstField className='w-full sm:max-w-md'>
+                <SheetHeader>
+                  <SheetTitle>修改密码</SheetTitle>
+                  <SheetDescription>更新当前账号的登录密码。</SheetDescription>
+                </SheetHeader>
+                <AccountPasswordForm onCancel={closeAccountSheet} onSuccess={closeAccountSheet} />
+              </SheetContent>
+            </Sheet>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

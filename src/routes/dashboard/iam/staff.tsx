@@ -1,7 +1,6 @@
 import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
 import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
-import { ensureIamPermission } from '@/lib/api/iam/permissions';
 import { IAM_PERMISSIONS } from '@/features/iam/lib/constants';
 
 const StaffManagementPage = lazyRouteComponent(
@@ -27,7 +26,6 @@ const meta = defineRouteMeta({
 
 export const Route = createFileRoute('/dashboard/iam/staff')({
   ...meta,
-  beforeLoad: ({ context }) => ensureIamPermission(context.queryClient, IAM_PERMISSIONS.staff.query),
   component: StaffPage
 });
 

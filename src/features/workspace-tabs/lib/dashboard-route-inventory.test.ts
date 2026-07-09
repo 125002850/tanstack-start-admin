@@ -81,11 +81,14 @@ const allPaths = Object.keys(routeModules);
 // - system-management/index: 重定向路由，无实际页面内容
 // - iam/index: 重定向路由，无实际页面内容
 // - dashboard/index: 重定向路由，无实际页面内容
+// - account/profile, account/password: 账号功能迁入侧边栏 Sheet，路由仅保留兼容重定向
 const keepAliveFalsePaths = new Set([
   '/src/routes/dashboard/system-management/index.tsx',
   '/src/routes/dashboard/iam/index.tsx',
   '/src/routes/dashboard/forms/index.tsx',
-  '/src/routes/dashboard/index.tsx'
+  '/src/routes/dashboard/index.tsx',
+  '/src/routes/dashboard/account/profile.tsx',
+  '/src/routes/dashboard/account/password.tsx'
 ]);
 
 const standardWorkspacePageRoutePaths = new Set([
@@ -105,7 +108,10 @@ const standardWorkspacePageRoutePaths = new Set([
   '/src/routes/dashboard/iam/role.tsx',
   '/src/routes/dashboard/iam/menu.tsx',
   '/src/routes/dashboard/iam/log/login.tsx',
-  '/src/routes/dashboard/iam/log/operation.tsx',
+  '/src/routes/dashboard/iam/log/operation.tsx'
+]);
+
+const accountOverlayRedirectRoutePaths = new Set([
   '/src/routes/dashboard/account/profile.tsx',
   '/src/routes/dashboard/account/password.tsx'
 ]);
@@ -211,6 +217,19 @@ describe('dashboard route inventory', () => {
       expect(getKeepAlive(route)).toBe(false);
       expect(getTagEnabled(route)).toBe(false);
       expect(getNav(route)?.visible).toBe(false);
+    }
+  });
+
+  it('account overlay redirect routes are hidden from navigation and workspace tabs', () => {
+    for (const routeFile of accountOverlayRedirectRoutePaths) {
+      const route = routeModules[routeFile];
+      expect(route, `${extractRoutePath(routeFile)} route missing`).toBeDefined();
+      expect(getKeepAlive(route)).toBe(false);
+      expect(getTagEnabled(route)).toBe(false);
+      expect(getNav(route)).toMatchObject({
+        visible: false,
+        group: 'account'
+      });
     }
   });
 
