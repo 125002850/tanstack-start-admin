@@ -63,75 +63,79 @@ export default function UserAuthForm() {
 
   return (
     <form.AppForm>
-      <form.Form className='w-full gap-4 p-0'>
-        <form.AppField
-          name='username'
-          children={(field) => (
-            <field.FieldSet>
-              <field.Field>
-                <field.FieldLabel htmlFor={field.name} required>
-                  用户名
-                </field.FieldLabel>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  autoComplete='username'
-                  placeholder='请输入用户名'
-                  aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                />
-              </field.Field>
-              <field.FieldError />
-            </field.FieldSet>
-          )}
-        />
-        <form.AppField
-          name='password'
-          children={(field) => (
-            <field.FieldSet>
-              <field.Field>
-                <field.FieldLabel htmlFor={field.name} required>
-                  密码
-                </field.FieldLabel>
-                <div className='flex gap-2'>
+      <form.Form className='w-full gap-0 p-0'>
+        <div className='flex flex-col gap-5'>
+          <form.AppField
+            name='username'
+            children={(field) => (
+              <field.FieldSet>
+                <field.Field>
+                  <field.FieldLabel htmlFor={field.name} required>
+                    用户名
+                  </field.FieldLabel>
                   <Input
                     id={field.name}
                     name={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}
-                    autoComplete='current-password'
-                    placeholder='请输入密码'
-                    type={showPassword ? 'text' : 'password'}
+                    autoComplete='username'
+                    placeholder='请输入用户名'
                     aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                   />
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='icon'
-                    aria-label={showPassword ? '隐藏密码' : '显示密码'}
-                    onClick={() => setShowPassword((value) => !value)}
-                  >
-                    {showPassword ? (
-                      <Icons.eyeOff className='size-4' aria-hidden={true} />
-                    ) : (
-                      <Icons.lock className='size-4' aria-hidden={true} />
-                    )}
-                  </Button>
-                </div>
-              </field.Field>
-              <field.FieldError />
-            </field.FieldSet>
+                </field.Field>
+                <field.FieldError />
+              </field.FieldSet>
+            )}
+          />
+          <form.AppField
+            name='password'
+            children={(field) => (
+              <field.FieldSet>
+                <field.Field>
+                  <field.FieldLabel htmlFor={field.name} required>
+                    密码
+                  </field.FieldLabel>
+                  <div className='flex gap-2'>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      autoComplete='current-password'
+                      placeholder='请输入密码'
+                      type={showPassword ? 'text' : 'password'}
+                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                    />
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='icon'
+                      aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      {showPassword ? (
+                        <Icons.eyeOff className='size-4' aria-hidden={true} />
+                      ) : (
+                        <Icons.lock className='size-4' aria-hidden={true} />
+                      )}
+                    </Button>
+                  </div>
+                </field.Field>
+                <field.FieldError />
+              </field.FieldSet>
+            )}
+          />
+        </div>
+        <div className='flex flex-col gap-4 pt-2'>
+          {errorMessage && (
+            <p className='text-destructive text-sm' role='alert'>
+              {errorMessage}
+            </p>
           )}
-        />
-        {errorMessage && (
-          <p className='text-destructive text-sm' role='alert'>
-            {errorMessage}
-          </p>
-        )}
-        <form.SubmitButton className='w-full'>登录</form.SubmitButton>
+          <form.SubmitButton className='w-full'>登录</form.SubmitButton>
+        </div>
       </form.Form>
     </form.AppForm>
   );
