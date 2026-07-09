@@ -5,7 +5,6 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
-import { PermissionGate } from '@/components/permission-gate';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FieldItem } from '@/components/ui/detail-field';
@@ -31,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
+import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
 import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
 import {
   createDataTableColumnDsl,
@@ -56,8 +56,14 @@ import {
 } from '@/lib/api/clients/service';
 import { nullableText } from '@/lib/display-formatters';
 import { iamDeptTreeQueryOptions, iamMenuTreeQueryOptions } from '../api/query-options';
-import { DATA_SCOPE_OPTIONS, ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS } from '../lib/constants';
-import { DataScopeBadge, dataScopeLabel, formatOptionalDateTime, nextStatus, StatusBadge } from '../lib/format';
+import { DATA_SCOPE_OPTIONS, ENABLE_STATUS_OPTIONS } from '../lib/constants';
+import {
+  DataScopeBadge,
+  dataScopeLabel,
+  formatOptionalDateTime,
+  nextStatus,
+  StatusBadge
+} from '../lib/format';
 import { deptMultiSelectOptions, menuMultiSelectOptions } from '../lib/tree';
 import { dslConditionValue, pageRequestFromDsl } from '../lib/table';
 
@@ -94,8 +100,7 @@ function roleTableQueryOptions(request: DataTableDslPageRequestBase) {
   const condition = request.condition;
   return iamRolePageQueryOptions({
     ...pageRequestFromDsl(request),
-    keyword:
-      dslConditionValue(condition, 'roleCode') ?? dslConditionValue(condition, 'roleName'),
+    keyword: dslConditionValue(condition, 'roleCode') ?? dslConditionValue(condition, 'roleName'),
     status: dslConditionValue(condition, 'status') as IamRolePageRequest['status']
   });
 }
@@ -236,21 +241,39 @@ function RoleFormSheet({
           <SheetTitle>{isEdit ? '编辑角色' : '新增角色'}</SheetTitle>
           <SheetDescription>{isEdit ? '修改角色基础信息。' : '创建业务角色。'}</SheetDescription>
         </SheetHeader>
-        <form id='role-form' className='min-h-0 flex-1 space-y-4 overflow-auto' onSubmit={handleSubmit}>
+        <form
+          id='role-form'
+          className='min-h-0 flex-1 space-y-4 overflow-auto'
+          onSubmit={handleSubmit}
+        >
           <div className='grid gap-4 sm:grid-cols-2'>
             <FieldShell label='角色编码'>
-              <Input value={values.roleCode} disabled={isProtectedRole(role)} onChange={(event) => update({ roleCode: event.target.value })} />
+              <Input
+                value={values.roleCode}
+                disabled={isProtectedRole(role)}
+                onChange={(event) => update({ roleCode: event.target.value })}
+              />
             </FieldShell>
             <FieldShell label='角色名称'>
-              <Input value={values.roleName} onChange={(event) => update({ roleName: event.target.value })} />
+              <Input
+                value={values.roleName}
+                onChange={(event) => update({ roleName: event.target.value })}
+              />
             </FieldShell>
           </div>
           <div className='grid gap-4 sm:grid-cols-2'>
             <FieldShell label='排序'>
-              <Input inputMode='numeric' value={values.sortOrder} onChange={(event) => update({ sortOrder: event.target.value })} />
+              <Input
+                inputMode='numeric'
+                value={values.sortOrder}
+                onChange={(event) => update({ sortOrder: event.target.value })}
+              />
             </FieldShell>
             <FieldShell label='状态'>
-              <Select value={values.status} onValueChange={(status) => update({ status: status as RoleFormValues['status'] })}>
+              <Select
+                value={values.status}
+                onValueChange={(status) => update({ status: status as RoleFormValues['status'] })}
+              >
                 <SelectTrigger className='w-full'>
                   <SelectValue />
                 </SelectTrigger>
@@ -265,7 +288,12 @@ function RoleFormSheet({
             </FieldShell>
           </div>
           <FieldShell label='数据范围'>
-            <Select value={values.dataScopeType} onValueChange={(dataScopeType) => update({ dataScopeType: dataScopeType as RoleFormValues['dataScopeType'] })}>
+            <Select
+              value={values.dataScopeType}
+              onValueChange={(dataScopeType) =>
+                update({ dataScopeType: dataScopeType as RoleFormValues['dataScopeType'] })
+              }
+            >
               <SelectTrigger className='w-full'>
                 <SelectValue />
               </SelectTrigger>
@@ -279,7 +307,10 @@ function RoleFormSheet({
             </Select>
           </FieldShell>
           <FieldShell label='备注'>
-            <Textarea value={values.remark} onChange={(event) => update({ remark: event.target.value })} />
+            <Textarea
+              value={values.remark}
+              onChange={(event) => update({ remark: event.target.value })}
+            />
           </FieldShell>
         </form>
         <SheetFooter className='flex-row justify-end'>
@@ -356,7 +387,10 @@ function RoleDataScopeSheet({
   onOpenChange: (open: boolean) => void;
   role?: RoleRspDTO | null;
   deptOptions: ReturnType<typeof deptMultiSelectOptions>;
-  onSubmit: (payload: { dataScopeType: RoleFormValues['dataScopeType']; deptIds: number[] }) => Promise<void>;
+  onSubmit: (payload: {
+    dataScopeType: RoleFormValues['dataScopeType'];
+    deptIds: number[];
+  }) => Promise<void>;
 }) {
   const [dataScopeType, setDataScopeType] = React.useState<RoleFormValues['dataScopeType']>('SELF');
   const [deptIds, setDeptIds] = React.useState<string[]>([]);
@@ -383,7 +417,10 @@ function RoleDataScopeSheet({
         </SheetHeader>
         <div className='min-h-0 flex-1 space-y-4'>
           <FieldShell label='数据范围'>
-            <Select value={dataScopeType} onValueChange={(value) => setDataScopeType(value as RoleFormValues['dataScopeType'])}>
+            <Select
+              value={dataScopeType}
+              onValueChange={(value) => setDataScopeType(value as RoleFormValues['dataScopeType'])}
+            >
               <SelectTrigger className='w-full'>
                 <SelectValue />
               </SelectTrigger>
@@ -466,8 +503,14 @@ export default function RoleManagementPage() {
   const queryClient = useQueryClient();
   const menuQuery = useQuery(iamMenuTreeQueryOptions());
   const deptQuery = useQuery(iamDeptTreeQueryOptions());
-  const menuOptions = React.useMemo(() => menuMultiSelectOptions(menuQuery.data ?? []), [menuQuery.data]);
-  const deptOptions = React.useMemo(() => deptMultiSelectOptions(deptQuery.data ?? []), [deptQuery.data]);
+  const menuOptions = React.useMemo(
+    () => menuMultiSelectOptions(menuQuery.data ?? []),
+    [menuQuery.data]
+  );
+  const deptOptions = React.useMemo(
+    () => deptMultiSelectOptions(deptQuery.data ?? []),
+    [deptQuery.data]
+  );
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingRole, setEditingRole] = React.useState<RoleRspDTO | null>(null);
@@ -491,7 +534,8 @@ export default function RoleManagementPage() {
     }
   });
   const statusMutation = useMutation({
-    mutationFn: (request: Parameters<typeof iamRoleStatusUpdate>[0]) => iamRoleStatusUpdate(request),
+    mutationFn: (request: Parameters<typeof iamRoleStatusUpdate>[0]) =>
+      iamRoleStatusUpdate(request),
     onSuccess: async () => {
       await invalidateRoleQueries(queryClient);
       toast.success('角色状态已更新');
@@ -568,7 +612,8 @@ export default function RoleManagementPage() {
         disabled: isProtectedRole,
         confirmDelete: {
           title: '确认删除角色',
-          description: (role) => `删除后 ${role.roleName ?? role.roleCode ?? '该角色'} 的授权关系会失效。`,
+          description: (role) =>
+            `删除后 ${role.roleName ?? role.roleCode ?? '该角色'} 的授权关系会失效。`,
           confirmText: '确认删除',
           cancelText: '取消'
         },
@@ -579,6 +624,20 @@ export default function RoleManagementPage() {
       }
     ],
     [deleteMutation, statusMutation]
+  );
+
+  const tableActions = React.useMemo<DataTableAction<RoleRspDTO>[]>(
+    () => [
+      {
+        label: '新增角色',
+        icon: <Icons.add className='size-3.5' />,
+        callback: () => {
+          setEditingRole(null);
+          setFormOpen(true);
+        }
+      }
+    ],
+    []
   );
 
   const { table, total, queryState, refreshProps } = useDslDataTable<
@@ -605,32 +664,19 @@ export default function RoleManagementPage() {
     <>
       <Card>
         <CardContent className='px-0'>
-          <div className='px-6 pb-3'>
-            <DataTableToolbar table={table} isQuerying={queryState.isFetching}>
-              <PermissionGate permission={IAM_PERMISSIONS.role.manage}>
-                <Button
-                  size='sm'
-                  onClick={() => {
-                    setEditingRole(null);
-                    setFormOpen(true);
-                  }}
-                >
-                  <Icons.add className='size-4' />
-                  新增角色
-                </Button>
-              </PermissionGate>
-            </DataTableToolbar>
-          </div>
           {queryState.isFetching && !queryState.data ? (
             <DataTableSkeleton columnCount={7} filterCount={3} />
           ) : (
             <DataTable
               table={table}
               statusTotalCount={total}
+              tableActions={tableActions}
               isLoading={queryState.isFetching}
               onRefresh={refreshProps?.onRefresh}
               isRefreshing={refreshProps?.isRefreshing}
-            />
+            >
+              <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
+            </DataTable>
           )}
         </CardContent>
       </Card>

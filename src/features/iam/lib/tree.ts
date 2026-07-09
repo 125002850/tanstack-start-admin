@@ -9,6 +9,15 @@ type FlatNode<TNode> = TNode & {
   depth: number;
 };
 
+export type MenuTreeNode = MenuRspDTO & {
+  children?: MenuTreeNode[];
+};
+
+export type FlatMenuNode = MenuRspDTO & {
+  depth: number;
+  children?: MenuTreeNode[];
+};
+
 function flattenTree<TNode>(
   nodes: readonly TreeLike<TNode>[] = [],
   depth = 0
@@ -28,10 +37,57 @@ export function flattenDeptTree(nodes: readonly DeptRspDTO[] = []) {
 }
 
 export function flattenMenuTree(nodes: readonly MenuRspDTO[] = []) {
-  return flattenTree<MenuRspDTO>(nodes as readonly TreeLike<MenuRspDTO>[]);
+  return flattenTree<MenuRspDTO>(nodes as readonly TreeLike<MenuRspDTO>[]) as FlatMenuNode[];
 }
 
-export function deptSelectOptions(nodes: readonly DeptRspDTO[] = [], options?: { enabledOnly?: boolean }) {
+export function getMenuNodeStableId(menu: Pick<MenuRspDTO, 'menuCode' | 'menuId'>): string {
+  if (menu.menuId != null) return String(menu.menuId);
+  return `code:${menu.menuCode ?? ''}`;
+}
+
+export function isMenuNodeCollapsible(menu: Pick<FlatMenuNode, 'children'>): boolean {
+  return Array.isArray(menu.children) && menu.children.length > 0;
+}
+
+export function collectCollapsibleMenuIds(rows: readonly FlatMenuNode[]): Set<string> {
+  return new Set(
+    rows.filter((menu) => isMenuNodeCollapsible(menu)).map((menu) => getMenuNodeStableId(menu))
+  );
+}
+
+export function filterVisibleMenuRows(
+  rows: readonly FlatMenuNode[],
+  collapsedMenuIds: ReadonlySet<string>
+): FlatMenuNode[] {
+  const visibleRows: FlatMenuNode[] = [];
+  const collapsedAncestorDepths: number[] = [];
+
+  for (const menu of rows) {
+    while (
+      collapsedAncestorDepths.length > 0 &&
+      menu.depth <= collapsedAncestorDepths[collapsedAncestorDepths.length - 1]
+    ) {
+      collapsedAncestorDepths.pop();
+    }
+
+    if (collapsedAncestorDepths.length > 0) {
+      continue;
+    }
+
+    visibleRows.push(menu);
+
+    if (isMenuNodeCollapsible(menu) && collapsedMenuIds.has(getMenuNodeStableId(menu))) {
+      collapsedAncestorDepths.push(menu.depth);
+    }
+  }
+
+  return visibleRows;
+}
+
+export function deptSelectOptions(
+  nodes: readonly DeptRspDTO[] = [],
+  options?: { enabledOnly?: boolean }
+) {
   return flattenDeptTree(nodes)
     .filter((dept) => !options?.enabledOnly || dept.status === 'ENABLED')
     .map((dept) => ({
@@ -42,7 +98,9 @@ export function deptSelectOptions(nodes: readonly DeptRspDTO[] = [], options?: {
     .filter((option) => option.value);
 }
 
-export function deptMultiSelectOptions(nodes: readonly DeptRspDTO[] = []): MultiSelectComboboxOption[] {
+export function deptMultiSelectOptions(
+  nodes: readonly DeptRspDTO[] = []
+): MultiSelectComboboxOption[] {
   return deptSelectOptions(nodes).map((option) => ({
     value: option.value,
     label: option.label,
@@ -59,7 +117,9 @@ export function menuSelectOptions(nodes: readonly MenuRspDTO[] = [], excludeMenu
     }));
 }
 
-export function menuMultiSelectOptions(nodes: readonly MenuRspDTO[] = []): MultiSelectComboboxOption[] {
+export function menuMultiSelectOptions(
+  nodes: readonly MenuRspDTO[] = []
+): MultiSelectComboboxOption[] {
   return flattenMenuTree(nodes)
     .filter((menu) => menu.menuId != null)
     .map((menu) => ({

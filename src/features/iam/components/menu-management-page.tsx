@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
@@ -26,8 +27,14 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
+import {
+  DataTableActionsBar,
+  type DataTableAction
+} from '@/components/ui/table/actions/data-table-actions-bar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
+import { hasIamPermission } from '@/lib/api/iam/permissions';
 import {
   iamMenuCreate,
   iamMenuDelete,
@@ -40,7 +47,14 @@ import {
 import { iamMenuTreeQueryOptions } from '../api/query-options';
 import { ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS, MENU_TYPE_OPTIONS } from '../lib/constants';
 import { formatOptionalDateTime, MenuTypeBadge, nextStatus, StatusBadge } from '../lib/format';
-import { flattenMenuTree, menuSelectOptions } from '../lib/tree';
+import {
+  collectCollapsibleMenuIds,
+  filterVisibleMenuRows,
+  flattenMenuTree,
+  getMenuNodeStableId,
+  isMenuNodeCollapsible,
+  menuSelectOptions
+} from '../lib/tree';
 
 type MenuFormValues = {
   parentId: string;
@@ -73,6 +87,8 @@ const emptyValues: MenuFormValues = {
   permissionCode: '',
   remark: ''
 };
+
+const menuTableActionColumns: Array<ColumnDef<MenuRspDTO>> = [];
 
 function invalidateMenuTree(queryClient: ReturnType<typeof useQueryClient>) {
   return Promise.all([
@@ -332,14 +348,53 @@ function MenuDetailSheet({
 
 export default function MenuManagementPage() {
   const queryClient = useQueryClient();
+  const { data: me } = useQuery(getIamMeQueryOptions());
   const [keyword, setKeyword] = React.useState('');
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingMenu, setEditingMenu] = React.useState<MenuRspDTO | null>(null);
   const [parentMenu, setParentMenu] = React.useState<MenuRspDTO | null>(null);
   const [detailMenu, setDetailMenu] = React.useState<MenuRspDTO | null>(null);
+  const [collapsedMenuIds, setCollapsedMenuIds] = React.useState<Set<string>>(() => new Set());
   const query = useQuery(iamMenuTreeQueryOptions({ keyword: keyword.trim() || undefined }));
-  const rows = React.useMemo(() => flattenMenuTree(query.data ?? []), [query.data]);
+  const { isFetching: isMenuTreeFetching, refetch: refetchMenuTree } = query;
+  const allRows = React.useMemo(() => flattenMenuTree(query.data ?? []), [query.data]);
+  const collapsibleMenuIds = React.useMemo(() => collectCollapsibleMenuIds(allRows), [allRows]);
+  const collapsedMenuCount = React.useMemo(
+    () => Array.from(collapsedMenuIds).filter((id) => collapsibleMenuIds.has(id)).length,
+    [collapsedMenuIds, collapsibleMenuIds]
+  );
+  const rows = React.useMemo(
+    () => filterVisibleMenuRows(allRows, collapsedMenuIds),
+    [allRows, collapsedMenuIds]
+  );
+  const actionTable = useReactTable<MenuRspDTO>({
+    data: rows,
+    columns: menuTableActionColumns,
+    getCoreRowModel: getCoreRowModel()
+  });
   const { withConfirm, confirmDialog } = useConfirmAction<[MenuRspDTO]>();
+  const canManageMenu = hasIamPermission(me, IAM_PERMISSIONS.menu.manage);
+
+  const toggleMenuCollapse = React.useCallback((menu: MenuRspDTO) => {
+    const menuId = getMenuNodeStableId(menu);
+    setCollapsedMenuIds((current) => {
+      const next = new Set(current);
+      if (next.has(menuId)) {
+        next.delete(menuId);
+      } else {
+        next.add(menuId);
+      }
+      return next;
+    });
+  }, []);
+
+  const expandAllMenus = React.useCallback(() => {
+    setCollapsedMenuIds(new Set());
+  }, []);
+
+  const collapseAllMenus = React.useCallback(() => {
+    setCollapsedMenuIds(new Set(collapsibleMenuIds));
+  }, [collapsibleMenuIds]);
 
   const createMutation = useMutation({
     mutationFn: (request: MenuCreateReqDTO) => iamMenuCreate(request),
@@ -401,35 +456,66 @@ export default function MenuManagementPage() {
       }),
     [deleteMutation, withConfirm]
   );
+  const tableActions = React.useMemo<DataTableAction<MenuRspDTO>[]>(
+    () => [
+      {
+        label: '刷新列表',
+        icon: <Icons.rotateClockwise className='size-3.5' />,
+        disabled: isMenuTreeFetching,
+        callback: async () => {
+          await refetchMenuTree();
+        }
+      },
+      {
+        label: '全部展开',
+        icon: <Icons.chevronDown className='size-3.5' />,
+        disabled: collapsedMenuCount === 0,
+        callback: expandAllMenus
+      },
+      {
+        label: '全部折叠',
+        icon: <Icons.chevronRight className='size-3.5' />,
+        disabled: collapsibleMenuIds.size === 0 || collapsedMenuCount >= collapsibleMenuIds.size,
+        callback: collapseAllMenus
+      },
+      {
+        label: '新增菜单',
+        icon: <Icons.add className='size-3.5' />,
+        hidden: !canManageMenu,
+        callback: () => {
+          setEditingMenu(null);
+          setParentMenu(null);
+          setFormOpen(true);
+        }
+      }
+    ],
+    [
+      canManageMenu,
+      collapseAllMenus,
+      collapsedMenuCount,
+      collapsibleMenuIds.size,
+      expandAllMenus,
+      isMenuTreeFetching,
+      refetchMenuTree
+    ]
+  );
 
   return (
     <>
       <Card>
-        <CardContent className='space-y-4 px-0'>
-          <div className='flex flex-wrap items-center gap-2 px-6'>
+        <CardContent className='flex flex-col gap-4 px-0'>
+          <div
+            role='toolbar'
+            aria-label='菜单表格操作栏'
+            className='flex flex-wrap items-center gap-2 px-6'
+          >
             <Input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder='搜索菜单、编码或权限'
               className='h-8 w-60'
             />
-            <Button variant='outline' size='sm' onClick={() => query.refetch()}>
-              <Icons.rotateClockwise className='size-4' />
-              刷新
-            </Button>
-            <PermissionGate permission={IAM_PERMISSIONS.menu.manage}>
-              <Button
-                size='sm'
-                onClick={() => {
-                  setEditingMenu(null);
-                  setParentMenu(null);
-                  setFormOpen(true);
-                }}
-              >
-                <Icons.add className='size-4' />
-                新增菜单
-              </Button>
-            </PermissionGate>
+            <DataTableActionsBar table={actionTable} actions={tableActions} />
           </div>
           <div className='overflow-auto px-6 pb-6'>
             <Table>
@@ -445,75 +531,104 @@ export default function MenuManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((menu) => (
-                  <TableRow key={menu.menuId}>
-                    <TableCell>
-                      <Button
-                        variant='link'
-                        className='h-auto p-0 font-medium'
-                        style={{ marginLeft: menu.depth * 18 }}
-                        onClick={() => setDetailMenu(menu)}
-                      >
-                        {menu.menuName}
-                      </Button>
-                    </TableCell>
-                    <TableCell>{menu.menuCode}</TableCell>
-                    <TableCell>
-                      <MenuTypeBadge type={menu.menuType} />
-                    </TableCell>
-                    <TableCell>{menu.permissionCode ?? '-'}</TableCell>
-                    <TableCell>{menu.sortOrder ?? '-'}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={menu.status} />
-                    </TableCell>
-                    <TableCell>
-                      <div className='flex justify-end gap-1'>
-                        <PermissionGate permission={IAM_PERMISSIONS.menu.manage}>
+                {rows.map((menu) => {
+                  const collapsible = isMenuNodeCollapsible(menu);
+                  const collapsed = collapsedMenuIds.has(getMenuNodeStableId(menu));
+                  const menuName = menu.menuName ?? menu.menuCode ?? '-';
+
+                  return (
+                    <TableRow key={getMenuNodeStableId(menu)}>
+                      <TableCell>
+                        <div
+                          className='flex min-w-0 items-center gap-1'
+                          style={{ paddingLeft: menu.depth * 18 }}
+                        >
+                          {collapsible ? (
+                            <Button
+                              type='button'
+                              variant='ghost'
+                              size='icon'
+                              className='size-7 shrink-0'
+                              aria-label={`${collapsed ? '展开' : '折叠'} ${menuName}`}
+                              aria-expanded={!collapsed}
+                              onClick={() => toggleMenuCollapse(menu)}
+                            >
+                              {collapsed ? (
+                                <Icons.chevronRight className='size-4' />
+                              ) : (
+                                <Icons.chevronDown className='size-4' />
+                              )}
+                            </Button>
+                          ) : (
+                            <span className='size-7 shrink-0' aria-hidden='true' />
+                          )}
                           <Button
-                            variant='ghost'
-                            size='icon'
-                            aria-label='新增下级'
-                            onClick={() => {
-                              setEditingMenu(null);
-                              setParentMenu(menu);
-                              setFormOpen(true);
-                            }}
+                            variant='link'
+                            className='h-auto min-w-0 p-0 text-left font-medium'
+                            onClick={() => setDetailMenu(menu)}
                           >
-                            <Icons.plusCircle className='size-4' />
+                            <span className='truncate'>{menuName}</span>
                           </Button>
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            aria-label='编辑'
-                            onClick={() => {
-                              setEditingMenu(menu);
-                              setParentMenu(null);
-                              setFormOpen(true);
-                            }}
-                          >
-                            <Icons.edit className='size-4' />
-                          </Button>
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            aria-label='切换状态'
-                            onClick={() => confirmMenuStatus(menu)}
-                          >
-                            <Icons.rotate className='size-4' />
-                          </Button>
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            aria-label='删除'
-                            onClick={() => confirmMenuDelete(menu)}
-                          >
-                            <Icons.trash className='size-4' />
-                          </Button>
-                        </PermissionGate>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>{menu.menuCode}</TableCell>
+                      <TableCell>
+                        <MenuTypeBadge type={menu.menuType} />
+                      </TableCell>
+                      <TableCell>{menu.permissionCode ?? '-'}</TableCell>
+                      <TableCell>{menu.sortOrder ?? '-'}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={menu.status} />
+                      </TableCell>
+                      <TableCell>
+                        <div className='flex justify-end gap-1'>
+                          <PermissionGate permission={IAM_PERMISSIONS.menu.manage}>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              aria-label='新增下级'
+                              onClick={() => {
+                                setEditingMenu(null);
+                                setParentMenu(menu);
+                                setFormOpen(true);
+                              }}
+                            >
+                              <Icons.plusCircle className='size-4' />
+                            </Button>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              aria-label='编辑'
+                              onClick={() => {
+                                setEditingMenu(menu);
+                                setParentMenu(null);
+                                setFormOpen(true);
+                              }}
+                            >
+                              <Icons.edit className='size-4' />
+                            </Button>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              aria-label='切换状态'
+                              onClick={() => confirmMenuStatus(menu)}
+                            >
+                              <Icons.rotate className='size-4' />
+                            </Button>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              aria-label='删除'
+                              onClick={() => confirmMenuDelete(menu)}
+                            >
+                              <Icons.trash className='size-4' />
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {rows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className='h-24 text-center text-muted-foreground'>

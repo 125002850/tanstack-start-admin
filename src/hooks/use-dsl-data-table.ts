@@ -6,7 +6,6 @@ import {
   type UseQueryResult
 } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
-import { toast } from 'sonner';
 
 import { useDataTable } from '@/hooks/use-data-table';
 import { DEBOUNCE_MS } from '@/hooks/use-data-table/constants';
@@ -39,21 +38,6 @@ type RefreshBehavior<TError> = {
   onSuccess?: () => void | Promise<void>;
   onError?: (error: TError) => void | Promise<void>;
 };
-
-/** 创建默认刷新行为：成功/失败时用 sonner toast 提示。 */
-export function createDefaultRefreshBehavior<TError = Error>(options?: {
-  successMessage?: string;
-  errorMessage?: string;
-}): RefreshBehavior<TError> {
-  return {
-    onSuccess: () => {
-      toast.success(options?.successMessage ?? '列表已刷新');
-    },
-    onError: () => {
-      toast.error(options?.errorMessage ?? '列表刷新失败');
-    }
-  };
-}
 
 type RefreshProps = {
   onRefresh: () => Promise<void>;

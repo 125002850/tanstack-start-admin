@@ -5,7 +5,6 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
-import { PermissionGate } from '@/components/permission-gate';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
+import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
 import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
 import {
   createDataTableColumnDsl,
@@ -642,6 +642,7 @@ export default function StaffManagementPage() {
     }
   });
 
+  const canCreate = hasIamPermission(me, IAM_PERMISSIONS.staff.create);
   const canUpdate = hasIamPermission(me, IAM_PERMISSIONS.staff.update);
   const canDelete = hasIamPermission(me, IAM_PERMISSIONS.staff.delete);
   const canResetPassword = hasIamPermission(me, IAM_PERMISSIONS.staff.resetPassword);
@@ -707,6 +708,21 @@ export default function StaffManagementPage() {
     [canDelete, canResetPassword, canUpdate, deleteMutation, statusMutation]
   );
 
+  const tableActions = React.useMemo<DataTableAction<StaffRspDTO>[]>(
+    () => [
+      {
+        label: '新增员工',
+        icon: <Icons.add className='size-3.5' />,
+        hidden: !canCreate,
+        callback: () => {
+          setEditingStaff(null);
+          setFormOpen(true);
+        }
+      }
+    ],
+    [canCreate]
+  );
+
   const { table, total, queryState, refreshProps } = useDslDataTable<
     StaffRspDTO,
     DataTableDslPageRequestBase,
@@ -731,33 +747,19 @@ export default function StaffManagementPage() {
     <>
       <Card>
         <CardContent className='px-0'>
-          <div className='px-6 pb-3'>
-            <DataTableToolbar table={table} isQuerying={queryState.isFetching}>
-              <PermissionGate permission={IAM_PERMISSIONS.staff.create}>
-                <Button
-                  type='button'
-                  size='sm'
-                  onClick={() => {
-                    setEditingStaff(null);
-                    setFormOpen(true);
-                  }}
-                >
-                  <Icons.add className='size-4' />
-                  新增员工
-                </Button>
-              </PermissionGate>
-            </DataTableToolbar>
-          </div>
           {queryState.isFetching && !queryState.data ? (
             <DataTableSkeleton columnCount={8} filterCount={5} />
           ) : (
             <DataTable
               table={table}
               statusTotalCount={total}
+              tableActions={tableActions}
               isLoading={queryState.isFetching}
               onRefresh={refreshProps?.onRefresh}
               isRefreshing={refreshProps?.isRefreshing}
-            />
+            >
+              <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
+            </DataTable>
           )}
         </CardContent>
       </Card>

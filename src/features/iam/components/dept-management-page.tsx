@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
@@ -25,8 +26,14 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
+import {
+  DataTableActionsBar,
+  type DataTableAction
+} from '@/components/ui/table/actions/data-table-actions-bar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
+import { hasIamPermission } from '@/lib/api/iam/permissions';
 import {
   iamDeptCreate,
   iamDeptDelete,
@@ -58,6 +65,8 @@ const emptyValues: DeptFormValues = {
   status: 'ENABLED',
   remark: ''
 };
+
+const deptTableActionColumns: Array<ColumnDef<DeptRspDTO>> = [];
 
 function invalidateDeptTree(queryClient: ReturnType<typeof useQueryClient>) {
   return queryClient.invalidateQueries({
@@ -249,14 +258,22 @@ function DeptDetailSheet({
 
 export default function DeptManagementPage() {
   const queryClient = useQueryClient();
+  const { data: me } = useQuery(getIamMeQueryOptions());
   const [keyword, setKeyword] = React.useState('');
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingDept, setEditingDept] = React.useState<DeptRspDTO | null>(null);
   const [parentDept, setParentDept] = React.useState<DeptRspDTO | null>(null);
   const [detailDept, setDetailDept] = React.useState<DeptRspDTO | null>(null);
   const query = useQuery(iamDeptTreeQueryOptions({ keyword: keyword.trim() || undefined }));
+  const { isFetching: isDeptTreeFetching, refetch: refetchDeptTree } = query;
   const rows = React.useMemo(() => flattenDeptTree(query.data ?? []), [query.data]);
+  const actionTable = useReactTable<DeptRspDTO>({
+    data: rows,
+    columns: deptTableActionColumns,
+    getCoreRowModel: getCoreRowModel()
+  });
   const { withConfirm, confirmDialog } = useConfirmAction<[DeptRspDTO]>();
+  const canManageDept = hasIamPermission(me, IAM_PERMISSIONS.dept.manage);
 
   const createMutation = useMutation({
     mutationFn: (request: DeptCreateReqDTO) => iamDeptCreate(request),
@@ -318,35 +335,46 @@ export default function DeptManagementPage() {
       }),
     [deleteMutation, withConfirm]
   );
+  const tableActions = React.useMemo<DataTableAction<DeptRspDTO>[]>(
+    () => [
+      {
+        label: '刷新列表',
+        icon: <Icons.rotateClockwise className='size-3.5' />,
+        disabled: isDeptTreeFetching,
+        callback: async () => {
+          await refetchDeptTree();
+        }
+      },
+      {
+        label: '新增部门',
+        icon: <Icons.add className='size-3.5' />,
+        hidden: !canManageDept,
+        callback: () => {
+          setEditingDept(null);
+          setParentDept(null);
+          setFormOpen(true);
+        }
+      }
+    ],
+    [canManageDept, isDeptTreeFetching, refetchDeptTree]
+  );
 
   return (
     <>
       <Card>
         <CardContent className='space-y-4 px-0'>
-          <div className='flex flex-wrap items-center gap-2 px-6'>
+          <div
+            role='toolbar'
+            aria-label='部门表格操作栏'
+            className='flex flex-wrap items-center gap-2 px-6'
+          >
             <Input
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder='搜索部门编码或名称'
               className='h-8 w-56'
             />
-            <Button variant='outline' size='sm' onClick={() => query.refetch()}>
-              <Icons.rotateClockwise className='size-4' />
-              刷新
-            </Button>
-            <PermissionGate permission={IAM_PERMISSIONS.dept.manage}>
-              <Button
-                size='sm'
-                onClick={() => {
-                  setEditingDept(null);
-                  setParentDept(null);
-                  setFormOpen(true);
-                }}
-              >
-                <Icons.add className='size-4' />
-                新增部门
-              </Button>
-            </PermissionGate>
+            <DataTableActionsBar table={actionTable} actions={tableActions} />
           </div>
           <div className='overflow-auto px-6 pb-6'>
             <Table>
