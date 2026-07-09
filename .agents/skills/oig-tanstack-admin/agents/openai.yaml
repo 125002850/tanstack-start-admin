@@ -1,0 +1,4 @@
+interface:
+  display_name: "Oig Tanstack Admin"
+  short_description: "Oig Tanstack Admin 仓库开发规范与任务路由"
+  default_prompt: "Use $oig-tanstack-admin to implement this repository change according to the relevant project conventions."

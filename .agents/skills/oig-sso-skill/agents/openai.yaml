@@ -1,0 +1,7 @@
+interface:
+  display_name: "OIG SSO Skill"
+  short_description: "本仓库 AI 测试 SSO 登录态 SOP"
+  default_prompt: "Use $oig-sso-skill to refresh local SSO auth state and verify AI Playwright access to localhost:3000."
+
+policy:
+  allow_implicit_invocation: true
