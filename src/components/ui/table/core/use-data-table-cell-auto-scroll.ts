@@ -160,12 +160,21 @@ export function getDataTableCellEffectiveVisibleRect(viewport: HTMLElement) {
   return intersectDataTableCellClientRects(rects);
 }
 
+const rtlScrollTypeCache = new WeakMap<HTMLElement, DataTableRtlScrollType>();
+
 function detectDataTableRtlScrollType(viewport: HTMLElement): DataTableRtlScrollType {
-  if (viewport.scrollLeft < 0) return 'negative';
+  const cached = rtlScrollTypeCache.get(viewport);
+  if (cached !== undefined) return cached;
+
+  if (viewport.scrollLeft < 0) {
+    rtlScrollTypeCache.set(viewport, 'negative');
+    return 'negative';
+  }
   const initial = viewport.scrollLeft;
   viewport.scrollLeft = 1;
   const type = viewport.scrollLeft === 0 ? 'negative' : 'reverse';
   viewport.scrollLeft = initial;
+  rtlScrollTypeCache.set(viewport, type);
   return type;
 }
 
