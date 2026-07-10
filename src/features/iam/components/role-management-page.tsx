@@ -37,12 +37,8 @@ import {
 import { nullableText } from '@/lib/display-formatters';
 import { iamDeptTreeQueryOptions, iamMenuTreeQueryOptions } from '../api/query-options';
 import { ENABLE_STATUS_OPTIONS } from '../lib/constants';
-import {
-  DataScopeBadge,
-  nextStatus,
-  StatusBadge
-} from '../lib/format';
-import { deptMultiSelectOptions, menuMultiSelectOptions } from '../lib/tree';
+import { DataScopeBadge, nextStatus, StatusBadge } from '../lib/format';
+import { menuMultiSelectOptions } from '../lib/tree';
 import { dslConditionValue, pageRequestFromDsl } from '../lib/table';
 import { isProtectedRole } from './role-form-sheet';
 import RoleDetailSheet from './role-detail-sheet';
@@ -129,10 +125,6 @@ export default function RoleManagementPage() {
   const menuOptions = React.useMemo(
     () => menuMultiSelectOptions(menuQuery.data ?? []),
     [menuQuery.data]
-  );
-  const deptOptions = React.useMemo(
-    () => deptMultiSelectOptions(deptQuery.data ?? []),
-    [deptQuery.data]
   );
 
   const [formOpen, setFormOpen] = React.useState(false);
@@ -329,7 +321,7 @@ export default function RoleManagementPage() {
         open={!!scopeRole}
         onOpenChange={(open) => !open && setScopeRole(null)}
         role={scopeRole}
-        deptOptions={deptOptions}
+        departments={deptQuery.data ?? []}
         onSubmit={async ({ dataScopeType, deptIds }) => {
           if (!scopeRole?.roleId) return;
           await scopeMutation.mutateAsync({ roleId: scopeRole.roleId, dataScopeType, deptIds });

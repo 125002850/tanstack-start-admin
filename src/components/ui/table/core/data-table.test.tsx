@@ -1001,7 +1001,7 @@ describe('DataTable body', () => {
     const firstCell = container.querySelector('tbody td[data-cell-id]');
 
     expect(firstCell?.getAttribute('class')).toContain('px-[15px]');
-    expect(firstCell?.getAttribute('class')).toContain('py-2');
+    expect(firstCell?.getAttribute('class')).toContain('py-[11px]');
     expect(firstCell?.getAttribute('class')).toContain('outline');
     expect(firstCell?.getAttribute('class')).toContain('outline-transparent');
     expect(firstCell?.getAttribute('class')).toContain('transition-[outline-color,box-shadow]');
@@ -1655,7 +1655,7 @@ describe('DataTable body', () => {
     ) as HTMLTableRowElement | null;
     expect(secondVirtualRow).not.toBeNull();
     expect(secondVirtualRow?.dataset.virtualRowPositioning).toBe('top');
-    expect(secondVirtualRow?.style.top).toBe('56px');
+    expect(secondVirtualRow?.style.top).toBe('42px');
     expect(secondVirtualRow?.style.transform).toBe('');
   });
 
@@ -1682,7 +1682,7 @@ describe('DataTable body', () => {
     expect(secondVirtualRow).not.toBeNull();
     expect(secondVirtualRow?.dataset.virtualRowPositioning).toBe('transform');
     expect(secondVirtualRow?.style.top).toBe('0px');
-    expect(secondVirtualRow?.style.transform).toBe('translateY(56px)');
+    expect(secondVirtualRow?.style.transform).toBe('translateY(42px)');
   });
 
   it('renders all rows when below threshold', () => {
@@ -1705,7 +1705,7 @@ describe('DataTable body', () => {
       'tbody[data-virtual-enabled="true"] tr[data-index]'
     );
     expect(virtualRows.length).toBeGreaterThan(0);
-    expect((virtualRows[0] as HTMLTableRowElement).style.height).toBe('56px');
+    expect((virtualRows[0] as HTMLTableRowElement).style.height).toBe('42px');
   });
 
   it('expands the clicked row when clicking normal cell content', async () => {

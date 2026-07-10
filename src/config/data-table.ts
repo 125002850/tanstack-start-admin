@@ -16,7 +16,7 @@ export type DataTableConfig = typeof dataTableConfig;
 
 /** 行/列虚拟化的共享默认值，调用方可通过 DataTable virtualization prop 局部覆盖。 */
 export const DATA_TABLE_VIRTUAL_PRESET = {
-  estimateRowHeight: 56,
+  estimateRowHeight: 42,
   overscan: 8,
   rowCountThreshold: 100,
   columnCountThreshold: 20,

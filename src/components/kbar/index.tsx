@@ -1,19 +1,32 @@
 import { KBarAnimator, KBarPortal, KBarPositioner, KBarProvider, KBarSearch } from 'kbar';
 import { useRouter } from '@tanstack/react-router';
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 import { buildNavGroupsFromRoutes } from '@/lib/router/route-nav';
+import { buildMenuTreeLookup } from '@/lib/router/menu-tree-resolver';
+import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
+import { Icons } from '@/components/icons';
+
+function navActionIcon(icon: keyof typeof Icons | undefined) {
+  if (!icon) return undefined;
+  const Icon = Icons[icon];
+  return <Icon className='size-4' />;
+}
 
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const navGroups = useMemo(() => buildNavGroupsFromRoutes(router.routesById), [router.routesById]);
+  const { data: me } = useQuery(getIamMeQueryOptions());
+  const treeLookup = useMemo(() => buildMenuTreeLookup(me?.menus ?? []), [me?.menus]);
+  const navGroups = useMemo(
+    () => buildNavGroupsFromRoutes(router.routesById, treeLookup),
+    [router.routesById, treeLookup]
+  );
   const filteredGroups = useFilteredNavGroups(navGroups);
 
-  // These action are for the navigation
   const actions = useMemo(() => {
-    // Define navigateTo inside the useMemo callback to avoid dependency array issues
     const navigateTo = (url: string) => {
       router.navigate({ to: url });
     };
@@ -21,7 +34,6 @@ export default function KBar({ children }: { children: React.ReactNode }) {
     const allItems = filteredGroups.flatMap((group) => group.items);
 
     return allItems.flatMap((navItem) => {
-      // Only include base action if the navItem is linkable (not a non-navigable container)
       const baseAction =
         navItem.linkable !== false
           ? {
@@ -31,11 +43,11 @@ export default function KBar({ children }: { children: React.ReactNode }) {
               keywords: navItem.title.toLowerCase(),
               section: '导航',
               subtitle: `前往 ${navItem.title}`,
+              icon: navActionIcon(navItem.icon),
               perform: () => navigateTo(navItem.url)
             }
           : null;
 
-      // Map child items into actions, only for linkable children
       const childActions =
         navItem.items
           ?.filter((childItem) => childItem.linkable !== false)
@@ -46,10 +58,10 @@ export default function KBar({ children }: { children: React.ReactNode }) {
             keywords: childItem.title.toLowerCase(),
             section: navItem.title,
             subtitle: `前往 ${childItem.title}`,
+            icon: navActionIcon(childItem.icon),
             perform: () => navigateTo(childItem.url)
           })) ?? [];
 
-      // Return only valid actions (ignoring null base actions for containers)
       return baseAction ? [baseAction, ...childActions] : childActions;
     });
   }, [router, filteredGroups]);

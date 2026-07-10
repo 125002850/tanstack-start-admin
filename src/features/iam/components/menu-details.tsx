@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldItem } from '@/components/ui/detail-field';
-import { NAV_GROUP_META, type AppNavGroupKey } from '@/lib/router/app-route-meta';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { MenuRspDTO } from '@/lib/api/clients/service';
 
 import { formatOptionalDateTime, MenuTypeBadge, StatusBadge } from '../lib/format';
@@ -12,10 +13,12 @@ interface MenuDetailsProps {
   record: MenuRspDTO | null;
   parentMenuName: string;
   canManage: boolean;
+  isEnablingPageCache: boolean;
   onCreateChild: () => void;
   onEdit: () => void;
   onToggleStatus: () => void;
   onDelete: () => void;
+  onEnablePageCache: () => void;
 }
 
 function AuditInfo({
@@ -40,24 +43,48 @@ function AuditInfo({
   );
 }
 
-function resolveNavigationGroup(menuCode?: string) {
-  if (!menuCode || !Object.hasOwn(NAV_GROUP_META, menuCode)) return null;
-
-  return NAV_GROUP_META[menuCode as AppNavGroupKey];
+function MenuDetailAction({
+  label,
+  icon,
+  variant = 'outline',
+  isLoading,
+  onClick
+}: {
+  label: string;
+  icon: ReactNode;
+  variant?: 'outline' | 'destructive';
+  isLoading?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={variant}
+          size='icon'
+          aria-label={label}
+          isLoading={isLoading ? true : undefined}
+          onClick={onClick}
+        >
+          {icon}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side='top'>{label}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function MenuDetails({
   record,
   parentMenuName,
   canManage,
+  isEnablingPageCache,
   onCreateChild,
   onEdit,
   onToggleStatus,
-  onDelete
+  onDelete,
+  onEnablePageCache
 }: MenuDetailsProps) {
-  const navigationGroup =
-    record?.menuType === 'DIR' ? resolveNavigationGroup(record.menuCode) : null;
-
   return (
     <Card role='region' aria-label='菜单详情'>
       <CardHeader>
@@ -70,13 +97,7 @@ export function MenuDetails({
                   <span>{record.menuCode ?? '-'}</span>
                   <MenuTypeBadge type={record.menuType} />
                   <StatusBadge status={record.status} />
-                  {record.menuType === 'DIR' ? (
-                    navigationGroup ? (
-                      <Badge variant='secondary'>{`导航分组：${navigationGroup.label}`}</Badge>
-                    ) : (
-                      <Badge variant='destructive'>未匹配前端导航分组</Badge>
-                    )
-                  ) : null}
+                  {record.menuType === 'DIR' ? <Badge variant='secondary'>目录节点</Badge> : null}
                 </>
               ) : (
                 '从左侧菜单树选择目录或页面菜单后查看详情'
@@ -86,25 +107,36 @@ export function MenuDetails({
           {record && canManage ? (
             <div className='flex flex-wrap items-center justify-end gap-2'>
               {record.menuType !== 'BUTTON' ? (
-                <Button variant='outline' size='sm' onClick={onCreateChild}>
-                  <Icons.add className='size-4' />
-                  新增下级菜单
-                </Button>
+                <MenuDetailAction
+                  label='新增下级菜单'
+                  icon={<Icons.add className='size-4' />}
+                  onClick={onCreateChild}
+                />
               ) : null}
-              <Button variant='outline' size='icon' aria-label='编辑菜单' onClick={onEdit}>
-                <Icons.edit className='size-4' />
-              </Button>
-              <Button
-                variant='outline'
-                size='icon'
-                aria-label='切换菜单状态'
+              {record.menuType === 'MENU' && record.cached !== true ? (
+                <MenuDetailAction
+                  label='开启页面缓存'
+                  icon={<Icons.databaseCog className='size-4' />}
+                  isLoading={isEnablingPageCache}
+                  onClick={onEnablePageCache}
+                />
+              ) : null}
+              <MenuDetailAction
+                label='编辑菜单'
+                icon={<Icons.edit className='size-4' />}
+                onClick={onEdit}
+              />
+              <MenuDetailAction
+                label='切换菜单状态'
+                icon={<Icons.rotate className='size-4' />}
                 onClick={onToggleStatus}
-              >
-                <Icons.rotate className='size-4' />
-              </Button>
-              <Button variant='destructive' size='icon' aria-label='删除菜单' onClick={onDelete}>
-                <Icons.trash className='size-4' />
-              </Button>
+              />
+              <MenuDetailAction
+                label='删除菜单'
+                icon={<Icons.trash className='size-4' />}
+                variant='destructive'
+                onClick={onDelete}
+              />
             </div>
           ) : null}
         </div>
@@ -117,9 +149,7 @@ export function MenuDetails({
             <FieldItem label='上级菜单' value={parentMenuName} />
             <FieldItem label='菜单编码' value={record.menuCode} />
             <FieldItem label='路由路径' value={record.routePath} valueMaxLines={2} />
-            <FieldItem label='组件路径' value={record.componentPath} valueMaxLines={2} />
             <FieldItem label='权限标识' value={record.permissionCode} valueMaxLines={2} />
-            <FieldItem label='图标' value={record.icon} />
             <FieldItem label='排序' value={record.sortOrder} />
             <FieldItem label='隐藏' value={record.hidden ? '是' : '否'} />
             <FieldItem label='页面缓存' value={record.cached ? '是' : '否'} />

@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { useDashboardRouteTagSync, findDeepestRouteMatch } from './use-dashboard-route-tag-sync';
 import { useWorkspaceTabStore } from '../utils/store';
+import { buildMenuTreeLookup } from '@/lib/router/menu-tree-resolver';
+import type { IamMenuNode } from '@/lib/api/iam/types';
 
 // Mutable state that tests control to simulate URL changes
 let mockPathname = '/dashboard/overview';
@@ -50,6 +52,14 @@ const mockRoutesByPath = {
         workspace: { tagEnabled: true, keepAlive: true, closable: false }
       }
     }
+  },
+  '/dashboard/managed': {
+    options: {
+      staticData: {
+        title: '受管页面',
+        nav: { menuKey: 'managed' }
+      }
+    }
   }
 };
 
@@ -70,6 +80,26 @@ vi.mock('@tanstack/react-router', () => ({
 function SyncHarness() {
   useDashboardRouteTagSync();
   return null;
+}
+
+function ManagedSyncHarness({ menu }: { menu: IamMenuNode }) {
+  const treeLookup = React.useMemo(() => buildMenuTreeLookup([menu]), [menu]);
+  useDashboardRouteTagSync(true, treeLookup);
+  return null;
+}
+
+function createManagedMenu(menuName: string, cached: boolean): IamMenuNode {
+  return {
+    menuId: 'managed',
+    menuCode: 'managed',
+    menuKey: 'managed',
+    menuName,
+    menuType: 'MENU',
+    sortOrder: 10,
+    hidden: false,
+    cached,
+    status: 'ENABLED'
+  };
 }
 
 function resetStore() {
@@ -201,6 +231,25 @@ describe('useDashboardRouteTagSync (hook integration)', () => {
     rerender(React.createElement(SyncHarness));
     const state = useWorkspaceTabStore.getState();
     expect(state.tabs['/dashboard/items'].href).toBe('/dashboard/items?page=2');
+  });
+
+  it('updates an existing tab when refreshed menu metadata changes', () => {
+    mockPathname = '/dashboard/managed';
+    const { rerender } = render(
+      React.createElement(ManagedSyncHarness, { menu: createManagedMenu('旧名称', true) })
+    );
+
+    expect(useWorkspaceTabStore.getState().tabs['/dashboard/managed']).toMatchObject({
+      title: '旧名称',
+      keepAlive: true
+    });
+
+    rerender(React.createElement(ManagedSyncHarness, { menu: createManagedMenu('新名称', false) }));
+
+    expect(useWorkspaceTabStore.getState().tabs['/dashboard/managed']).toMatchObject({
+      title: '新名称',
+      keepAlive: false
+    });
   });
 
   it('does not re-seed home tab if it already exists', () => {

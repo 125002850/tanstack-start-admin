@@ -8,13 +8,9 @@ const DictionaryManagementPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  label: '字典管理',
   title: '系统管理：字典管理',
   nav: {
-    visible: true,
-    group: 'systemManagement',
-    order: 10,
-    menuKey: 'mdm_dict',
+    menuKey: 'system_dict',
     icon: 'databaseCog',
     shortcut: ['d', 'm']
   },

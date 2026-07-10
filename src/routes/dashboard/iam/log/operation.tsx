@@ -1,7 +1,6 @@
 import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
 import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
 import { defineRouteMeta } from '@/lib/router/app-route-meta';
-import { IAM_PERMISSIONS } from '@/features/iam/lib/constants';
 
 const OperationLogPage = lazyRouteComponent(
   () => import('@/features/iam/components/log-pages'),
@@ -9,13 +8,8 @@ const OperationLogPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  label: '操作日志',
   title: '权限管理：操作日志',
-  requiredPermission: IAM_PERMISSIONS.log.operationQuery,
   nav: {
-    visible: true,
-    group: 'iam',
-    order: 60,
     menuKey: 'iam_operation_log',
     icon: 'clipboardList',
     shortcut: ['i', 'o']

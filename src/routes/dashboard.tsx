@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {
   createFileRoute,
   Outlet,
@@ -17,6 +18,9 @@ import { WorkspaceViewport } from '@/features/workspace-tabs/components/workspac
 import { useWorkspaceDevtools } from '@/features/workspace-tabs/lib/workspace-devtools';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useDashboardRouteTagSync } from '@/features/workspace-tabs/hooks/use-dashboard-route-tag-sync';
+import { buildMenuTreeLookup } from '@/lib/router/menu-tree-resolver';
+import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
+import { useQuery } from '@tanstack/react-query';
 import {
   isAuthRequiredError,
   isPasswordChangeRequiredError,
@@ -117,7 +121,9 @@ function DashboardErrorComponent({ error, reset }: ErrorComponentProps) {
 
 function DashboardLayout() {
   const workspaceEnabled = isWorkspaceTabsEnabled();
-  useDashboardRouteTagSync(workspaceEnabled);
+  const { data: me } = useQuery(getIamMeQueryOptions());
+  const treeLookup = React.useMemo(() => buildMenuTreeLookup(me?.menus ?? []), [me?.menus]);
+  useDashboardRouteTagSync(workspaceEnabled, treeLookup);
   useWorkspaceDevtools(workspaceEnabled);
 
   return (

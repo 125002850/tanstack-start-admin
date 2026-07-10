@@ -10,9 +10,7 @@ const meta = defineRouteMeta({
     keepAlive: false
   },
   nav: {
-    visible: false,
-    group: 'systemManagement',
-    order: 0
+    isContainer: true
   }
 });
 

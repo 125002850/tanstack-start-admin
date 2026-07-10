@@ -22,11 +22,7 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import type {
-  MenuCreateReqDTO,
-  MenuRspDTO,
-  MenuUpdateReqDTO
-} from '@/lib/api/clients/service';
+import type { MenuCreateReqDTO, MenuRspDTO, MenuUpdateReqDTO } from '@/lib/api/clients/service';
 import { ENABLE_STATUS_OPTIONS, MENU_TYPE_OPTIONS } from '../lib/constants';
 import { flattenMenuTree, menuSelectOptions } from '../lib/tree';
 
@@ -37,7 +33,6 @@ export type MenuFormValues = {
   menuType: 'DIR' | 'MENU' | 'BUTTON';
   routePath: string;
   componentPath: string;
-  icon: string;
   sortOrder: string;
   hidden: boolean;
   cached: boolean;
@@ -53,7 +48,6 @@ const emptyValues: MenuFormValues = {
   menuType: 'MENU',
   routePath: '',
   componentPath: '',
-  icon: '',
   sortOrder: '10',
   hidden: false,
   cached: true,
@@ -121,7 +115,6 @@ export default function MenuFormSheet({
           : (initialMenuType ?? 'MENU'),
       routePath: menu?.routePath ?? '',
       componentPath: menu?.componentPath ?? '',
-      icon: menu?.icon ?? '',
       sortOrder: String(menu?.sortOrder ?? 10),
       hidden: menu?.hidden ?? false,
       cached: menu?.cached ?? emptyValues.cached,
@@ -170,7 +163,6 @@ export default function MenuFormSheet({
         menuType,
         routePath: values.routePath.trim() || undefined,
         componentPath: values.componentPath.trim() || undefined,
-        icon: values.icon.trim() || undefined,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : undefined,
         hidden: values.hidden,
         cached: values.cached,
@@ -300,22 +292,13 @@ export default function MenuFormSheet({
                 />
               </FieldShell>
             </div>
-            <div className='grid gap-4 sm:grid-cols-2'>
-              <FieldShell label='权限标识' controlId='iam-menu-permission-code'>
-                <Input
-                  id='iam-menu-permission-code'
-                  value={values.permissionCode}
-                  onChange={(event) => update({ permissionCode: event.target.value })}
-                />
-              </FieldShell>
-              <FieldShell label='图标' controlId='iam-menu-icon'>
-                <Input
-                  id='iam-menu-icon'
-                  value={values.icon}
-                  onChange={(event) => update({ icon: event.target.value })}
-                />
-              </FieldShell>
-            </div>
+            <FieldShell label='权限标识' controlId='iam-menu-permission-code'>
+              <Input
+                id='iam-menu-permission-code'
+                value={values.permissionCode}
+                onChange={(event) => update({ permissionCode: event.target.value })}
+              />
+            </FieldShell>
             <FieldShell label='排序' controlId='iam-menu-sort-order'>
               <Input
                 id='iam-menu-sort-order'

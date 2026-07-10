@@ -80,7 +80,14 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
         if (existing) {
           nextTabs = {
             ...state.tabs,
-            [tab.id]: { ...existing, href: tab.href, title: tab.title, lastVisitedAt: Date.now() }
+            [tab.id]: {
+              ...existing,
+              href: tab.href,
+              title: tab.title,
+              closable: tab.closable ?? existing.closable,
+              keepAlive: tab.keepAlive ?? existing.keepAlive,
+              lastVisitedAt: Date.now()
+            }
           };
           nextActiveId = tab.id;
           nextLifecycleSnapshots = state.lifecycleSnapshots;

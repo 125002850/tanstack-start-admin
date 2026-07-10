@@ -1,6 +1,7 @@
 import { useRouter, useRouterState } from '@tanstack/react-router';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { getAppRouteStaticData, type AppRouteStaticData } from '@/lib/router/app-route-meta';
+import type { ResolvedMenuNode } from '@/lib/router/menu-tree-resolver';
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import { resolveRouteWorkspaceConfig, resolveRouteTagTitle } from '../lib/route-workspace';
 import type { WorkspaceTabId } from '../types';
@@ -15,10 +16,6 @@ export function normalizeRoutePath(path: string): string {
   return path.endsWith('/') ? path.slice(0, -1) : path;
 }
 
-/**
- * Convert a TanStack Router route path (e.g. "/dashboard/items/$itemId")
- * into a regex for matching against actual pathnames (e.g. "/dashboard/items/123").
- */
 function compileRoutePattern(routePath: string): RegExp {
   const normalizedRoutePath = normalizeRoutePath(routePath);
   let escaped = '';
@@ -100,10 +97,6 @@ function getCompiledRouteMatchers(routesByPath: Record<string, unknown>): Compil
   return matchers;
 }
 
-/**
- * Find the deepest matching route for a given pathname by converting
- * route patterns with $param placeholders into regexes.
- */
 export function findDeepestRouteMatch(
   pathname: string,
   routesByPath: Record<string, unknown>
@@ -117,7 +110,10 @@ export function findDeepestRouteMatch(
   return undefined;
 }
 
-export function useDashboardRouteTagSync(enabled = true) {
+export function useDashboardRouteTagSync(
+  enabled = true,
+  treeLookup?: Map<string, ResolvedMenuNode>
+) {
   const router = useRouter();
   const location = useRouterState({ select: (s) => s.location });
   const prevHref = useRef<string | null>(null);
@@ -133,7 +129,6 @@ export function useDashboardRouteTagSync(enabled = true) {
     prevEnabled.current = enabled;
   }, [enabled]);
 
-  // Seed the home tag once on mount (idempotent via store check)
   useIsomorphicLayoutEffect(() => {
     if (!enabled) return;
 
@@ -163,16 +158,14 @@ export function useDashboardRouteTagSync(enabled = true) {
       }
     };
 
-    if (fullHref === prevHref.current) return;
+    if (fullHref === prevHref.current && !treeLookup) return;
     prevHref.current = fullHref;
 
-    // Only track dashboard sub-routes
     if (!normalizedPathname.startsWith('/dashboard')) {
       clearActiveWorkspaceRoute();
       return;
     }
 
-    // Skip the layout route itself
     if (normalizedPathname === '/dashboard') {
       clearActiveWorkspaceRoute();
       return;
@@ -187,13 +180,13 @@ export function useDashboardRouteTagSync(enabled = true) {
       return;
     }
 
-    const wsConfig = resolveRouteWorkspaceConfig(match.pattern, match.staticData);
+    const wsConfig = resolveRouteWorkspaceConfig(match.pattern, match.staticData, treeLookup);
     if (!wsConfig.tagEnabled) {
       clearActiveWorkspaceRoute();
       return;
     }
 
-    const title = resolveRouteTagTitle(match.staticData, normalizedPathname);
+    const title = resolveRouteTagTitle(match.staticData, normalizedPathname, treeLookup);
     const id = tagIdFromPathname(normalizedPathname);
     const closable = wsConfig.closable;
 
@@ -204,5 +197,5 @@ export function useDashboardRouteTagSync(enabled = true) {
       closable,
       keepAlive: wsConfig.keepAlive
     });
-  }, [location.pathname, location.searchStr, router.routesByPath, enabled]);
+  }, [location.pathname, location.searchStr, router.routesByPath, enabled, treeLookup]);
 }

@@ -186,10 +186,6 @@ export default function MenuManagementPage() {
     () => filterVisibleMenuRows(navigationRows, visibleCollapsedMenuIds),
     [navigationRows, visibleCollapsedMenuIds]
   );
-  const uncachedPageMenus = React.useMemo(
-    () => allRows.filter((menu) => menu.menuType === 'MENU' && menu.cached !== true),
-    [allRows]
-  );
   const { withConfirm, confirmDialog } = useConfirmAction<[MenuRspDTO]>();
   const { withConfirm: withPageCacheConfirm, confirmDialog: pageCacheConfirmDialog } =
     useConfirmAction<[readonly MenuRspDTO[]]>();
@@ -328,13 +324,10 @@ export default function MenuManagementPage() {
           canManage={canManageMenu}
           canToggleAll={!normalizedKeyword && collapsibleMenuIds.size > 0}
           allCollapsed={allMenusCollapsed}
-          canEnablePageCache={uncachedPageMenus.length > 0}
-          isEnablingPageCache={enablePageCacheMutation.isPending}
           onKeywordChange={setKeyword}
           onSelect={(menu) => setRequestedMenuId(getMenuNodeStableId(menu))}
           onToggleCollapse={toggleMenuCollapse}
           onToggleAll={toggleAllMenus}
-          onEnablePageCache={() => confirmEnablePageCache(uncachedPageMenus)}
           onRefresh={() => {
             void refetchMenuTree();
           }}
@@ -346,10 +339,12 @@ export default function MenuManagementPage() {
             record={selectedMenu}
             parentMenuName={selectedMenuParentName}
             canManage={canManageMenu}
+            isEnablingPageCache={enablePageCacheMutation.isPending}
             onCreateChild={() => selectedMenu && openCreateMenu(selectedMenu, 'MENU')}
             onEdit={() => selectedMenu && openEditMenu(selectedMenu)}
             onToggleStatus={() => selectedMenu && confirmMenuStatus(selectedMenu)}
             onDelete={() => selectedMenu && confirmMenuDelete(selectedMenu)}
+            onEnablePageCache={() => selectedMenu && confirmEnablePageCache([selectedMenu])}
           />
           <MenuButtonPermissionsPanel
             record={selectedMenu}

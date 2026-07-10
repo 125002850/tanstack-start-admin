@@ -159,10 +159,8 @@ describe('project architecture contracts', () => {
     const dashboardRouteFiles = collectFiles(resolve(SRC_ROOT, 'routes/dashboard'), (path) =>
       path.endsWith('.tsx')
     );
-    const protectedRouteFiles = dashboardRouteFiles
-      .filter((path) =>
-        /required(?:Permission|AnyPermissions)\s*:/.test(readFileSync(path, 'utf8'))
-      )
+    const iamProtectedRouteFiles = dashboardRouteFiles
+      .filter((path) => /\bmenuKey\s*:/.test(readFileSync(path, 'utf8')))
       .map(toProjectPath);
     const permissionMetaOutsideDashboard = collectFiles(resolve(SRC_ROOT, 'routes'), (path) =>
       path.endsWith('.tsx')
@@ -176,12 +174,13 @@ describe('project architecture contracts', () => {
       .filter((path) => /ensure(?:Any)?IamPermission\s*\(/.test(readFileSync(path, 'utf8')))
       .map(toProjectPath);
 
-    expect(protectedRouteFiles.length).toBeGreaterThan(0);
+    expect(iamProtectedRouteFiles.length).toBeGreaterThan(0);
     expect(normalizeSource(dashboardSource)).toMatch(
       /beforeLoad:\s*async\s*\([^)]*\)\s*=>\s*\{[^}]*ensureDashboardRouteAccess/
     );
     expect(guardSource).toContain('requiredPermission');
     expect(guardSource).toContain('requiredAnyPermissions');
+    expect(guardSource).toContain('resolvePermissionFromTree');
     expect(permissionMetaOutsideDashboard).toEqual([]);
     expect(decentralizedGuardViolations).toEqual([]);
   });

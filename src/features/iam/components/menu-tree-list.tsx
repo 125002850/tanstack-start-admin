@@ -1,5 +1,4 @@
 import { Icons } from '@/components/icons';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,7 +10,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
-import { menuTypeLabel } from '../lib/format';
 import { getMenuNodeStableId, isMenuNodeCollapsible, type FlatMenuNode } from '../lib/tree';
 
 interface MenuTreeListProps {
@@ -24,13 +22,10 @@ interface MenuTreeListProps {
   canManage: boolean;
   canToggleAll: boolean;
   allCollapsed: boolean;
-  canEnablePageCache: boolean;
-  isEnablingPageCache: boolean;
   onKeywordChange: (keyword: string) => void;
   onSelect: (menu: FlatMenuNode) => void;
   onToggleCollapse: (menu: FlatMenuNode) => void;
   onToggleAll: () => void;
-  onEnablePageCache: () => void;
   onRefresh: () => void;
   onCreateRoot: () => void;
 }
@@ -45,13 +40,10 @@ export function MenuTreeList({
   canManage,
   canToggleAll,
   allCollapsed,
-  canEnablePageCache,
-  isEnablingPageCache,
   onKeywordChange,
   onSelect,
   onToggleCollapse,
   onToggleAll,
-  onEnablePageCache,
   onRefresh,
   onCreateRoot
 }: MenuTreeListProps) {
@@ -98,18 +90,6 @@ export function MenuTreeList({
             )}
             {allCollapsed ? '展开' : '折叠'}
           </Button>
-          {canManage ? (
-            <Button
-              variant='outline'
-              size='sm'
-              disabled={!canEnablePageCache}
-              isLoading={isEnablingPageCache ? true : undefined}
-              onClick={onEnablePageCache}
-            >
-              <Icons.databaseCog className='size-4' />
-              开启页面缓存
-            </Button>
-          ) : null}
         </div>
 
         <div
@@ -170,9 +150,6 @@ export function MenuTreeList({
                         {menu.menuCode ?? '-'}
                       </span>
                     </span>
-                    <Badge variant='outline' className='shrink-0'>
-                      {menuTypeLabel(menu.menuType)}
-                    </Badge>
                   </Button>
                 </div>
               );

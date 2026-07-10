@@ -54,6 +54,8 @@ function getNav(mod: unknown):
       kind?: string;
       linkable?: boolean;
       parentId?: string;
+      isContainer?: true;
+      menuKey?: string;
     }
   | undefined {
   const route = (mod as Record<string, unknown>)?.Route as
@@ -66,6 +68,8 @@ function getNav(mod: unknown):
               kind?: string;
               linkable?: boolean;
               parentId?: string;
+              isContainer?: true;
+              menuKey?: string;
             };
           };
         };
@@ -186,13 +190,22 @@ describe('dashboard route inventory', () => {
     }
   });
 
-  it('every discovered route has a staticData with a label', () => {
+  it('every discovered route has a staticData with a label or menuKey', () => {
     for (const filePath of allPaths) {
       const mod = routeModules[filePath] as {
-        Route?: { options?: { staticData?: { label?: string } } };
+        Route?: {
+          options?: {
+            staticData?: {
+              label?: string;
+              title?: string;
+              nav?: { menuKey?: string };
+            };
+          };
+        };
       };
-      const label = mod?.Route?.options?.staticData?.label;
-      expect(label, `${extractRoutePath(filePath)} missing label`).toBeTruthy();
+      const staticData = mod?.Route?.options?.staticData;
+      const identity = staticData?.label ?? staticData?.title ?? staticData?.nav?.menuKey;
+      expect(identity, `${extractRoutePath(filePath)} missing identifying metadata`).toBeTruthy();
     }
   });
 
@@ -201,10 +214,7 @@ describe('dashboard route inventory', () => {
       routeModules['/src/routes/dashboard/system-management/dictionaries.tsx'];
     expect(dictionariesRoute).toBeDefined();
     expect(getTagEnabled(dictionariesRoute)).not.toBe(false);
-    expect(getNav(dictionariesRoute)).toMatchObject({
-      visible: true,
-      group: 'systemManagement'
-    });
+    expect(getNav(dictionariesRoute)?.menuKey).toBe('mdm_dict');
     expect(getNav(dictionariesRoute)?.parentId).toBeUndefined();
   });
 
@@ -216,7 +226,7 @@ describe('dashboard route inventory', () => {
       expect(route).toBeDefined();
       expect(getKeepAlive(route)).toBe(false);
       expect(getTagEnabled(route)).toBe(false);
-      expect(getNav(route)?.visible).toBe(false);
+      expect(getNav(route)?.isContainer).toBe(true);
     }
   });
 
@@ -250,16 +260,14 @@ describe('dashboard route inventory', () => {
 
   it('system management routes are top-level items in their group', () => {
     const expectations = [
-      ['/src/routes/dashboard/system-management/dictionaries.tsx', 'systemManagement'],
-      ['/src/routes/dashboard/system-management/export-center.tsx', 'systemManagement']
+      ['/src/routes/dashboard/system-management/dictionaries.tsx', 'mdm_dict'],
+      ['/src/routes/dashboard/system-management/export-center.tsx', 'export_center']
     ] as const;
 
-    for (const [routeFile, group] of expectations) {
+    for (const [routeFile, menuKey] of expectations) {
       const nav = getNav(routeModules[routeFile]);
-      expect(nav).toMatchObject({
-        visible: true,
-        group
-      });
+      expect(nav).toMatchObject({ menuKey });
+      expect(nav?.isContainer).toBeUndefined();
       expect(nav?.parentId).toBeUndefined();
     }
   });

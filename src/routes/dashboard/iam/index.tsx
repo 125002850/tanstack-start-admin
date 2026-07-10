@@ -9,9 +9,7 @@ const meta = defineRouteMeta({
     keepAlive: false
   },
   nav: {
-    visible: false,
-    group: 'iam',
-    order: 0
+    isContainer: true
   }
 });
 

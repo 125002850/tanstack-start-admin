@@ -6,6 +6,7 @@
 |------|------|
 | 文档状态 | Draft |
 | 编写日期 | 2026-07-08 |
+| 最后更新 | 2026-07-10（按产品交互确认更新菜单图标与菜单管理操作） |
 | 目标仓库 | `tanstack-start-admin` |
 | 配套后端 | `java-demo` `main` 分支本地 IAM |
 | 后端 PRD | `/Users/youdingte/studys/java-demo/docs/prd/2026-07-08-main-local-iam-prd.md` |
@@ -325,7 +326,7 @@ interface AppNavStaticData {
   menuKey?: string;
   kind?: 'container';
   parentId?: string;
-  icon?: keyof typeof Icons;
+  icon?: keyof typeof Icons; // 前端本地维护，不读取后端菜单 icon
   shortcut?: [string, string];
   linkable?: boolean;
 }
@@ -349,6 +350,7 @@ interface AppRouteStaticData {
 4. 禁止再引入 `backendMenuCode`、`nav.permissionCode` 等第三套 key。
 5. 没有权限字段的 dashboard 路由默认只要求登录，但商用业务页面必须声明权限字段，禁止新增裸 dashboard 页面。
 6. 新增 IAM 一级导航分组 `iam`，显示名称为“权限管理”，排序位于 `overview` 之后、`systemManagement` 之前；账号相关页面继续归入 `account`。
+7. `nav.icon` 是导航图标的唯一事实源，由前端 route metadata 使用 `Icons` key 本地维护；后端菜单 `icon` 字段不得覆盖或动态控制前端导航图标。
 
 ### 7.4 动态菜单渲染
 
@@ -373,6 +375,7 @@ auth/me
 6. 菜单过滤函数必须有单元测试覆盖目录、菜单、按钮、隐藏节点和未知节点。
 7. 未知后端菜单只记录诊断信息，不渲染、不动态注册路由。
 8. Sidebar、KBar、workspace 入口必须复用同一个授权导航结果，禁止各自实现过滤和排序。
+9. 导航名称、排序、显示状态和缓存策略可以从授权菜单树派生；导航图标例外，必须从本地 route metadata 派生，避免后端任意字符串影响前端图标组件加载。
 
 ### 7.5 Workspace 权限失效处理
 
@@ -521,7 +524,7 @@ interface IamMenuNode {
   menuType: MenuType;
   routePath?: string | null;
   componentPath?: string | null;
-  icon?: string | null;
+  icon?: string | null; // 后端兼容字段，前端导航和菜单管理 UI 不消费
   sortOrder: number;
   hidden: boolean;
   cached: boolean;
@@ -666,10 +669,13 @@ interface IamMenuNode {
 1. 树表展示目录、菜单、按钮。
 2. 支持新增目录、菜单、按钮。
 3. 支持编辑、删除、启用/禁用、排序。
-4. 菜单字段：名称、类型、父级、路由路径、组件路径、图标、排序、隐藏、缓存、权限标识。
+4. 菜单字段：名称、类型、父级、路由路径、组件路径、排序、隐藏、缓存、权限标识；图标不在菜单管理表单中编辑。
 5. 按钮字段：名称、权限标识、排序、状态。
 6. 权限标识唯一性错误需要清晰展示。
-7. 菜单图标从 `Icons` 统一选择，禁止自由输入任意图标 import。
+7. 导航图标由前端 route metadata 通过 `Icons` key 本地维护，不读取后端菜单 `icon`，菜单管理页不提供图标输入项。
+8. “开启页面缓存”只展示在选中 `MENU` 节点的详情 panel；左侧菜单树及其 toolbar 不展示单项或批量开启缓存入口。
+9. 菜单详情 panel 的操作统一使用纯图标按钮；按钮保留可访问名称，并在鼠标 hover 或键盘 focus 时通过 Tooltip 展示“新增下级菜单”“开启页面缓存”“编辑菜单”“切换菜单状态”“删除菜单”等操作名称。
+10. 左侧菜单树使用目录/页面图标区分节点类型，不再额外展示“目录/菜单”类型 Badge；状态、缓存等详细信息统一在右侧详情 panel 展示。
 
 ### 9.8 登录日志
 
@@ -888,7 +894,7 @@ rg -n "src/lib/api/sso|X-User-Id|/api/getLoginInfo|sso_token|sso_logout_url|VITE
 
 1. 后端登录接口是否返回 `accessTokenExpiresAt` 还是 `expiresIn`。
 2. refreshToken 是否每次 refresh 都轮换并返回新值。
-3. `auth/me` 的菜单树字段是否包含前端 route path、component path、permissionCode 和 icon。
+3. `auth/me` 的菜单树字段是否包含前端 route path、component path 和 permissionCode；后端 `icon` 即使存在也不参与前端导航渲染。
 4. 菜单排序以后端为准还是前端 route metadata 为准。
 5. 创建员工时初始密码由管理员输入还是后端生成一次性返回。
 6. 后端是否提供批量删除、批量启停；若没有，前端不做批量 UI。

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 import { buildNavGroupsFromRoutes } from '@/lib/router/route-nav';
+import { buildMenuTreeLookup } from '@/lib/router/menu-tree-resolver';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
 import { Link } from '@tanstack/react-router';
@@ -65,7 +66,7 @@ function isRouteActive(pathname: string, targetPath: string): boolean {
 
 function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string }) {
   const { isMobile, state } = useSidebar();
-  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+  const Icon = item.icon && item.icon in Icons ? Icons[item.icon] : Icons.logo;
   const hasChildren = Boolean(item.items?.length);
   const hasActiveChild =
     item.items?.some((subItem) => isRouteActive(pathname, subItem.url)) ?? false;
@@ -321,12 +322,13 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
 export default function AppSidebar() {
   const { pathname } = useLocation();
   const router = useRouter();
+  const { data: me, isLoading } = useQuery(getIamMeQueryOptions());
+  const treeLookup = React.useMemo(() => buildMenuTreeLookup(me?.menus ?? []), [me?.menus]);
   const navGroups = React.useMemo(
-    () => buildNavGroupsFromRoutes(router.routesById),
-    [router.routesById]
+    () => buildNavGroupsFromRoutes(router.routesById, treeLookup),
+    [router.routesById, treeLookup]
   );
   const filteredGroups = useFilteredNavGroups(navGroups);
-  const { data: me, isLoading } = useQuery(getIamMeQueryOptions());
   const [accountSheet, setAccountSheet] = React.useState<AccountSheet | null>(null);
 
   const handleLogout = () => {

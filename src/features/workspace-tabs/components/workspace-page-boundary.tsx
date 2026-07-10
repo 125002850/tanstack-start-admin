@@ -4,21 +4,9 @@ import { findDeepestRouteMatch, normalizeRoutePath } from '../hooks/use-dashboar
 import { useWorkspaceTabStore } from '../utils/store';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { resolveRouteTagTitle, resolveRouteWorkspaceConfig } from '../lib/route-workspace';
+import type { ResolvedMenuNode } from '@/lib/router/menu-tree-resolver';
 import type { WorkspacePageBoundaryProps, WorkspacePageDescriptor } from '../types';
 
-/**
- * WorkspacePageBoundary is the single registration point for a page instance
- * into the workspace shell.
- *
- * Flag-off: renders the page directly with zero side effects — no descriptor
- * registration, no store writes. renderWhenDisabled is the direct route tree
- * for pages whose workspace render tree uses a Screen shell around the page body.
- *
- * Host Ownership Contract (flag-on):
- * 1. Registers a WorkspacePageDescriptor in the store during render
- * 2. Returns null — the actual page instance is mounted exclusively by ActivityHost
- * 3. Unmount does NOT cleanup the descriptor; only tab close or shell reset does
- */
 export function WorkspacePageBoundary({
   tabId,
   initialTitle,
@@ -26,8 +14,9 @@ export function WorkspacePageBoundary({
   closable: legacyClosable,
   render,
   renderWhenDisabled,
-  errorFallback
-}: WorkspacePageBoundaryProps) {
+  errorFallback,
+  treeLookup
+}: WorkspacePageBoundaryProps & { treeLookup?: Map<string, ResolvedMenuNode> }) {
   const enabled = isWorkspaceTabsEnabled();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -43,10 +32,10 @@ export function WorkspacePageBoundary({
   );
   const staticData = routeMatch?.staticData;
   const routeWorkspaceConfig = React.useMemo(
-    () => resolveRouteWorkspaceConfig(routeMatch?.pattern ?? resolvedTabId, staticData),
-    [resolvedTabId, routeMatch?.pattern, staticData]
+    () => resolveRouteWorkspaceConfig(routeMatch?.pattern ?? resolvedTabId, staticData, treeLookup),
+    [resolvedTabId, routeMatch?.pattern, staticData, treeLookup]
   );
-  const resolvedInitialTitle = initialTitle ?? resolveRouteTagTitle(staticData, resolvedTabId);
+  const resolvedInitialTitle = initialTitle ?? resolveRouteTagTitle(staticData, resolvedTabId, treeLookup);
   const resolvedKeepAlive =
     staticData?.workspace?.keepAlive ?? legacyKeepAlive ?? routeWorkspaceConfig.keepAlive;
   const resolvedClosable =

@@ -4,6 +4,7 @@ import { hasAnyIamPermission, hasIamPermission } from '@/lib/api/iam/permissions
 import { ensureIamMe } from '@/lib/api/iam/queries';
 import type { IamMe } from '@/lib/api/iam/types';
 import { getAppRouteStaticData, type AppRouteStaticData } from './app-route-meta';
+import { buildMenuTreeLookup, resolveMenuNode } from './menu-tree-resolver';
 
 export interface DashboardRouteGuardMatch {
   options?: { staticData?: unknown };
@@ -24,8 +25,31 @@ function getMatchedRouteStaticData(
   });
 }
 
+function resolvePermissionFromTree(me: IamMe, staticData: AppRouteStaticData): string | undefined {
+  const menuKey = staticData.nav?.menuKey;
+  if (!menuKey) return undefined;
+
+  const lookup = buildMenuTreeLookup(me.menus);
+  const menuNode = resolveMenuNode(lookup, menuKey);
+  if (!menuNode || menuNode.hidden || menuNode.status !== 'ENABLED') {
+    throw new PermissionDeniedError();
+  }
+
+  return menuNode.permissionCode;
+}
+
 function ensureRouteStaticDataAccess(me: IamMe, staticData: AppRouteStaticData): void {
-  if (staticData.requiredPermission && !hasIamPermission(me, staticData.requiredPermission)) {
+  const treePermission = resolvePermissionFromTree(me, staticData);
+
+  if (treePermission && !hasIamPermission(me, treePermission)) {
+    throw new PermissionDeniedError();
+  }
+
+  if (
+    !treePermission &&
+    staticData.requiredPermission &&
+    !hasIamPermission(me, staticData.requiredPermission)
+  ) {
     throw new PermissionDeniedError();
   }
 

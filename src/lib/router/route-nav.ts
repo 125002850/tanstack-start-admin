@@ -1,5 +1,13 @@
 import type { NavGroup, NavItem } from '@/types';
-import { getAppRouteStaticData, NAV_GROUP_META, type AppNavGroupKey } from './app-route-meta';
+import { Icons } from '@/components/icons';
+import type { ResolvedMenuNode } from './menu-tree-resolver';
+import {
+  isTreeHidden,
+  resolveGroupFromTree,
+  resolveTreeLabel,
+  resolveTreeOrder
+} from './menu-tree-resolver';
+import { getAppRouteStaticData } from './app-route-meta';
 
 function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`[route-nav] ${message}`);
@@ -24,7 +32,107 @@ interface RouteNavSource {
   staticData?: unknown;
 }
 
-export function buildNavGroupsFromRoutes<TRoutes extends object>(routesById: TRoutes): NavGroup[] {
+const NAV_GROUP_META_STATIC: Record<string, { label: string; order: number }> = {
+  overview: { label: '概览', order: 10 },
+  components: { label: '组件', order: 20 },
+  iam: { label: '权限管理', order: 30 },
+  systemManagement: { label: '系统管理', order: 40 },
+  account: { label: '账户', order: 50 }
+};
+
+function resolveGroupLabel(
+  meta: RouteEntry['meta'],
+  treeLookup?: Map<string, ResolvedMenuNode>
+): string {
+  const nav = meta.nav;
+  if (!nav) return '';
+
+  if (nav.menuKey && treeLookup) {
+    const treeGroup = resolveGroupFromTree(treeLookup, nav.menuKey);
+    if (treeGroup) return treeGroup.label;
+  }
+
+  const staticGroup = nav.group ? NAV_GROUP_META_STATIC[nav.group] : undefined;
+  if (staticGroup) return staticGroup.label;
+
+  return nav.group ?? '';
+}
+
+function resolveGroupOrder(
+  meta: RouteEntry['meta'],
+  treeLookup?: Map<string, ResolvedMenuNode>
+): number {
+  const nav = meta.nav;
+  if (!nav) return 0;
+
+  if (nav.menuKey && treeLookup) {
+    const treeGroup = resolveGroupFromTree(treeLookup, nav.menuKey);
+    if (treeGroup) return treeGroup.order;
+  }
+
+  const staticGroup = nav.group ? NAV_GROUP_META_STATIC[nav.group] : undefined;
+  if (staticGroup) return staticGroup.order;
+
+  return 0;
+}
+
+function resolveItemOrder(
+  meta: RouteEntry['meta'],
+  treeLookup?: Map<string, ResolvedMenuNode>
+): number {
+  const nav = meta.nav;
+  if (!nav) return 0;
+
+  if (nav.menuKey && treeLookup) {
+    return resolveTreeOrder(treeLookup, nav.menuKey) ?? nav.order ?? 0;
+  }
+
+  return nav.order ?? 0;
+}
+
+function isIconKey(value: string | undefined): value is keyof typeof Icons {
+  return value !== undefined && Object.hasOwn(Icons, value);
+}
+
+function resolveItemIcon(meta: RouteEntry['meta']): keyof typeof Icons | undefined {
+  const nav = meta.nav;
+  if (!nav) return undefined;
+
+  return isIconKey(nav.icon) ? nav.icon : undefined;
+}
+
+function resolveItemLabel(
+  meta: RouteEntry['meta'],
+  treeLookup?: Map<string, ResolvedMenuNode>
+): string {
+  if (meta.nav?.menuKey && treeLookup) {
+    return resolveTreeLabel(treeLookup, meta.nav.menuKey) ?? meta.label ?? '';
+  }
+  return meta.label ?? '';
+}
+
+function isItemVisible(
+  meta: RouteEntry['meta'],
+  treeLookup?: Map<string, ResolvedMenuNode>
+): boolean {
+  const nav = meta.nav;
+  if (!nav) return false;
+
+  if (nav.isContainer) return false;
+
+  if (nav.menuKey && treeLookup) {
+    const hidden = isTreeHidden(treeLookup, nav.menuKey);
+    if (hidden) return false;
+  }
+
+  if (nav.visible !== undefined) return nav.visible;
+  return true;
+}
+
+export function buildNavGroupsFromRoutes<TRoutes extends object>(
+  routesById: TRoutes,
+  treeLookup?: Map<string, ResolvedMenuNode>
+): NavGroup[] {
   const entries: RouteEntry[] = [];
   const entriesByFullPath = new Map<string, RouteEntry>();
 
@@ -33,7 +141,9 @@ export function buildNavGroupsFromRoutes<TRoutes extends object>(routesById: TRo
     if (!fullPath || !fullPath.startsWith('/dashboard')) continue;
 
     const meta = getAppRouteStaticData(route);
-    if (!meta?.nav?.visible) continue;
+    if (!meta?.nav) continue;
+
+    if (!isItemVisible(meta, treeLookup)) continue;
 
     const normalizedPath = normalizePath(fullPath);
     const entry: RouteEntry = {
@@ -78,38 +188,49 @@ export function buildNavGroupsFromRoutes<TRoutes extends object>(routesById: TRo
 
     return {
       id,
-      title: meta.label,
+      title: resolveItemLabel(meta, treeLookup),
       url: fullPath,
       linkable: nav.linkable ?? nav.kind !== 'container',
       shortcut: nav.shortcut,
       menuKey: nav.menuKey,
-      icon: nav.icon,
+      icon: resolveItemIcon(meta),
       items: (childrenByParentPath.get(entry.normalizedPath) ?? [])
-        .toSorted((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
+        .toSorted(
+          (a, b) => resolveItemOrder(a.meta, treeLookup) - resolveItemOrder(b.meta, treeLookup)
+        )
         .map(entryToNavItem)
     };
   }
 
-  const grouped = new Map<AppNavGroupKey, RouteEntry[]>();
+  const grouped = new Map<string, RouteEntry[]>();
   for (const entry of topLevelEntries) {
-    const group = entry.meta.nav!.group;
+    const group = resolveGroupLabel(entry.meta, treeLookup);
+    if (!group) continue;
     const items = grouped.get(group) ?? [];
     items.push(entry);
     grouped.set(group, items);
   }
 
   const result: NavGroup[] = [];
-  const sortedGroupKeys = [...grouped.keys()].toSorted(
-    (a, b) => (NAV_GROUP_META[a]?.order ?? 0) - (NAV_GROUP_META[b]?.order ?? 0)
-  );
+  const sortedGroupKeys = [...grouped.keys()].toSorted((a, b) => {
+    const orderA = topLevelEntries
+      .filter((e) => resolveGroupLabel(e.meta, treeLookup) === a)
+      .reduce((min, e) => Math.min(min, resolveGroupOrder(e.meta, treeLookup)), Infinity);
+    const orderB = topLevelEntries
+      .filter((e) => resolveGroupLabel(e.meta, treeLookup) === b)
+      .reduce((min, e) => Math.min(min, resolveGroupOrder(e.meta, treeLookup)), Infinity);
+    return orderA - orderB;
+  });
 
   for (const key of sortedGroupKeys) {
     const items = grouped
       .get(key)!
-      .toSorted((a, b) => (a.meta.nav?.order ?? 0) - (b.meta.nav?.order ?? 0))
+      .toSorted(
+        (a, b) => resolveItemOrder(a.meta, treeLookup) - resolveItemOrder(b.meta, treeLookup)
+      )
       .map(entryToNavItem);
     result.push({
-      label: NAV_GROUP_META[key]?.label ?? '',
+      label: key,
       items
     });
   }

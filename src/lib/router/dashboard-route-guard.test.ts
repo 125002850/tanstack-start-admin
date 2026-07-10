@@ -40,6 +40,21 @@ function createMatch(staticData: Record<string, unknown>): DashboardRouteGuardMa
   return { staticData };
 }
 
+function createMenu(overrides: Partial<IamMe['menus'][number]> = {}): IamMe['menus'][number] {
+  return {
+    menuId: 'menu-1',
+    menuCode: 'iam_staff',
+    menuKey: 'iam_staff',
+    menuName: '员工管理',
+    menuType: 'MENU',
+    sortOrder: 10,
+    hidden: false,
+    cached: true,
+    status: 'ENABLED',
+    ...overrides
+  };
+}
+
 describe('ensureDashboardRouteAccess', () => {
   let queryClient: QueryClient;
 
@@ -101,5 +116,39 @@ describe('ensureDashboardRouteAccess', () => {
         matches: [createMatch({ label: '角色管理', requiredPermission: 'system:role:manage' })]
       })
     ).rejects.toBeInstanceOf(PermissionDeniedError);
+  });
+
+  it('denies a menu-managed route when its menuKey is absent from the account menu tree', async () => {
+    mockEnsureIamMe.mockResolvedValue(createMe({ menus: [] }));
+
+    await expect(
+      ensureDashboardRouteAccess({
+        queryClient,
+        matches: [createMatch({ nav: { menuKey: 'iam_staff' } })]
+      })
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
+  });
+
+  it('denies a menu-managed route when its menu node is disabled', async () => {
+    mockEnsureIamMe.mockResolvedValue(createMe({ menus: [createMenu({ status: 'DISABLED' })] }));
+
+    await expect(
+      ensureDashboardRouteAccess({
+        queryClient,
+        matches: [createMatch({ nav: { menuKey: 'iam_staff' } })]
+      })
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
+  });
+
+  it('allows a visible menu-managed route without a page permissionCode', async () => {
+    const me = createMe({ menus: [createMenu()] });
+    mockEnsureIamMe.mockResolvedValue(me);
+
+    await expect(
+      ensureDashboardRouteAccess({
+        queryClient,
+        matches: [createMatch({ nav: { menuKey: 'iam_staff' } })]
+      })
+    ).resolves.toBe(me);
   });
 });

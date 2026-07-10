@@ -131,10 +131,12 @@ describe('MenuManagementPage', () => {
     expect(await within(tree).findByText('权限管理')).toBeInTheDocument();
     expect(within(tree).getByText('员工管理')).toBeInTheDocument();
     expect(within(tree).queryByText('新增员工')).not.toBeInTheDocument();
+    expect(within(tree).queryByText('目录')).not.toBeInTheDocument();
+    expect(within(tree).queryByText('菜单')).not.toBeInTheDocument();
 
     const details = screen.getByRole('region', { name: '菜单详情' });
     expect(within(details).getByText('权限管理')).toBeInTheDocument();
-    expect(within(details).getByText('导航分组：权限管理')).toBeInTheDocument();
+    expect(within(details).getByText('目录节点')).toBeInTheDocument();
     expect(screen.getByText('请选择页面菜单')).toBeInTheDocument();
 
     await user.click(await within(tree).findByRole('button', { name: '选择 员工管理' }));
@@ -229,34 +231,58 @@ describe('MenuManagementPage', () => {
     expect(within(details).queryByText('上级 ID')).not.toBeInTheDocument();
     expect(within(details).getByText('菜单编码')).toBeInTheDocument();
     expect(within(details).queryByText('菜单键')).not.toBeInTheDocument();
+    expect(within(details).queryByText('图标')).not.toBeInTheDocument();
     expect(within(details).getByText('创建信息')).toBeInTheDocument();
     expect(within(details).getByText('更新信息')).toBeInTheDocument();
     expect(within(details).getByText('100')).toBeInTheDocument();
     expect(within(details).getByText('101')).toBeInTheDocument();
   });
 
-  it('批量为未缓存的页面菜单开启页面缓存', async () => {
-    const user = userEvent.setup();
+  it('左侧菜单树不展示页面缓存操作', async () => {
     render(<MenuManagementPage />, { wrapper: createWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await within(tree).findByText('员工管理');
-    await user.click(screen.getByRole('button', { name: '开启页面缓存' }));
+    const toolbar = screen.getByRole('toolbar', { name: '菜单树操作' });
+    expect(within(toolbar).queryByRole('button', { name: '开启页面缓存' })).not.toBeInTheDocument();
+  });
 
-    expect(screen.getByText('将为 2 个页面菜单开启页面缓存。')).toBeInTheDocument();
+  it('从菜单详情仅为当前页面开启缓存', async () => {
+    const user = userEvent.setup();
+    render(<MenuManagementPage />, { wrapper: createWrapper() });
+
+    const tree = await screen.findByRole('list', { name: '菜单树' });
+    await user.click(await within(tree).findByRole('button', { name: '选择 员工管理' }));
+    const details = screen.getByRole('region', { name: '菜单详情' });
+    await user.click(within(details).getByRole('button', { name: '开启页面缓存' }));
+
+    expect(screen.getByText('将为 1 个页面菜单开启页面缓存。')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '开启' }));
 
     await waitFor(() => {
-      expect(serviceMocks.iamMenuUpdate).toHaveBeenCalledTimes(2);
+      expect(serviceMocks.iamMenuUpdate).toHaveBeenCalledTimes(1);
     });
-    expect(serviceMocks.iamMenuUpdate).toHaveBeenNthCalledWith(
-      1,
+    expect(serviceMocks.iamMenuUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ menuId: 2, menuType: 'MENU', cached: true })
     );
-    expect(serviceMocks.iamMenuUpdate).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ menuId: 4, menuType: 'MENU', cached: true })
-    );
+  });
+
+  it('菜单详情操作只展示图标，并在 hover 时展示操作名称', async () => {
+    const user = userEvent.setup();
+    render(<MenuManagementPage />, { wrapper: createWrapper() });
+
+    const tree = await screen.findByRole('list', { name: '菜单树' });
+    await user.click(await within(tree).findByRole('button', { name: '选择 员工管理' }));
+    const details = screen.getByRole('region', { name: '菜单详情' });
+    const labels = ['新增下级菜单', '开启页面缓存', '编辑菜单', '切换菜单状态', '删除菜单'];
+
+    for (const label of labels) {
+      const button = within(details).getByRole('button', { name: label });
+      expect(button.textContent).toBe('');
+      await user.hover(button);
+      expect(await screen.findByRole('tooltip', { name: label })).toBeInTheDocument();
+      await user.unhover(button);
+    }
   });
 
   it('从所选菜单的按钮权限表新增时预设 BUTTON 类型和上级菜单', async () => {
@@ -276,6 +302,7 @@ describe('MenuManagementPage', () => {
     await user.type(screen.getByLabelText('菜单编码'), 'iam_staff_export');
     await user.type(screen.getByLabelText('菜单名称'), '导出员工');
     await user.type(screen.getByLabelText('权限标识'), 'iam:staff:export');
+    expect(screen.queryByLabelText('图标')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '创建按钮权限' }));
 
     await waitFor(() => {
