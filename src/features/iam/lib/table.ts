@@ -52,6 +52,31 @@ export function dslConditionNumber(condition: DataTableDslCondition | undefined,
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+export function dslConditionValues(
+  condition: DataTableDslCondition | undefined,
+  field: string
+): string[] | undefined {
+  if (!condition) return undefined;
+  if (condition.nodeType === 'compose') {
+    for (const child of condition.children) {
+      const values = dslConditionValues(child, field);
+      if (values?.length) return values;
+    }
+    return undefined;
+  }
+  if (condition.nodeType !== 'text' || condition.field !== field) return undefined;
+  if (condition.values?.length) return condition.values;
+  return condition.value ? [condition.value] : undefined;
+}
+
+export function dslConditionNumbers(
+  condition: DataTableDslCondition | undefined,
+  field: string
+): number[] | undefined {
+  const numbers = dslConditionValues(condition, field)?.map(Number).filter(Number.isFinite);
+  return numbers?.length ? numbers : undefined;
+}
+
 export function dslDateTimeRange(
   condition: DataTableDslCondition | undefined,
   field: string

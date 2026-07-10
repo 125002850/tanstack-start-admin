@@ -3,7 +3,7 @@ import { ensureIamMe } from './queries';
 import { PermissionDeniedError } from './errors';
 import type { IamMe } from './types';
 
-const SUPER_ADMIN_ROLE_CODE = 'SUPER_ADMIN';
+export const SUPER_ADMIN_ROLE_CODE = 'SUPER_ADMIN';
 
 type IamRoleHolder = {
   roles?: ReadonlyArray<{ roleCode?: string | null }> | null;

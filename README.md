@@ -436,6 +436,13 @@ export function isDataTableVirtualizationEnabled(): boolean {
 
 OpenAPI client 当前仍保留在 `src/lib/api/clients/service/`，后续可在后端框架抽离完成后重新生成干净 client。
 
+### 超级管理员约束
+
+- 系统内置超级管理员角色编码固定为 `SUPER_ADMIN`，全系统有且只有一个内置超级管理员账号。
+- `SUPER_ADMIN` 不得出现在新增员工、编辑员工或分配员工角色的可选角色中，也不得通过普通员工管理流程授予其他账号。
+- 内置超级管理员禁止编辑基础资料、重新分配角色、切换状态或删除；仅允许本人按既有权限重置自己的密码。
+- 前端限制只负责交互防护，后端必须继续校验上述唯一性和不可变约束，禁止把安全边界仅建立在 UI 隐藏上。
+
 ## 快速开始
 
 > [!NOTE]

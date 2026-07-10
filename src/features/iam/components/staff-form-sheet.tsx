@@ -27,6 +27,7 @@ import type {
   StaffRspDTO,
   StaffUpdateReqDTO
 } from '@/lib/api/clients/service';
+import { SUPER_ADMIN_ROLE_CODE } from '@/lib/api/iam/permissions';
 import { ENABLE_STATUS_OPTIONS } from '../lib/constants';
 import { deptSelectOptions } from '../lib/tree';
 
@@ -58,7 +59,7 @@ const emptyStaffFormValues: StaffFormValues = {
 
 export function roleOptions(roles: readonly RoleRspDTO[] = []) {
   return roles
-    .filter((role) => role.roleId != null)
+    .filter((role) => role.roleId != null && role.roleCode !== SUPER_ADMIN_ROLE_CODE)
     .map((role) => ({
       value: String(role.roleId),
       label: `${role.roleName ?? role.roleCode ?? role.roleId}`,
@@ -68,6 +69,7 @@ export function roleOptions(roles: readonly RoleRspDTO[] = []) {
 
 export function selectedRoleIds(staff?: StaffRspDTO | null) {
   return (staff?.roles ?? [])
+    .filter((role) => role.roleCode !== SUPER_ADMIN_ROLE_CODE)
     .map((role) => role.roleId)
     .filter((roleId): roleId is number => typeof roleId === 'number')
     .map(String);

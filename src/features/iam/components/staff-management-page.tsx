@@ -42,11 +42,12 @@ import { nullableText } from '@/lib/display-formatters';
 import { iamDeptTreeQueryOptions, iamRoleOptionsQueryOptions } from '../api/query-options';
 import { ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS } from '../lib/constants';
 import { nextStatus, StatusBadge } from '../lib/format';
-import { deptSelectOptions } from '../lib/tree';
+import { deptMultiSelectOptions, deptSelectOptions } from '../lib/tree';
 import { resolveStaffOperationAccess } from '../lib/staff-operation-access';
 import {
-  dslConditionNumber,
+  dslConditionNumbers,
   dslConditionValue,
+  dslConditionValues,
   dslDateTimeRange,
   pageRequestFromDsl
 } from '../lib/table';
@@ -68,16 +69,15 @@ function invalidateStaffQueries(queryClient: ReturnType<typeof useQueryClient>) 
   ]);
 }
 
-function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
+export function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
   const condition = request.condition;
   const keyword = dslConditionValue(condition, 'phone');
-  const status = dslConditionValue(condition, 'status') as IamStaffPageRequest['status'];
 
   return iamStaffPageQueryOptions({
     ...pageRequestFromDsl(request),
     keyword,
-    deptId: dslConditionNumber(condition, 'deptId'),
-    status,
+    deptIds: dslConditionNumbers(condition, 'deptId'),
+    statuses: dslConditionValues(condition, 'status') as IamStaffPageRequest['statuses'],
     staffCode: dslConditionValue(condition, 'staffCode'),
     username: dslConditionValue(condition, 'username'),
     staffName: dslConditionValue(condition, 'staffName'),
@@ -85,7 +85,10 @@ function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
   });
 }
 
-function getColumns(onOpenDetail: (staff: StaffRspDTO) => void): Array<ColumnDef<StaffRspDTO>> {
+function getColumns(
+  onOpenDetail: (staff: StaffRspDTO) => void,
+  departmentOptions: ReturnType<typeof deptMultiSelectOptions>
+): Array<ColumnDef<StaffRspDTO>> {
   return [
     columnDsl.field('staffCode', '工号', {
       size: 130,
@@ -126,9 +129,9 @@ function getColumns(onOpenDetail: (staff: StaffRspDTO) => void): Array<ColumnDef
       enableColumnFilter: true,
       enableSorting: false,
       meta: {
-        variant: 'select',
+        variant: 'multiSelect',
         label: '部门',
-        options: []
+        options: departmentOptions
       },
       cell: ({ row }) => dataTableTextCell(row.original.deptName, 'max-w-[160px]')
     },
@@ -144,7 +147,7 @@ function getColumns(onOpenDetail: (staff: StaffRspDTO) => void): Array<ColumnDef
       enableColumnFilter: true,
       enableSorting: false,
       meta: {
-        variant: 'select',
+        variant: 'multiSelect',
         label: '状态',
         options: [...ENABLE_STATUS_OPTIONS]
       },
@@ -192,6 +195,10 @@ export default function StaffManagementPage() {
   const deptQuery = useQuery(iamDeptTreeQueryOptions());
   const roleQuery = useQuery(iamRoleOptionsQueryOptions());
   const departments = React.useMemo(() => deptSelectOptions(deptQuery.data ?? [], { enabledOnly: true }), [deptQuery.data]);
+  const departmentFilterOptions = React.useMemo(
+    () => deptMultiSelectOptions(deptQuery.data ?? []),
+    [deptQuery.data]
+  );
   const roles = React.useMemo(() => roleOptions(roleQuery.data ?? []), [roleQuery.data]);
 
   const [formOpen, setFormOpen] = React.useState(false);
@@ -200,7 +207,10 @@ export default function StaffManagementPage() {
   const [rolesStaff, setRolesStaff] = React.useState<StaffRspDTO | null>(null);
   const [resetStaff, setResetStaff] = React.useState<StaffRspDTO | null>(null);
 
-  const columns = React.useMemo(() => getColumns(setDetailStaff), []);
+  const columns = React.useMemo(
+    () => getColumns(setDetailStaff, departmentFilterOptions),
+    [departmentFilterOptions]
+  );
 
   const createMutation = useMutation({
     mutationFn: (request: StaffCreateReqDTO) => iamStaffCreate(request),

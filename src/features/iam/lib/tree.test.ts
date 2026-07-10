@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   collectCollapsibleMenuIds,
+  deptMultiSelectOptions,
   filterVisibleMenuRows,
   flattenMenuTree,
   getMenuNodeStableId,
@@ -88,5 +89,22 @@ describe('menu tree helpers', () => {
 
   it('不允许将按钮权限节点选为上级菜单', () => {
     expect(menuSelectOptions(menuTree).map((option) => option.value)).toEqual(['1', '2', '4', '5']);
+  });
+});
+
+describe('department multi-select options', () => {
+  it('preserves tree depth without embedding presentation markers in labels', () => {
+    expect(
+      deptMultiSelectOptions([
+        {
+          deptId: 1,
+          deptName: '总部',
+          children: [{ deptId: 2, deptName: '研发部' }]
+        }
+      ])
+    ).toEqual([
+      { value: '1', label: '总部', depth: 0 },
+      { value: '2', label: '研发部', depth: 1 }
+    ]);
   });
 });

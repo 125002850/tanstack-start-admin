@@ -143,7 +143,13 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='data-table-filter-popover w-[12.5rem] p-0' align='start'>
+      <PopoverContent
+        className={cn(
+          'data-table-filter-popover w-[12.5rem] p-0',
+          options.some((option) => (option.depth ?? 0) > 0) && 'w-72'
+        )}
+        align='start'
+      >
         <Command>
           <CommandInput placeholder={labels?.inputPlaceholder?.(title) ?? `筛选${title ?? ''}`} />
           <CommandList className='max-h-full'>
@@ -153,7 +159,11 @@ export function DataTableFacetedFilter<TData, TValue>({
                 const isSelected = selectedValues.has(option.value);
 
                 return (
-                  <CommandItem key={option.value} onSelect={() => onItemSelect(option, isSelected)}>
+                  <CommandItem
+                    key={option.value}
+                    style={{ paddingLeft: `${(option.depth ?? 0) * 16 + 8}px` }}
+                    onSelect={() => onItemSelect(option, isSelected)}
+                  >
                     <div
                       className={cn(
                         'border-primary flex size-4 items-center justify-center rounded-sm border',
@@ -163,6 +173,11 @@ export function DataTableFacetedFilter<TData, TValue>({
                       <Icons.check className='size-4' />
                     </div>
                     {option.icon && <option.icon />}
+                    {(option.depth ?? 0) > 0 ? (
+                      <span aria-hidden='true' className='text-muted-foreground'>
+                        └
+                      </span>
+                    ) : null}
                     <span className='truncate'>{option.label}</span>
                     {option.count && (
                       <span className='ml-auto font-mono text-xs'>{option.count}</span>
