@@ -1,8 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { mockLoginInfo } from './support/mock-login-info';
+import { mockIamSession } from './support/mock-iam-session';
 
 test.beforeEach(async ({ page }) => {
-  await mockLoginInfo(page);
+  await mockIamSession(page);
 });
 
 function workspaceTags(page: Page) {
