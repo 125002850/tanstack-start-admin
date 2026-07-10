@@ -1,19 +1,10 @@
 import * as React from 'react';
 import type { ApiClientError } from '@oig/react-query-generator/core';
-import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FieldItem } from '@/components/ui/detail-field';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle
-} from '@/components/ui/sheet';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
@@ -24,10 +15,8 @@ import {
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
 import {
-  iamLoginLogDetailQueryOptions,
   iamLoginLogPageQueryKey,
   iamLoginLogPageQueryOptions,
-  iamOperationLogDetailQueryOptions,
   iamOperationLogPageQueryKey,
   iamOperationLogPageQueryOptions,
   type IamLoginLogPageRequest,
@@ -38,12 +27,11 @@ import {
 } from '@/lib/api/clients/service';
 import { nullableText } from '@/lib/display-formatters';
 import { BOOLEAN_RESULT_OPTIONS, LOGIN_RESULT_OPTIONS } from '../lib/constants';
-import {
-  BooleanResultBadge,
-  formatOptionalDateTime,
-  LoginResultBadge
-} from '../lib/format';
+import { BooleanResultBadge, LoginResultBadge } from '../lib/format';
 import { dslConditionNumber, dslConditionValue, dslDateTimeRange, pageRequestFromDsl } from '../lib/table';
+
+import LoginLogDetailSheet from './login-log-detail-sheet';
+import OperationLogDetailSheet from './operation-log-detail-sheet';
 
 const LOGIN_LOG_TABLE_ID = 'iam-login-log-list';
 const OPERATION_LOG_TABLE_ID = 'iam-operation-log-list';
@@ -184,93 +172,6 @@ function getOperationLogColumns(onOpenDetail: (log: OperationLogRspDTO) => void)
       filter: 'dateRange'
     })
   ];
-}
-
-function LoginLogDetailSheet({
-  log,
-  open,
-  onOpenChange
-}: {
-  log?: LoginLogRspDTO | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const logId = log?.logId;
-  const detailQuery = useQuery({
-    ...iamLoginLogDetailQueryOptions({ logId: logId ?? 0 }),
-    enabled: open && logId != null
-  });
-  const detail = detailQuery.data ?? log;
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex max-w-xl flex-col'>
-        <SheetHeader>
-          <SheetTitle>登录日志详情</SheetTitle>
-          <SheetDescription>{detail?.username ?? '-'}</SheetDescription>
-        </SheetHeader>
-        <div className='grid min-h-0 flex-1 gap-3 overflow-auto sm:grid-cols-2'>
-          <FieldItem label='日志ID' value={detail?.logId} />
-          <FieldItem label='员工ID' value={detail?.staffId} />
-          <FieldItem label='用户名' value={detail?.username} />
-          <FieldItem label='员工姓名' value={detail?.staffName} />
-          <FieldItem label='事件' value={detail?.eventType} />
-          <FieldItem label='结果' value={detail?.result} />
-          <FieldItem label='IP' value={detail?.ip} />
-          <FieldItem label='Token ID' value={detail?.tokenId} valueMaxLines={1} />
-          <FieldItem label='时间' value={formatOptionalDateTime(detail?.operationTime)} />
-          <FieldItem label='失败原因' value={detail?.failureReason} valueMaxLines={2} />
-          <FieldItem label='User Agent' value={detail?.userAgent} valueMaxLines={2} />
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function OperationLogDetailSheet({
-  log,
-  open,
-  onOpenChange
-}: {
-  log?: OperationLogRspDTO | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const logId = log?.logId;
-  const detailQuery = useQuery({
-    ...iamOperationLogDetailQueryOptions({ logId: logId ?? 0 }),
-    enabled: open && logId != null
-  });
-  const detail = detailQuery.data ?? log;
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex max-w-2xl flex-col sm:max-w-2xl'>
-        <SheetHeader>
-          <SheetTitle>操作日志详情</SheetTitle>
-          <SheetDescription>{detail?.module ?? '-'}</SheetDescription>
-        </SheetHeader>
-        <div className='grid min-h-0 flex-1 gap-3 overflow-auto sm:grid-cols-2'>
-          <FieldItem label='日志ID' value={detail?.logId} />
-          <FieldItem label='操作人ID' value={detail?.operatorId} />
-          <FieldItem label='用户名' value={detail?.operatorUsername} />
-          <FieldItem label='员工姓名' value={detail?.operatorStaffName} />
-          <FieldItem label='模块' value={detail?.module} />
-          <FieldItem label='动作' value={detail?.action} />
-          <FieldItem label='结果' value={detail?.success ? '成功' : '失败'} />
-          <FieldItem label='耗时' value={detail?.costMillis == null ? '-' : `${detail.costMillis} ms`} />
-          <FieldItem label='方法' value={detail?.httpMethod} />
-          <FieldItem label='IP' value={detail?.ip} />
-          <FieldItem label='路径' value={detail?.requestPath} valueMaxLines={2} />
-          <FieldItem label='时间' value={formatOptionalDateTime(detail?.operationTime)} />
-          <FieldItem label='请求摘要' value={detail?.requestSummary} valueMaxLines={2} />
-          <FieldItem label='响应摘要' value={detail?.responseSummary} valueMaxLines={2} />
-          <FieldItem label='错误信息' value={detail?.errorMessage} valueMaxLines={2} />
-          <FieldItem label='User Agent' value={detail?.userAgent} valueMaxLines={2} />
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
 }
 
 export function LoginLogPage() {

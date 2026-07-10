@@ -5,7 +5,11 @@ import type { IamMe } from './types';
 
 const SUPER_ADMIN_ROLE_CODE = 'SUPER_ADMIN';
 
-export function isIamSuperAdmin(me: Pick<IamMe, 'roles'> | null | undefined): boolean {
+type IamRoleHolder = {
+  roles?: ReadonlyArray<{ roleCode?: string | null }> | null;
+};
+
+export function isIamSuperAdmin(me: IamRoleHolder | null | undefined): boolean {
   return (me?.roles ?? []).some((role) => role.roleCode === SUPER_ADMIN_ROLE_CODE);
 }
 

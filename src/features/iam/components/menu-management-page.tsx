@@ -1,38 +1,8 @@
 import * as React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
-import { Icons } from '@/components/icons';
-import { PermissionGate } from '@/components/permission-gate';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { FieldItem } from '@/components/ui/detail-field';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from '@/components/ui/sheet';
-import {
-  DataTableActionsBar,
-  type DataTableAction
-} from '@/components/ui/table/actions/data-table-actions-bar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
 import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
 import { hasIamPermission } from '@/lib/api/iam/permissions';
 import {
@@ -45,50 +15,80 @@ import {
   type MenuUpdateReqDTO
 } from '@/lib/api/clients/service';
 import { iamMenuTreeQueryOptions } from '../api/query-options';
-import { ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS, MENU_TYPE_OPTIONS } from '../lib/constants';
-import { formatOptionalDateTime, MenuTypeBadge, nextStatus, StatusBadge } from '../lib/format';
+import { IAM_PERMISSIONS } from '../lib/constants';
+import { nextStatus } from '../lib/format';
 import {
   collectCollapsibleMenuIds,
   filterVisibleMenuRows,
   flattenMenuTree,
   getMenuNodeStableId,
-  isMenuNodeCollapsible,
-  menuSelectOptions
+  type MenuTreeNode
 } from '../lib/tree';
+import { MenuButtonPermissionsPanel } from './menu-button-permissions-panel';
+import { MenuDetails } from './menu-details';
+import MenuFormSheet, { type MenuFormValues } from './menu-form-sheet';
+import { MenuTreeList } from './menu-tree-list';
 
-type MenuFormValues = {
-  parentId: string;
-  menuCode: string;
-  menuName: string;
-  menuType: 'DIR' | 'MENU' | 'BUTTON';
-  routePath: string;
-  componentPath: string;
-  icon: string;
-  sortOrder: string;
-  hidden: boolean;
-  cached: boolean;
-  status: 'ENABLED' | 'DISABLED';
-  permissionCode: string;
-  remark: string;
-};
+const EMPTY_MENU_TREE: MenuRspDTO[] = [];
+const EMPTY_COLLAPSED_MENU_IDS = new Set<string>();
 
-const emptyValues: MenuFormValues = {
-  parentId: 'ROOT',
-  menuCode: '',
-  menuName: '',
-  menuType: 'MENU',
-  routePath: '',
-  componentPath: '',
-  icon: '',
-  sortOrder: '10',
-  hidden: false,
-  cached: false,
-  status: 'ENABLED',
-  permissionCode: '',
-  remark: ''
-};
+function menuMatchesKeyword(menu: MenuRspDTO, keyword: string) {
+  return [menu.menuName, menu.menuCode, menu.menuKey, menu.routePath, menu.permissionCode].some(
+    (value) => value?.toLocaleLowerCase().includes(keyword)
+  );
+}
 
-const menuTableActionColumns: Array<ColumnDef<MenuRspDTO>> = [];
+function pruneMenuNavigationTree(nodes: readonly MenuRspDTO[]): MenuTreeNode[] {
+  return nodes.flatMap((menu) => {
+    if (menu.menuType === 'BUTTON') return [];
+
+    const node = menu as MenuTreeNode;
+    return [
+      {
+        ...node,
+        children: pruneMenuNavigationTree(node.children ?? [])
+      }
+    ];
+  });
+}
+
+function filterMenuNavigationTree(
+  nodes: readonly MenuRspDTO[],
+  normalizedKeyword: string
+): MenuTreeNode[] {
+  if (!normalizedKeyword) return pruneMenuNavigationTree(nodes);
+
+  return nodes.flatMap((menu) => {
+    if (menu.menuType === 'BUTTON') return [];
+
+    const node = menu as MenuTreeNode;
+    const children = node.children ?? [];
+    const matchingNavigationChildren = filterMenuNavigationTree(children, normalizedKeyword);
+    const matchingButtonChild = children.some(
+      (child) => child.menuType === 'BUTTON' && menuMatchesKeyword(child, normalizedKeyword)
+    );
+
+    if (menuMatchesKeyword(menu, normalizedKeyword)) {
+      return [
+        {
+          ...node,
+          children: pruneMenuNavigationTree(children)
+        }
+      ];
+    }
+
+    if (matchingNavigationChildren.length > 0 || matchingButtonChild) {
+      return [
+        {
+          ...node,
+          children: matchingNavigationChildren
+        }
+      ];
+    }
+
+    return [];
+  });
+}
 
 function invalidateMenuTree(queryClient: ReturnType<typeof useQueryClient>) {
   return Promise.all([
@@ -97,282 +97,102 @@ function invalidateMenuTree(queryClient: ReturnType<typeof useQueryClient>) {
   ]);
 }
 
-function FieldShell({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className='space-y-2'>
-      <Label>{label}</Label>
-      {children}
-    </div>
-  );
-}
+function toMenuUpdateRequest(menu: MenuRspDTO, cached: boolean): MenuUpdateReqDTO {
+  if (
+    menu.menuId == null ||
+    !menu.menuCode ||
+    !menu.menuName ||
+    (menu.menuType !== 'DIR' && menu.menuType !== 'MENU' && menu.menuType !== 'BUTTON')
+  ) {
+    throw new Error('菜单数据不完整，无法更新页面缓存');
+  }
 
-function MenuFormSheet({
-  open,
-  onOpenChange,
-  menu,
-  parent,
-  tree,
-  onSubmit
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  menu?: MenuRspDTO | null;
-  parent?: MenuRspDTO | null;
-  tree: readonly MenuRspDTO[];
-  onSubmit: (payload: MenuCreateReqDTO | MenuUpdateReqDTO) => Promise<void>;
-}) {
-  const isEdit = !!menu?.menuId;
-  const [values, setValues] = React.useState<MenuFormValues>(emptyValues);
-  const parentOptions = React.useMemo(() => menuSelectOptions(tree, menu?.menuId), [menu?.menuId, tree]);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const parentId = isEdit ? menu?.parentId : (parent?.menuId ?? menu?.parentId);
-    setValues({
-      parentId: parentId == null ? 'ROOT' : String(parentId),
-      menuCode: menu?.menuCode ?? '',
-      menuName: menu?.menuName ?? '',
-      menuType:
-        menu?.menuType === 'DIR' || menu?.menuType === 'BUTTON' || menu?.menuType === 'MENU'
-          ? menu.menuType
-          : 'MENU',
-      routePath: menu?.routePath ?? '',
-      componentPath: menu?.componentPath ?? '',
-      icon: menu?.icon ?? '',
-      sortOrder: String(menu?.sortOrder ?? 10),
-      hidden: menu?.hidden ?? false,
-      cached: menu?.cached ?? false,
-      status: menu?.status === 'DISABLED' ? 'DISABLED' : 'ENABLED',
-      permissionCode: menu?.permissionCode ?? '',
-      remark: menu?.remark ?? ''
-    });
-  }, [isEdit, menu, open, parent]);
-
-  const update = React.useCallback(
-    (patch: Partial<MenuFormValues>) => setValues((current) => ({ ...current, ...patch })),
-    []
-  );
-
-  const handleSubmit = React.useCallback(
-    async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      if (!values.menuCode.trim() || !values.menuName.trim()) {
-        toast.error('请填写菜单编码和名称');
-        return;
-      }
-      if (values.menuType === 'BUTTON' && !values.permissionCode.trim()) {
-        toast.error('按钮权限必须填写权限标识');
-        return;
-      }
-      const sortOrder = Number(values.sortOrder);
-      const payload = {
-        parentId: values.parentId === 'ROOT' ? undefined : Number(values.parentId),
-        menuCode: values.menuCode.trim(),
-        menuName: values.menuName.trim(),
-        menuType: values.menuType,
-        routePath: values.routePath.trim() || undefined,
-        componentPath: values.componentPath.trim() || undefined,
-        icon: values.icon.trim() || undefined,
-        sortOrder: Number.isFinite(sortOrder) ? sortOrder : undefined,
-        hidden: values.hidden,
-        cached: values.cached,
-        status: values.status,
-        permissionCode: values.permissionCode.trim() || undefined,
-        remark: values.remark.trim() || undefined
-      };
-      if (isEdit) {
-        if (!menu?.menuId) return;
-        await onSubmit({ ...payload, menuId: menu.menuId });
-      } else {
-        await onSubmit(payload);
-      }
-      onOpenChange(false);
-    },
-    [isEdit, menu?.menuId, onOpenChange, onSubmit, values]
-  );
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent autoFocusFirstField className='flex max-w-xl flex-col sm:max-w-xl'>
-        <SheetHeader>
-          <SheetTitle>{isEdit ? '编辑菜单' : '新增菜单'}</SheetTitle>
-          <SheetDescription>维护目录、页面菜单和按钮权限节点。</SheetDescription>
-        </SheetHeader>
-        <form id='menu-form' className='min-h-0 flex-1 space-y-4 overflow-auto' onSubmit={handleSubmit}>
-          <FieldShell label='上级菜单'>
-            <Select value={values.parentId} onValueChange={(parentId) => update({ parentId })}>
-              <SelectTrigger className='w-full'>
-                <SelectValue placeholder='根菜单' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='ROOT'>根菜单</SelectItem>
-                {parentOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FieldShell>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <FieldShell label='菜单编码'>
-              <Input value={values.menuCode} onChange={(event) => update({ menuCode: event.target.value })} />
-            </FieldShell>
-            <FieldShell label='菜单名称'>
-              <Input value={values.menuName} onChange={(event) => update({ menuName: event.target.value })} />
-            </FieldShell>
-          </div>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <FieldShell label='类型'>
-              <Select value={values.menuType} onValueChange={(menuType) => update({ menuType: menuType as MenuFormValues['menuType'] })}>
-                <SelectTrigger className='w-full'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MENU_TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FieldShell>
-            <FieldShell label='状态'>
-              <Select value={values.status} onValueChange={(status) => update({ status: status as MenuFormValues['status'] })}>
-                <SelectTrigger className='w-full'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ENABLE_STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FieldShell>
-          </div>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <FieldShell label='路由路径'>
-              <Input value={values.routePath} onChange={(event) => update({ routePath: event.target.value })} />
-            </FieldShell>
-            <FieldShell label='组件路径'>
-              <Input value={values.componentPath} onChange={(event) => update({ componentPath: event.target.value })} />
-            </FieldShell>
-          </div>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <FieldShell label='权限标识'>
-              <Input value={values.permissionCode} onChange={(event) => update({ permissionCode: event.target.value })} />
-            </FieldShell>
-            <FieldShell label='图标'>
-              <Input value={values.icon} onChange={(event) => update({ icon: event.target.value })} />
-            </FieldShell>
-          </div>
-          <FieldShell label='排序'>
-            <Input inputMode='numeric' value={values.sortOrder} onChange={(event) => update({ sortOrder: event.target.value })} />
-          </FieldShell>
-          <div className='flex flex-wrap gap-6'>
-            <div className='flex items-center gap-2'>
-              <Checkbox
-                id='iam-menu-hidden'
-                checked={values.hidden}
-                onCheckedChange={(checked) => update({ hidden: checked === true })}
-              />
-              <Label htmlFor='iam-menu-hidden' className='text-sm'>
-                隐藏
-              </Label>
-            </div>
-            <div className='flex items-center gap-2'>
-              <Checkbox
-                id='iam-menu-cached'
-                checked={values.cached}
-                onCheckedChange={(checked) => update({ cached: checked === true })}
-              />
-              <Label htmlFor='iam-menu-cached' className='text-sm'>
-                缓存
-              </Label>
-            </div>
-          </div>
-          <FieldShell label='备注'>
-            <Textarea value={values.remark} onChange={(event) => update({ remark: event.target.value })} />
-          </FieldShell>
-        </form>
-        <SheetFooter className='flex-row justify-end'>
-          <Button type='submit' form='menu-form'>
-            {isEdit ? '保存修改' : '创建菜单'}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function MenuDetailSheet({
-  menu,
-  open,
-  onOpenChange
-}: {
-  menu?: MenuRspDTO | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex max-w-xl flex-col'>
-        <SheetHeader>
-          <SheetTitle>菜单详情</SheetTitle>
-          <SheetDescription>{menu?.menuName ?? '-'}</SheetDescription>
-        </SheetHeader>
-        <div className='grid min-h-0 flex-1 gap-3 overflow-auto sm:grid-cols-2'>
-          <FieldItem label='菜单ID' value={menu?.menuId} />
-          <FieldItem label='上级ID' value={menu?.parentId ?? '根菜单'} />
-          <FieldItem label='编码' value={menu?.menuCode} />
-          <FieldItem label='名称' value={menu?.menuName} />
-          <FieldItem label='类型' value={menu?.menuType} />
-          <FieldItem label='路由' value={menu?.routePath} valueMaxLines={2} />
-          <FieldItem label='组件' value={menu?.componentPath} valueMaxLines={2} />
-          <FieldItem label='权限标识' value={menu?.permissionCode} valueMaxLines={2} />
-          <FieldItem label='图标' value={menu?.icon} />
-          <FieldItem label='排序' value={menu?.sortOrder} />
-          <FieldItem label='隐藏' value={menu?.hidden ? '是' : '否'} />
-          <FieldItem label='缓存' value={menu?.cached ? '是' : '否'} />
-          <FieldItem label='状态' value={menu?.status} />
-          <FieldItem label='创建时间' value={formatOptionalDateTime(menu?.createTime)} />
-          <FieldItem label='更新时间' value={formatOptionalDateTime(menu?.updateTime)} />
-          <FieldItem label='备注' value={menu?.remark} valueMaxLines={2} />
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
+  return {
+    menuId: menu.menuId,
+    parentId: menu.parentId,
+    menuCode: menu.menuCode,
+    menuName: menu.menuName,
+    menuType: menu.menuType,
+    routePath: menu.routePath ?? undefined,
+    componentPath: menu.componentPath ?? undefined,
+    icon: menu.icon ?? undefined,
+    sortOrder: menu.sortOrder ?? undefined,
+    hidden: menu.hidden ?? false,
+    cached,
+    status: menu.status === 'DISABLED' ? 'DISABLED' : 'ENABLED',
+    permissionCode: menu.permissionCode ?? undefined,
+    remark: menu.remark ?? undefined
+  };
 }
 
 export default function MenuManagementPage() {
   const queryClient = useQueryClient();
   const { data: me } = useQuery(getIamMeQueryOptions());
   const [keyword, setKeyword] = React.useState('');
+  const [requestedMenuId, setRequestedMenuId] = React.useState<string | null>(null);
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingMenu, setEditingMenu] = React.useState<MenuRspDTO | null>(null);
   const [parentMenu, setParentMenu] = React.useState<MenuRspDTO | null>(null);
-  const [detailMenu, setDetailMenu] = React.useState<MenuRspDTO | null>(null);
+  const [initialMenuType, setInitialMenuType] = React.useState<MenuFormValues['menuType']>('MENU');
   const [collapsedMenuIds, setCollapsedMenuIds] = React.useState<Set<string>>(() => new Set());
-  const query = useQuery(iamMenuTreeQueryOptions({ keyword: keyword.trim() || undefined }));
+  const query = useQuery(iamMenuTreeQueryOptions());
   const { isFetching: isMenuTreeFetching, refetch: refetchMenuTree } = query;
-  const allRows = React.useMemo(() => flattenMenuTree(query.data ?? []), [query.data]);
-  const collapsibleMenuIds = React.useMemo(() => collectCollapsibleMenuIds(allRows), [allRows]);
+  const menuTree = query.data ?? EMPTY_MENU_TREE;
+  const allRows = React.useMemo(() => flattenMenuTree(menuTree), [menuTree]);
+  const allRowsById = React.useMemo(
+    () => new Map(allRows.map((menu) => [getMenuNodeStableId(menu), menu])),
+    [allRows]
+  );
+  const menuNameById = React.useMemo(
+    () =>
+      new Map(
+        allRows
+          .filter((menu) => menu.menuId != null)
+          .map((menu) => [
+            String(menu.menuId),
+            menu.menuName ?? menu.menuCode ?? String(menu.menuId)
+          ])
+      ),
+    [allRows]
+  );
+  const normalizedKeyword = keyword.trim().toLocaleLowerCase();
+  const visibleCollapsedMenuIds = normalizedKeyword ? EMPTY_COLLAPSED_MENU_IDS : collapsedMenuIds;
+  const navigationTree = React.useMemo(
+    () => filterMenuNavigationTree(menuTree, normalizedKeyword),
+    [menuTree, normalizedKeyword]
+  );
+  const navigationRows = React.useMemo(() => flattenMenuTree(navigationTree), [navigationTree]);
+  const selectedNavigationMenu =
+    navigationRows.find((menu) => getMenuNodeStableId(menu) === requestedMenuId) ??
+    navigationRows[0] ??
+    null;
+  const selectedMenuId = selectedNavigationMenu
+    ? getMenuNodeStableId(selectedNavigationMenu)
+    : null;
+  const selectedMenu = selectedMenuId ? (allRowsById.get(selectedMenuId) ?? null) : null;
+  const selectedMenuParentName =
+    selectedMenu?.parentId == null
+      ? '根菜单'
+      : (menuNameById.get(String(selectedMenu.parentId)) ?? '-');
+  const collapsibleMenuIds = React.useMemo(
+    () => collectCollapsibleMenuIds(navigationRows),
+    [navigationRows]
+  );
   const collapsedMenuCount = React.useMemo(
-    () => Array.from(collapsedMenuIds).filter((id) => collapsibleMenuIds.has(id)).length,
-    [collapsedMenuIds, collapsibleMenuIds]
+    () => Array.from(visibleCollapsedMenuIds).filter((id) => collapsibleMenuIds.has(id)).length,
+    [collapsibleMenuIds, visibleCollapsedMenuIds]
   );
   const rows = React.useMemo(
-    () => filterVisibleMenuRows(allRows, collapsedMenuIds),
-    [allRows, collapsedMenuIds]
+    () => filterVisibleMenuRows(navigationRows, visibleCollapsedMenuIds),
+    [navigationRows, visibleCollapsedMenuIds]
   );
-  const actionTable = useReactTable<MenuRspDTO>({
-    data: rows,
-    columns: menuTableActionColumns,
-    getCoreRowModel: getCoreRowModel()
-  });
+  const uncachedPageMenus = React.useMemo(
+    () => allRows.filter((menu) => menu.menuType === 'MENU' && menu.cached !== true),
+    [allRows]
+  );
   const { withConfirm, confirmDialog } = useConfirmAction<[MenuRspDTO]>();
+  const { withConfirm: withPageCacheConfirm, confirmDialog: pageCacheConfirmDialog } =
+    useConfirmAction<[readonly MenuRspDTO[]]>();
   const canManageMenu = hasIamPermission(me, IAM_PERMISSIONS.menu.manage);
 
   const toggleMenuCollapse = React.useCallback((menu: MenuRspDTO) => {
@@ -388,13 +208,29 @@ export default function MenuManagementPage() {
     });
   }, []);
 
-  const expandAllMenus = React.useCallback(() => {
-    setCollapsedMenuIds(new Set());
-  }, []);
+  const allMenusCollapsed =
+    collapsibleMenuIds.size > 0 && collapsedMenuCount === collapsibleMenuIds.size;
 
-  const collapseAllMenus = React.useCallback(() => {
-    setCollapsedMenuIds(new Set(collapsibleMenuIds));
-  }, [collapsibleMenuIds]);
+  const toggleAllMenus = React.useCallback(() => {
+    setCollapsedMenuIds(allMenusCollapsed ? new Set() : new Set(collapsibleMenuIds));
+  }, [allMenusCollapsed, collapsibleMenuIds]);
+
+  const openCreateMenu = React.useCallback(
+    (parent: MenuRspDTO | null, menuType: MenuFormValues['menuType']) => {
+      setEditingMenu(null);
+      setParentMenu(parent);
+      setInitialMenuType(menuType);
+      setFormOpen(true);
+    },
+    []
+  );
+
+  const openEditMenu = React.useCallback((menu: MenuRspDTO) => {
+    setEditingMenu(menu);
+    setParentMenu(null);
+    setInitialMenuType('MENU');
+    setFormOpen(true);
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: (request: MenuCreateReqDTO) => iamMenuCreate(request),
@@ -410,8 +246,18 @@ export default function MenuManagementPage() {
       toast.success('菜单已更新');
     }
   });
+  const enablePageCacheMutation = useMutation({
+    mutationFn: async (menus: readonly MenuRspDTO[]) => {
+      await Promise.all(menus.map((menu) => iamMenuUpdate(toMenuUpdateRequest(menu, true))));
+    },
+    onSuccess: () => {
+      toast.success('页面缓存已开启');
+    },
+    onSettled: () => invalidateMenuTree(queryClient)
+  });
   const statusMutation = useMutation({
-    mutationFn: (request: Parameters<typeof iamMenuStatusUpdate>[0]) => iamMenuStatusUpdate(request),
+    mutationFn: (request: Parameters<typeof iamMenuStatusUpdate>[0]) =>
+      iamMenuStatusUpdate(request),
     onSuccess: async () => {
       await invalidateMenuTree(queryClient);
       toast.success('菜单状态已更新');
@@ -456,198 +302,74 @@ export default function MenuManagementPage() {
       }),
     [deleteMutation, withConfirm]
   );
-  const tableActions = React.useMemo<DataTableAction<MenuRspDTO>[]>(
-    () => [
-      {
-        label: '刷新列表',
-        icon: <Icons.rotateClockwise className='size-3.5' />,
-        disabled: isMenuTreeFetching,
-        callback: async () => {
-          await refetchMenuTree();
+  const confirmEnablePageCache = React.useMemo(
+    () =>
+      withPageCacheConfirm({
+        title: '确认开启页面缓存',
+        description: (menus) => `将为 ${menus.length} 个页面菜单开启页面缓存。`,
+        confirmText: '开启',
+        cancelText: '取消',
+        run: async (menus) => {
+          await enablePageCacheMutation.mutateAsync(menus);
         }
-      },
-      {
-        label: '全部展开',
-        icon: <Icons.chevronDown className='size-3.5' />,
-        disabled: collapsedMenuCount === 0,
-        callback: expandAllMenus
-      },
-      {
-        label: '全部折叠',
-        icon: <Icons.chevronRight className='size-3.5' />,
-        disabled: collapsibleMenuIds.size === 0 || collapsedMenuCount >= collapsibleMenuIds.size,
-        callback: collapseAllMenus
-      },
-      {
-        label: '新增菜单',
-        icon: <Icons.add className='size-3.5' />,
-        hidden: !canManageMenu,
-        callback: () => {
-          setEditingMenu(null);
-          setParentMenu(null);
-          setFormOpen(true);
-        }
-      }
-    ],
-    [
-      canManageMenu,
-      collapseAllMenus,
-      collapsedMenuCount,
-      collapsibleMenuIds.size,
-      expandAllMenus,
-      isMenuTreeFetching,
-      refetchMenuTree
-    ]
+      }),
+    [enablePageCacheMutation, withPageCacheConfirm]
   );
-
   return (
     <>
-      <Card>
-        <CardContent className='flex flex-col gap-4 px-0'>
-          <div
-            role='toolbar'
-            aria-label='菜单表格操作栏'
-            className='flex flex-wrap items-center gap-2 px-6'
-          >
-            <Input
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder='搜索菜单、编码或权限'
-              className='h-8 w-60'
-            />
-            <DataTableActionsBar table={actionTable} actions={tableActions} />
-          </div>
-          <div className='overflow-auto px-6 pb-6'>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>名称</TableHead>
-                  <TableHead>编码</TableHead>
-                  <TableHead>类型</TableHead>
-                  <TableHead>权限标识</TableHead>
-                  <TableHead>排序</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className='text-right'>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((menu) => {
-                  const collapsible = isMenuNodeCollapsible(menu);
-                  const collapsed = collapsedMenuIds.has(getMenuNodeStableId(menu));
-                  const menuName = menu.menuName ?? menu.menuCode ?? '-';
+      <div className='grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start'>
+        <MenuTreeList
+          rows={rows}
+          keyword={keyword}
+          selectedMenuId={selectedMenuId}
+          collapsedMenuIds={visibleCollapsedMenuIds}
+          isFiltering={Boolean(normalizedKeyword)}
+          isFetching={isMenuTreeFetching}
+          canManage={canManageMenu}
+          canToggleAll={!normalizedKeyword && collapsibleMenuIds.size > 0}
+          allCollapsed={allMenusCollapsed}
+          canEnablePageCache={uncachedPageMenus.length > 0}
+          isEnablingPageCache={enablePageCacheMutation.isPending}
+          onKeywordChange={setKeyword}
+          onSelect={(menu) => setRequestedMenuId(getMenuNodeStableId(menu))}
+          onToggleCollapse={toggleMenuCollapse}
+          onToggleAll={toggleAllMenus}
+          onEnablePageCache={() => confirmEnablePageCache(uncachedPageMenus)}
+          onRefresh={() => {
+            void refetchMenuTree();
+          }}
+          onCreateRoot={() => openCreateMenu(null, 'DIR')}
+        />
 
-                  return (
-                    <TableRow key={getMenuNodeStableId(menu)}>
-                      <TableCell>
-                        <div
-                          className='flex min-w-0 items-center gap-1'
-                          style={{ paddingLeft: menu.depth * 18 }}
-                        >
-                          {collapsible ? (
-                            <Button
-                              type='button'
-                              variant='ghost'
-                              size='icon'
-                              className='size-7 shrink-0'
-                              aria-label={`${collapsed ? '展开' : '折叠'} ${menuName}`}
-                              aria-expanded={!collapsed}
-                              onClick={() => toggleMenuCollapse(menu)}
-                            >
-                              {collapsed ? (
-                                <Icons.chevronRight className='size-4' />
-                              ) : (
-                                <Icons.chevronDown className='size-4' />
-                              )}
-                            </Button>
-                          ) : (
-                            <span className='size-7 shrink-0' aria-hidden='true' />
-                          )}
-                          <Button
-                            variant='link'
-                            className='h-auto min-w-0 p-0 text-left font-medium'
-                            onClick={() => setDetailMenu(menu)}
-                          >
-                            <span className='truncate'>{menuName}</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>{menu.menuCode}</TableCell>
-                      <TableCell>
-                        <MenuTypeBadge type={menu.menuType} />
-                      </TableCell>
-                      <TableCell>{menu.permissionCode ?? '-'}</TableCell>
-                      <TableCell>{menu.sortOrder ?? '-'}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={menu.status} />
-                      </TableCell>
-                      <TableCell>
-                        <div className='flex justify-end gap-1'>
-                          <PermissionGate permission={IAM_PERMISSIONS.menu.manage}>
-                            <Button
-                              variant='ghost'
-                              size='icon'
-                              aria-label='新增下级'
-                              onClick={() => {
-                                setEditingMenu(null);
-                                setParentMenu(menu);
-                                setFormOpen(true);
-                              }}
-                            >
-                              <Icons.plusCircle className='size-4' />
-                            </Button>
-                            <Button
-                              variant='ghost'
-                              size='icon'
-                              aria-label='编辑'
-                              onClick={() => {
-                                setEditingMenu(menu);
-                                setParentMenu(null);
-                                setFormOpen(true);
-                              }}
-                            >
-                              <Icons.edit className='size-4' />
-                            </Button>
-                            <Button
-                              variant='ghost'
-                              size='icon'
-                              aria-label='切换状态'
-                              onClick={() => confirmMenuStatus(menu)}
-                            >
-                              <Icons.rotate className='size-4' />
-                            </Button>
-                            <Button
-                              variant='ghost'
-                              size='icon'
-                              aria-label='删除'
-                              onClick={() => confirmMenuDelete(menu)}
-                            >
-                              <Icons.trash className='size-4' />
-                            </Button>
-                          </PermissionGate>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {rows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={7} className='h-24 text-center text-muted-foreground'>
-                      {query.isFetching ? '加载中' : '暂无菜单'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+        <div className='flex min-w-0 flex-col gap-4'>
+          <MenuDetails
+            record={selectedMenu}
+            parentMenuName={selectedMenuParentName}
+            canManage={canManageMenu}
+            onCreateChild={() => selectedMenu && openCreateMenu(selectedMenu, 'MENU')}
+            onEdit={() => selectedMenu && openEditMenu(selectedMenu)}
+            onToggleStatus={() => selectedMenu && confirmMenuStatus(selectedMenu)}
+            onDelete={() => selectedMenu && confirmMenuDelete(selectedMenu)}
+          />
+          <MenuButtonPermissionsPanel
+            record={selectedMenu}
+            canManage={canManageMenu}
+            onCreate={() => selectedMenu && openCreateMenu(selectedMenu, 'BUTTON')}
+            onEdit={openEditMenu}
+            onToggleStatus={confirmMenuStatus}
+            onDelete={confirmMenuDelete}
+          />
+        </div>
+      </div>
       {confirmDialog}
+      {pageCacheConfirmDialog}
       <MenuFormSheet
         open={formOpen}
         onOpenChange={setFormOpen}
         menu={editingMenu}
         parent={parentMenu}
-        tree={query.data ?? []}
+        initialMenuType={initialMenuType}
+        tree={menuTree}
         onSubmit={async (payload) => {
           if ('menuId' in payload) {
             await updateMutation.mutateAsync(payload);
@@ -655,11 +377,6 @@ export default function MenuManagementPage() {
             await createMutation.mutateAsync(payload);
           }
         }}
-      />
-      <MenuDetailSheet
-        open={!!detailMenu}
-        onOpenChange={(open) => !open && setDetailMenu(null)}
-        menu={detailMenu}
       />
     </>
   );

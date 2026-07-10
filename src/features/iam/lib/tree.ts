@@ -46,7 +46,7 @@ export function getMenuNodeStableId(menu: Pick<MenuRspDTO, 'menuCode' | 'menuId'
 }
 
 export function isMenuNodeCollapsible(menu: Pick<FlatMenuNode, 'children'>): boolean {
-  return Array.isArray(menu.children) && menu.children.length > 0;
+  return Array.isArray(menu.children) && menu.children.some((child) => child.menuType !== 'BUTTON');
 }
 
 export function collectCollapsibleMenuIds(rows: readonly FlatMenuNode[]): Set<string> {
@@ -76,7 +76,7 @@ export function filterVisibleMenuRows(
 
     visibleRows.push(menu);
 
-    if (isMenuNodeCollapsible(menu) && collapsedMenuIds.has(getMenuNodeStableId(menu))) {
+    if (collapsedMenuIds.has(getMenuNodeStableId(menu))) {
       collapsedAncestorDepths.push(menu.depth);
     }
   }
@@ -110,7 +110,9 @@ export function deptMultiSelectOptions(
 
 export function menuSelectOptions(nodes: readonly MenuRspDTO[] = [], excludeMenuId?: number) {
   return flattenMenuTree(nodes)
-    .filter((menu) => menu.menuId != null && menu.menuId !== excludeMenuId)
+    .filter(
+      (menu) => menu.menuId != null && menu.menuId !== excludeMenuId && menu.menuType !== 'BUTTON'
+    )
     .map((menu) => ({
       value: String(menu.menuId),
       label: prefixLabel(menu.depth, menu.menuName ?? menu.menuCode ?? String(menu.menuId))

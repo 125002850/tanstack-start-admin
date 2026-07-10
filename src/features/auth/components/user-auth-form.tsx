@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import * as z from 'zod';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useAppForm } from '@/components/ui/tanstack-form';
 import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
@@ -64,7 +65,7 @@ export default function UserAuthForm() {
   return (
     <form.AppForm>
       <form.Form className='w-full gap-0 p-0'>
-        <div className='flex flex-col gap-5'>
+        <FieldGroup>
           <form.AppField
             name='username'
             children={(field) => (
@@ -118,7 +119,7 @@ export default function UserAuthForm() {
                       {showPassword ? (
                         <Icons.eyeOff className='size-4' aria-hidden={true} />
                       ) : (
-                        <Icons.lock className='size-4' aria-hidden={true} />
+                        <Icons.eye className='size-4' aria-hidden={true} />
                       )}
                     </Button>
                   </div>
@@ -127,8 +128,8 @@ export default function UserAuthForm() {
               </field.FieldSet>
             )}
           />
-        </div>
-        <div className='flex flex-col gap-4 pt-2'>
+        </FieldGroup>
+        <div className='flex flex-col gap-4'>
           {errorMessage && (
             <p className='text-destructive text-sm' role='alert'>
               {errorMessage}

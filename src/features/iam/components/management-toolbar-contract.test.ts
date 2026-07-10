@@ -81,19 +81,23 @@ describe('IAM management tableActions', () => {
     );
   });
 
-  it('keeps department and menu create actions in the shared table actions bar', () => {
+  it('keeps department create actions in the shared table actions bar', () => {
     expectCreateActionInTableActions({
       path: 'src/features/iam/components/dept-management-page.tsx',
       rowType: 'DeptRspDTO',
       actionText: '新增部门'
     });
     expectActionsBarUsesTableActions('src/features/iam/components/dept-management-page.tsx');
+  });
 
+  it('keeps button permission create actions in the selected-menu DataTable', () => {
     expectCreateActionInTableActions({
-      path: 'src/features/iam/components/menu-management-page.tsx',
+      path: 'src/features/iam/components/menu-button-permissions-panel.tsx',
       rowType: 'MenuRspDTO',
-      actionText: '新增菜单'
+      actionText: '新增按钮权限'
     });
-    expectActionsBarUsesTableActions('src/features/iam/components/menu-management-page.tsx');
+    expectDataTableUsesTableActions(
+      'src/features/iam/components/menu-button-permissions-panel.tsx'
+    );
   });
 });

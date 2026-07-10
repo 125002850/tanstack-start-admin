@@ -8,26 +8,6 @@ import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { FieldItem } from '@/components/ui/detail-field';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from '@/components/ui/sheet';
-import { Textarea } from '@/components/ui/textarea';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
@@ -54,7 +34,6 @@ import {
   iamStaffUpdate,
   type IamStaffPageRequest,
   type IamStaffPageResponse,
-  type RoleRspDTO,
   type StaffCreateReqDTO,
   type StaffRspDTO,
   type StaffUpdateReqDTO
@@ -62,8 +41,9 @@ import {
 import { nullableText } from '@/lib/display-formatters';
 import { iamDeptTreeQueryOptions, iamRoleOptionsQueryOptions } from '../api/query-options';
 import { ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS } from '../lib/constants';
-import { formatOptionalDateTime, nextStatus, StatusBadge } from '../lib/format';
+import { nextStatus, StatusBadge } from '../lib/format';
 import { deptSelectOptions } from '../lib/tree';
+import { resolveStaffOperationAccess } from '../lib/staff-operation-access';
 import {
   dslConditionNumber,
   dslConditionValue,
@@ -71,34 +51,13 @@ import {
   pageRequestFromDsl
 } from '../lib/table';
 
+import StaffFormSheet, { roleOptions } from './staff-form-sheet';
+import AssignRolesSheet from './assign-roles-sheet';
+import ResetPasswordSheet from './reset-password-sheet';
+import StaffDetailSheet from './staff-detail-sheet';
+
 const TABLE_ID = 'iam-staff-list';
 const STAFF_LIST_QUERY_KEY = ['service', 'iam-staff'] as const;
-
-type StaffFormValues = {
-  username: string;
-  staffCode: string;
-  staffName: string;
-  deptId: string;
-  password: string;
-  phone: string;
-  email: string;
-  status: 'ENABLED' | 'DISABLED';
-  roleIds: string[];
-  remark: string;
-};
-
-const emptyStaffFormValues: StaffFormValues = {
-  username: '',
-  staffCode: '',
-  staffName: '',
-  deptId: '',
-  password: '',
-  phone: '',
-  email: '',
-  status: 'ENABLED',
-  roleIds: [],
-  remark: ''
-};
 
 const columnDsl = createDataTableColumnDsl<StaffRspDTO>();
 
@@ -107,23 +66,6 @@ function invalidateStaffQueries(queryClient: ReturnType<typeof useQueryClient>) 
     queryClient.invalidateQueries({ queryKey: STAFF_LIST_QUERY_KEY, exact: false }),
     queryClient.invalidateQueries({ queryKey: IAM_QUERY_KEYS.me, exact: false })
   ]);
-}
-
-function roleOptions(roles: readonly RoleRspDTO[] = []) {
-  return roles
-    .filter((role) => role.roleId != null)
-    .map((role) => ({
-      value: String(role.roleId),
-      label: `${role.roleName ?? role.roleCode ?? role.roleId}`,
-      disabled: role.status === 'DISABLED'
-    }));
-}
-
-function selectedRoleIds(staff?: StaffRspDTO | null) {
-  return (staff?.roles ?? [])
-    .map((role) => role.roleId)
-    .filter((roleId): roleId is number => typeof roleId === 'number')
-    .map(String);
 }
 
 function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
@@ -244,342 +186,6 @@ function getColumns(onOpenDetail: (staff: StaffRspDTO) => void): Array<ColumnDef
   ];
 }
 
-function FieldShell({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className='space-y-2'>
-      <Label>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-function StaffFormSheet({
-  open,
-  onOpenChange,
-  staff,
-  departments,
-  roles,
-  onSubmit
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  staff?: StaffRspDTO | null;
-  departments: ReturnType<typeof deptSelectOptions>;
-  roles: ReturnType<typeof roleOptions>;
-  onSubmit: (payload: StaffCreateReqDTO | StaffUpdateReqDTO) => Promise<void>;
-}) {
-  const isEdit = !!staff?.staffId;
-  const [values, setValues] = React.useState<StaffFormValues>(emptyStaffFormValues);
-
-  React.useEffect(() => {
-    if (!open) return;
-    setValues({
-      username: staff?.username ?? '',
-      staffCode: staff?.staffCode ?? '',
-      staffName: staff?.staffName ?? '',
-      deptId: staff?.deptId == null ? '' : String(staff.deptId),
-      password: '',
-      phone: staff?.phone ?? '',
-      email: staff?.email ?? '',
-      status: staff?.status === 'DISABLED' ? 'DISABLED' : 'ENABLED',
-      roleIds: isEdit ? selectedRoleIds(staff) : [],
-      remark: staff?.remark ?? ''
-    });
-  }, [isEdit, open, staff]);
-
-  const update = React.useCallback(
-    (patch: Partial<StaffFormValues>) => setValues((current) => ({ ...current, ...patch })),
-    []
-  );
-
-  const handleSubmit = React.useCallback(
-    async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const deptId = Number(values.deptId);
-      if (!values.staffCode.trim() || !values.staffName.trim() || !Number.isFinite(deptId)) {
-        toast.error('请填写工号、姓名和部门');
-        return;
-      }
-      if (!isEdit && (!values.username.trim() || !values.password.trim())) {
-        toast.error('请填写用户名和初始密码');
-        return;
-      }
-
-      if (isEdit) {
-        if (!staff?.staffId) return;
-        await onSubmit({
-          staffId: staff.staffId,
-          staffCode: values.staffCode.trim(),
-          staffName: values.staffName.trim(),
-          deptId,
-          phone: values.phone.trim() || undefined,
-          email: values.email.trim() || undefined,
-          status: values.status,
-          remark: values.remark.trim() || undefined
-        });
-      } else {
-        await onSubmit({
-          username: values.username.trim(),
-          staffCode: values.staffCode.trim(),
-          staffName: values.staffName.trim(),
-          deptId,
-          password: values.password,
-          phone: values.phone.trim() || undefined,
-          email: values.email.trim() || undefined,
-          status: values.status,
-          roleIds: values.roleIds.map(Number).filter(Number.isFinite),
-          remark: values.remark.trim() || undefined
-        });
-      }
-      onOpenChange(false);
-    },
-    [isEdit, onOpenChange, onSubmit, staff?.staffId, values]
-  );
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent autoFocusFirstField className='flex max-w-xl flex-col sm:max-w-xl'>
-        <SheetHeader>
-          <SheetTitle>{isEdit ? '编辑员工' : '新增员工'}</SheetTitle>
-          <SheetDescription>
-            {isEdit ? '修改员工基础资料和启用状态。' : '创建本地 IAM 员工账号。'}
-          </SheetDescription>
-        </SheetHeader>
-        <form id='staff-form' className='min-h-0 flex-1 space-y-4 overflow-auto' onSubmit={handleSubmit}>
-          {!isEdit && (
-            <FieldShell label='用户名'>
-              <Input value={values.username} onChange={(event) => update({ username: event.target.value })} />
-            </FieldShell>
-          )}
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <FieldShell label='员工工号'>
-              <Input value={values.staffCode} onChange={(event) => update({ staffCode: event.target.value })} />
-            </FieldShell>
-            <FieldShell label='员工姓名'>
-              <Input value={values.staffName} onChange={(event) => update({ staffName: event.target.value })} />
-            </FieldShell>
-          </div>
-          <FieldShell label='部门'>
-            <Select value={values.deptId} onValueChange={(deptId) => update({ deptId })}>
-              <SelectTrigger className='w-full'>
-                <SelectValue placeholder='选择部门' />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((department) => (
-                  <SelectItem key={department.value} value={department.value} disabled={department.disabled}>
-                    {department.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FieldShell>
-          <div className='grid gap-4 sm:grid-cols-2'>
-            <FieldShell label='手机号'>
-              <Input value={values.phone} onChange={(event) => update({ phone: event.target.value })} />
-            </FieldShell>
-            <FieldShell label='邮箱'>
-              <Input value={values.email} onChange={(event) => update({ email: event.target.value })} />
-            </FieldShell>
-          </div>
-          {!isEdit && (
-            <>
-              <FieldShell label='初始密码'>
-                <Input
-                  type='password'
-                  value={values.password}
-                  onChange={(event) => update({ password: event.target.value })}
-                />
-              </FieldShell>
-              <FieldShell label='初始角色'>
-                <MultiSelectCombobox
-                  triggerLabel='角色'
-                  placeholder='选择角色'
-                  options={roles}
-                  value={values.roleIds}
-                  onValueChange={(roleIds) => update({ roleIds })}
-                />
-              </FieldShell>
-            </>
-          )}
-          <FieldShell label='状态'>
-            <Select value={values.status} onValueChange={(status) => update({ status: status as StaffFormValues['status'] })}>
-              <SelectTrigger className='w-full'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ENABLE_STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FieldShell>
-          <FieldShell label='备注'>
-            <Textarea value={values.remark} onChange={(event) => update({ remark: event.target.value })} />
-          </FieldShell>
-        </form>
-        <SheetFooter className='flex-row justify-end'>
-          <Button type='submit' form='staff-form'>
-            {isEdit ? '保存修改' : '创建员工'}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function AssignRolesSheet({
-  open,
-  onOpenChange,
-  staff,
-  roles,
-  onSubmit
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  staff?: StaffRspDTO | null;
-  roles: ReturnType<typeof roleOptions>;
-  onSubmit: (roleIds: number[]) => Promise<void>;
-}) {
-  const [roleIds, setRoleIds] = React.useState<string[]>([]);
-
-  React.useEffect(() => {
-    if (open) setRoleIds(selectedRoleIds(staff));
-  }, [open, staff]);
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent autoFocusFirstField className='flex max-w-lg flex-col'>
-        <SheetHeader>
-          <SheetTitle>分配角色</SheetTitle>
-          <SheetDescription>{staff?.staffName ?? staff?.username ?? '当前员工'}</SheetDescription>
-        </SheetHeader>
-        <div className='min-h-0 flex-1'>
-          <FieldShell label='角色'>
-            <MultiSelectCombobox
-              triggerLabel='角色'
-              placeholder='选择角色'
-              options={roles}
-              value={roleIds}
-              onValueChange={setRoleIds}
-            />
-          </FieldShell>
-        </div>
-        <SheetFooter className='flex-row justify-end'>
-          <Button
-            type='button'
-            onClick={async () => {
-              await onSubmit(roleIds.map(Number).filter(Number.isFinite));
-              onOpenChange(false);
-            }}
-          >
-            保存角色
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function ResetPasswordSheet({
-  open,
-  onOpenChange,
-  staff,
-  onSubmit
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  staff?: StaffRspDTO | null;
-  onSubmit: (newPassword: string) => Promise<void>;
-}) {
-  const [newPassword, setNewPassword] = React.useState('');
-
-  React.useEffect(() => {
-    if (open) setNewPassword('');
-  }, [open]);
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent autoFocusFirstField className='flex max-w-lg flex-col'>
-        <SheetHeader>
-          <SheetTitle>重置密码</SheetTitle>
-          <SheetDescription>{staff?.staffName ?? staff?.username ?? '当前员工'}</SheetDescription>
-        </SheetHeader>
-        <div className='min-h-0 flex-1'>
-          <FieldShell label='新密码'>
-            <Input type='password' value={newPassword} onChange={(event) => setNewPassword(event.target.value)} />
-          </FieldShell>
-        </div>
-        <SheetFooter className='flex-row justify-end'>
-          <Button
-            type='button'
-            onClick={async () => {
-              if (!newPassword.trim()) {
-                toast.error('请输入新密码');
-                return;
-              }
-              await onSubmit(newPassword);
-              onOpenChange(false);
-            }}
-          >
-            确认重置
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-function StaffDetailSheet({
-  open,
-  onOpenChange,
-  staff
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  staff?: StaffRspDTO | null;
-}) {
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex max-w-2xl flex-col sm:max-w-2xl'>
-        <SheetHeader>
-          <SheetTitle>员工详情</SheetTitle>
-          <SheetDescription>{staff?.staffName ?? '-'}</SheetDescription>
-        </SheetHeader>
-        <div className='grid min-h-0 flex-1 gap-3 overflow-auto sm:grid-cols-2'>
-          <FieldItem label='员工ID' value={staff?.staffId} />
-          <FieldItem label='用户名' value={staff?.username} />
-          <FieldItem label='工号' value={staff?.staffCode} />
-          <FieldItem label='姓名' value={staff?.staffName} />
-          <FieldItem label='部门' value={staff?.deptName} />
-          <FieldItem label='手机号' value={staff?.phone} />
-          <FieldItem label='邮箱' value={staff?.email} />
-          <FieldItem label='状态' value={staff?.status} />
-          <FieldItem label='必须改密' value={staff?.mustChangePassword ? '是' : '否'} />
-          <FieldItem label='创建时间' value={formatOptionalDateTime(staff?.createTime)} />
-          <FieldItem label='更新时间' value={formatOptionalDateTime(staff?.updateTime)} />
-          <FieldItem label='备注' value={staff?.remark} valueMaxLines={2} />
-          <div className='space-y-2 sm:col-span-2'>
-            <Label>角色</Label>
-            <div className='flex flex-wrap gap-1.5'>
-              {(staff?.roles ?? []).length > 0 ? (
-                staff!.roles!.map((role) => (
-                  <Badge key={role.roleId ?? role.roleCode} variant='outline'>
-                    {role.roleName ?? role.roleCode}
-                  </Badge>
-                ))
-              ) : (
-                <span className='text-muted-foreground text-sm'>未分配角色</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
 export default function StaffManagementPage() {
   const queryClient = useQueryClient();
   const { data: me } = useQuery(getIamMeQueryOptions());
@@ -646,14 +252,25 @@ export default function StaffManagementPage() {
   const canUpdate = hasIamPermission(me, IAM_PERMISSIONS.staff.update);
   const canDelete = hasIamPermission(me, IAM_PERMISSIONS.staff.delete);
   const canResetPassword = hasIamPermission(me, IAM_PERMISSIONS.staff.resetPassword);
+  const getStaffOperationAccess = React.useCallback(
+    (staff: StaffRspDTO) =>
+      resolveStaffOperationAccess(staff, {
+        canUpdate,
+        canDelete,
+        canResetPassword,
+        currentStaffId: me?.staff.staffId
+      }),
+    [canDelete, canResetPassword, canUpdate, me?.staff.staffId]
+  );
 
   const rowActions = React.useMemo<DataTableRowAction<StaffRspDTO>[]>(
     () => [
       {
         label: '编辑',
         icon: <Icons.edit className='size-4' />,
-        hidden: !canUpdate,
+        hidden: (staff) => !getStaffOperationAccess(staff).canEdit,
         onClick: (staff) => {
+          if (!getStaffOperationAccess(staff).canEdit) return;
           setEditingStaff(staff);
           setFormOpen(true);
         }
@@ -661,13 +278,16 @@ export default function StaffManagementPage() {
       {
         label: '角色',
         icon: <Icons.userShare className='size-4' />,
-        hidden: !canUpdate,
-        onClick: (staff) => setRolesStaff(staff)
+        hidden: (staff) => !getStaffOperationAccess(staff).canAssignRoles,
+        onClick: (staff) => {
+          if (!getStaffOperationAccess(staff).canAssignRoles) return;
+          setRolesStaff(staff);
+        }
       },
       {
         label: '状态',
         icon: <Icons.rotate className='size-4' />,
-        hidden: !canUpdate,
+        hidden: (staff) => !getStaffOperationAccess(staff).canUpdateStatus,
         confirmDelete: {
           title: '确认切换员工状态',
           description: (staff) =>
@@ -676,7 +296,7 @@ export default function StaffManagementPage() {
           cancelText: '取消'
         },
         onClick: async (staff) => {
-          if (staff.staffId == null) return;
+          if (!getStaffOperationAccess(staff).canUpdateStatus || staff.staffId == null) return;
           await statusMutation.mutateAsync({
             staffId: staff.staffId,
             status: nextStatus(staff.status)
@@ -686,13 +306,16 @@ export default function StaffManagementPage() {
       {
         label: '重置密码',
         icon: <Icons.lock className='size-4' />,
-        hidden: !canResetPassword,
-        onClick: (staff) => setResetStaff(staff)
+        hidden: (staff) => !getStaffOperationAccess(staff).canResetPassword,
+        onClick: (staff) => {
+          if (!getStaffOperationAccess(staff).canResetPassword) return;
+          setResetStaff(staff);
+        }
       },
       {
         label: '删除',
         icon: <Icons.trash className='size-4' />,
-        hidden: !canDelete,
+        hidden: (staff) => !getStaffOperationAccess(staff).canDelete,
         confirmDelete: {
           title: '确认删除员工',
           description: (staff) => `删除后 ${staff.staffName ?? staff.username ?? '该员工'} 将无法登录。`,
@@ -700,12 +323,12 @@ export default function StaffManagementPage() {
           cancelText: '取消'
         },
         onClick: async (staff) => {
-          if (staff.staffId == null) return;
+          if (!getStaffOperationAccess(staff).canDelete || staff.staffId == null) return;
           await deleteMutation.mutateAsync({ staffId: staff.staffId });
         }
       }
     ],
-    [canDelete, canResetPassword, canUpdate, deleteMutation, statusMutation]
+    [deleteMutation, getStaffOperationAccess, statusMutation]
   );
 
   const tableActions = React.useMemo<DataTableAction<StaffRspDTO>[]>(
@@ -774,6 +397,7 @@ export default function StaffManagementPage() {
           if ('username' in payload) {
             await createMutation.mutateAsync(payload);
           } else {
+            if (!editingStaff?.staffId || !getStaffOperationAccess(editingStaff).canEdit) return;
             await updateMutation.mutateAsync(payload);
           }
         }}
@@ -784,7 +408,7 @@ export default function StaffManagementPage() {
         staff={rolesStaff}
         roles={roles}
         onSubmit={async (roleIds) => {
-          if (!rolesStaff?.staffId) return;
+          if (!rolesStaff?.staffId || !getStaffOperationAccess(rolesStaff).canAssignRoles) return;
           await assignRolesMutation.mutateAsync({ staffId: rolesStaff.staffId, roleIds });
         }}
       />
@@ -793,7 +417,7 @@ export default function StaffManagementPage() {
         onOpenChange={(open) => !open && setResetStaff(null)}
         staff={resetStaff}
         onSubmit={async (newPassword) => {
-          if (!resetStaff?.staffId) return;
+          if (!resetStaff?.staffId || !getStaffOperationAccess(resetStaff).canResetPassword) return;
           await resetPasswordMutation.mutateAsync({ staffId: resetStaff.staffId, newPassword });
         }}
       />

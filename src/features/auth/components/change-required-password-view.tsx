@@ -3,6 +3,7 @@ import { useRouter } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
+import { FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useAppForm } from '@/components/ui/tanstack-form';
 import { changeCurrentPassword, logout } from '@/lib/api/iam/session';
@@ -77,91 +78,95 @@ export default function ChangeRequiredPasswordView() {
           </p>
         </div>
         <form.AppForm>
-          <form.Form className='gap-4 p-0'>
-            <form.AppField
-              name='oldPassword'
-              children={(field) => (
-                <field.FieldSet>
-                  <field.Field>
-                    <field.FieldLabel htmlFor={field.name} required>
-                      旧密码
-                    </field.FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type='password'
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
-                      autoComplete='current-password'
-                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                    />
-                  </field.Field>
-                  <field.FieldError />
-                </field.FieldSet>
+          <form.Form className='gap-0 p-0'>
+            <FieldGroup>
+              <form.AppField
+                name='oldPassword'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field>
+                      <field.FieldLabel htmlFor={field.name} required>
+                        旧密码
+                      </field.FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='password'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        autoComplete='current-password'
+                        aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                      />
+                    </field.Field>
+                    <field.FieldError />
+                  </field.FieldSet>
+                )}
+              />
+              <form.AppField
+                name='newPassword'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field>
+                      <field.FieldLabel htmlFor={field.name} required>
+                        新密码
+                      </field.FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='password'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        autoComplete='new-password'
+                        aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                      />
+                    </field.Field>
+                    <field.FieldError />
+                  </field.FieldSet>
+                )}
+              />
+              <form.AppField
+                name='confirmPassword'
+                children={(field) => (
+                  <field.FieldSet>
+                    <field.Field>
+                      <field.FieldLabel htmlFor={field.name} required>
+                        确认新密码
+                      </field.FieldLabel>
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type='password'
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        autoComplete='new-password'
+                        aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                      />
+                    </field.Field>
+                    <field.FieldError />
+                  </field.FieldSet>
+                )}
+              />
+            </FieldGroup>
+            <div className='flex flex-col gap-4'>
+              {errorMessage && (
+                <p className='text-destructive text-sm' role='alert'>
+                  {errorMessage}
+                </p>
               )}
-            />
-            <form.AppField
-              name='newPassword'
-              children={(field) => (
-                <field.FieldSet>
-                  <field.Field>
-                    <field.FieldLabel htmlFor={field.name} required>
-                      新密码
-                    </field.FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type='password'
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
-                      autoComplete='new-password'
-                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                    />
-                  </field.Field>
-                  <field.FieldError />
-                </field.FieldSet>
-              )}
-            />
-            <form.AppField
-              name='confirmPassword'
-              children={(field) => (
-                <field.FieldSet>
-                  <field.Field>
-                    <field.FieldLabel htmlFor={field.name} required>
-                      确认新密码
-                    </field.FieldLabel>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type='password'
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
-                      autoComplete='new-password'
-                      aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
-                    />
-                  </field.Field>
-                  <field.FieldError />
-                </field.FieldSet>
-              )}
-            />
-            {errorMessage && (
-              <p className='text-destructive text-sm' role='alert'>
-                {errorMessage}
-              </p>
-            )}
-            <div className='flex gap-2'>
-              <Button
-                type='button'
-                variant='outline'
-                className='flex-1'
-                onClick={() => void logout()}
-              >
-                退出登录
-              </Button>
-              <form.SubmitButton className='flex-1'>保存新密码</form.SubmitButton>
+              <div className='flex gap-2'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='flex-1'
+                  onClick={() => void logout()}
+                >
+                  退出登录
+                </Button>
+                <form.SubmitButton className='flex-1'>保存新密码</form.SubmitButton>
+              </div>
             </div>
           </form.Form>
         </form.AppForm>
