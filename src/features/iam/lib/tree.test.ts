@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collectCollapsibleMenuIds,
   deptMultiSelectOptions,
+  deptSelectOptions,
   filterVisibleMenuRows,
   flattenMenuTree,
   getMenuNodeStableId,
@@ -89,6 +90,30 @@ describe('menu tree helpers', () => {
 
   it('不允许将按钮权限节点选为上级菜单', () => {
     expect(menuSelectOptions(menuTree).map((option) => option.value)).toEqual(['1', '2', '4', '5']);
+  });
+});
+
+describe('department select options', () => {
+  it('exposes every department depth for layout indentation', () => {
+    const options = deptSelectOptions([
+      {
+        deptId: 1,
+        deptName: '总部',
+        children: [
+          {
+            deptId: 2,
+            deptName: '市场部',
+            children: [{ deptId: 3, deptName: '品牌营销' }]
+          }
+        ]
+      }
+    ]);
+
+    expect(options.map((option) => [option.label.trimStart(), option.depth])).toEqual([
+      ['总部', 0],
+      ['└ 市场部', 1],
+      ['└ 品牌营销', 2]
+    ]);
   });
 });
 

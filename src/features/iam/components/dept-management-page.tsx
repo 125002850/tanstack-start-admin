@@ -22,6 +22,8 @@ import DeptDataTable from './dept-data-table';
 import DeptDetailSheet from './dept-detail-sheet';
 import DeptFormSheet from './dept-form-sheet';
 
+const EMPTY_DEPT_TREE: DeptRspDTO[] = [];
+
 function invalidateDeptTree(queryClient: ReturnType<typeof useQueryClient>) {
   return queryClient.invalidateQueries({
     queryKey: ['service', 'iam-dept'],
@@ -39,7 +41,8 @@ export default function DeptManagementPage() {
   const [detailDept, setDetailDept] = React.useState<DeptRspDTO | null>(null);
   const query = useQuery(iamDeptTreeQueryOptions({ keyword: keyword.trim() || undefined }));
   const { isFetching: isDeptTreeFetching, refetch: refetchDeptTree } = query;
-  const rows = React.useMemo(() => flattenDeptTree(query.data ?? []), [query.data]);
+  const rows = query.data ?? EMPTY_DEPT_TREE;
+  const totalCount = React.useMemo(() => flattenDeptTree(rows).length, [rows]);
   const canManageDept = hasIamPermission(me, IAM_PERMISSIONS.dept.manage);
 
   const createMutation = useMutation({
@@ -97,11 +100,14 @@ export default function DeptManagementPage() {
         <CardContent className='px-0'>
           <DeptDataTable
             rows={rows}
+            totalCount={totalCount}
             isFetching={isDeptTreeFetching}
             keyword={keyword}
             onKeywordChange={setKeyword}
             canManageDept={canManageDept}
-            onRefresh={async () => { await refetchDeptTree(); }}
+            onRefresh={async () => {
+              await refetchDeptTree();
+            }}
             onAddDept={(parent) => {
               setEditingDept(null);
               setParentDept(parent ?? null);
@@ -123,7 +129,7 @@ export default function DeptManagementPage() {
         onOpenChange={setFormOpen}
         dept={editingDept}
         parent={parentDept}
-        tree={query.data ?? []}
+        tree={rows}
         onSubmit={async (payload) => {
           if ('deptId' in payload) {
             await updateMutation.mutateAsync(payload);

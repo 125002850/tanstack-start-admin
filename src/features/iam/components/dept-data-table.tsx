@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import { getExpandedRowModel, type ColumnDef } from '@tanstack/react-table';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,9 @@ import { useDataTable } from '@/hooks/use-data-table';
 import type { DeptRspDTO } from '@/lib/api/clients/service';
 import { StatusBadge } from '../lib/format';
 
-type FlatDeptRow = DeptRspDTO & { depth: number };
-
 interface DeptDataTableProps {
-  rows: FlatDeptRow[];
+  rows: DeptRspDTO[];
+  totalCount: number;
   isFetching: boolean;
   keyword: string;
   onKeywordChange: (keyword: string) => void;
@@ -32,10 +31,11 @@ interface DeptDataTableProps {
   onViewDetail: (dept: DeptRspDTO) => void;
 }
 
-const columnDsl = createDataTableColumnDsl<FlatDeptRow>();
+const columnDsl = createDataTableColumnDsl<DeptRspDTO>();
 
 export default function DeptDataTable({
   rows,
+  totalCount,
   isFetching,
   keyword,
   onKeywordChange,
@@ -47,39 +47,76 @@ export default function DeptDataTable({
   onDeleteDept,
   onViewDetail
 }: DeptDataTableProps) {
-  const columns = React.useMemo<Array<ColumnDef<FlatDeptRow>>>(() => [
-    {
-      accessorKey: 'deptName',
-      header: ({ column }) => dataTableHeader(column, '部门名称'),
-      size: 240,
-      cell: ({ row }) => (
-        <Button
-          variant='link'
-          className='h-auto p-0 font-medium'
-          style={{ marginLeft: (row.original.depth ?? 0) * 18 }}
-          onClick={() => onViewDetail(row.original)}
-        >
-          {row.original.deptName}
-        </Button>
-      )
-    },
-    columnDsl.field('deptCode', '编码', { size: 160 }),
-    {
-      accessorKey: 'sortOrder',
-      header: ({ column }) => dataTableHeader(column, '排序'),
-      size: 90,
-      cell: ({ row }) => <>{row.original.sortOrder ?? '-'}</>
-    },
-    {
-      accessorKey: 'status',
-      header: ({ column }) => dataTableHeader(column, '状态'),
-      size: 110,
-      cell: ({ row }) => <StatusBadge status={row.original.status} />
-    },
-    columnDsl.field('createTime', '创建时间', { type: 'dateTime', size: 180 })
-  ], [onViewDetail]);
+  const columns = React.useMemo<Array<ColumnDef<DeptRspDTO>>>(
+    () => [
+      {
+        accessorKey: 'deptName',
+        header: ({ column }) => dataTableHeader(column, '部门名称'),
+        size: 240,
+        cell: ({ row }) => {
+          const canExpand = row.getCanExpand();
+          const expanded = row.getIsExpanded();
+          const name = row.original.deptName ?? row.original.deptCode ?? '-';
 
-  const rowActions = React.useMemo<DataTableRowAction<FlatDeptRow>[]>(
+          return (
+            <div
+              className='flex min-w-0 items-center gap-1'
+              style={{ paddingInlineStart: row.depth * 18 }}
+            >
+              {canExpand ? (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='size-7 shrink-0'
+                  aria-label={`${expanded ? '折叠' : '展开'} ${name}`}
+                  aria-expanded={expanded}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    row.toggleExpanded();
+                  }}
+                >
+                  {expanded ? (
+                    <Icons.chevronDown className='size-4' />
+                  ) : (
+                    <Icons.chevronRight className='size-4' />
+                  )}
+                </Button>
+              ) : (
+                <span className='size-7 shrink-0' aria-hidden='true' />
+              )}
+
+              <Button
+                type='button'
+                variant='link'
+                className='h-auto min-w-0 justify-start p-0 font-medium'
+                onClick={() => onViewDetail(row.original)}
+              >
+                <span className='truncate'>{name}</span>
+              </Button>
+            </div>
+          );
+        }
+      },
+      columnDsl.field('deptCode', '编码', { size: 160 }),
+      {
+        accessorKey: 'sortOrder',
+        header: ({ column }) => dataTableHeader(column, '排序'),
+        size: 90,
+        cell: ({ row }) => <>{row.original.sortOrder ?? '-'}</>
+      },
+      {
+        accessorKey: 'status',
+        header: ({ column }) => dataTableHeader(column, '状态'),
+        size: 110,
+        cell: ({ row }) => <StatusBadge status={row.original.status} />
+      },
+      columnDsl.field('createTime', '创建时间', { type: 'dateTime', size: 180 })
+    ],
+    [onViewDetail]
+  );
+
+  const rowActions = React.useMemo<DataTableRowAction<DeptRspDTO>[]>(
     () =>
       canManageDept
         ? [
@@ -121,9 +158,21 @@ export default function DeptDataTable({
     [canManageDept, onAddDept, onEditDept, onToggleStatus, onDeleteDept]
   );
 
-  const tableActions = React.useMemo<DataTableAction<FlatDeptRow>[]>(
-    () =>
-      canManageDept
+  const tableActions = React.useMemo<DataTableAction<DeptRspDTO>[]>(
+    () => [
+      {
+        label: '折叠全部部门',
+        icon: <Icons.chevronRight className='size-3.5' />,
+        hidden: ({ table }) => !table.getCanSomeRowsExpand() || !table.getIsAllRowsExpanded(),
+        callback: ({ table }) => table.toggleAllRowsExpanded(false)
+      },
+      {
+        label: '展开全部部门',
+        icon: <Icons.chevronDown className='size-3.5' />,
+        hidden: ({ table }) => !table.getCanSomeRowsExpand() || table.getIsAllRowsExpanded(),
+        callback: ({ table }) => table.toggleAllRowsExpanded(true)
+      },
+      ...(canManageDept
         ? [
             {
               label: '新增部门',
@@ -131,7 +180,8 @@ export default function DeptDataTable({
               callback: () => onAddDept(null)
             }
           ]
-        : [],
+        : [])
+    ],
     [canManageDept, onAddDept]
   );
 
@@ -140,22 +190,34 @@ export default function DeptDataTable({
     data: rows,
     columns,
     pageCount: 1,
+    getSubRows: (dept) => dept.children ?? [],
+    getExpandedRowModel: getExpandedRowModel(),
+    initialState: { expanded: true },
+    enableSorting: false,
     showRowNumberColumn: false,
     showSelectColumn: false,
     rowId: 'deptId',
     rowActions
   });
 
+  const isFiltering = keyword.trim().length > 0;
+
+  React.useEffect(() => {
+    if (isFiltering) {
+      table.toggleAllRowsExpanded(true);
+    }
+  }, [isFiltering, rows, table]);
+
   return (
     <DataTable
       table={table}
       tableActions={tableActions}
-      statusTotalCount={rows.length}
+      statusTotalCount={totalCount}
       isLoading={isFetching}
       onRefresh={onRefresh}
       isRefreshing={isFetching}
     >
-      <DataTableToolbar table={table}>
+      <DataTableToolbar table={table} aria-label='部门树操作'>
         <Input
           value={keyword}
           onChange={(event) => onKeywordChange(event.target.value)}

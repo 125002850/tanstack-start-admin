@@ -146,8 +146,14 @@ export default function DeptFormSheet({
               <SelectContent>
                 <SelectItem value='ROOT'>根部门</SelectItem>
                 {parentOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value} disabled={Number(option.value) === dept?.deptId}>
-                    {option.label}
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    disabled={Number(option.value) === dept?.deptId}
+                  >
+                    <span style={{ paddingInlineStart: `${option.depth}rem` }}>
+                      {option.label.trimStart()}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -94,6 +94,7 @@ export function deptSelectOptions(
     .map((dept) => ({
       value: String(dept.deptId ?? ''),
       label: prefixLabel(dept.depth, dept.deptName ?? dept.deptCode ?? String(dept.deptId ?? '')),
+      depth: dept.depth,
       disabled: options?.enabledOnly && dept.status !== 'ENABLED'
     }))
     .filter((option) => option.value);
