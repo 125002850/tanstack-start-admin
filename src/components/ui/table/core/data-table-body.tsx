@@ -64,7 +64,7 @@ const ROW_EXPAND_IGNORE_SELECTOR = [
   '[role="checkbox"]'
 ].join(',');
 const DATA_TABLE_BODY_CELL_CLASS_NAME =
-  'relative select-none px-[15px] py-[11px] outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out data-[cell-selected=true]:bg-primary/5 data-[cell-selected=true]:outline-primary';
+  'relative px-[15px] py-[11px] outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out';
 
 /** 行展开点击需要避开按钮、链接、表单控件等交互元素。 */
 function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: HTMLElement) {
@@ -210,14 +210,16 @@ export function DataTableBody<TData>({
   const prevKeyRef = useRef('');
   // 运行时异常时关闭虚拟化，回退到普通 tbody，保证数据仍可见。
   const [runtimeFallback, setRuntimeFallback] = useState(false);
-  const { getCellSelectionProps } = useDataTableCellSelection<TData>({
-    shouldIgnoreTarget: shouldIgnoreRowExpandTarget
-  });
-
   // 从真实表头测得的列宽是虚拟 td 的唯一宽度来源；虚拟 td 已脱离表格流。
   const [columnWidths, setColumnWidths] = useState<number[]>([]);
 
   const rows = table.getRowModel().rows;
+  const { getCellSelectionProps } = useDataTableCellSelection<TData>({
+    rows,
+    columns: table.getVisibleLeafColumns(),
+    scrollViewportRef,
+    shouldIgnoreTarget: shouldIgnoreRowExpandTarget
+  });
   // 行数达到阈值、环境支持并且没有运行时回退时才启用行虚拟化。
   const shouldVirtualize =
     typeof window !== 'undefined' &&
