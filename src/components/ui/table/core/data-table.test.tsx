@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { act, render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import {
   getCoreRowModel,
   getSortedRowModel,
@@ -258,6 +258,41 @@ function createCopyEvent() {
   });
 
   return { clipboardData, event };
+}
+
+function getBodyCell(container: HTMLElement, rowIndex: number, text: string) {
+  const cell = Array.from(
+    container.querySelectorAll<HTMLTableCellElement>(`tbody tr:nth-child(${rowIndex + 1}) td`)
+  ).find((candidate) => candidate.textContent === text);
+
+  if (!cell) throw new Error(`cell ${rowIndex}:${text} missing`);
+  return cell;
+}
+
+function dispatchCellPointerEvent(
+  target: HTMLElement,
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  init: { pointerId: number; clientX?: number; clientY?: number; shiftKey?: boolean }
+) {
+  const event = new (window.PointerEvent ?? window.MouseEvent)(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    buttons: type === 'pointerup' ? 0 : 1,
+    clientX: init.clientX,
+    clientY: init.clientY,
+    shiftKey: init.shiftKey
+  });
+  if (!('pointerId' in event)) {
+    Object.defineProperty(event, 'pointerId', { value: init.pointerId });
+  }
+  fireEvent(target, event);
+}
+
+function dragCellRange(source: HTMLElement, target: HTMLElement) {
+  dispatchCellPointerEvent(source, 'pointerdown', { pointerId: 1, clientX: 10, clientY: 10 });
+  dispatchCellPointerEvent(target, 'pointermove', { pointerId: 1, clientX: 40, clientY: 40 });
+  dispatchCellPointerEvent(target, 'pointerup', { pointerId: 1, clientX: 40, clientY: 40 });
 }
 
 function useHarnessTable(data: TestRow[], pageSize = 10) {
@@ -745,6 +780,133 @@ describe('DataTable virtualization option resolution', () => {
 });
 
 describe('DataTable cell selection', () => {
+  it('selects the rectangular cells between pointer anchor and focus in either direction', () => {
+    const { container } = render(<Harness rows={makeRows(2)} />);
+    const firstIdCell = getBodyCell(container, 0, '1');
+    const secondNameCell = getBodyCell(container, 1, 'Item 2');
+
+    dragCellRange(firstIdCell, secondNameCell);
+
+    expect(container.querySelectorAll('tbody td[data-cell-selected="true"]')).toHaveLength(4);
+    expect(firstIdCell).toHaveAttribute('data-cell-range-anchor', 'true');
+    expect(secondNameCell).toHaveAttribute('data-cell-range-focus', 'true');
+
+    dragCellRange(secondNameCell, firstIdCell);
+
+    expect(container.querySelectorAll('tbody td[data-cell-selected="true"]')).toHaveLength(4);
+    expect(secondNameCell).toHaveAttribute('data-cell-range-anchor', 'true');
+    expect(firstIdCell).toHaveAttribute('data-cell-range-focus', 'true');
+  });
+
+  it('extends the current anchor with Shift plus pointer down', () => {
+    const { container } = render(<Harness rows={makeRows(2)} />);
+    const firstNameCell = getBodyCell(container, 0, 'Item 1');
+    const secondIdCell = getBodyCell(container, 1, '2');
+
+    dispatchCellPointerEvent(firstNameCell, 'pointerdown', { pointerId: 1 });
+    dispatchCellPointerEvent(firstNameCell, 'pointerup', { pointerId: 1 });
+    dispatchCellPointerEvent(secondIdCell, 'pointerdown', { pointerId: 2, shiftKey: true });
+    dispatchCellPointerEvent(secondIdCell, 'pointerup', { pointerId: 2 });
+
+    expect(container.querySelectorAll('tbody td[data-cell-selected="true"]')).toHaveLength(4);
+    expect(firstNameCell).toHaveAttribute('data-cell-range-anchor', 'true');
+    expect(secondIdCell).toHaveAttribute('data-cell-range-focus', 'true');
+  });
+
+  it('moves with arrows, extends with Shift arrows, and clears with Escape', () => {
+    const { container } = render(<Harness rows={makeRows(2)} />);
+    const firstIdCell = getBodyCell(container, 0, '1');
+    const firstNameCell = getBodyCell(container, 0, 'Item 1');
+    const secondNameCell = getBodyCell(container, 1, 'Item 2');
+
+    dispatchCellPointerEvent(firstIdCell, 'pointerdown', { pointerId: 1 });
+    dispatchCellPointerEvent(firstIdCell, 'pointerup', { pointerId: 1 });
+    fireEvent.keyDown(firstIdCell, { key: 'ArrowRight' });
+
+    expect(firstNameCell).toHaveAttribute('data-cell-selected', 'true');
+    expect(firstNameCell).toHaveFocus();
+    expect(firstIdCell).not.toHaveAttribute('data-cell-selected');
+
+    fireEvent.keyDown(firstNameCell, { key: 'ArrowDown', shiftKey: true });
+
+    expect(firstNameCell).toHaveAttribute('data-cell-selected', 'true');
+    expect(secondNameCell).toHaveAttribute('data-cell-selected', 'true');
+    expect(secondNameCell).toHaveFocus();
+
+    fireEvent.keyDown(secondNameCell, { key: 'Escape' });
+    expect(container.querySelectorAll('tbody td[data-cell-selected="true"]')).toHaveLength(0);
+  });
+
+  it('copies a selected rectangle as row-major TSV', () => {
+    const { container } = render(<Harness rows={makeRows(2)} />);
+    const firstIdCell = getBodyCell(container, 0, '1');
+    const secondNameCell = getBodyCell(container, 1, 'Item 2');
+
+    dragCellRange(firstIdCell, secondNameCell);
+    document.getSelection()?.removeAllRanges();
+
+    const { clipboardData, event } = createCopyEvent();
+    document.dispatchEvent(event);
+
+    expect(clipboardData.setData).toHaveBeenCalledWith('text/plain', '1\tItem 1\n2\tItem 2');
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('auto-scrolls its own viewport while dragging in the bottom-right edge zone', () => {
+    let frame: FrameRequestCallback | null = null;
+    const cancelAnimationFrame = vi.fn();
+    window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      frame = callback;
+      return 11;
+    });
+    window.cancelAnimationFrame = cancelAnimationFrame;
+
+    const { container } = render(<Harness rows={makeRows(2)} />);
+    const viewport = screen.getByTestId('scroll-viewport');
+    Object.defineProperties(viewport, {
+      clientWidth: { value: 200 },
+      clientHeight: { value: 100 },
+      scrollWidth: { value: 500 },
+      scrollHeight: { value: 400 }
+    });
+    Object.defineProperty(viewport, 'scrollLeft', { value: 100, writable: true });
+    Object.defineProperty(viewport, 'scrollTop', { value: 100, writable: true });
+    viewport.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100 }) as DOMRect;
+    viewport.scrollBy = vi.fn();
+
+    const firstIdCell = getBodyCell(container, 0, '1');
+    const secondNameCell = getBodyCell(container, 1, 'Item 2');
+    secondNameCell.getBoundingClientRect = () =>
+      ({ left: 100, top: 50, right: 200, bottom: 100, width: 100, height: 40 }) as DOMRect;
+
+    dispatchCellPointerEvent(firstIdCell, 'pointerdown', { pointerId: 1 });
+    dispatchCellPointerEvent(secondNameCell, 'pointermove', {
+      pointerId: 1,
+      clientX: 200,
+      clientY: 100
+    });
+
+    expect(window.requestAnimationFrame).toHaveBeenCalledOnce();
+    act(() => frame?.(0));
+    expect(viewport.scrollBy).toHaveBeenCalledWith({ behavior: 'auto', left: 20, top: 20 });
+
+    dispatchCellPointerEvent(secondNameCell, 'pointerup', { pointerId: 1 });
+    expect(cancelAnimationFrame).toHaveBeenCalled();
+  });
+
+  it('marks only the active pointer sequence as text-selection suppressed', () => {
+    const { container } = render(<Harness rows={makeRows(2)} />);
+    const viewport = screen.getByTestId('scroll-viewport');
+    const firstIdCell = getBodyCell(container, 0, '1');
+
+    expect(viewport).not.toHaveAttribute('data-cell-range-dragging');
+    dispatchCellPointerEvent(firstIdCell, 'pointerdown', { pointerId: 1 });
+    expect(viewport).toHaveAttribute('data-cell-range-dragging', 'true');
+    dispatchCellPointerEvent(firstIdCell, 'pointerup', { pointerId: 1 });
+    expect(viewport).not.toHaveAttribute('data-cell-range-dragging');
+  });
+
   it('marks the clicked data cell as active without treating checkbox controls as cells', async () => {
     const user = userEvent.setup();
     const { container } = render(<SelectableHarness rows={makeRows(2)} />);
@@ -758,8 +920,9 @@ describe('DataTable cell selection', () => {
     await user.click(firstNameCell);
 
     expect(firstNameCell).toHaveAttribute('data-cell-selected', 'true');
-    expect(firstNameCell.getAttribute('class')).toContain(
-      'data-[cell-selected=true]:outline-primary'
+    expect(firstNameCell).toHaveAttribute(
+      'data-cell-range-edge',
+      'block-start inline-end block-end inline-start'
     );
 
     const firstRowCheckbox = screen.getAllByRole('checkbox', { name: '选择行' })[0];

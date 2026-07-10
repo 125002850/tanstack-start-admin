@@ -1,60 +1,81 @@
-import { type Cell } from '@tanstack/react-table';
+import { type Cell, type Column, type Row } from '@tanstack/react-table';
 import {
   useCallback,
   useEffect,
+  useId,
+  useMemo,
   useRef,
   useState,
-  type MouseEvent as ReactMouseEvent
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type RefCallback,
+  type RefObject
 } from 'react';
 
 import {
   DATA_TABLE_ACTIONS_COLUMN_ID,
   DATA_TABLE_ROW_NUMBER_COLUMN_ID
 } from '@/hooks/use-data-table/constants';
+import {
+  buildDataTableCellRangeTsv,
+  createDataTableCellRangeIndex,
+  getDataTableCellRangeEdges,
+  isDataTableCellInRange,
+  moveDataTableCellCoordinate,
+  normalizeDataTableCellClipboardText,
+  resolveDataTableCellClipboardText,
+  resolveDataTableCellRangeBounds,
+  type DataTableCellCoordinate,
+  type DataTableCellRange
+} from './data-table-cell-range';
+import { useDataTableCellAutoScroll } from './use-data-table-cell-auto-scroll';
 
-/**
- * 单元格点击选择与复制反馈。
- *
- * 该 hook 不修改 TanStack rowSelection；它维护一套独立的“当前复制单元格”状态：
- * 点击普通业务单元格后，用户按 Cmd/Ctrl+C 会把该单元格文本写入剪贴板，并触发短暂闪烁。
- */
 const DATA_TABLE_CELL_SELECTION_CHANGE_EVENT = 'data-table-cell-selection-change';
 const DATA_TABLE_CELL_COPY_FEEDBACK_DURATION_MS = 960;
-
-type DataTableCellSelectionState = {
-  id: string;
-  text: string;
-};
 
 type DataTableCellSelectionChangeDetail = {
   owner: symbol | null;
 };
 
 type DataTableCellCopyFeedbackState = {
-  id: string;
+  range: DataTableCellRange;
   run: 'a' | 'b';
 };
 
 type DataTableCellSelectionProps = {
+  ref: RefCallback<HTMLTableCellElement>;
+  tabIndex: number;
   'data-cell-id': string;
+  'data-cell-row-id': string;
+  'data-cell-column-id': string;
+  'data-cell-selection-owner': string;
   'data-cell-copy-flash'?: 'true';
   'data-cell-copy-flash-run'?: DataTableCellCopyFeedbackState['run'];
   'data-cell-selected'?: 'true';
-  onClick: (event: ReactMouseEvent<HTMLTableCellElement>) => void;
+  'data-cell-range-anchor'?: 'true';
+  'data-cell-range-focus'?: 'true';
+  'data-cell-range-edge'?: string;
+  onPointerDown: (event: ReactPointerEvent<HTMLTableCellElement>) => void;
+  onKeyDown: (event: ReactKeyboardEvent<HTMLTableCellElement>) => void;
 };
 
-type UseDataTableCellSelectionOptions = {
+type UseDataTableCellSelectionOptions<TData> = {
+  rows: readonly Row<TData>[];
+  columns: readonly Column<TData, unknown>[];
+  scrollViewportRef: RefObject<HTMLDivElement | null>;
   shouldIgnoreTarget?: (target: EventTarget | null, currentTarget: HTMLElement) => boolean;
+};
+
+type ActivePointerSelection = {
+  pointerId: number;
+  handlePointerMove: (event: PointerEvent) => void;
+  captureTarget: HTMLTableCellElement;
 };
 
 let activeCellSelectionOwner: symbol | null = null;
 
-/** 广播当前拥有单元格复制焦点的表格实例，保证页面上多个 DataTable 互斥。 */
 function emitDataTableCellSelectionChange(owner: symbol | null) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
+  if (typeof window === 'undefined') return;
   window.dispatchEvent(
     new CustomEvent<DataTableCellSelectionChangeDetail>(DATA_TABLE_CELL_SELECTION_CHANGE_EVENT, {
       detail: { owner }
@@ -62,93 +83,127 @@ function emitDataTableCellSelectionChange(owner: symbol | null) {
   );
 }
 
-/** 工具列、行号列和固定列不参与单元格复制选择，避免和操作/固定区交互冲突。 */
-function canSelectDataTableCell<TData>(cell: Cell<TData, unknown>): boolean {
-  const columnId = cell.column.id;
-
+function canSelectDataTableColumn<TData>(column: Column<TData, unknown>): boolean {
   return (
-    columnId !== DATA_TABLE_ROW_NUMBER_COLUMN_ID &&
-    columnId !== DATA_TABLE_ACTIONS_COLUMN_ID &&
-    !cell.column.getIsPinned()
+    column.id !== DATA_TABLE_ROW_NUMBER_COLUMN_ID &&
+    column.id !== DATA_TABLE_ACTIONS_COLUMN_ID &&
+    !column.getIsPinned()
   );
 }
 
-/** 统一换行符，防止不同浏览器 innerText 产生 CRLF 差异。 */
-function normalizeDataTableCellClipboardText(value: unknown): string {
-  return String(value ?? '').replace(/\r\n?/g, '\n');
+function canSelectDataTableCell<TData>(cell: Cell<TData, unknown>): boolean {
+  return canSelectDataTableColumn(cell.column);
 }
 
-/** 优先使用列 meta.copyValue；未提供时退回到单元格 DOM 文本。 */
-function getDataTableCellClipboardText<TData>(
-  cellElement: HTMLTableCellElement,
-  cell: Cell<TData, unknown>
-): string {
-  const copyValue = cell.column.columnDef.meta?.copyValue;
-  if (copyValue) {
-    return normalizeDataTableCellClipboardText(copyValue(cell.getValue(), cell.row.original));
-  }
-
-  const text =
-    typeof cellElement.innerText === 'string'
-      ? cellElement.innerText
-      : (cellElement.textContent ?? '');
-
-  return normalizeDataTableCellClipboardText(text);
-}
-
-/** 如果用户已经手动框选文本，则尊重原生复制，不抢 clipboard。 */
 function hasUserTextSelection(): boolean {
   const selection = document.getSelection();
   return Boolean(selection && !selection.isCollapsed && selection.toString().length > 0);
 }
 
-/** 输入框、textarea、select 和 contenteditable 内的复制必须交给控件自身处理。 */
 function isEditableCopyTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  if (target.closest('input, textarea, select')) {
-    return true;
-  }
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.closest('input, textarea, select')) return true;
 
   let element: HTMLElement | null = target;
   while (element) {
-    if (element.isContentEditable || element.getAttribute('contenteditable') !== null) {
-      return true;
-    }
+    if (element.isContentEditable || element.getAttribute('contenteditable') !== null) return true;
     element = element.parentElement;
   }
-
   return false;
 }
 
+function getCoordinateKey({ rowId, columnId }: DataTableCellCoordinate) {
+  return `${rowId}\u0000${columnId}`;
+}
+
+function getCellCoordinate<TData>(cell: Cell<TData, unknown>): DataTableCellCoordinate {
+  return { rowId: cell.row.id, columnId: cell.column.id };
+}
+
+function isSameCoordinate(left: DataTableCellCoordinate, right: DataTableCellCoordinate): boolean {
+  return left.rowId === right.rowId && left.columnId === right.columnId;
+}
+
 export function useDataTableCellSelection<TData>({
+  rows,
+  columns,
+  scrollViewportRef,
   shouldIgnoreTarget
-}: UseDataTableCellSelectionOptions = {}) {
-  // ownerRef 是当前 hook 实例的唯一身份，用于跨表格协调复制焦点。
+}: UseDataTableCellSelectionOptions<TData>) {
   const ownerRef = useRef(Symbol('data-table-cell-selection'));
+  const ownerId = useId();
   const copyFeedbackTimeoutRef = useRef<number | null>(null);
   const nextCopyFeedbackRunRef = useRef<DataTableCellCopyFeedbackState['run']>('a');
-  const [activeCell, setActiveCell] = useState<DataTableCellSelectionState | null>(null);
+  const activePointerRef = useRef<ActivePointerSelection | null>(null);
+  const stopAutoScrollRef = useRef<() => void>(() => undefined);
+  const cellElementsRef = useRef(new Map<string, HTMLTableCellElement>());
+  const [range, setRange] = useState<DataTableCellRange | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<DataTableCellCopyFeedbackState | null>(null);
 
-  const clearCopyFeedbackTimeout = useCallback(() => {
-    if (copyFeedbackTimeoutRef.current === null) {
-      return;
+  const selectableColumns = useMemo(() => columns.filter(canSelectDataTableColumn), [columns]);
+  const rangeIndex = useMemo(
+    () =>
+      createDataTableCellRangeIndex(
+        rows.map((row) => row.id),
+        selectableColumns.map((column) => column.id)
+      ),
+    [rows, selectableColumns]
+  );
+  const rangeBounds = useMemo(
+    () => (range ? resolveDataTableCellRangeBounds(range, rangeIndex) : null),
+    [range, rangeIndex]
+  );
+  const copyFeedbackBounds = useMemo(
+    () => (copyFeedback ? resolveDataTableCellRangeBounds(copyFeedback.range, rangeIndex) : null),
+    [copyFeedback, rangeIndex]
+  );
+  const cellsByCoordinate = useMemo(() => {
+    const cells = new Map<string, Cell<TData, unknown>>();
+    for (const row of rows) {
+      for (const cell of row.getVisibleCells()) {
+        if (canSelectDataTableCell(cell)) {
+          cells.set(getCoordinateKey(getCellCoordinate(cell)), cell);
+        }
+      }
     }
+    return cells;
+  }, [rows]);
 
+  const clearCopyFeedbackTimeout = useCallback(() => {
+    if (copyFeedbackTimeoutRef.current === null) return;
     window.clearTimeout(copyFeedbackTimeoutRef.current);
     copyFeedbackTimeoutRef.current = null;
   }, []);
 
-  const flashCopiedCell = useCallback(
-    (cellId: string) => {
-      // run 在 a/b 间切换，让同一个单元格连续复制时也能重新触发 CSS 动画。
+  const finishPointerSelection = useCallback(() => {
+    stopAutoScrollRef.current();
+    scrollViewportRef.current?.removeAttribute('data-cell-range-dragging');
+    const activePointer = activePointerRef.current;
+    if (activePointer) {
+      document.removeEventListener('pointermove', activePointer.handlePointerMove);
+      if (activePointer.captureTarget.hasPointerCapture?.(activePointer.pointerId)) {
+        activePointer.captureTarget.releasePointerCapture(activePointer.pointerId);
+      }
+    }
+    activePointerRef.current = null;
+    document.removeEventListener('pointerup', finishPointerSelection);
+    document.removeEventListener('pointercancel', finishPointerSelection);
+  }, [scrollViewportRef]);
+
+  const clearCellSelection = useCallback(() => {
+    finishPointerSelection();
+    activeCellSelectionOwner = null;
+    emitDataTableCellSelectionChange(null);
+    setRange(null);
+    setCopyFeedback(null);
+  }, [finishPointerSelection]);
+
+  const flashCopiedRange = useCallback(
+    (copiedRange: DataTableCellRange) => {
       clearCopyFeedbackTimeout();
       const run = nextCopyFeedbackRunRef.current;
       nextCopyFeedbackRunRef.current = run === 'a' ? 'b' : 'a';
-      setCopyFeedback({ id: cellId, run });
+      setCopyFeedback({ range: copiedRange, run });
       copyFeedbackTimeoutRef.current = window.setTimeout(() => {
         copyFeedbackTimeoutRef.current = null;
         setCopyFeedback(null);
@@ -157,102 +212,311 @@ export function useDataTableCellSelection<TData>({
     [clearCopyFeedbackTimeout]
   );
 
-  const clearCellSelection = useCallback(() => {
-    activeCellSelectionOwner = null;
-    emitDataTableCellSelectionChange(null);
-    setActiveCell(null);
-  }, []);
+  const findOwnedCell = useCallback(
+    (element: Element | null): HTMLTableCellElement | null => {
+      const cell = element?.closest<HTMLTableCellElement>('[data-cell-id]') ?? null;
+      return cell?.dataset.cellSelectionOwner === ownerId ? cell : null;
+    },
+    [ownerId]
+  );
 
-  const handleCellClick = useCallback(
-    (event: ReactMouseEvent<HTMLTableCellElement>, cell: Cell<TData, unknown>) => {
-      // 行展开、按钮等交互目标可通过 shouldIgnoreTarget 阻止单元格选中。
-      if (shouldIgnoreTarget?.(event.target, event.currentTarget)) {
-        return;
+  const findCellAtPointer = useCallback(
+    ({
+      clientX,
+      clientY,
+      target
+    }: {
+      clientX: number;
+      clientY: number;
+      target?: EventTarget | null;
+    }): HTMLTableCellElement | null => {
+      const stackedElements = document.elementsFromPoint?.(clientX, clientY) ?? [];
+      for (const element of stackedElements) {
+        const cell = findOwnedCell(element);
+        if (cell) return cell;
       }
 
+      const targetCell = findOwnedCell(target instanceof Element ? target : null);
+      if (targetCell) return targetCell;
+
+      const candidates = Array.from(cellElementsRef.current.values());
+      let nearest: HTMLTableCellElement | null = null;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (const candidate of candidates) {
+        const rect = candidate.getBoundingClientRect();
+        const dx = Math.max(rect.left - clientX, 0, clientX - rect.right);
+        const dy = Math.max(rect.top - clientY, 0, clientY - rect.bottom);
+        const distance = dx * dx + dy * dy;
+        if (distance < nearestDistance) {
+          nearest = candidate;
+          nearestDistance = distance;
+        }
+      }
+      return nearest;
+    },
+    [findOwnedCell]
+  );
+
+  const readCellCoordinate = useCallback(
+    (cell: HTMLTableCellElement): DataTableCellCoordinate | null => {
+      const rowId = cell.dataset.cellRowId;
+      const columnId = cell.dataset.cellColumnId;
+      if (!rowId || !columnId) return null;
+      return rangeIndex.rowIndexById.has(rowId) && rangeIndex.columnIndexById.has(columnId)
+        ? { rowId, columnId }
+        : null;
+    },
+    [rangeIndex]
+  );
+
+  const updateRangeFocusAtPointer = useCallback(
+    (pointer: { clientX: number; clientY: number; target?: EventTarget | null }) => {
+      const cell = findCellAtPointer(pointer);
+      const coordinate = cell ? readCellCoordinate(cell) : null;
+      if (coordinate) {
+        setRange((current) =>
+          current && !isSameCoordinate(current.focus, coordinate)
+            ? { ...current, focus: coordinate }
+            : current
+        );
+      }
+      return cell;
+    },
+    [findCellAtPointer, readCellCoordinate]
+  );
+
+  const { stop: stopAutoScroll, updatePointer: updateAutoScrollPointer } =
+    useDataTableCellAutoScroll({
+      viewportRef: scrollViewportRef,
+      onScrollFrame: (pointer) => {
+        updateRangeFocusAtPointer(pointer);
+      }
+    });
+  stopAutoScrollRef.current = stopAutoScroll;
+
+  const handleDocumentPointerMove = useCallback(
+    (event: PointerEvent) => {
+      if (event.pointerId !== activePointerRef.current?.pointerId) return;
+      const cell = updateRangeFocusAtPointer(event);
+      if (!cell) return;
+      event.preventDefault();
+      updateAutoScrollPointer({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        cellSize: cell.getBoundingClientRect().height || 40
+      });
+    },
+    [updateAutoScrollPointer, updateRangeFocusAtPointer]
+  );
+
+  const beginPointerSelection = useCallback(
+    (event: ReactPointerEvent<HTMLTableCellElement>, cell: Cell<TData, unknown>) => {
+      if (event.button !== 0 || shouldIgnoreTarget?.(event.target, event.currentTarget)) return;
       if (!canSelectDataTableCell(cell)) {
         clearCellSelection();
         return;
       }
 
+      const coordinate = getCellCoordinate(cell);
+      const nextRange =
+        event.shiftKey && range && rangeBounds
+          ? { anchor: range.anchor, focus: coordinate }
+          : { anchor: coordinate, focus: coordinate };
+
+      finishPointerSelection();
       activeCellSelectionOwner = ownerRef.current;
       emitDataTableCellSelectionChange(ownerRef.current);
-      setActiveCell({
-        id: cell.id,
-        text: getDataTableCellClipboardText(event.currentTarget, cell)
-      });
+      setRange(nextRange);
+      setCopyFeedback(null);
+      event.currentTarget.focus({ preventScroll: true });
+      event.preventDefault();
+      scrollViewportRef.current?.setAttribute('data-cell-range-dragging', 'true');
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+
+      activePointerRef.current = {
+        pointerId: event.pointerId,
+        handlePointerMove: handleDocumentPointerMove,
+        captureTarget: event.currentTarget
+      };
+      document.addEventListener('pointermove', handleDocumentPointerMove);
+      document.addEventListener('pointerup', finishPointerSelection);
+      document.addEventListener('pointercancel', finishPointerSelection);
     },
-    [clearCellSelection, shouldIgnoreTarget]
+    [
+      clearCellSelection,
+      finishPointerSelection,
+      handleDocumentPointerMove,
+      range,
+      rangeBounds,
+      shouldIgnoreTarget,
+      scrollViewportRef
+    ]
+  );
+
+  const focusCoordinate = useCallback((coordinate: DataTableCellCoordinate) => {
+    cellElementsRef.current.get(getCoordinateKey(coordinate))?.focus({ preventScroll: true });
+  }, []);
+
+  const handleCellKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLTableCellElement>, cell: Cell<TData, unknown>) => {
+      if (event.target !== event.currentTarget || isEditableCopyTarget(event.target)) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        clearCellSelection();
+        return;
+      }
+      if (!['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(event.key)) return;
+
+      const coordinate = getCellCoordinate(cell);
+      const direction = getComputedStyle(
+        scrollViewportRef.current ?? event.currentTarget
+      ).direction;
+      const next = moveDataTableCellCoordinate(
+        coordinate,
+        event.key as 'ArrowUp' | 'ArrowRight' | 'ArrowDown' | 'ArrowLeft',
+        direction === 'rtl' ? 'rtl' : 'ltr',
+        rangeIndex
+      );
+      event.preventDefault();
+      activeCellSelectionOwner = ownerRef.current;
+      emitDataTableCellSelectionChange(ownerRef.current);
+      setRange((current) => ({
+        anchor: event.shiftKey && current && rangeBounds ? current.anchor : next,
+        focus: next
+      }));
+      focusCoordinate(next);
+    },
+    [clearCellSelection, focusCoordinate, rangeBounds, rangeIndex, scrollViewportRef]
   );
 
   const getCellSelectionProps = useCallback(
     (cell: Cell<TData, unknown>): DataTableCellSelectionProps => {
-      const isSelectable = canSelectDataTableCell(cell);
-      const isCopyFeedbackCell = isSelectable && copyFeedback?.id === cell.id;
+      const coordinate = getCellCoordinate(cell);
+      const selectable = canSelectDataTableCell(cell);
+      const selected =
+        selectable && rangeBounds
+          ? isDataTableCellInRange(coordinate, rangeBounds, rangeIndex)
+          : false;
+      const copied =
+        selectable && copyFeedbackBounds
+          ? isDataTableCellInRange(coordinate, copyFeedbackBounds, rangeIndex)
+          : false;
 
       return {
+        ref: (element) => {
+          const key = getCoordinateKey(coordinate);
+          if (element) cellElementsRef.current.set(key, element);
+          else cellElementsRef.current.delete(key);
+        },
+        tabIndex: selectable && range?.focus && isSameCoordinate(coordinate, range.focus) ? 0 : -1,
         'data-cell-id': cell.id,
-        'data-cell-copy-flash': isCopyFeedbackCell ? 'true' : undefined,
-        'data-cell-copy-flash-run': isCopyFeedbackCell ? copyFeedback.run : undefined,
-        'data-cell-selected': isSelectable && activeCell?.id === cell.id ? 'true' : undefined,
-        onClick: (event) => handleCellClick(event, cell)
+        'data-cell-row-id': coordinate.rowId,
+        'data-cell-column-id': coordinate.columnId,
+        'data-cell-selection-owner': ownerId,
+        'data-cell-copy-flash': copied ? 'true' : undefined,
+        'data-cell-copy-flash-run': copied ? copyFeedback?.run : undefined,
+        'data-cell-selected': selected ? 'true' : undefined,
+        'data-cell-range-anchor':
+          selectable && range?.anchor && isSameCoordinate(coordinate, range.anchor)
+            ? 'true'
+            : undefined,
+        'data-cell-range-focus':
+          selectable && range?.focus && isSameCoordinate(coordinate, range.focus)
+            ? 'true'
+            : undefined,
+        'data-cell-range-edge':
+          selectable && rangeBounds
+            ? getDataTableCellRangeEdges(coordinate, rangeBounds, rangeIndex)
+            : undefined,
+        onPointerDown: (event) => beginPointerSelection(event, cell),
+        onKeyDown: (event) => handleCellKeyDown(event, cell)
       };
     },
-    [activeCell?.id, copyFeedback, handleCellClick]
+    [
+      beginPointerSelection,
+      copyFeedback?.run,
+      copyFeedbackBounds,
+      handleCellKeyDown,
+      ownerId,
+      range,
+      rangeBounds,
+      rangeIndex
+    ]
   );
 
   useEffect(() => {
+    if (range && !rangeBounds) clearCellSelection();
+  }, [clearCellSelection, range, rangeBounds]);
+
+  useEffect(() => {
     const handleSelectionChange = (event: Event) => {
-      // 其他 DataTable 获得单元格焦点时，当前表格同步清空高亮。
       const detail = (event as CustomEvent<DataTableCellSelectionChangeDetail>).detail;
       if (detail?.owner !== ownerRef.current) {
-        setActiveCell(null);
+        finishPointerSelection();
+        setRange(null);
+        setCopyFeedback(null);
       }
     };
-
     window.addEventListener(DATA_TABLE_CELL_SELECTION_CHANGE_EVENT, handleSelectionChange);
-    return () => {
+    return () =>
       window.removeEventListener(DATA_TABLE_CELL_SELECTION_CHANGE_EVENT, handleSelectionChange);
-    };
-  }, []);
+  }, [finishPointerSelection]);
 
   useEffect(() => {
-    return () => {
-      if (activeCellSelectionOwner === ownerRef.current) {
-        activeCellSelectionOwner = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      clearCopyFeedbackTimeout();
-    };
-  }, [clearCopyFeedbackTimeout]);
+    const handleWindowBlur = () => finishPointerSelection();
+    window.addEventListener('blur', handleWindowBlur);
+    return () => window.removeEventListener('blur', handleWindowBlur);
+  }, [finishPointerSelection]);
 
   useEffect(() => {
     const handleCopy = (event: ClipboardEvent) => {
-      // 只有当前 hook 实例持有复制焦点时才接管 copy 事件。
-      if (activeCellSelectionOwner !== ownerRef.current || !activeCell) {
+      if (
+        activeCellSelectionOwner !== ownerRef.current ||
+        !range ||
+        !rangeBounds ||
+        isEditableCopyTarget(event.target) ||
+        hasUserTextSelection() ||
+        !event.clipboardData
+      ) {
         return;
       }
 
-      if (isEditableCopyTarget(event.target) || hasUserTextSelection() || !event.clipboardData) {
-        return;
-      }
+      const text = buildDataTableCellRangeTsv(rangeBounds, rangeIndex, (coordinate) => {
+        const key = getCoordinateKey(coordinate);
+        const cell = cellsByCoordinate.get(key);
+        if (!cell) return '';
+        const copyValue = cell.column.columnDef.meta?.copyValue;
+        if (copyValue) {
+          return normalizeDataTableCellClipboardText(copyValue(cell.getValue(), cell.row.original));
+        }
+        const cellElement = cellElementsRef.current.get(key);
+        const renderedText = cellElement
+          ? typeof cellElement.innerText === 'string'
+            ? cellElement.innerText
+            : (cellElement.textContent ?? '')
+          : undefined;
+        return resolveDataTableCellClipboardText({
+          renderedText,
+          rawValue: cell.getValue()
+        });
+      });
 
-      event.clipboardData.setData('text/plain', activeCell.text);
+      event.clipboardData.setData('text/plain', text);
       event.preventDefault();
-      flashCopiedCell(activeCell.id);
+      flashCopiedRange(range);
     };
 
     document.addEventListener('copy', handleCopy);
-    return () => {
-      document.removeEventListener('copy', handleCopy);
-    };
-  }, [activeCell, flashCopiedCell]);
+    return () => document.removeEventListener('copy', handleCopy);
+  }, [cellsByCoordinate, flashCopiedRange, range, rangeBounds, rangeIndex]);
 
-  return {
-    getCellSelectionProps
-  };
+  useEffect(() => {
+    return () => {
+      finishPointerSelection();
+      clearCopyFeedbackTimeout();
+      if (activeCellSelectionOwner === ownerRef.current) activeCellSelectionOwner = null;
+    };
+  }, [clearCopyFeedbackTimeout, finishPointerSelection]);
+
+  return { getCellSelectionProps };
 }
