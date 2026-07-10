@@ -2,7 +2,6 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import { visualizer } from 'rollup-plugin-visualizer';
 
 function manualChunks(id: string) {
@@ -80,6 +79,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: normalizeBasePath(process.env.APP_BASE_PATH ?? env.APP_BASE_PATH),
+    resolve: {
+      tsconfigPaths: true
+    },
     server: {
       host: '0.0.0.0',
       port: 3000,
@@ -96,7 +98,6 @@ export default defineConfig(({ mode }) => {
       allowedHosts: ['louise-outlets-off-ambient.trycloudflare.com']
     },
     plugins: [
-      tsconfigPaths(),
       tailwindcss(),
       tanstackRouter({ target: 'react' }),
       viteReact(),
@@ -105,7 +106,7 @@ export default defineConfig(({ mode }) => {
         : [])
     ],
     build: {
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           manualChunks
         }
