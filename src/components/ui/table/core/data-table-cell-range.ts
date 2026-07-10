@@ -95,7 +95,15 @@ export function getDataTableCellRangeEdges(
   index: DataTableCellRangeIndex
 ): string | undefined {
   const position = resolveCoordinateIndexes(coordinate, index);
-  if (!position || !isDataTableCellInRange(coordinate, bounds, index)) return undefined;
+  if (
+    !position ||
+    position.row < bounds.rowStart ||
+    position.row > bounds.rowEnd ||
+    position.column < bounds.columnStart ||
+    position.column > bounds.columnEnd
+  ) {
+    return undefined;
+  }
 
   const edges: DataTableCellRangeEdge[] = [];
   if (position.row === bounds.rowStart) edges.push('block-start');
