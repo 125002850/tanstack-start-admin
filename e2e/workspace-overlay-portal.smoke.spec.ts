@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mockLoginInfo } from './support/mock-login-info';
+import { mockIamSession } from './support/mock-iam-session';
 
 const CONTRACT_ROUTE = '/dashboard/forms/overlay-contract';
 
@@ -14,7 +14,7 @@ const openOverlaySelector = [
 ].join(',');
 
 test.beforeEach(async ({ page }) => {
-  await mockLoginInfo(page);
+  await mockIamSession(page);
 });
 
 async function gotoContractPage(page: Page) {
