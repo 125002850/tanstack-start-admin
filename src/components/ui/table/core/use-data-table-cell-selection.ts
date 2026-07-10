@@ -236,8 +236,14 @@ export function useDataTableCellSelection<TData>({
         if (cell) return cell;
       }
 
+      const isCaptured =
+        activePointerRef.current !== null &&
+        activePointerRef.current.captureTarget.hasPointerCapture?.(
+          activePointerRef.current.pointerId
+        );
+
       const targetCell = findOwnedCell(target instanceof Element ? target : null);
-      if (targetCell) return targetCell;
+      if (targetCell && !isCaptured) return targetCell;
 
       const candidates = Array.from(cellElementsRef.current.values());
       let nearest: HTMLTableCellElement | null = null;
