@@ -56,6 +56,7 @@ function getNav(mod: unknown):
       parentId?: string;
       isContainer?: true;
       menuKey?: string;
+      icon?: string;
     }
   | undefined {
   const route = (mod as Record<string, unknown>)?.Route as
@@ -70,6 +71,7 @@ function getNav(mod: unknown):
               parentId?: string;
               isContainer?: true;
               menuKey?: string;
+              icon?: string;
             };
           };
         };
@@ -270,6 +272,11 @@ describe('dashboard route inventory', () => {
       expect(nav?.isContainer).toBeUndefined();
       expect(nav?.parentId).toBeUndefined();
     }
+  });
+
+  it('uses domain-specific icons for department and role management', () => {
+    expect(getNav(routeModules['/src/routes/dashboard/iam/dept.tsx'])?.icon).toBe('department');
+    expect(getNav(routeModules['/src/routes/dashboard/iam/role.tsx'])?.icon).toBe('role');
   });
 
   it('standard workspace pages use WorkspacePageRoute for container and disabled-mode rendering', () => {

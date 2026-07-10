@@ -46,6 +46,7 @@ import {
   IconFolder,
   IconGripVertical,
   IconHelpCircle,
+  IconHierarchy2,
   IconInfoCircle,
   IconItalic,
   IconLayoutDashboard,
@@ -90,6 +91,7 @@ import {
   IconUserCog,
   IconUserEdit,
   IconUserShare,
+  IconUserShield,
   IconUserX,
   IconUsers,
   IconVideo,
@@ -147,7 +149,11 @@ export const Icons = {
   userPen: IconUserEdit,
   userCog: IconUserCog,
   userShare: IconUserShare,
+  role: IconUserShield,
   teams: IconUsers,
+
+  // Organization
+  department: IconHierarchy2,
 
   // Brand
   github: IconBrandGithub,

@@ -10,7 +10,7 @@ const meta = defineRouteMeta({
   title: '权限管理：角色管理',
   nav: {
     menuKey: 'iam_role',
-    icon: 'shieldCheck',
+    icon: 'role',
     shortcut: ['i', 'r']
   },
   workspace: {

@@ -10,7 +10,7 @@ const meta = defineRouteMeta({
   title: '权限管理：部门管理',
   nav: {
     menuKey: 'iam_dept',
-    icon: 'workspace',
+    icon: 'department',
     shortcut: ['i', 'd']
   },
   workspace: {
