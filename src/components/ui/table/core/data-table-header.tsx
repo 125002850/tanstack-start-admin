@@ -28,7 +28,7 @@ import type { DataTableColumnRenderItem, DataTableColumnVirtualWindow } from '@/
  * aria-sort、sticky top 和拖拽 overlay 所需的数据属性；排序/显隐菜单由列 header
  * 自身组件处理。
  */
-const HEADER_ROW_HEIGHT_PX = 40;
+export const DATA_TABLE_HEADER_ROW_HEIGHT_PX = 40;
 const HEADER_STICKY_TOP_OFFSET_PX = -1;
 // 这些工具列的顺序由 useDataTable 统一管理，不能被用户拖到业务列中间。
 const NON_REORDERABLE_COLUMN_IDS = new Set([
@@ -106,7 +106,7 @@ function getStickyHeaderCellStyles<TData>(
   return {
     ...styles,
     position: 'sticky',
-    top: rowIndex * HEADER_ROW_HEIGHT_PX + HEADER_STICKY_TOP_OFFSET_PX,
+    top: rowIndex * DATA_TABLE_HEADER_ROW_HEIGHT_PX + HEADER_STICKY_TOP_OFFSET_PX,
     zIndex: pinnedSide ? 12 : 10
   };
 }

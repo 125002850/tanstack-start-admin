@@ -5,6 +5,10 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const globalsSource = readFileSync(resolve(process.cwd(), 'src/styles/globals.css'), 'utf8');
+const astroVistaThemeSource = readFileSync(
+  resolve(process.cwd(), 'src/styles/themes/astro-vista.css'),
+  'utf8'
+);
 const lightGreenThemeSource = readFileSync(
   resolve(process.cwd(), 'src/styles/themes/light-green.css'),
   'utf8'
@@ -23,6 +27,15 @@ function getCssBlock(source: string, selector: string) {
 }
 
 describe('共享主题样式', () => {
+  it('Astro Vista 的 input 在明暗模式下直接复用 border', () => {
+    const lightTheme = getCssBlock(astroVistaThemeSource, "[data-theme='astro-vista']");
+    const darkTheme = getCssBlock(astroVistaThemeSource, "[data-theme='astro-vista'].dark");
+    const inputPattern = /--input:\s*var\(--border\);/;
+
+    expect(lightTheme).toMatch(inputPattern);
+    expect(darkTheme).toMatch(inputPattern);
+  });
+
   it('浅春主题的 Sidebar accent 在明暗模式下直接复用 accent', () => {
     const lightTheme = getCssBlock(lightGreenThemeSource, "[data-theme='light-green']");
     const darkTheme = getCssBlock(lightGreenThemeSource, "[data-theme='light-green'].dark");

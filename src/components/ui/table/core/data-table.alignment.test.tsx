@@ -65,11 +65,13 @@ vi.mock('@/components/ui/scroll-area', () => ({
   ScrollArea: ({
     children,
     horizontalScrollbarProps,
+    verticalScrollbarProps,
     viewportRef,
     viewportProps
   }: {
     children: React.ReactNode;
     horizontalScrollbarProps?: React.HTMLAttributes<HTMLDivElement>;
+    verticalScrollbarProps?: React.HTMLAttributes<HTMLDivElement>;
     viewportRef?: React.Ref<HTMLDivElement>;
     viewportProps?: Record<string, unknown>;
   }) => {
@@ -79,6 +81,7 @@ vi.mock('@/components/ui/scroll-area', () => ({
         <div ref={viewportRef} data-scroll-target-id={id} data-testid='scroll-viewport'>
           {children}
         </div>
+        <div data-testid='vertical-scrollbar' {...verticalScrollbarProps} />
         <div data-testid='horizontal-scrollbar' {...horizontalScrollbarProps} />
       </div>
     );
@@ -470,6 +473,28 @@ describe('DataTable column alignment', () => {
     expect(horizontalScrollbar.getAttribute('data-right-pinned-width')).toBe('111');
     expect(horizontalScrollbar.getAttribute('style')).toContain('left: 80px');
     expect(horizontalScrollbar.getAttribute('style')).toContain('right: 111px');
+  });
+
+  it('insets the vertical scrollbar below the sticky header and above the horizontal scrollbar', () => {
+    const rows = makeRows(5);
+    const { getByTestId } = render(<AlignHarness rows={rows} />);
+
+    const verticalScrollbar = getByTestId('vertical-scrollbar');
+
+    const scrollbarStyle = verticalScrollbar.getAttribute('style') ?? '';
+    expect(scrollbarStyle).toContain('top: 40px');
+    expect(scrollbarStyle).toContain('bottom: 10px');
+  });
+
+  it('anchors the horizontal scrollbar to both viewport edges without pinned columns', () => {
+    const rows = makeRows(5);
+    const { getByTestId } = render(<AlignHarness rows={rows} />);
+
+    const horizontalScrollbar = getByTestId('horizontal-scrollbar');
+
+    const scrollbarStyle = horizontalScrollbar.getAttribute('style') ?? '';
+    expect(scrollbarStyle).toContain('left: 0px');
+    expect(scrollbarStyle).toContain('right: 0px');
   });
 
   it('colgroup widths follow the visual leaf-column order after pinning reorders columns', () => {

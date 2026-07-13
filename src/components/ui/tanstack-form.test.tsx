@@ -32,6 +32,27 @@ function BaseFieldForm() {
   );
 }
 
+function SelectFieldForm() {
+  const form = useAppForm({
+    defaultValues: {
+      status: ''
+    },
+    onSubmit: vi.fn()
+  });
+
+  return (
+    <form.AppForm>
+      <form.Form>
+        <form.AppField name='status'>
+          {(field) => (
+            <field.SelectField label='状态' options={[{ label: '启用', value: 'enabled' }]} />
+          )}
+        </form.AppField>
+      </form.Form>
+    </form.AppForm>
+  );
+}
+
 describe('TanStack form field accessibility', () => {
   it('associates AppField base controls with their validation message', async () => {
     const user = userEvent.setup();
@@ -45,5 +66,11 @@ describe('TanStack form field accessibility', () => {
     expect(error.id).not.toContain('undefined');
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(input).toHaveAttribute('aria-describedby', error.id);
+  });
+
+  it('keeps select triggers within the field width', () => {
+    render(<SelectFieldForm />);
+
+    expect(screen.getByRole('combobox', { name: '状态' })).toHaveClass('w-full', 'min-w-0');
   });
 });

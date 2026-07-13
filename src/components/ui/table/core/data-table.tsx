@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { DataTableViewOptions } from '@/components/ui/table/toolbar/data-table-view-options';
 import { DataTableColGroup } from '@/components/ui/table/core/data-table-colgroup';
 import {
+  DATA_TABLE_HEADER_ROW_HEIGHT_PX,
   DataTableHeader,
   DataTableHeaderDragOverlay
 } from '@/components/ui/table/core/data-table-header';
@@ -50,6 +51,7 @@ import { useDataTableVirtualization } from '@/components/ui/table/virtualization
  */
 const DATA_TABLE_SKELETON_MAX_COLUMN_COUNT = 10;
 const DATA_TABLE_SKELETON_MAX_FILTER_COUNT = 8;
+const DATA_TABLE_SCROLLBAR_SIZE_PX = 10;
 
 /** 控制加载骨架的可选参数；列数和筛选数未传时会从 table 当前状态推导。 */
 export type DataTableLoadingSkeletonConfig = Omit<
@@ -193,6 +195,7 @@ export function DataTable<TData>({
   const pinnedRightWidth = table
     .getRightVisibleLeafColumns()
     .reduce((total, column) => total + column.getSize(), 0);
+  const pinnedHeaderHeight = table.getHeaderGroups().length * DATA_TABLE_HEADER_ROW_HEIGHT_PX;
   const isFlatLeafHeader = table.getHeaderGroups().length === 1;
   // 只有单层叶子表头才启用表头列拖拽，分组表头会由 header 结构保护而回退为静态表头。
   const {
@@ -298,12 +301,19 @@ export function DataTable<TData>({
       {/* 表格本体始终放在 ScrollArea 内，列宽预览、虚拟化和固定列阴影都以它为坐标系。 */}
       <ScrollArea
         className='h-full w-full'
+        verticalScrollbarProps={{
+          className: 'h-auto',
+          style: {
+            top: pinnedHeaderHeight ? `${pinnedHeaderHeight}px` : 0,
+            bottom: DATA_TABLE_SCROLLBAR_SIZE_PX
+          }
+        }}
         horizontalScrollbarProps={{
           'data-left-pinned-width': pinnedLeftWidth || undefined,
           'data-right-pinned-width': pinnedRightWidth || undefined,
           style: {
-            left: pinnedLeftWidth ? `${pinnedLeftWidth}px` : undefined,
-            right: pinnedRightWidth ? `${pinnedRightWidth}px` : undefined
+            left: pinnedLeftWidth ? `${pinnedLeftWidth}px` : 0,
+            right: pinnedRightWidth ? `${pinnedRightWidth}px` : 0
           }
         }}
         viewportRef={scrollViewportRef}

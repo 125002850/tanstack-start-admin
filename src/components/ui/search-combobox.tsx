@@ -128,7 +128,7 @@ export function SearchCombobox<TItem>({
             type='button'
             variant='outline'
             className={cn(
-              'min-w-0 w-full overflow-hidden justify-between gap-2 font-normal',
+              'border-input min-w-0 w-full overflow-hidden justify-between gap-2 bg-transparent font-normal',
               !selectedLabel && 'text-muted-foreground',
               className
             )}
