@@ -1,5 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 
+import { resolveDataTableColumnSize, type DataTableColumnSize } from '@/config/data-table';
 import type {
   DataTableColumnDslQueryOptions,
   DataTableColumnFilterOptions,
@@ -25,6 +26,13 @@ type DataTableColumnNativeOptions<TData, TValue> = Pick<
   meta?: ColumnDef<TData, TValue>['meta'];
 };
 
+type DataTableColumnInputOptions<TData, TValue> = Omit<
+  DataTableColumnNativeOptions<TData, TValue>,
+  'size'
+> & {
+  size?: DataTableColumnSize;
+};
+
 export interface DataTableColumnResolvedDefaults {
   size?: number;
   minSize?: number;
@@ -38,7 +46,7 @@ export interface DataTableColumnResolvedDefaults {
   columnPanelReorder?: boolean;
 }
 
-export type DataTableColumnOptions<TData, TValue> = DataTableColumnNativeOptions<TData, TValue> &
+export type DataTableColumnOptions<TData, TValue> = DataTableColumnInputOptions<TData, TValue> &
   DataTableColumnFilterOptions &
   DataTableColumnDslQueryOptions<TData, TValue> &
   DataTableColumnPanelOptions;
@@ -187,7 +195,7 @@ export function resolveDataTableColumnOptions<TData, TValue>({
   TValue
 > {
   return {
-    size: options.size ?? defaults.size,
+    size: resolveDataTableColumnSize(options.size ?? defaults.size),
     minSize: options.minSize ?? defaults.minSize,
     maxSize: options.maxSize ?? defaults.maxSize,
     enableSorting: options.enableSorting ?? defaults.enableSorting,

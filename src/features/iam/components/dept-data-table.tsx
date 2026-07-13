@@ -6,10 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
 import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
-import {
-  createDataTableColumnDsl,
-  dataTableHeader
-} from '@/components/ui/table/columns/data-table-column-factory';
+import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
@@ -49,11 +46,9 @@ export default function DeptDataTable({
 }: DeptDataTableProps) {
   const columns = React.useMemo<Array<ColumnDef<DeptRspDTO>>>(
     () => [
-      {
-        accessorKey: 'deptName',
-        header: ({ column }) => dataTableHeader(column, '部门名称'),
-        size: 240,
-        cell: ({ row }) => {
+      columnDsl.field('deptName', '部门名称', {
+        size: 'xxl',
+        renderCell: ({ row }) => {
           const canExpand = row.getCanExpand();
           const expanded = row.getIsExpanded();
           const name = row.original.deptName ?? row.original.deptCode ?? '-';
@@ -97,21 +92,20 @@ export default function DeptDataTable({
             </div>
           );
         }
-      },
+      }),
       columnDsl.field('deptCode', '编码', { size: 160 }),
-      {
-        accessorKey: 'sortOrder',
-        header: ({ column }) => dataTableHeader(column, '排序'),
-        size: 90,
-        cell: ({ row }) => <>{row.original.sortOrder ?? '-'}</>
-      },
-      {
-        accessorKey: 'status',
-        header: ({ column }) => dataTableHeader(column, '状态'),
-        size: 110,
-        cell: ({ row }) => <StatusBadge status={row.original.status} />
-      },
-      columnDsl.field('createTime', '创建时间', { type: 'dateTime', size: 180 })
+      columnDsl.field('sortOrder', '排序', {
+        size: 'xs',
+        renderCell: ({ row }) => <>{row.original.sortOrder ?? '-'}</>
+      }),
+      columnDsl.field('status', '状态', {
+        size: 'sm',
+        renderCell: ({ row }) => <StatusBadge status={row.original.status} />
+      }),
+      columnDsl.field('createTime', '创建时间', {
+        type: 'dateTime',
+        size: 'lg'
+      })
     ],
     [onViewDetail]
   );

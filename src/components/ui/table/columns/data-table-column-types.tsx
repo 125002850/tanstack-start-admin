@@ -13,6 +13,7 @@ import type {
   DataTableColumnTypeDefinition,
   DataTableColumnValueType
 } from '@/types/data-table';
+import { dataTableColumnSizes } from '@/config/data-table';
 
 /**
  * DataTable 列类型注册表。
@@ -60,7 +61,7 @@ export const dataTableColumnTypes = {
     align: 'left'
   },
   longText: {
-    size: 240,
+    size: dataTableColumnSizes.xxl,
     minSize: 120,
     align: 'left',
     cellClassName: 'text-muted-foreground'
@@ -103,7 +104,7 @@ export const dataTableColumnTypes = {
     formatValue: (value) => nullableDate(typeof value === 'string' ? value : undefined)
   },
   dateTime: {
-    size: 180,
+    size: dataTableColumnSizes.lg,
     minSize: 150,
     align: 'left',
     formatValue: (value) => nullableDateTime(value as string | number | Date | null | undefined)

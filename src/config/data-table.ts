@@ -14,6 +14,28 @@ import type {
  */
 export type DataTableConfig = typeof dataTableConfig;
 
+/**
+ * DataTable 列宽语义预设。
+ *
+ * DSL 可直接传入预设 key，生成 ColumnDef 前会解析为数值；非标准宽度仍可直接传 number。
+ */
+export const dataTableColumnSizes = {
+  xs: 90,
+  sm: 110,
+  md: 150,
+  lg: 180,
+  xl: 220,
+  xxl: 240
+} as const;
+
+export type DataTableColumnSizePreset = keyof typeof dataTableColumnSizes;
+export type DataTableColumnSize = number | DataTableColumnSizePreset;
+
+/** 将 DSL 的语义列宽转换为 TanStack ColumnDef 接受的数值。 */
+export function resolveDataTableColumnSize(size: DataTableColumnSize | undefined) {
+  return typeof size === 'string' ? dataTableColumnSizes[size] : size;
+}
+
 /** 行/列虚拟化的共享默认值，调用方可通过 DataTable virtualization prop 局部覆盖。 */
 export const DATA_TABLE_VIRTUAL_PRESET = {
   estimateRowHeight: 42,

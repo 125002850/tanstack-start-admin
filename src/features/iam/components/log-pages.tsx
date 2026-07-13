@@ -8,10 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
-import {
-  createDataTableColumnDsl,
-  dataTableHeader
-} from '@/components/ui/table/columns/data-table-column-factory';
+import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 import { useDict } from '@/hooks/use-dict';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
@@ -77,13 +74,12 @@ function getLoginLogColumns(
   }
 ): Array<ColumnDef<LoginLogRspDTO>> {
   return [
-    {
-      accessorKey: 'username',
-      header: ({ column }) => dataTableHeader(column, '用户名'),
-      size: 150,
-      enableColumnFilter: true,
-      meta: { variant: 'text', label: '用户名', placeholder: '搜索用户名' },
-      cell: ({ row }) => (
+    loginLogDsl.field('username', '用户名', {
+      size: 'md',
+      filter: 'text',
+      filterPlaceholder: '搜索用户名',
+      enableSorting: true,
+      renderCell: ({ row }) => (
         <Button
           type='button'
           variant='link'
@@ -93,46 +89,46 @@ function getLoginLogColumns(
           {nullableText(row.original.username)}
         </Button>
       )
-    },
+    }),
     loginLogDsl.field('staffName', '员工姓名', {
       size: 140,
       filter: 'text',
       filterPlaceholder: '搜索员工姓名'
     }),
-    {
-      accessorKey: 'result',
-      header: ({ column }) => dataTableHeader(column, '结果'),
-      size: 110,
-      enableColumnFilter: true,
-      meta: { variant: 'select', label: '结果', options: loginDicts.resultDict.options, placeholder: '选择结果' },
-      cell: ({ row }) => <LoginResultBadge result={row.original.result} getLabel={loginDicts.resultDict.getLabel} />
-    },
+    loginLogDsl.field('result', '结果', {
+      size: 'sm',
+      filter: 'select',
+      filterOptions: loginDicts.resultDict.options,
+      filterPlaceholder: '选择结果',
+      enableSorting: true,
+      renderCell: ({ row }) => (
+        <LoginResultBadge result={row.original.result} getLabel={loginDicts.resultDict.getLabel} />
+      )
+    }),
     loginLogDsl.field('ip', 'IP', {
-      size: 150,
+      size: 'md',
       filter: 'text',
       filterPlaceholder: '搜索IP'
     }),
-    {
-      accessorKey: 'eventType',
-      header: ({ column }) => dataTableHeader(column, '事件'),
+    loginLogDsl.field('eventType', '事件', {
       size: 120,
-      cell: ({ row }) => {
+      enableSorting: true,
+      renderCell: ({ row }) => {
         const val = row.original.eventType;
         return val ? loginDicts.eventTypeDict.getLabel(val) : '-';
       }
-    },
-    {
-      accessorKey: 'failureReason',
-      header: ({ column }) => dataTableHeader(column, '失败原因'),
-      size: 220,
-      cell: ({ row }) => {
+    }),
+    loginLogDsl.field('failureReason', '失败原因', {
+      size: 'xl',
+      enableSorting: true,
+      renderCell: ({ row }) => {
         const val = row.original.failureReason;
         return val ? loginDicts.failureReasonDict.getLabel(val) : '-';
       }
-    },
+    }),
     loginLogDsl.field('operationTime', '时间', {
       type: 'dateTime',
-      size: 180,
+      size: 'lg',
       filter: 'dateRange'
     })
   ];
@@ -143,13 +139,12 @@ function getOperationLogColumns(
   actionDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> }
 ): Array<ColumnDef<OperationLogRspDTO>> {
   return [
-    {
-      accessorKey: 'operatorUsername',
-      header: ({ column }) => dataTableHeader(column, '操作人'),
-      size: 150,
-      enableColumnFilter: true,
-      meta: { variant: 'text', label: '操作人', placeholder: '搜索用户名' },
-      cell: ({ row }) => (
+    operationLogDsl.field('operatorUsername', '操作人', {
+      size: 'md',
+      filter: 'text',
+      filterPlaceholder: '搜索用户名',
+      enableSorting: true,
+      renderCell: ({ row }) => (
         <Button
           type='button'
           variant='link'
@@ -159,7 +154,7 @@ function getOperationLogColumns(
           {nullableText(row.original.operatorUsername)}
         </Button>
       )
-    },
+    }),
     operationLogDsl.field('operatorStaffName', '员工姓名', {
       size: 140,
       filter: 'text',
@@ -170,37 +165,34 @@ function getOperationLogColumns(
       filter: 'text',
       filterPlaceholder: '搜索模块'
     }),
-    {
-      accessorKey: 'action',
-      header: ({ column }) => dataTableHeader(column, '动作'),
+    operationLogDsl.field('action', '动作', {
       size: 130,
-      enableColumnFilter: true,
-      meta: {
-        variant: 'select',
-        label: '动作',
-        options: actionDict.options,
-        placeholder: '选择动作'
-      },
-      cell: ({ row }) => actionDict.getLabel(row.original.action ?? '')
-    },
-    {
-      accessorKey: 'success',
-      header: ({ column }) => dataTableHeader(column, '结果'),
-      size: 110,
-      enableColumnFilter: true,
-      meta: { variant: 'select', label: '结果', options: [...BOOLEAN_RESULT_OPTIONS] },
-      cell: ({ row }) => <BooleanResultBadge value={row.original.success} />
-    },
+      filter: 'select',
+      filterOptions: actionDict.options,
+      filterPlaceholder: '选择动作',
+      enableSorting: true,
+      renderCell: ({ row }) => actionDict.getLabel(row.original.action ?? '')
+    }),
+    operationLogDsl.field('success', '结果', {
+      size: 'sm',
+      filter: 'select',
+      filterOptions: [...BOOLEAN_RESULT_OPTIONS],
+      enableSorting: true,
+      renderCell: ({ row }) => <BooleanResultBadge value={row.original.success} />
+    }),
     operationLogDsl.field('requestPath', '路径', {
-      size: 240,
+      size: 'xxl',
       filter: 'text',
       filterPlaceholder: '搜索路径',
       cellClassName: 'max-w-[240px]'
     }),
-    operationLogDsl.field('costMillis', '耗时(ms)', { type: 'int', size: 110 }),
+    operationLogDsl.field('costMillis', '耗时(ms)', {
+      type: 'int',
+      size: 'sm'
+    }),
     operationLogDsl.field('operationTime', '时间', {
       type: 'dateTime',
-      size: 180,
+      size: 'lg',
       filter: 'dateRange'
     })
   ];

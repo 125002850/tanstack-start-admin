@@ -24,8 +24,14 @@ const buttonPermissionColumns: Array<ColumnDef<MenuRspDTO>> = [
     renderCell: ({ row }) => <span className='font-medium'>{row.original.menuName ?? '-'}</span>
   }),
   buttonColumnDsl.field('menuCode', '按钮编码', { size: 190 }),
-  buttonColumnDsl.field('permissionCode', '权限标识', { type: 'longText', size: 220 }),
-  buttonColumnDsl.field('sortOrder', '排序', { type: 'int', size: 90 }),
+  buttonColumnDsl.field('permissionCode', '权限标识', {
+    type: 'longText',
+    size: 'xl'
+  }),
+  buttonColumnDsl.field('sortOrder', '排序', {
+    type: 'int',
+    size: 'xs'
+  }),
   buttonColumnDsl.custom({
     id: 'status',
     title: '状态',

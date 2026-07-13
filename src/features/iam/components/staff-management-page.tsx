@@ -15,7 +15,6 @@ import type { DataTableAction } from '@/components/ui/table/actions/data-table-a
 import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
 import {
   createDataTableColumnDsl,
-  dataTableHeader,
   dataTableTextCell
 } from '@/components/ui/table/columns/data-table-column-factory';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
@@ -96,21 +95,16 @@ function getColumns(
       filterPlaceholder: '搜索工号'
     }),
     columnDsl.field('username', '用户名', {
-      size: 150,
+      size: 'md',
       filter: 'text',
       filterPlaceholder: '搜索用户名'
     }),
-    {
-      accessorKey: 'staffName',
-      header: ({ column }) => dataTableHeader(column, '姓名'),
-      size: 150,
-      enableColumnFilter: true,
-      meta: {
-        variant: 'text',
-        label: '姓名',
-        placeholder: '搜索姓名'
-      },
-      cell: ({ row }) => (
+    columnDsl.field('staffName', '姓名', {
+      size: 'md',
+      filter: 'text',
+      filterPlaceholder: '搜索姓名',
+      enableSorting: true,
+      renderCell: ({ row }) => (
         <Button
           type='button'
           variant='link'
@@ -120,46 +114,34 @@ function getColumns(
           {nullableText(row.original.staffName)}
         </Button>
       )
-    },
-    {
+    }),
+    columnDsl.custom({
       id: 'deptId',
+      title: '部门',
       accessorFn: (row) => row.deptName,
-      header: ({ column }) => dataTableHeader(column, '部门'),
       size: 160,
-      enableColumnFilter: true,
+      filter: 'multiSelect',
+      filterOptions: departmentOptions,
       enableSorting: false,
-      meta: {
-        variant: 'multiSelect',
-        label: '部门',
-        options: departmentOptions
-      },
       cell: ({ row }) => dataTableTextCell(row.original.deptName, 'max-w-[160px]')
-    },
+    }),
     columnDsl.field('phone', '手机号', {
       size: 140,
       filter: 'text',
       filterPlaceholder: '搜索手机号'
     }),
-    {
-      accessorKey: 'status',
-      header: ({ column }) => dataTableHeader(column, '状态'),
-      size: 110,
-      enableColumnFilter: true,
+    columnDsl.field('status', '状态', {
+      size: 'sm',
+      filter: 'multiSelect',
+      filterOptions: [...ENABLE_STATUS_OPTIONS],
       enableSorting: false,
-      meta: {
-        variant: 'multiSelect',
-        label: '状态',
-        options: [...ENABLE_STATUS_OPTIONS]
-      },
-      cell: ({ row }) => <StatusBadge status={row.original.status} />
-    },
-    {
-      id: 'roles',
-      header: ({ column }) => dataTableHeader(column, '角色'),
-      size: 220,
+      renderCell: ({ row }) => <StatusBadge status={row.original.status} />
+    }),
+    columnDsl.field('roles', '角色', {
+      size: 'xl',
       enableSorting: false,
-      enableColumnFilter: false,
-      cell: ({ row }) => {
+      filter: false,
+      renderCell: ({ row }) => {
         const roles = row.original.roles ?? [];
         if (!roles.length) return <span className='text-muted-foreground'>-</span>;
         return (
@@ -173,17 +155,16 @@ function getColumns(
           </div>
         );
       }
-    },
-    {
-      accessorKey: 'mustChangePassword',
-      header: ({ column }) => dataTableHeader(column, '改密'),
-      size: 90,
-      enableColumnFilter: false,
-      cell: ({ row }) => (row.original.mustChangePassword ? '是' : '否')
-    },
+    }),
+    columnDsl.field('mustChangePassword', '改密', {
+      size: 'xs',
+      filter: false,
+      enableSorting: true,
+      renderCell: ({ row }) => (row.original.mustChangePassword ? '是' : '否')
+    }),
     columnDsl.field('createTime', '创建时间', {
       type: 'dateTime',
-      size: 180,
+      size: 'lg',
       filter: 'dateRange'
     })
   ];

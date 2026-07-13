@@ -7,10 +7,7 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  createDataTableColumnDsl,
-  dataTableHeader
-} from '@/components/ui/table/columns/data-table-column-factory';
+import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
@@ -68,13 +65,12 @@ function roleTableQueryOptions(request: DataTableDslPageRequestBase) {
 
 function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<RoleRspDTO>> {
   return [
-    {
-      accessorKey: 'roleName',
-      header: ({ column }) => dataTableHeader(column, '角色名称'),
-      size: 180,
-      enableColumnFilter: true,
-      meta: { variant: 'text', label: '角色名称', placeholder: '搜索名称' },
-      cell: ({ row }) => (
+    columnDsl.field('roleName', '角色名称', {
+      size: 'lg',
+      filter: 'text',
+      filterPlaceholder: '搜索名称',
+      enableSorting: true,
+      renderCell: ({ row }) => (
         <Button
           type='button'
           variant='link'
@@ -84,37 +80,39 @@ function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<R
           {nullableText(row.original.roleName)}
         </Button>
       )
-    },
+    }),
     columnDsl.field('roleCode', '角色编码', {
-      size: 180,
+      size: 'lg',
       filter: 'text',
       filterPlaceholder: '搜索编码'
     }),
-    {
-      accessorKey: 'status',
-      header: ({ column }) => dataTableHeader(column, '状态'),
-      size: 110,
-      enableColumnFilter: true,
+    columnDsl.field('status', '状态', {
+      size: 'sm',
+      filter: 'select',
+      filterOptions: [...ENABLE_STATUS_OPTIONS],
       enableSorting: false,
-      meta: { variant: 'select', label: '状态', options: [...ENABLE_STATUS_OPTIONS] },
-      cell: ({ row }) => <StatusBadge status={row.original.status} />
-    },
-    {
-      accessorKey: 'dataScopeType',
-      header: ({ column }) => dataTableHeader(column, '数据范围'),
-      size: 150,
-      enableColumnFilter: false,
-      cell: ({ row }) => <DataScopeBadge type={row.original.dataScopeType} />
-    },
-    {
-      accessorKey: 'systemBuiltIn',
-      header: ({ column }) => dataTableHeader(column, '内置角色'),
-      size: 110,
-      enableColumnFilter: false,
-      cell: ({ row }) => (row.original.systemBuiltIn ? '是' : '否')
-    },
-    columnDsl.field('sortOrder', '排序', { type: 'int', size: 90 }),
-    columnDsl.field('createTime', '创建时间', { type: 'dateTime', size: 180 })
+      renderCell: ({ row }) => <StatusBadge status={row.original.status} />
+    }),
+    columnDsl.field('dataScopeType', '数据范围', {
+      size: 'md',
+      filter: false,
+      enableSorting: true,
+      renderCell: ({ row }) => <DataScopeBadge type={row.original.dataScopeType} />
+    }),
+    columnDsl.field('systemBuiltIn', '内置角色', {
+      size: 'sm',
+      filter: false,
+      enableSorting: true,
+      renderCell: ({ row }) => (row.original.systemBuiltIn ? '是' : '否')
+    }),
+    columnDsl.field('sortOrder', '排序', {
+      type: 'int',
+      size: 'xs'
+    }),
+    columnDsl.field('createTime', '创建时间', {
+      type: 'dateTime',
+      size: 'lg'
+    })
   ];
 }
 
