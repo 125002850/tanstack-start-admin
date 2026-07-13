@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
+import { useDict } from '@/hooks/use-dict';
 import { iamLoginLogDetailQueryOptions } from '@/lib/api/clients/service';
 import type { LoginLogRspDTO } from '@/lib/api/clients/service';
 
@@ -28,6 +29,9 @@ function LoginLogDetailSheet({
     enabled: open && logId != null
   });
   const detail = detailQuery.data ?? log;
+  const eventTypeDict = useDict('IAM_LOGIN_EVENT_TYPE');
+  const resultDict = useDict('IAM_LOGIN_RESULT');
+  const failureReasonDict = useDict('IAM_LOGIN_FAILURE_REASON');
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -41,12 +45,12 @@ function LoginLogDetailSheet({
           <FieldItem label='员工ID' value={detail?.staffId} />
           <FieldItem label='用户名' value={detail?.username} />
           <FieldItem label='员工姓名' value={detail?.staffName} />
-          <FieldItem label='事件' value={detail?.eventType} />
-          <FieldItem label='结果' value={detail?.result} />
+          <FieldItem label='事件' value={detail?.eventType ? eventTypeDict.getLabel(detail.eventType) : '-'} />
+          <FieldItem label='结果' value={detail?.result ? resultDict.getLabel(detail.result) : '-'} />
           <FieldItem label='IP' value={detail?.ip} />
           <FieldItem label='Token ID' value={detail?.tokenId} valueMaxLines={1} />
           <FieldItem label='时间' value={formatOptionalDateTime(detail?.operationTime)} />
-          <FieldItem label='失败原因' value={detail?.failureReason} valueMaxLines={2} />
+          <FieldItem label='失败原因' value={detail?.failureReason ? failureReasonDict.getLabel(detail.failureReason) : '-'} valueMaxLines={2} />
           <FieldItem label='User Agent' value={detail?.userAgent} valueMaxLines={2} />
         </div>
       </SheetContent>

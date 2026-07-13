@@ -46,8 +46,11 @@ export function loginResultLabel(result?: string | null) {
   return optionLabel(LOGIN_RESULT_OPTIONS, result);
 }
 
-export function LoginResultBadge({ result }: { result?: string | null }) {
-  return <Badge variant={result === 'SUCCESS' ? 'default' : 'destructive'}>{loginResultLabel(result)}</Badge>;
+export function LoginResultBadge({ result, getLabel }: { result?: string | null; getLabel?: (code: string) => string }) {
+  const label = result
+    ? (getLabel ? getLabel(result) : loginResultLabel(result))
+    : '-';
+  return <Badge variant={result === 'SUCCESS' ? 'default' : 'destructive'}>{label}</Badge>;
 }
 
 export function BooleanResultBadge({ value }: { value?: boolean | null }) {

@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet';
+import { useDict } from '@/hooks/use-dict';
 import { iamOperationLogDetailQueryOptions } from '@/lib/api/clients/service';
 import type { OperationLogRspDTO } from '@/lib/api/clients/service';
 
@@ -28,6 +29,7 @@ function OperationLogDetailSheet({
     enabled: open && logId != null
   });
   const detail = detailQuery.data ?? log;
+  const actionDict = useDict('IAM_OPERATION_LOG_ACTION');
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -42,7 +44,7 @@ function OperationLogDetailSheet({
           <FieldItem label='用户名' value={detail?.operatorUsername} />
           <FieldItem label='员工姓名' value={detail?.operatorStaffName} />
           <FieldItem label='模块' value={detail?.module} />
-          <FieldItem label='动作' value={detail?.action} />
+          <FieldItem label='动作' value={actionDict.getLabel(detail?.action ?? '')} />
           <FieldItem label='结果' value={detail?.success ? '成功' : '失败'} />
           <FieldItem label='耗时' value={detail?.costMillis == null ? '-' : `${detail.costMillis} ms`} />
           <FieldItem label='方法' value={detail?.httpMethod} />

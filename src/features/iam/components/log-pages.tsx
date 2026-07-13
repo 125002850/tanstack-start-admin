@@ -12,6 +12,7 @@ import {
   createDataTableColumnDsl,
   dataTableHeader
 } from '@/components/ui/table/columns/data-table-column-factory';
+import { useDict } from '@/hooks/use-dict';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
 import {
@@ -26,7 +27,7 @@ import {
   type OperationLogRspDTO
 } from '@/lib/api/clients/service';
 import { nullableText } from '@/lib/display-formatters';
-import { BOOLEAN_RESULT_OPTIONS, LOGIN_RESULT_OPTIONS } from '../lib/constants';
+import { BOOLEAN_RESULT_OPTIONS } from '../lib/constants';
 import { BooleanResultBadge, LoginResultBadge } from '../lib/format';
 import { dslConditionNumber, dslConditionValue, dslDateTimeRange, pageRequestFromDsl } from '../lib/table';
 
@@ -67,7 +68,14 @@ function operationLogQueryOptions(request: DataTableDslPageRequestBase) {
   });
 }
 
-function getLoginLogColumns(onOpenDetail: (log: LoginLogRspDTO) => void): Array<ColumnDef<LoginLogRspDTO>> {
+function getLoginLogColumns(
+  onOpenDetail: (log: LoginLogRspDTO) => void,
+  loginDicts: {
+    eventTypeDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> };
+    resultDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> };
+    failureReasonDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> };
+  }
+): Array<ColumnDef<LoginLogRspDTO>> {
   return [
     {
       accessorKey: 'username',
@@ -96,19 +104,32 @@ function getLoginLogColumns(onOpenDetail: (log: LoginLogRspDTO) => void): Array<
       header: ({ column }) => dataTableHeader(column, '结果'),
       size: 110,
       enableColumnFilter: true,
-      meta: { variant: 'select', label: '结果', options: [...LOGIN_RESULT_OPTIONS] },
-      cell: ({ row }) => <LoginResultBadge result={row.original.result} />
+      meta: { variant: 'select', label: '结果', options: loginDicts.resultDict.options, placeholder: '选择结果' },
+      cell: ({ row }) => <LoginResultBadge result={row.original.result} getLabel={loginDicts.resultDict.getLabel} />
     },
     loginLogDsl.field('ip', 'IP', {
       size: 150,
       filter: 'text',
       filterPlaceholder: '搜索IP'
     }),
-    loginLogDsl.field('eventType', '事件', { size: 120 }),
-    loginLogDsl.field('failureReason', '失败原因', {
+    {
+      accessorKey: 'eventType',
+      header: ({ column }) => dataTableHeader(column, '事件'),
+      size: 120,
+      cell: ({ row }) => {
+        const val = row.original.eventType;
+        return val ? loginDicts.eventTypeDict.getLabel(val) : '-';
+      }
+    },
+    {
+      accessorKey: 'failureReason',
+      header: ({ column }) => dataTableHeader(column, '失败原因'),
       size: 220,
-      cellClassName: 'max-w-[220px]'
-    }),
+      cell: ({ row }) => {
+        const val = row.original.failureReason;
+        return val ? loginDicts.failureReasonDict.getLabel(val) : '-';
+      }
+    },
     loginLogDsl.field('operationTime', '时间', {
       type: 'dateTime',
       size: 180,
@@ -117,7 +138,10 @@ function getLoginLogColumns(onOpenDetail: (log: LoginLogRspDTO) => void): Array<
   ];
 }
 
-function getOperationLogColumns(onOpenDetail: (log: OperationLogRspDTO) => void): Array<ColumnDef<OperationLogRspDTO>> {
+function getOperationLogColumns(
+  onOpenDetail: (log: OperationLogRspDTO) => void,
+  actionDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> }
+): Array<ColumnDef<OperationLogRspDTO>> {
   return [
     {
       accessorKey: 'operatorUsername',
@@ -146,11 +170,19 @@ function getOperationLogColumns(onOpenDetail: (log: OperationLogRspDTO) => void)
       filter: 'text',
       filterPlaceholder: '搜索模块'
     }),
-    operationLogDsl.field('action', '动作', {
+    {
+      accessorKey: 'action',
+      header: ({ column }) => dataTableHeader(column, '动作'),
       size: 130,
-      filter: 'text',
-      filterPlaceholder: '搜索动作'
-    }),
+      enableColumnFilter: true,
+      meta: {
+        variant: 'select',
+        label: '动作',
+        options: actionDict.options,
+        placeholder: '选择动作'
+      },
+      cell: ({ row }) => actionDict.getLabel(row.original.action ?? '')
+    },
     {
       accessorKey: 'success',
       header: ({ column }) => dataTableHeader(column, '结果'),
@@ -176,7 +208,14 @@ function getOperationLogColumns(onOpenDetail: (log: OperationLogRspDTO) => void)
 
 export function LoginLogPage() {
   const [detailLog, setDetailLog] = React.useState<LoginLogRspDTO | null>(null);
-  const columns = React.useMemo(() => getLoginLogColumns(setDetailLog), []);
+  const eventTypeDict = useDict('IAM_LOGIN_EVENT_TYPE');
+  const resultDict = useDict('IAM_LOGIN_RESULT');
+  const failureReasonDict = useDict('IAM_LOGIN_FAILURE_REASON');
+  const loginDicts = React.useMemo(
+    () => ({ eventTypeDict, resultDict, failureReasonDict }),
+    [eventTypeDict, resultDict, failureReasonDict]
+  );
+  const columns = React.useMemo(() => getLoginLogColumns(setDetailLog, loginDicts), [loginDicts]);
   const { table, total, queryState, refreshProps } = useDslDataTable<
     LoginLogRspDTO,
     DataTableDslPageRequestBase,
@@ -227,7 +266,8 @@ export function LoginLogPage() {
 
 export function OperationLogPage() {
   const [detailLog, setDetailLog] = React.useState<OperationLogRspDTO | null>(null);
-  const columns = React.useMemo(() => getOperationLogColumns(setDetailLog), []);
+  const actionDict = useDict('IAM_OPERATION_LOG_ACTION');
+  const columns = React.useMemo(() => getOperationLogColumns(setDetailLog, actionDict), [actionDict]);
   const { table, total, queryState, refreshProps } = useDslDataTable<
     OperationLogRspDTO,
     DataTableDslPageRequestBase,
