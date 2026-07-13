@@ -108,8 +108,8 @@ function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<R
     },
     {
       accessorKey: 'systemBuiltIn',
-      header: ({ column }) => dataTableHeader(column, '内置'),
-      size: 90,
+      header: ({ column }) => dataTableHeader(column, '内置角色'),
+      size: 110,
       enableColumnFilter: false,
       cell: ({ row }) => (row.original.systemBuiltIn ? '是' : '否')
     },
