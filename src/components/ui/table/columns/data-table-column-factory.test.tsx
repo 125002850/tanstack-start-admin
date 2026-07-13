@@ -286,6 +286,24 @@ describe('data-table-column-factory', () => {
     expect(renderCellText(phoneColumn, { phone: '13800138000' })).toBe('tel:13800138000');
   });
 
+  it('resolves semantic size presets before creating native columns', () => {
+    const columnDsl = createDataTableColumnDsl<Row>();
+    const columns = [
+      columnDsl.field('name', '名称', { size: 'md' }),
+      columnDsl.badge('status', '状态', { size: 'sm' }),
+      columnDsl.actions({ size: 'xs', actions: [] }),
+      columnDsl.custom({
+        id: 'score',
+        title: '评分',
+        size: 'xl',
+        cell: () => null
+      }),
+      columnDsl.field('amount', '金额', { size: 137 })
+    ];
+
+    expect(columns.map((column) => column.size)).toEqual([150, 110, 90, 220, 137]);
+  });
+
   it('keeps adapted row actions stable for the same TanStack row', () => {
     const onSelect = vi.fn();
     const columnDsl = createDataTableColumnDsl<Row>();
@@ -324,6 +342,9 @@ function expectColumnDslTypeErrors() {
 
   // @ts-expect-error serializeFilter only accepts a function
   columnDsl.field('name', '名称', { dsl: { serializeFilter: disabledSerializeFilter } });
+
+  // @ts-expect-error size only accepts a known preset or an exact number
+  columnDsl.field('name', '名称', { size: 'huge' });
 }
 
 void expectColumnDslTypeErrors;

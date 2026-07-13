@@ -35,6 +35,7 @@ import {
   validateDataTableColumnTypeRegistry,
   type DataTableColumnTypeRegistry
 } from '@/components/ui/table/columns/data-table-column-types';
+import type { DataTableColumnSize } from '@/config/data-table';
 import { nullableText } from '@/lib/display-formatters';
 import { cn } from '@/lib/utils';
 import type {
@@ -59,7 +60,7 @@ interface DataTableColumnDslOptions<TData> {
 }
 
 interface BaseColumnOptions<TData, TValue = unknown> {
-  size?: number;
+  size?: DataTableColumnSize;
   minSize?: number;
   maxSize?: number;
   enableSorting?: boolean;
@@ -94,7 +95,7 @@ interface ActionsDslColumnOptions<TData> extends DataTableColumnPanelOptions {
   id?: string;
   title?: string;
   actions: Array<DataTableRowActionOption<TData>>;
-  size?: number;
+  size?: DataTableColumnSize;
   minSize?: number;
   maxSize?: number;
   enableHiding?: boolean;
@@ -279,12 +280,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     // 操作列默认不参与筛选/隐藏/重排，但仍允许调用方覆盖宽度范围和 meta。
     const resolvedOptions = resolveDataTableColumnOptions<TData, unknown>({
       title,
-      defaults: {
-        ...ACTIONS_COLUMN_DEFAULTS,
-        size: columnOptions.size ?? ACTIONS_COLUMN_DEFAULTS.size,
-        minSize: columnOptions.minSize ?? ACTIONS_COLUMN_DEFAULTS.minSize,
-        maxSize: columnOptions.maxSize ?? ACTIONS_COLUMN_DEFAULTS.maxSize
-      },
+      defaults: ACTIONS_COLUMN_DEFAULTS,
       options: {
         ...columnOptions,
         filter: false,

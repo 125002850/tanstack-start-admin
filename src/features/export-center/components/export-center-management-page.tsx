@@ -15,7 +15,6 @@ import type {
 import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
 import {
   createDataTableColumnDsl,
-  dataTableHeader,
   dataTableTextCell
 } from '@/components/ui/table/columns/data-table-column-factory';
 import { DataTableLinkButtonCell } from '@/components/ui/table/cells/data-table-link-button-cell';
@@ -161,18 +160,12 @@ function getColumns(
   getStatusLabel: (record: ExportRecordRecord) => string
 ): Array<ColumnDef<ExportRecordRecord>> {
   return [
-    {
-      accessorKey: 'fileName',
-      header: ({ column }) => dataTableHeader(column, '文件名'),
+    columnDsl.field('fileName', '文件名', {
       size: 260,
-      enableColumnFilter: true,
       enableSorting: false,
-      meta: {
-        variant: 'text',
-        label: '文件名',
-        placeholder: '搜索文件名'
-      },
-      cell: ({ row }) => {
+      filter: 'text',
+      filterPlaceholder: '搜索文件名',
+      renderCell: ({ row }) => {
         if (!row.original.fileName) {
           return dataTableTextCell(row.original.fileName, 'max-w-[260px]');
         }
@@ -185,27 +178,25 @@ function getColumns(
           />
         );
       }
-    },
+    }),
     columnDsl.field('exportBizName', '导出业务', {
-      size: 180,
+      size: 'lg',
       filter: 'text',
       filterPlaceholder: '搜索导出业务'
     }),
     columnDsl.field('querySnapshotSummary', '导出摘要', {
-      size: 180,
+      size: 'lg',
       cellClassName: 'max-w-[180px]'
     }),
-    {
-      accessorKey: 'status',
-      header: ({ column }) => dataTableHeader(column, '状态'),
+    columnDsl.field('status', '状态', {
       size: 120,
-      enableColumnFilter: false,
+      filter: false,
       enableSorting: false,
-      cell: ({ row }) => {
+      renderCell: ({ row }) => {
         const label = getStatusLabel(row.original);
         return <Badge variant={getStatusBadgeVariant(row.original)}>{label}</Badge>;
       }
-    },
+    }),
     columnDsl.field('fileType', '类型', {
       size: 100
     }),
@@ -213,13 +204,11 @@ function getColumns(
       type: 'fileSize',
       size: 100
     }),
-    {
-      accessorKey: 'downloadCount',
-      header: ({ column }) => dataTableHeader(column, '下载次数'),
-      size: 110,
+    columnDsl.field('downloadCount', '下载次数', {
+      size: 'sm',
       enableSorting: true,
-      cell: ({ row }) => row.original.downloadCount ?? 0
-    },
+      renderCell: ({ row }) => row.original.downloadCount ?? 0
+    }),
     ...auditColumns<ExportRecordRecord>()
   ];
 }

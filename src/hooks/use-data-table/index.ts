@@ -17,7 +17,7 @@ import type {
 } from '@tanstack/react-table';
 import * as React from 'react';
 
-import { dataTableConfig } from '@/config/data-table';
+import { dataTableColumnSizes, dataTableConfig } from '@/config/data-table';
 import { getSelectedPageRows } from '@/lib/data-table';
 import type {
   ColumnOrderStorageMode,
@@ -401,7 +401,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     defaultColumn: {
       // 默认关闭列筛选，只有 DSL/业务显式 filter 的列才出现在工具栏。
       minSize: 80,
-      size: 150,
+      size: dataTableColumnSizes.md,
       ...tableProps.defaultColumn,
       enableColumnFilter: false
     },
