@@ -188,6 +188,14 @@ function normalizeStringArray(value: unknown): string[] {
     .filter((item): item is string => Boolean(item));
 }
 
+/** 按英文分号拆分文本筛选多值；只有调用方确认 2 个及以上值时才改变 DSL 形态。 */
+function splitSemicolonTextValues(value: string): string[] {
+  return value
+    .split(';')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
 /** 支持毫秒时间戳字符串/数字和可被 Date 解析的字符串。 */
 function parseTimestamp(value: unknown): Date | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -312,6 +320,28 @@ function buildFilterCondition<TData>(
     }
 
     const op = resolveOperator(variant, meta?.query?.operator, field);
+    if (op === 'CONTAINS' && value.includes(';')) {
+      const values = splitSemicolonTextValues(value);
+      if (values.length === 0) {
+        return undefined;
+      }
+
+      if (values.length >= 2) {
+        return {
+          nodeType: 'compose',
+          logic: 'OR',
+          children: values.map((item) => ({
+            nodeType: 'text',
+            field,
+            op,
+            value: item
+          }))
+        };
+      }
+
+      return { nodeType: 'text', field, op, value: values[0]! };
+    }
+
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], value };
   }
 

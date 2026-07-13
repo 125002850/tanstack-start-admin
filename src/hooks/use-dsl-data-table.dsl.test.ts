@@ -157,6 +157,84 @@ describe('use-dsl-data-table.dsl', () => {
     });
   });
 
+  it('expands semicolon-separated CONTAINS text values into an inner OR compose node', () => {
+    const request = buildDataTableDslRequest({
+      columns: [
+        {
+          accessorKey: 'staffCode',
+          header: '员工编码',
+          enableColumnFilter: true,
+          meta: { variant: 'text', label: '员工编码' }
+        },
+        {
+          accessorKey: 'staffName',
+          header: '员工姓名',
+          enableColumnFilter: true,
+          meta: { variant: 'text', label: '员工姓名', query: { operator: 'EQ' } }
+        }
+      ],
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [
+        { id: 'staffCode', value: ' 1 ; ; 2 ; ' },
+        { id: 'staffName', value: 'Alice;Bob' }
+      ]
+    });
+
+    expect(request.condition).toEqual({
+      nodeType: 'compose',
+      logic: 'AND',
+      children: [
+        {
+          nodeType: 'compose',
+          logic: 'OR',
+          children: [
+            {
+              nodeType: 'text',
+              field: 'staffCode',
+              op: 'CONTAINS',
+              value: '1'
+            },
+            {
+              nodeType: 'text',
+              field: 'staffCode',
+              op: 'CONTAINS',
+              value: '2'
+            }
+          ]
+        },
+        {
+          nodeType: 'text',
+          field: 'staffName',
+          op: 'EQ',
+          value: 'Alice;Bob'
+        }
+      ]
+    });
+  });
+
+  it('keeps CONTAINS text filters as single text nodes when semicolon parsing finds one value', () => {
+    const request = buildDataTableDslRequest({
+      columns,
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [{ id: 'dictTypeCode', value: ' payment ; ; ' }]
+    });
+
+    expect(request.condition).toEqual({
+      nodeType: 'compose',
+      logic: 'AND',
+      children: [
+        {
+          nodeType: 'text',
+          field: 'dictTypeCode',
+          op: 'CONTAINS',
+          value: 'payment'
+        }
+      ]
+    });
+  });
+
   it('omits text and multi-select filters after empty normalization', () => {
     const request = buildDataTableDslRequest({
       columns: [
