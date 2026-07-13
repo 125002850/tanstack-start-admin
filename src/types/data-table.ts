@@ -67,6 +67,8 @@ declare module '@tanstack/react-table' {
 export interface Option {
   label: string;
   value: string;
+  /** 树形选项的层级；省略时按普通扁平选项渲染。 */
+  depth?: number;
   count?: number;
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
 }
