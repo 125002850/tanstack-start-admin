@@ -235,6 +235,74 @@ describe('use-dsl-data-table.dsl', () => {
     });
   });
 
+  it('truncates semicolon-separated CONTAINS text values at 50 items and warns', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const request = buildDataTableDslRequest({
+      columns: [
+        {
+          accessorKey: 'staffCode',
+          header: '员工编码',
+          enableColumnFilter: true,
+          meta: { variant: 'text', label: '员工编码' }
+        }
+      ],
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [
+        {
+          id: 'staffCode',
+          value: Array.from({ length: 55 }, (_, index) => String(index + 1)).join(';')
+        }
+      ]
+    });
+
+    const condition = request.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>;
+    const orNode = condition.children[0] as Extract<DataTableDslCondition, { nodeType: 'compose' }>;
+
+    expect(orNode.children).toHaveLength(50);
+    expect(orNode.children[0]).toMatchObject({ field: 'staffCode', value: '1' });
+    expect(orNode.children[49]).toMatchObject({ field: 'staffCode', value: '50' });
+    expect(warn).toHaveBeenCalledWith(
+      '[useDslDataTable.dsl] Truncating semicolon-separated text filter values.',
+      {
+        field: 'staffCode',
+        count: 55,
+        max: 50
+      }
+    );
+
+    warn.mockRestore();
+  });
+
+  it('keeps select filters containing semicolons as single text nodes', () => {
+    const request = buildDataTableDslRequest({
+      columns: [
+        {
+          accessorKey: 'dictTypeCode',
+          header: '字典类型编码',
+          enableColumnFilter: true,
+          meta: { variant: 'select', label: '字典类型编码' }
+        }
+      ],
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [{ id: 'dictTypeCode', value: 'payment;refund' }]
+    });
+
+    expect(request.condition).toEqual({
+      nodeType: 'compose',
+      logic: 'AND',
+      children: [
+        {
+          nodeType: 'text',
+          field: 'dictTypeCode',
+          op: 'EQ',
+          value: 'payment;refund'
+        }
+      ]
+    });
+  });
+
   it('omits text and multi-select filters after empty normalization', () => {
     const request = buildDataTableDslRequest({
       columns: [
