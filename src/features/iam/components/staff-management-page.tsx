@@ -17,6 +17,7 @@ import {
   createDataTableColumnDsl,
   dataTableTextCell
 } from '@/components/ui/table/columns/data-table-column-factory';
+import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
 import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
@@ -47,7 +48,6 @@ import {
   dslConditionNumbers,
   dslConditionValue,
   dslConditionValues,
-  dslDateTimeRange,
   pageRequestFromDsl
 } from '../lib/table';
 
@@ -79,8 +79,7 @@ export function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
     statuses: dslConditionValues(condition, 'status') as IamStaffPageRequest['statuses'],
     staffCode: dslConditionValue(condition, 'staffCode'),
     username: dslConditionValue(condition, 'username'),
-    staffName: dslConditionValue(condition, 'staffName'),
-    createTimeRange: dslDateTimeRange(condition, 'createTime')
+    staffName: dslConditionValue(condition, 'staffName')
   });
 }
 
@@ -162,11 +161,7 @@ function getColumns(
       enableSorting: true,
       renderCell: ({ row }) => (row.original.mustChangePassword ? '是' : '否')
     }),
-    columnDsl.field('createTime', '创建时间', {
-      type: 'dateTime',
-      size: 'lg',
-      filter: 'dateRange'
-    })
+    ...auditColumns<StaffRspDTO>()
   ];
 }
 

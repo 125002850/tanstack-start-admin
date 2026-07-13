@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
 import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
@@ -109,10 +110,7 @@ function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<R
       type: 'int',
       size: 'xs'
     }),
-    columnDsl.field('createTime', '创建时间', {
-      type: 'dateTime',
-      size: 'lg'
-    })
+    ...auditColumns<RoleRspDTO>()
   ];
 }
 

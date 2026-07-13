@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
 import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
+import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
 import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
@@ -102,10 +103,7 @@ export default function DeptDataTable({
         size: 'sm',
         renderCell: ({ row }) => <StatusBadge status={row.original.status} />
       }),
-      columnDsl.field('createTime', '创建时间', {
-        type: 'dateTime',
-        size: 'lg'
-      })
+      ...auditColumns<DeptRspDTO>()
     ],
     [onViewDetail]
   );
