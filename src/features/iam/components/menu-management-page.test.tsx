@@ -136,7 +136,8 @@ describe('MenuManagementPage', () => {
 
     const details = screen.getByRole('region', { name: '菜单详情' });
     expect(within(details).getByText('权限管理')).toBeInTheDocument();
-    expect(within(details).getByText('目录节点')).toBeInTheDocument();
+    expect(within(details).getByText('目录')).toBeInTheDocument();
+    expect(within(details).queryByText('目录节点')).not.toBeInTheDocument();
     expect(screen.getByText('请选择页面菜单')).toBeInTheDocument();
 
     await user.click(await within(tree).findByRole('button', { name: '选择 员工管理' }));
@@ -154,6 +155,21 @@ describe('MenuManagementPage', () => {
     });
     expect(screen.getByText('当前菜单暂无按钮权限')).toBeInTheDocument();
     expect(screen.queryByText('iam:staff:create')).not.toBeInTheDocument();
+  });
+
+  it('选中菜单使用 Sidebar active 背景及配套前景色', async () => {
+    render(<MenuManagementPage />, { wrapper: createWrapper() });
+
+    const tree = await screen.findByRole('list', { name: '菜单树' });
+    const selectedMenu = await within(tree).findByRole('button', { name: '选择 权限管理' });
+    const unselectedMenu = within(tree).getByRole('button', { name: '选择 员工管理' });
+
+    expect(selectedMenu).toHaveClass('bg-sidebar-accent', 'text-sidebar-accent-foreground');
+    expect(selectedMenu).not.toHaveClass('bg-primary');
+    expect(selectedMenu).not.toHaveClass('bg-secondary');
+    expect(selectedMenu).not.toHaveClass('bg-accent');
+    expect(within(selectedMenu).getByText('iam')).toHaveClass('text-sidebar-accent-foreground');
+    expect(within(unselectedMenu).getByText('iam_staff')).toHaveClass('text-muted-foreground');
   });
 
   it('在前端本地筛选完整菜单树，按钮权限命中时保留所属菜单祖先链', async () => {

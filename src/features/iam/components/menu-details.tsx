@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Icons } from '@/components/icons';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldItem } from '@/components/ui/detail-field';
@@ -97,7 +96,6 @@ export function MenuDetails({
                   <span>{record.menuCode ?? '-'}</span>
                   <MenuTypeBadge type={record.menuType} />
                   <StatusBadge status={record.status} />
-                  {record.menuType === 'DIR' ? <Badge variant='secondary'>目录节点</Badge> : null}
                 </>
               ) : (
                 '从左侧菜单树选择目录或页面菜单后查看详情'

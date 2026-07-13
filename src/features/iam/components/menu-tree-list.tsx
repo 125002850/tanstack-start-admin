@@ -9,6 +9,7 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 import { getMenuNodeStableId, isMenuNodeCollapsible, type FlatMenuNode } from '../lib/tree';
 
@@ -137,16 +138,25 @@ export function MenuTreeList({
 
                   <Button
                     type='button'
-                    variant={selected ? 'secondary' : 'ghost'}
+                    variant={selected ? null : 'ghost'}
                     aria-label={`选择 ${menuName}`}
                     aria-pressed={selected}
-                    className='h-auto min-w-0 flex-1 justify-start gap-2 px-2 py-2 text-left'
+                    className={cn(
+                      'h-auto min-w-0 flex-1 justify-start gap-2 px-2 py-2 text-left',
+                      selected &&
+                        'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground active:bg-sidebar-accent active:text-sidebar-accent-foreground'
+                    )}
                     onClick={() => onSelect(menu)}
                   >
                     <NodeIcon className='size-4 shrink-0' />
                     <span className='min-w-0 flex-1'>
                       <span className='block truncate text-sm font-medium'>{menuName}</span>
-                      <span className='text-muted-foreground block truncate text-xs'>
+                      <span
+                        className={cn(
+                          'block truncate text-xs',
+                          selected ? 'text-sidebar-accent-foreground' : 'text-muted-foreground'
+                        )}
+                      >
                         {menu.menuCode ?? '-'}
                       </span>
                     </span>
