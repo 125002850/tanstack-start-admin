@@ -314,6 +314,10 @@ describe('MenuManagementPage', () => {
     expect(screen.getByText('上级菜单：员工管理')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: '上级菜单' })).toBeDisabled();
     expect(screen.getByRole('combobox', { name: '类型' })).toBeDisabled();
+    expect(screen.queryByLabelText('路由路径')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('组件路径')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('页面缓存')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('隐藏')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('菜单编码'), 'iam_staff_export');
     await user.type(screen.getByLabelText('菜单名称'), '导出员工');
@@ -327,7 +331,9 @@ describe('MenuManagementPage', () => {
           parentId: 2,
           menuType: 'BUTTON',
           menuCode: 'iam_staff_export',
-          cached: true,
+          routePath: undefined,
+          componentPath: undefined,
+          cached: false,
           permissionCode: 'iam:staff:export'
         })
       );

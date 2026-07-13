@@ -97,6 +97,8 @@ export default function MenuFormSheet({
       ? MENU_TYPE_OPTIONS.filter((option) => option.value !== 'BUTTON')
       : MENU_TYPE_OPTIONS;
   const [values, setValues] = React.useState<MenuFormValues>(emptyValues);
+  const effectiveMenuType = isButtonCreate ? 'BUTTON' : values.menuType;
+  const isButtonType = effectiveMenuType === 'BUTTON';
   const parentOptions = React.useMemo(
     () => menuSelectOptions(tree, menu?.menuId),
     [menu?.menuId, tree]
@@ -105,19 +107,21 @@ export default function MenuFormSheet({
   React.useEffect(() => {
     if (!open) return;
     const parentId = isEdit ? menu?.parentId : (parent?.menuId ?? menu?.parentId);
+    const menuType =
+      menu?.menuType === 'DIR' || menu?.menuType === 'BUTTON' || menu?.menuType === 'MENU'
+        ? menu.menuType
+        : (initialMenuType ?? 'MENU');
+    const isButton = menuType === 'BUTTON';
     setValues({
       parentId: parentId == null ? 'ROOT' : String(parentId),
       menuCode: menu?.menuCode ?? '',
       menuName: menu?.menuName ?? '',
-      menuType:
-        menu?.menuType === 'DIR' || menu?.menuType === 'BUTTON' || menu?.menuType === 'MENU'
-          ? menu.menuType
-          : (initialMenuType ?? 'MENU'),
-      routePath: menu?.routePath ?? '',
-      componentPath: menu?.componentPath ?? '',
+      menuType,
+      routePath: isButton ? '' : (menu?.routePath ?? ''),
+      componentPath: isButton ? '' : (menu?.componentPath ?? ''),
       sortOrder: String(menu?.sortOrder ?? 10),
       hidden: menu?.hidden ?? false,
-      cached: menu?.cached ?? emptyValues.cached,
+      cached: isButton ? false : (menu?.cached ?? emptyValues.cached),
       status: menu?.status === 'DISABLED' ? 'DISABLED' : 'ENABLED',
       permissionCode: menu?.permissionCode ?? '',
       remark: menu?.remark ?? ''
@@ -132,7 +136,8 @@ export default function MenuFormSheet({
   const handleSubmit = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const menuType = isButtonCreate ? 'BUTTON' : values.menuType;
+      const menuType = effectiveMenuType;
+      const isButton = menuType === 'BUTTON';
       const parentId = isEdit
         ? values.parentId === 'ROOT'
           ? undefined
@@ -161,11 +166,11 @@ export default function MenuFormSheet({
         menuCode: values.menuCode.trim(),
         menuName: values.menuName.trim(),
         menuType,
-        routePath: values.routePath.trim() || undefined,
-        componentPath: values.componentPath.trim() || undefined,
+        routePath: isButton ? undefined : values.routePath.trim() || undefined,
+        componentPath: isButton ? undefined : values.componentPath.trim() || undefined,
         sortOrder: Number.isFinite(sortOrder) ? sortOrder : undefined,
         hidden: values.hidden,
-        cached: values.cached,
+        cached: isButton ? false : values.cached,
         status: values.status,
         permissionCode: values.permissionCode.trim() || undefined,
         remark: values.remark.trim() || undefined
@@ -178,7 +183,7 @@ export default function MenuFormSheet({
       }
       onOpenChange(false);
     },
-    [isButtonCreate, isEdit, menu?.menuId, onOpenChange, onSubmit, parent?.menuId, tree, values]
+    [effectiveMenuType, isEdit, menu?.menuId, onOpenChange, onSubmit, parent?.menuId, tree, values]
   );
 
   return (
@@ -236,11 +241,21 @@ export default function MenuFormSheet({
             <div className='grid gap-4 sm:grid-cols-2'>
               <FieldShell label='类型' controlId='iam-menu-type'>
                 <Select
-                  value={values.menuType}
+                  value={effectiveMenuType}
                   disabled={isButtonCreate}
-                  onValueChange={(menuType) =>
-                    update({ menuType: menuType as MenuFormValues['menuType'] })
-                  }
+                  onValueChange={(menuType) => {
+                    const nextMenuType = menuType as MenuFormValues['menuType'];
+                    update(
+                      nextMenuType === 'BUTTON'
+                        ? {
+                            menuType: nextMenuType,
+                            routePath: '',
+                            componentPath: '',
+                            cached: false
+                          }
+                        : { menuType: nextMenuType }
+                    );
+                  }}
                 >
                   <SelectTrigger id='iam-menu-type' className='w-full'>
                     <SelectValue />
@@ -276,22 +291,24 @@ export default function MenuFormSheet({
                 </Select>
               </FieldShell>
             </div>
-            <div className='grid gap-4 sm:grid-cols-2'>
-              <FieldShell label='路由路径' controlId='iam-menu-route-path'>
-                <Input
-                  id='iam-menu-route-path'
-                  value={values.routePath}
-                  onChange={(event) => update({ routePath: event.target.value })}
-                />
-              </FieldShell>
-              <FieldShell label='组件路径' controlId='iam-menu-component-path'>
-                <Input
-                  id='iam-menu-component-path'
-                  value={values.componentPath}
-                  onChange={(event) => update({ componentPath: event.target.value })}
-                />
-              </FieldShell>
-            </div>
+            {!isButtonType && (
+              <div className='grid gap-4 sm:grid-cols-2'>
+                <FieldShell label='路由路径' controlId='iam-menu-route-path'>
+                  <Input
+                    id='iam-menu-route-path'
+                    value={values.routePath}
+                    onChange={(event) => update({ routePath: event.target.value })}
+                  />
+                </FieldShell>
+                <FieldShell label='组件路径' controlId='iam-menu-component-path'>
+                  <Input
+                    id='iam-menu-component-path'
+                    value={values.componentPath}
+                    onChange={(event) => update({ componentPath: event.target.value })}
+                  />
+                </FieldShell>
+              </div>
+            )}
             <FieldShell label='权限标识' controlId='iam-menu-permission-code'>
               <Input
                 id='iam-menu-permission-code'
@@ -316,14 +333,16 @@ export default function MenuFormSheet({
                 />
                 <FieldLabel htmlFor='iam-menu-hidden'>隐藏</FieldLabel>
               </Field>
-              <Field orientation='horizontal'>
-                <Checkbox
-                  id='iam-menu-cached'
-                  checked={values.cached}
-                  onCheckedChange={(checked) => update({ cached: checked === true })}
-                />
-                <FieldLabel htmlFor='iam-menu-cached'>页面缓存</FieldLabel>
-              </Field>
+              {!isButtonType && (
+                <Field orientation='horizontal'>
+                  <Checkbox
+                    id='iam-menu-cached'
+                    checked={values.cached}
+                    onCheckedChange={(checked) => update({ cached: checked === true })}
+                  />
+                  <FieldLabel htmlFor='iam-menu-cached'>页面缓存</FieldLabel>
+                </Field>
+              )}
             </div>
             <FieldShell label='备注' controlId='iam-menu-remark'>
               <Textarea
