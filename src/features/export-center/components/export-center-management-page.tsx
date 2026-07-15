@@ -484,9 +484,9 @@ export default function ExportCenterManagementPage() {
   const tableActions = React.useMemo<DataTableAction<ExportRecordRecord>[]>(
     () => [
       {
+        kind: 'selection',
         label: '批量下载',
         icon: <Icons.fileZip className='size-3.5' />,
-        hidden: (ctx) => ctx.selectedRows.length === 0,
         disabled: batchDownloadMutation.isPending,
         callback: async (ctx) => {
           const completed = await handleBatchDownload(ctx.selectedRows);
@@ -496,10 +496,10 @@ export default function ExportCenterManagementPage() {
         }
       },
       {
+        kind: 'selection',
         label: '批量删除',
         icon: <Icons.trash className='size-3.5' />,
         type: 'danger',
-        hidden: (ctx) => ctx.selectedRows.length === 0,
         callback: withConfirm({
           title: (ctx) => `确认删除 ${ctx.selectedRows.length} 条导出记录？`,
           description: '删除后不可恢复，已下载文件不会受影响。',

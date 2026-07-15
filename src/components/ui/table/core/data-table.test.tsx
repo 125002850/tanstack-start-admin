@@ -1452,8 +1452,8 @@ describe('DataTable body', () => {
       <ControlsHarness
         actions={[
           {
+            kind: 'selection',
             label: '导出选中',
-            hidden: (ctx) => ctx.selectedRows.length === 0,
             callback: vi.fn()
           }
         ]}

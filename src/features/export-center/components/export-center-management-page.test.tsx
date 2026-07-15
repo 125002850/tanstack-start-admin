@@ -454,7 +454,11 @@ describe('ExportCenterManagementPage', () => {
     const { container } = render(<ExportCenterManagementPage />, { wrapper: createWrapper() });
 
     await screen.findByText('导出记录-20260629.csv');
+    expect(screen.queryByRole('button', { name: /批量删除/ })).not.toBeInTheDocument();
+
     await user.click(getRowSelectHitbox(container, 0));
+
+    expect(screen.getByRole('button', { name: /批量删除/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /批量删除/ }));
     await user.click(await screen.findByRole('button', { name: '确认删除' }));
 
