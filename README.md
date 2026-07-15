@@ -286,7 +286,7 @@ function DictionariesPage() {
 - `visible`
   是否进入主导航派生。
 - `group`
-  顶部分组键，当前固定为 `overview | components | iam | systemManagement | account`。
+  顶部分组键，当前固定为 `overview | components | basicSettings | systemManagement | logManagement | account`。
 - `order`
   当前分组内的排序权重，数值越小越靠前。
 - `menuKey`
@@ -327,6 +327,7 @@ function DictionariesPage() {
 - 容器菜单依赖 `nav.kind === 'container'` 和子项的 `nav.parentId` 建树，不通过 URL 前缀做隐式推断。
 - `linkable: false` 的节点不会生成可执行 KBar action，也不会在侧边栏中渲染成跳转链接。
 - 声明 `nav.menuKey` 的节点会根据 IAM 菜单树过滤；无 `menuKey` 的框架、示例或公共页面不受权限过滤影响。
+- 路由显式声明 `nav.group` 时以该分组为准；未声明时才从后端菜单树祖先目录派生分组。
 
 #### WorkspacePageRoute
 

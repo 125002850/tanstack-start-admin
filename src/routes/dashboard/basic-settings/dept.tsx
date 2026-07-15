@@ -7,18 +7,19 @@ const DeptManagementPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  title: '权限管理：部门管理',
+  title: '基础设置：部门管理',
   nav: {
+    group: 'basicSettings',
     menuKey: 'iam_dept',
     icon: 'department',
-    shortcut: ['i', 'd']
+    shortcut: ['b', 'd']
   },
   workspace: {
     refreshPolicy: 'query-invalidate'
   }
 });
 
-export const Route = createFileRoute('/dashboard/iam/dept')({
+export const Route = createFileRoute('/dashboard/basic-settings/dept')({
   ...meta,
   component: DeptPage
 });

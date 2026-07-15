@@ -3,7 +3,7 @@ import { defineRouteMeta } from '@/lib/router/app-route-meta';
 import { createRedirectWithSearch } from '@/lib/router/redirect-search';
 
 const meta = defineRouteMeta({
-  label: '权限管理',
+  label: '日志管理',
   workspace: {
     tagEnabled: false,
     keepAlive: false
@@ -13,9 +13,9 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/iam/')({
+export const Route = createFileRoute('/dashboard/log-management/')({
   ...meta,
   beforeLoad: ({ location }) => {
-    throw redirect(createRedirectWithSearch('/dashboard/iam/staff', location));
+    throw redirect(createRedirectWithSearch('/dashboard/log-management/login', location));
   }
 });

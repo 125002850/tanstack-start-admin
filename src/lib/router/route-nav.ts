@@ -35,9 +35,10 @@ interface RouteNavSource {
 const NAV_GROUP_META_STATIC: Record<string, { label: string; order: number }> = {
   overview: { label: '概览', order: 10 },
   components: { label: '组件', order: 20 },
-  iam: { label: '权限管理', order: 30 },
+  basicSettings: { label: '基础设置', order: 30 },
   systemManagement: { label: '系统管理', order: 40 },
-  account: { label: '账户', order: 50 }
+  logManagement: { label: '日志管理', order: 50 },
+  account: { label: '账户', order: 60 }
 };
 
 function resolveGroupLabel(
@@ -47,13 +48,13 @@ function resolveGroupLabel(
   const nav = meta.nav;
   if (!nav) return '';
 
+  const staticGroup = nav.group ? NAV_GROUP_META_STATIC[nav.group] : undefined;
+  if (staticGroup) return staticGroup.label;
+
   if (nav.menuKey && treeLookup) {
     const treeGroup = resolveGroupFromTree(treeLookup, nav.menuKey);
     if (treeGroup) return treeGroup.label;
   }
-
-  const staticGroup = nav.group ? NAV_GROUP_META_STATIC[nav.group] : undefined;
-  if (staticGroup) return staticGroup.label;
 
   return nav.group ?? '';
 }
@@ -65,13 +66,13 @@ function resolveGroupOrder(
   const nav = meta.nav;
   if (!nav) return 0;
 
+  const staticGroup = nav.group ? NAV_GROUP_META_STATIC[nav.group] : undefined;
+  if (staticGroup) return staticGroup.order;
+
   if (nav.menuKey && treeLookup) {
     const treeGroup = resolveGroupFromTree(treeLookup, nav.menuKey);
     if (treeGroup) return treeGroup.order;
   }
-
-  const staticGroup = nav.group ? NAV_GROUP_META_STATIC[nav.group] : undefined;
-  if (staticGroup) return staticGroup.order;
 
   return 0;
 }

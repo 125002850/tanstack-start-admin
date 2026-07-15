@@ -4,8 +4,8 @@ import type { InfobarContent } from '@/components/ui/infobar';
 export interface AppNavStaticData {
   menuKey?: string;
   /**
-   * Used by non-IAM routes (no menuKey) for static nav grouping.
-   * IAM-managed routes derive group from the backend menu tree.
+   * Explicit nav group. Takes precedence over the backend menu-tree ancestor;
+   * routes without a group derive it from the backend tree.
    */
   group?: string;
   /**

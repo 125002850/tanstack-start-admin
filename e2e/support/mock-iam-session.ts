@@ -35,8 +35,8 @@ const iamMe = {
         {
           menuId: 'system-dict',
           parentId: 'system-management',
-          menuCode: 'system_dict',
-          menuKey: 'system_dict',
+          menuCode: 'mdm_dict',
+          menuKey: 'mdm_dict',
           menuName: '字典管理',
           menuType: 'MENU',
           routePath: '/dashboard/system-management/dictionaries',

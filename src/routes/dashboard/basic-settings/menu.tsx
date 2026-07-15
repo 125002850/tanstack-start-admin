@@ -7,18 +7,19 @@ const MenuManagementPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  title: '权限管理：菜单管理',
+  title: '基础设置：菜单管理',
   nav: {
+    group: 'basicSettings',
     menuKey: 'iam_menu',
     icon: 'settings',
-    shortcut: ['i', 'm']
+    shortcut: ['b', 'm']
   },
   workspace: {
     refreshPolicy: 'query-invalidate'
   }
 });
 
-export const Route = createFileRoute('/dashboard/iam/menu')({
+export const Route = createFileRoute('/dashboard/basic-settings/menu')({
   ...meta,
   component: MenuPage
 });

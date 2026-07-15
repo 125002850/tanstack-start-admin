@@ -49,7 +49,7 @@ export const Route = createFileRoute('/dashboard/users')({
 ### `nav`
 
 - `visible`：是否进入主导航。
-- `group`：顶部分组，当前为 `overview | components | iam | systemManagement | account`。
+- `group`：顶部分组，当前为 `overview | components | basicSettings | systemManagement | logManagement | account`。
 - `order`：分组内排序权重，数值越小越靠前。
 - `icon`：`Icons` 对象中的图标键。
 - `shortcut`：KBar 快捷键。
@@ -74,6 +74,7 @@ export const Route = createFileRoute('/dashboard/users')({
 - 容器菜单通过 `nav.kind === 'container'` 和 `nav.parentId` 建树，禁止通过 URL 前缀隐式推断。
 - `linkable: false` 不生成 KBar action，也不渲染为侧边栏跳转链接。
 - `nav.menuKey` 基于 IAM 菜单树节点的 `menuKey / menuCode / code` 过滤；不要再引用历史 `menuData` 语义。
+- 路由显式声明 `nav.group` 时以该分组为准；未声明时才从后端菜单树祖先目录派生分组。
 
 页面标题规则：
 

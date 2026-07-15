@@ -84,13 +84,15 @@ const allPaths = Object.keys(routeModules);
 
 // Routes that explicitly opt out of keepAlive (keepAlive=false) with documented reasons:
 // - forms/index: 重定向路由，无实际页面内容
+// - basic-settings/index: 重定向路由，无实际页面内容
 // - system-management/index: 重定向路由，无实际页面内容
-// - iam/index: 重定向路由，无实际页面内容
+// - log-management/index: 重定向路由，无实际页面内容
 // - dashboard/index: 重定向路由，无实际页面内容
 // - account/profile, account/password: 账号功能迁入侧边栏 Sheet，路由仅保留兼容重定向
 const keepAliveFalsePaths = new Set([
+  '/src/routes/dashboard/basic-settings/index.tsx',
   '/src/routes/dashboard/system-management/index.tsx',
-  '/src/routes/dashboard/iam/index.tsx',
+  '/src/routes/dashboard/log-management/index.tsx',
   '/src/routes/dashboard/forms/index.tsx',
   '/src/routes/dashboard/index.tsx',
   '/src/routes/dashboard/account/profile.tsx',
@@ -109,12 +111,12 @@ const standardWorkspacePageRoutePaths = new Set([
   '/src/routes/dashboard/forms/overlay-contract.tsx',
   '/src/routes/dashboard/system-management/dictionaries.tsx',
   '/src/routes/dashboard/system-management/export-center.tsx',
-  '/src/routes/dashboard/iam/staff.tsx',
-  '/src/routes/dashboard/iam/dept.tsx',
-  '/src/routes/dashboard/iam/role.tsx',
-  '/src/routes/dashboard/iam/menu.tsx',
-  '/src/routes/dashboard/iam/log/login.tsx',
-  '/src/routes/dashboard/iam/log/operation.tsx'
+  '/src/routes/dashboard/basic-settings/staff.tsx',
+  '/src/routes/dashboard/basic-settings/dept.tsx',
+  '/src/routes/dashboard/basic-settings/role.tsx',
+  '/src/routes/dashboard/basic-settings/menu.tsx',
+  '/src/routes/dashboard/log-management/login.tsx',
+  '/src/routes/dashboard/log-management/operation.tsx'
 ]);
 
 const accountOverlayRedirectRoutePaths = new Set([
@@ -154,13 +156,14 @@ describe('dashboard route inventory', () => {
         '/dashboard/system-management/',
         '/dashboard/system-management/dictionaries',
         '/dashboard/system-management/export-center',
-        '/dashboard/iam/',
-        '/dashboard/iam/staff',
-        '/dashboard/iam/dept',
-        '/dashboard/iam/role',
-        '/dashboard/iam/menu',
-        '/dashboard/iam/log/login',
-        '/dashboard/iam/log/operation',
+        '/dashboard/basic-settings/',
+        '/dashboard/basic-settings/staff',
+        '/dashboard/basic-settings/dept',
+        '/dashboard/basic-settings/role',
+        '/dashboard/basic-settings/menu',
+        '/dashboard/log-management/',
+        '/dashboard/log-management/login',
+        '/dashboard/log-management/operation',
         '/dashboard/account/profile',
         '/dashboard/account/password',
         '/dashboard/forms/',
@@ -221,7 +224,11 @@ describe('dashboard route inventory', () => {
   });
 
   it('redirect group roots are hidden from navigation', () => {
-    const routeFiles = ['/src/routes/dashboard/system-management/index.tsx'];
+    const routeFiles = [
+      '/src/routes/dashboard/basic-settings/index.tsx',
+      '/src/routes/dashboard/system-management/index.tsx',
+      '/src/routes/dashboard/log-management/index.tsx'
+    ];
 
     for (const routeFile of routeFiles) {
       const route = routeModules[routeFile];
@@ -274,9 +281,74 @@ describe('dashboard route inventory', () => {
     }
   });
 
+  it('management routes keep titles, groups and menu keys aligned with the target menu tree', () => {
+    const expectations = [
+      [
+        '/src/routes/dashboard/basic-settings/staff.tsx',
+        '基础设置：员工管理',
+        'basicSettings',
+        'iam_staff'
+      ],
+      [
+        '/src/routes/dashboard/basic-settings/dept.tsx',
+        '基础设置：部门管理',
+        'basicSettings',
+        'iam_dept'
+      ],
+      [
+        '/src/routes/dashboard/basic-settings/role.tsx',
+        '基础设置：角色管理',
+        'basicSettings',
+        'iam_role'
+      ],
+      [
+        '/src/routes/dashboard/basic-settings/menu.tsx',
+        '基础设置：菜单管理',
+        'basicSettings',
+        'iam_menu'
+      ],
+      [
+        '/src/routes/dashboard/system-management/dictionaries.tsx',
+        '系统管理：字典管理',
+        'systemManagement',
+        'mdm_dict'
+      ],
+      [
+        '/src/routes/dashboard/system-management/export-center.tsx',
+        '系统管理：导出中心',
+        'systemManagement',
+        'export_center'
+      ],
+      [
+        '/src/routes/dashboard/log-management/login.tsx',
+        '日志管理：登录日志',
+        'logManagement',
+        'iam_login_log'
+      ],
+      [
+        '/src/routes/dashboard/log-management/operation.tsx',
+        '日志管理：操作日志',
+        'logManagement',
+        'iam_operation_log'
+      ]
+    ] as const;
+
+    for (const [routeFile, title, group, menuKey] of expectations) {
+      const route = routeModules[routeFile];
+      expect(route, `${routeFile} route missing`).toBeDefined();
+      expect(getTitle(route)).toBe(title);
+      expect(getNav(route)?.group).toBe(group);
+      expect(getNav(route)?.menuKey).toBe(menuKey);
+    }
+  });
+
   it('uses domain-specific icons for department and role management', () => {
-    expect(getNav(routeModules['/src/routes/dashboard/iam/dept.tsx'])?.icon).toBe('department');
-    expect(getNav(routeModules['/src/routes/dashboard/iam/role.tsx'])?.icon).toBe('role');
+    expect(getNav(routeModules['/src/routes/dashboard/basic-settings/dept.tsx'])?.icon).toBe(
+      'department'
+    );
+    expect(getNav(routeModules['/src/routes/dashboard/basic-settings/role.tsx'])?.icon).toBe(
+      'role'
+    );
   });
 
   it('standard workspace pages use WorkspacePageRoute for container and disabled-mode rendering', () => {

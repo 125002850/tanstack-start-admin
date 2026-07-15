@@ -8,18 +8,19 @@ const OperationLogPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  title: '权限管理：操作日志',
+  title: '日志管理：操作日志',
   nav: {
+    group: 'logManagement',
     menuKey: 'iam_operation_log',
     icon: 'clipboardList',
-    shortcut: ['i', 'o']
+    shortcut: ['l', 'o']
   },
   workspace: {
     refreshPolicy: 'query-invalidate'
   }
 });
 
-export const Route = createFileRoute('/dashboard/iam/log/operation')({
+export const Route = createFileRoute('/dashboard/log-management/operation')({
   ...meta,
   component: OperationLogRoute
 });

@@ -7,18 +7,19 @@ const RoleManagementPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  title: '权限管理：角色管理',
+  title: '基础设置：角色管理',
   nav: {
+    group: 'basicSettings',
     menuKey: 'iam_role',
     icon: 'role',
-    shortcut: ['i', 'r']
+    shortcut: ['b', 'r']
   },
   workspace: {
     refreshPolicy: 'query-invalidate'
   }
 });
 
-export const Route = createFileRoute('/dashboard/iam/role')({
+export const Route = createFileRoute('/dashboard/basic-settings/role')({
   ...meta,
   component: RolePage
 });

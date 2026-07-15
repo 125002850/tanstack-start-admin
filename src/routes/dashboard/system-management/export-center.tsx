@@ -10,6 +10,7 @@ const ExportCenterManagementPage = lazyRouteComponent(
 const meta = defineRouteMeta({
   title: '系统管理：导出中心',
   nav: {
+    group: 'systemManagement',
     menuKey: 'export_center',
     icon: 'download',
     shortcut: ['e', 'c']

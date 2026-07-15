@@ -7,18 +7,19 @@ const StaffManagementPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  title: '权限管理：员工管理',
+  title: '基础设置：员工管理',
   nav: {
+    group: 'basicSettings',
     menuKey: 'iam_staff',
     icon: 'teams',
-    shortcut: ['i', 's']
+    shortcut: ['b', 's']
   },
   workspace: {
     refreshPolicy: 'query-invalidate'
   }
 });
 
-export const Route = createFileRoute('/dashboard/iam/staff')({
+export const Route = createFileRoute('/dashboard/basic-settings/staff')({
   ...meta,
   component: StaffPage
 });

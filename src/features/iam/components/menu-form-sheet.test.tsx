@@ -78,7 +78,7 @@ describe('MenuFormSheet', () => {
       menuCode: 'iam_staff_report',
       menuName: '员工报表',
       menuType: 'MENU',
-      routePath: '/dashboard/iam/staff-report',
+      routePath: '/dashboard/basic-settings/staff-report',
       componentPath: 'iam/staff-report',
       cached: true,
       permissionCode: 'iam:staff:report',

@@ -8,18 +8,19 @@ const LoginLogPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  title: '权限管理：登录日志',
+  title: '日志管理：登录日志',
   nav: {
+    group: 'logManagement',
     menuKey: 'iam_login_log',
     icon: 'login',
-    shortcut: ['i', 'l']
+    shortcut: ['l', 'l']
   },
   workspace: {
     refreshPolicy: 'query-invalidate'
   }
 });
 
-export const Route = createFileRoute('/dashboard/iam/log/login')({
+export const Route = createFileRoute('/dashboard/log-management/login')({
   ...meta,
   component: LoginLogRoute
 });
