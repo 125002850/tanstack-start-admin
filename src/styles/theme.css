@@ -31,3 +31,18 @@ body {
   /* Apply font-family - will now resolve from html's [data-theme] variables */
   font-family: var(--font-sans);
 }
+
+[data-theme]
+  :is([data-sidebar='menu-button'], [data-sidebar='menu-sub-button'])[data-active='true'] {
+  background-color: var(--sidebar-active-background, var(--sidebar-accent));
+  color: var(--sidebar-active-foreground, var(--sidebar-accent-foreground));
+}
+
+[data-theme]
+  :is([data-sidebar='menu-button'], [data-sidebar='menu-sub-button'])[data-active='true']
+  > svg,
+[data-theme]
+  [data-sidebar='menu-button'][data-active='true']
+  ~ :is([data-sidebar='menu-action'], [data-sidebar='menu-badge']) {
+  color: var(--sidebar-active-foreground, var(--sidebar-accent-foreground));
+}

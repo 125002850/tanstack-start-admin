@@ -170,7 +170,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                         isSelected ? 'bg-primary' : 'opacity-50 [&_svg]:invisible'
                       )}
                     >
-                      <Icons.check className='size-4' />
+                      <Icons.check className='size-4 text-primary-foreground' />
                     </div>
                     {option.icon && <option.icon />}
                     {(option.depth ?? 0) > 0 ? (
