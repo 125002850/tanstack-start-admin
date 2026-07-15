@@ -347,12 +347,21 @@ function useOverflowComponentHeaderHarnessTable(data: TestRow[], pageSize = 10) 
 
 function Harness({
   rows,
-  virtualization
+  virtualization,
+  enableZebraStriping = false
 }: {
   rows: TestRow[];
   virtualization?: TestVirtualizationProp;
+  enableZebraStriping?: boolean;
 }) {
-  const table = useHarnessTable(rows, rows.length);
+  const table = useReactTable({
+    data: rows,
+    columns: COLUMNS,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: { pagination: { pageSize: rows.length, pageIndex: 0 } },
+    meta: { enableZebraStriping }
+  });
   return <DataTable table={table} virtualization={virtualization as never} />;
 }
 
@@ -1151,6 +1160,39 @@ describe('DataTable cell selection', () => {
   });
 });
 
+describe('DataTable zebra striping', () => {
+  it('marks alternating rows from their logical row index when zebra striping is enabled', () => {
+    const { container } = render(<Harness rows={makeRows(4)} enableZebraStriping />);
+    const rows = container.querySelectorAll<HTMLTableRowElement>('tbody tr[data-row-index]');
+
+    expect(rows).toHaveLength(4);
+    expect(rows[0]).not.toHaveAttribute('data-striped');
+    expect(rows[1]).toHaveAttribute('data-striped', 'true');
+    expect(rows[2]).not.toHaveAttribute('data-striped');
+    expect(rows[3]).toHaveAttribute('data-striped', 'true');
+  });
+
+  it('does not mark alternating rows when zebra striping is disabled', () => {
+    const { container } = render(<Harness rows={makeRows(4)} />);
+
+    expect(container.querySelector('tbody tr[data-striped="true"]')).toBeNull();
+  });
+
+  it('keeps zebra parity tied to logical indexes in virtual mode', () => {
+    const rows = makeRows(150);
+    const { container } = render(<Harness rows={rows} enableZebraStriping />);
+    const virtualRows = container.querySelectorAll<HTMLTableRowElement>(
+      'tbody[data-virtual-enabled="true"] tr[data-row-index]'
+    );
+
+    expect(virtualRows.length).toBeGreaterThan(1);
+    virtualRows.forEach((row) => {
+      const rowIndex = Number(row.dataset.rowIndex);
+      expect(row.hasAttribute('data-striped')).toBe(rowIndex % 2 === 1);
+    });
+  });
+});
+
 describe('DataTable body', () => {
   it('renders all rows in normal mode', () => {
     const rows = makeRows(10);
@@ -1239,13 +1281,13 @@ describe('DataTable body', () => {
 
     expect(screen.getByText('筛选无结果')).toBeInTheDocument();
     expect(screen.queryByText('普通空态')).not.toBeInTheDocument();
-    expect(document.querySelector('tbody tr td')).not.toBeNull();
+    expect(document.querySelector('tbody[data-component="data-table-body"] tr td')).not.toBeNull();
 
     rerender(<StatusHarness type='error' />);
 
     expect(screen.getByText('接口异常')).toBeInTheDocument();
     expect(screen.queryByText('普通空态')).not.toBeInTheDocument();
-    expect(document.querySelector('tbody tr td')).not.toBeNull();
+    expect(document.querySelector('tbody[data-component="data-table-body"] tr td')).not.toBeNull();
   });
 
   it('updates status when table filters change without statusDeps', async () => {
@@ -1297,6 +1339,16 @@ describe('DataTable body', () => {
     expect(getNameHeader()).toHaveAttribute('aria-sort', 'descending');
   });
 
+  it('keeps sortable table header background stable on hover', () => {
+    render(<SortableHeaderHarness sorting={[]} />);
+
+    const trigger = screen.getByText(OVERFLOW_COMPONENT_HEADER_LABEL).closest('button');
+
+    expect(trigger).not.toHaveClass('hover:bg-accent');
+    expect(trigger).toHaveClass('data-[state=open]:bg-accent');
+    expect(trigger).toHaveClass('hover:[&_svg]:text-foreground');
+  });
+
   it('passes scrollTargetId to viewport', () => {
     const rows = makeRows(5);
     function HarnessWithScrollId() {
@@ -1325,9 +1377,9 @@ describe('DataTable body', () => {
 
     const headerCells = container.querySelectorAll('thead th');
     expect(headerCells).toHaveLength(2);
+    expect(container.querySelector('thead')).toHaveAttribute('data-component', 'data-table-header');
 
     headerCells.forEach((cell) => {
-      expect(cell).toHaveClass('bg-muted');
       expect(cell).toHaveStyle({
         position: 'sticky',
         top: '-1px',

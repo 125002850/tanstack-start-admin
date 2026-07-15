@@ -18,6 +18,10 @@
   --border: oklch(0.92 0 0);
   --input: oklch(0.94 0 0);
   --ring: oklch(0 0 0);
+  --data-table-header-background: color-mix(in oklab, var(--card) 82%, var(--foreground) 18%);
+  --data-table-header-foreground: var(--foreground);
+  --data-table-row-selected-background: color-mix(in oklab, var(--card) 92%, var(--primary) 8%);
+  --data-table-row-expanded-background: color-mix(in oklab, var(--card) 84%, var(--foreground) 16%);
   --chart-1: oklch(0.81 0.17 75.35);
   --chart-2: oklch(0.55 0.22 264.53);
   --chart-3: oklch(0.72 0 0);
@@ -73,6 +77,7 @@
   --border: oklch(0.26 0 0);
   --input: oklch(0.32 0 0);
   --ring: oklch(0.72 0 0);
+  --data-table-row-expanded-background: color-mix(in oklab, var(--card) 76%, var(--foreground) 24%);
   --chart-1: oklch(0.81 0.17 75.35);
   --chart-2: oklch(0.58 0.21 260.84);
   --chart-3: oklch(0.56 0 0);

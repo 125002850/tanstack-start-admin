@@ -54,6 +54,57 @@
   initial-value: 5%;
 }
 
+[data-component='data-table-header'] [data-slot='table-head'] {
+  background-color: var(
+    --data-table-header-background,
+    color-mix(in oklab, var(--card) 90%, var(--foreground) 10%)
+  );
+  color: var(--data-table-header-foreground, var(--foreground));
+  font-weight: 600;
+}
+
+[data-component='data-table-header'] [data-slot='table-row'] {
+  border-block-end-color: var(
+    --data-table-header-border,
+    color-mix(in oklab, var(--border) 75%, var(--foreground) 25%)
+  );
+}
+
+[data-component='data-table-body'] [data-slot='table-row'] {
+  --data-table-row-surface: var(--background);
+
+  background-color: var(--data-table-row-surface);
+}
+
+[data-component='data-table-body'] [data-slot='data-table-pinned-cell-base'] {
+  background-color: var(--data-table-row-surface);
+}
+
+[data-component='data-table-body'] [data-slot='table-row'][data-striped='true'] {
+  --data-table-row-surface: var(
+    --data-table-row-alternate-background,
+    color-mix(in oklab, var(--card) 98%, var(--foreground) 2%)
+  );
+}
+
+[data-component='data-table-body'] [data-slot='table-row']:hover {
+  --data-table-row-surface: var(
+    --data-table-row-hover-background,
+    color-mix(in oklab, var(--card) 92%, var(--foreground) 8%)
+  );
+}
+
+[data-component='data-table-body'] [data-slot='table-row'][data-state='selected'] {
+  --data-table-row-surface: var(
+    --data-table-row-selected-background,
+    color-mix(in oklab, var(--card) 88%, var(--primary) 12%)
+  );
+}
+
+[data-component='data-table-body'] [data-slot='table-row'][data-expanded='true'] {
+  --data-table-row-surface: var(--data-table-row-expanded-background, var(--accent));
+}
+
 [data-cell-range-dragging='true'] {
   user-select: none;
 }

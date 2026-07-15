@@ -124,7 +124,7 @@ function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
   const description = config.description ?? defaults.description;
 
   return (
-    <TableBody>
+    <TableBody data-component='data-table-body'>
       <TableRow>
         <TableCell colSpan={colSpan}>
           <div className='sticky left-1/2 -translate-x-1/2 inline-flex flex-col items-center justify-center py-16 text-center'>

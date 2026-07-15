@@ -78,6 +78,8 @@ type UseDslDataTableProps<
   defaultSort?: ExtendedColumnSort<TData>[];
   mapQueryData?: (data: TQueryData | undefined) => PaginatedResponse<TData>;
   refreshBehavior?: RefreshBehavior<TError>;
+  /** 是否启用 DataTable 斑马纹。默认 `true`。 */
+  enableZebraStriping?: boolean;
 };
 
 type UseDslDataTableResult<TData, TQueryData, TError> = ReturnType<typeof useDataTable<TData>> & {
@@ -173,6 +175,7 @@ export function useDslDataTable<
   defaultSort = [],
   mapQueryData,
   refreshBehavior,
+  enableZebraStriping = true,
   showSelectColumn,
   showRowNumberColumn,
   debounceMs,
@@ -207,6 +210,10 @@ export function useDslDataTable<
     debounceMs: debounceMs ?? DEBOUNCE_MS,
     showSelectColumn: showSelectColumn ?? true,
     showRowNumberColumn: showRowNumberColumn ?? true,
+    meta: {
+      ...tableProps.meta,
+      enableZebraStriping
+    },
     initialState:
       defaultSort.length > 0
         ? {

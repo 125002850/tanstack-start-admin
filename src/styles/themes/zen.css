@@ -18,6 +18,8 @@
   --border: oklch(0.8434 0.0231 87.1621);
   --input: oklch(0.8434 0.0231 87.1621);
   --ring: oklch(0.3012 0 0);
+  --data-table-header-background: var(--accent);
+  --data-table-header-foreground: var(--accent-foreground);
   --chart-1: oklch(0.6863 0.1743 34.2614);
   --chart-2: oklch(0.235 0 0);
   --chart-3: oklch(0.4688 0.0136 84.5932);

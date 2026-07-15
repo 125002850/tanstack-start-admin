@@ -343,7 +343,7 @@ describe('DataTable column alignment', () => {
     expect(extractWidth(tds[1]?.getAttribute('style') ?? '')).toBeUndefined();
   });
 
-  it('renders pinned body cell base and overlay layers that match row state styling', () => {
+  it('renders a pinned body cell surface that inherits the resolved row state', () => {
     const rows = makeRows(5);
     const { container } = render(
       React.createElement(() => {
@@ -368,20 +368,11 @@ describe('DataTable column alignment', () => {
     const firstPinnedCellBase = container.querySelector(
       'tbody td [data-slot="data-table-pinned-cell-base"]'
     );
-    const firstPinnedCellOverlay = container.querySelector(
-      'tbody td [data-slot="data-table-pinned-cell-overlay"]'
-    );
-
     expect(firstPinnedCellBase).not.toBeNull();
-    expect(firstPinnedCellOverlay).not.toBeNull();
-    expect(firstPinnedCellBase?.getAttribute('class')).toContain('bg-background');
-    expect(firstPinnedCellBase?.getAttribute('class')).toContain(
-      'group-data-[expanded=true]:bg-accent'
-    );
-    expect(firstPinnedCellOverlay?.getAttribute('class')).toContain('group-hover:bg-muted/50');
-    expect(firstPinnedCellOverlay?.getAttribute('class')).toContain(
-      'group-data-[state=selected]:bg-muted'
-    );
+    expect(firstPinnedCellBase?.getAttribute('class')).toContain('transition-colors');
+    expect(
+      container.querySelector('tbody td [data-slot="data-table-pinned-cell-overlay"]')
+    ).toBeNull();
   });
 
   it('applies theme-aware edge shadows to left and right pinned columns', () => {

@@ -222,6 +222,7 @@ src/
 
 - 新增表格列优先使用 `createDataTableColumnDsl()`，统一声明字段类型、筛选类型、展示格式、复制值和列面板行为。
 - DSL 查询优先通过 `useDslDataTable()` 构建；仅 `text`、`select`、`multiSelect`、`date`、`dateRange` 会自动序列化为后端 DSL 条件，不支持的筛选类型只作为前端 UI 状态。
+- `useDslDataTable()` 默认启用斑马纹；仅在明确需要纯色表体时传 `enableZebraStriping: false`。直接使用 `useDataTable()` 时不隐式启用。
 - 表格状态统一由 `src/lib/data-table-state-persistence.ts` 管理，覆盖列宽、列顺序、排序和每页条数；不要再新增独立的 localStorage key。
 - `src/components/ui/table/*` 的旧 flat 导入路径保留为兼容转发，新代码优先使用分层路径，例如 `core/`、`columns/`、`cells/`、`toolbar/`。
 
