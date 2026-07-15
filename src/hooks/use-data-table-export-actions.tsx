@@ -8,7 +8,10 @@ import {
   type DataTableExportDialogLabels,
   type DataTableExportRange
 } from '@/components/ui/table/export/data-table-export-dialog';
-import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
+import type {
+  DataTableAction,
+  DataTableActionContext
+} from '@/components/ui/table/actions/data-table-actions-bar';
 import { downloadFileFromUrl } from '@/lib/download-file';
 
 /**
@@ -267,15 +270,18 @@ export function useDataTableExportActions<TData, TRequest, TSelectedKey>({
         icon: <Icons.fileTypeCsv className='size-3.5' />,
         disabled,
         children: [
-          {
-            label: '导出选中',
-            icon: <Icons.fileTypeCsv className='size-3.5' />,
-            // 没有选中行时隐藏“导出选中”，减少无效操作入口。
-            hidden: (ctx) => !showSelectedAction || ctx.selectedRows.length === 0,
-            callback: async (ctx) => {
-              await handleExportSelected(ctx.selectedRows);
-            }
-          },
+          ...(showSelectedAction
+            ? [
+                {
+                  kind: 'selection' as const,
+                  label: '导出选中',
+                  icon: <Icons.fileTypeCsv className='size-3.5' />,
+                  callback: async (ctx: DataTableActionContext<TData>) => {
+                    await handleExportSelected(ctx.selectedRows);
+                  }
+                }
+              ]
+            : []),
           {
             label: '导出全部',
             icon: <Icons.fileTypeCsv className='size-3.5' />,

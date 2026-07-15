@@ -197,10 +197,10 @@ export function DictionaryItemsPanel({
         }
       },
       {
+        kind: 'selection',
         label: '批量删除',
         icon: <Icons.trash className='size-3.5' />,
         type: 'danger' as const,
-        hidden: (ctx) => ctx.selectedRows.length === 0,
         callback: withBatchConfirm({
           title: (ctx) => `确认删除 ${ctx.selectedRows.length} 个字典项？`,
           description: '删除后不可恢复。',

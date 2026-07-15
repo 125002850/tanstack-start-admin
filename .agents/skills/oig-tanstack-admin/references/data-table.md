@@ -59,6 +59,13 @@
 - `rowId` key、`rowId` function、`getRowId` 的优先级和解析必须复用 `resolveDataTableRowId()`，禁止页面层复制 row id 解析逻辑。
 - 展开分屏生命周期和尺寸逻辑统一收敛在 `useDataTableExpandPanel`；列拖拽状态和 handler 统一收敛在 `useDataTableColumnDnd`，新 hook 只供 `DataTable` 内部装配。
 
+## 表格操作
+
+- 依赖行选择的操作必须声明为 `DataTableSelectionAction`，通过 `kind: 'selection'` 表达语义。
+- 选择态操作由 `DataTableActionsBar` 统一在未选中行时隐藏；页面禁止重复编写 `selectedRows.length === 0` 显隐判断。
+- 顶层选择态操作由共享组件稳定排列在常规操作之后；页面只负责组合操作，不得依赖数组拼接顺序实现排序。
+- 选择态操作存在额外业务前置条件时必须使用 `disabled`，不得通过 `hidden` 隐藏。例如仅特定状态可执行的批量操作，应在选中一条数据后显示但按状态禁用。
+
 ## 可访问性语义
 
 - sortable header 必须在 `<th>` 暴露 `aria-sort`，按排序状态输出 `none`、`ascending` 或 `descending`。

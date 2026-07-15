@@ -189,6 +189,17 @@ function createWrapperWithClient() {
   return { queryClient, Wrapper };
 }
 
+function getRowSelectHitbox(container: HTMLElement, rowIndex: number) {
+  const hitboxes = container.querySelectorAll('[data-slot="data-table-select-hitbox"]');
+  const rowHitbox = hitboxes.item(rowIndex + 1);
+
+  if (!(rowHitbox instanceof HTMLElement)) {
+    throw new Error(`row ${rowIndex + 1} select hitbox missing`);
+  }
+
+  return rowHitbox;
+}
+
 function getTextConditionValue(condition: DataTableDslCondition | undefined): string | undefined {
   if (!condition) {
     return undefined;
@@ -460,6 +471,28 @@ describe('DictionaryManagementPage', () => {
         value: 'paid'
       });
     });
+  });
+
+  it('shows the batch delete action only after selecting a dictionary item', async () => {
+    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+      async (_request: DictionaryTypeRequest) => PAGE_ONE_TYPES.slice(0, 1)
+    );
+    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+      async (_request: DictionaryItemRequest) => ({
+        total: 1,
+        list: ITEMS_BY_TYPE.payment
+      })
+    );
+
+    const user = userEvent.setup();
+    const { container } = render(<DictionaryManagementPage />, { wrapper: createWrapper() });
+
+    await screen.findByText('已支付');
+    expect(screen.queryByRole('button', { name: /批量删除/ })).not.toBeInTheDocument();
+
+    await user.click(getRowSelectHitbox(container, 0));
+
+    expect(screen.getByRole('button', { name: /批量删除/ })).toBeInTheDocument();
   });
 
   it('keeps previous dictionary type content visible while keyword refetch is pending', async () => {

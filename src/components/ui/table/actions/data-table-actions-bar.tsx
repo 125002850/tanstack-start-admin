@@ -27,17 +27,34 @@ export interface DataTableActionContext<TData> {
   selectedRows: TData[];
 }
 
-export interface DataTableAction<TData> {
+type DataTableActionResolver<TData, TValue> =
+  | TValue
+  | ((ctx: DataTableActionContext<TData>) => TValue);
+
+interface DataTableActionBase<TData> {
   label: string;
   icon?: React.ReactNode;
   type?: 'default' | 'danger';
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  disabled?: boolean | ((ctx: DataTableActionContext<TData>) => boolean);
-  hidden?: boolean | ((ctx: DataTableActionContext<TData>) => boolean);
-  className?: string | ((ctx: DataTableActionContext<TData>) => string);
+  disabled?: DataTableActionResolver<TData, boolean>;
+  className?: DataTableActionResolver<TData, string>;
   callback?: (ctx: DataTableActionContext<TData>) => void | Promise<void>;
   children?: DataTableAction<TData>[];
 }
+
+export interface DataTableRegularAction<TData> extends DataTableActionBase<TData> {
+  kind?: 'regular';
+  hidden?: DataTableActionResolver<TData, boolean>;
+}
+
+export interface DataTableSelectionAction<TData> extends DataTableActionBase<TData> {
+  kind: 'selection';
+  hidden?: never;
+}
+
+export type DataTableAction<TData> =
+  | DataTableRegularAction<TData>
+  | DataTableSelectionAction<TData>;
 
 export interface DataTableActionsBarProps<TData> {
   table: Table<TData>;
@@ -81,6 +98,34 @@ function getActionMenuItemVariant<TData>(
   return 'default';
 }
 
+/** 选择态操作统一由组件按当前选中行控制显隐。 */
+function isActionHidden<TData>(
+  action: DataTableAction<TData>,
+  ctx: DataTableActionContext<TData>
+): boolean {
+  if (action.kind === 'selection') {
+    return ctx.selectedRows.length === 0;
+  }
+
+  return resolveValue(action.hidden ?? false, ctx);
+}
+
+/** 顶层选择态操作稳定排列在常规操作之后，并保持各组内部顺序。 */
+function orderTopLevelActions<TData>(actions: DataTableAction<TData>[]): DataTableAction<TData>[] {
+  const regularActions: DataTableAction<TData>[] = [];
+  const selectionActions: DataTableAction<TData>[] = [];
+
+  for (const action of actions) {
+    if (action.kind === 'selection') {
+      selectionActions.push(action);
+    } else {
+      regularActions.push(action);
+    }
+  }
+
+  return [...regularActions, ...selectionActions];
+}
+
 /** 父级 action 如果所有子项都隐藏，则整个入口也不渲染。 */
 function hasVisibleChildren<TData>(
   action: DataTableAction<TData>,
@@ -90,7 +135,7 @@ function hasVisibleChildren<TData>(
     return true;
   }
 
-  return action.children.some((child) => !resolveValue(child.hidden ?? false, ctx));
+  return action.children.some((child) => !isActionHidden(child, ctx));
 }
 
 /** outline 按钮之间不加分隔符，混入强调按钮时用分隔符提高识别度。 */
@@ -116,8 +161,9 @@ export function DataTableActionsBar<TData>({
     selectedRows: getSelectedRows ? getSelectedRows() : getSelectedPageRows(table)
   };
 
-  const visibleActions = actions.filter(
-    (action) => !resolveValue(action.hidden ?? false, ctx) && hasVisibleChildren(action, ctx)
+  const orderedActions = React.useMemo(() => orderTopLevelActions(actions), [actions]);
+  const visibleActions = orderedActions.filter(
+    (action) => !isActionHidden(action, ctx) && hasVisibleChildren(action, ctx)
   );
 
   if (visibleActions.length === 0) return null;
@@ -165,9 +211,7 @@ function ActionItem<TData>({
 
   // 有 children 的 action 作为下拉入口，子项自己处理 loading 和 disabled。
   if (action.children && action.children.length > 0) {
-    const visibleChildren = action.children.filter(
-      (child) => !resolveValue(child.hidden ?? false, ctx)
-    );
+    const visibleChildren = action.children.filter((child) => !isActionHidden(child, ctx));
 
     if (visibleChildren.length === 0) return null;
 
@@ -232,7 +276,7 @@ function DropdownActionItem<TData>({
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const disabled = isLoading || resolveValue(action.disabled ?? false, ctx);
-  const hidden = resolveValue(action.hidden ?? false, ctx);
+  const hidden = isActionHidden(action, ctx);
   const className = resolveValue(action.className ?? '', ctx);
 
   const handleSelect = React.useCallback(
