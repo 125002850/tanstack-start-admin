@@ -120,6 +120,7 @@ describe('useDslDataTable', () => {
     });
     expect(result.current.total).toBe(33);
     expect(result.current.debounceMs).toBe(DEBOUNCE_MS);
+    expect(result.current.table.options.meta?.enableZebraStriping).toBe(true);
     expect(result.current.table.getRowModel().rows[0]?.id).toBe('1');
     expect(result.current.queryState.isFetching).toBe(false);
     expect(result.current.queryState.isError).toBe(false);
@@ -156,6 +157,28 @@ describe('useDslDataTable', () => {
         }
       });
     });
+  });
+
+  it('allows zebra striping to be disabled explicitly', () => {
+    const queryFactory = vi.fn((request) =>
+      queryOptions({
+        queryKey: ['dictionary-types-no-zebra', request],
+        queryFn: async () => ({ list: [], total: 0 })
+      })
+    ) as unknown as QueryOptionsFactory<DictionaryTypeRow>;
+
+    const { result } = renderHook(
+      () =>
+        useDslDataTable({
+          tableId: 'dictionary-types-no-zebra',
+          columns,
+          queryOptions: queryFactory,
+          enableZebraStriping: false
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    expect(result.current.table.options.meta?.enableZebraStriping).toBe(false);
   });
 
   it('keeps previous query data while the next page is loading', async () => {

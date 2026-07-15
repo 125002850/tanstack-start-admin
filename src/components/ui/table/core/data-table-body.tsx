@@ -37,6 +37,7 @@ import { useDataTableCellSelection } from '@/components/ui/table/core/use-data-t
  */
 interface DataTableBodyProps<TData> {
   table: TanstackTable<TData>;
+  enableZebraStriping: boolean;
   emptyMessage: React.ReactNode;
   status?: DataTableStatusConfig;
   virtualization?: DataTableResolvedVirtualizationOptions;
@@ -163,13 +164,7 @@ function renderDataTableCellSurface<TData>(cell: Cell<TData, unknown>, content: 
         aria-hidden='true'
         data-slot='data-table-pinned-cell-base'
         data-pinning-shadow-edge={shadowEdge}
-        className='bg-background group-data-[expanded=true]:bg-accent pointer-events-none absolute inset-0'
-      />
-      <div
-        aria-hidden='true'
-        data-slot='data-table-pinned-cell-overlay'
-        data-pinning-shadow-edge={shadowEdge}
-        className='group-hover:bg-muted/50 group-data-[state=selected]:bg-muted pointer-events-none absolute inset-0'
+        className='pointer-events-none absolute inset-0 transition-colors'
       />
       {shadowStyle ? (
         <div
@@ -196,6 +191,7 @@ function getColumnVirtualCellWidthStyle(size: number): React.CSSProperties {
 
 export function DataTableBody<TData>({
   table,
+  enableZebraStriping,
   emptyMessage,
   status,
   virtualization,
@@ -314,20 +310,7 @@ export function DataTableBody<TData>({
     },
     [getExpandRowKey, onRowClick]
   );
-  const getCellClassName = useCallback(
-    (cell: Cell<TData, unknown>) =>
-      cn(DATA_TABLE_BODY_CELL_CLASS_NAME, cell.column.getIsPinned() && 'bg-background'),
-    []
-  );
-
-  const getRowClassName = useCallback(
-    (row: Row<TData>) =>
-      cn(
-        expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey && '!bg-accent',
-        onRowClick && 'cursor-pointer'
-      ),
-    [expandedRowKey, getExpandRowKey, onRowClick]
-  );
+  const rowClassName = cn(onRowClick && 'cursor-pointer');
 
   const getExpandableRowTabIndex = useCallback(
     (row: Row<TData>) => (onRowClick && getExpandRowKey?.(row.original) ? 0 : undefined),
@@ -408,7 +391,7 @@ export function DataTableBody<TData>({
           data-column-id={item.columnId}
           data-column-leaf-index={item.leafIndex}
           data-column-center-index={item.centerIndex >= 0 ? item.centerIndex : undefined}
-          className={getCellClassName(cell)}
+          className={DATA_TABLE_BODY_CELL_CLASS_NAME}
           {...getCellSelectionProps(cell)}
           style={{
             ...(isVirtualRow
@@ -431,7 +414,7 @@ export function DataTableBody<TData>({
         </TableCell>
       );
     },
-    [getCellClassName, getCellSelectionProps]
+    [getCellSelectionProps]
   );
   const renderColumnVirtualCells = useCallback(
     (row: Row<TData>, isVirtualRow: boolean) => {
@@ -471,7 +454,7 @@ export function DataTableBody<TData>({
   if (!rows.length) {
     // 没有状态配置时使用基础空态，避免调用方必须为每张表写 empty state。
     return (
-      <TableBody>
+      <TableBody data-component='data-table-body'>
         <TableRow>
           <TableCell colSpan={table.getAllColumns().length}>
             <div className='flex flex-col items-center justify-center py-16 text-center'>
@@ -499,6 +482,7 @@ export function DataTableBody<TData>({
 
       return (
         <TableBody
+          data-component='data-table-body'
           style={{ height: `${totalSize}px`, position: 'relative' }}
           aria-rowcount={rows.length + 1}
           data-virtual-enabled='true'
@@ -518,6 +502,10 @@ export function DataTableBody<TData>({
               <TableRow
                 key={row.id}
                 data-index={virtualRow.index}
+                data-row-index={virtualRow.index}
+                data-striped={
+                  enableZebraStriping && virtualRow.index % 2 === 1 ? 'true' : undefined
+                }
                 data-expanded={
                   expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey
                     ? 'true'
@@ -526,7 +514,7 @@ export function DataTableBody<TData>({
                 aria-rowindex={virtualRow.index + 2}
                 aria-selected={row.getIsSelected() ? true : undefined}
                 data-state={row.getIsSelected() ? 'selected' : undefined}
-                className={getRowClassName(row)}
+                className={rowClassName}
                 onClick={(event) => handleRowClick(event, row)}
                 onKeyDown={(event) => handleRowKeyDown(event, row)}
                 tabIndex={getExpandableRowTabIndex(row)}
@@ -561,7 +549,7 @@ export function DataTableBody<TData>({
                       return (
                         <TableCell
                           key={cell.id}
-                          className={getCellClassName(cell)}
+                          className={DATA_TABLE_BODY_CELL_CLASS_NAME}
                           {...getCellSelectionProps(cell)}
                           style={{
                             display: 'flex',
@@ -601,6 +589,7 @@ export function DataTableBody<TData>({
   return (
     // 普通渲染路径仍支持列虚拟化；此时行不脱离表格流，只裁剪中间列窗口。
     <TableBody
+      data-component='data-table-body'
       data-column-virtual-enabled={columnVirtualWindow?.enabled ? 'true' : undefined}
       data-column-virtual-count={
         columnVirtualWindow?.enabled ? columnVirtualWindow.items.length : undefined
@@ -610,6 +599,7 @@ export function DataTableBody<TData>({
         <TableRow
           key={row.id}
           data-row-index={index}
+          data-striped={enableZebraStriping && index % 2 === 1 ? 'true' : undefined}
           data-expanded={
             expandedRowKey && getExpandRowKey?.(row.original) === expandedRowKey
               ? 'true'
@@ -617,7 +607,7 @@ export function DataTableBody<TData>({
           }
           data-state={row.getIsSelected() ? 'selected' : undefined}
           aria-selected={row.getIsSelected() ? true : undefined}
-          className={getRowClassName(row)}
+          className={rowClassName}
           onClick={(event) => handleRowClick(event, row)}
           onKeyDown={(event) => handleRowKeyDown(event, row)}
           tabIndex={getExpandableRowTabIndex(row)}
@@ -627,7 +617,7 @@ export function DataTableBody<TData>({
             : row.getVisibleCells().map((cell) => (
                 <TableCell
                   key={cell.id}
-                  className={getCellClassName(cell)}
+                  className={DATA_TABLE_BODY_CELL_CLASS_NAME}
                   {...getCellSelectionProps(cell)}
                   style={getBodyCellPinningStyles(cell)}
                 >

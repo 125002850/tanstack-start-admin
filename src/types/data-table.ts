@@ -60,6 +60,8 @@ declare module '@tanstack/react-table' {
     rowNumberPagination?: PaginationState;
     /** 列面板重置顺序所需的状态和回调。 */
     dataTableColumnOrder?: DataTableColumnOrderMeta;
+    /** DataTable 是否展示斑马纹。 */
+    enableZebraStriping?: boolean;
   }
 }
 

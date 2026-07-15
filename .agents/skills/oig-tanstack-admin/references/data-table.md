@@ -4,6 +4,7 @@
 
 - 标准 DSL 服务端分页表格统一使用 `useDslDataTable`。
 - `useDslDataTable` 负责 DSL request 组装、`useQuery` 生命周期、`keepPreviousData`、页长偏好和默认表格 UX 选项。
+- `useDslDataTable` 默认启用斑马纹；仅在明确需要纯色表体时传 `enableZebraStriping: false`。`useDataTable` 不隐式启用斑马纹。
 - `useDataTable` 只用于本地数组、非分页接口、多接口拼装、自定义卡片列表或 mock REST demo 等特殊场景。
 - 非标准分页响应必须在 `useDslDataTable` 调用处显式传入 `mapQueryData`，禁止把适配逻辑散回页面。
 - `useDataTable` 默认状态不得依赖 router search / URL search params；需要可分享 URL 的 route 必须单独设计 route-specific search adapter。

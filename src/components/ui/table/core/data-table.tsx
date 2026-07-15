@@ -158,6 +158,7 @@ export function DataTable<TData>({
   const headerRowRef = React.useRef<HTMLTableRowElement>(null);
 
   const rows = table.getRowModel().rows;
+  const enableZebraStriping = table.options.meta?.enableZebraStriping ?? false;
   const columnFilters = table.getState().columnFilters;
   // 只把有实际值的筛选计入状态判断；空字符串、空数组都视为未筛选。
   const hasFilters = columnFilters.some((filter) => {
@@ -361,6 +362,7 @@ export function DataTable<TData>({
                 />
                 <DataTableBody
                   table={table}
+                  enableZebraStriping={enableZebraStriping}
                   emptyMessage={emptyMessage}
                   status={resolvedStatus}
                   virtualization={virtConfig}

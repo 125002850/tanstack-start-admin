@@ -146,3 +146,78 @@ test('@workspace-v2 auto-scrolls virtual rows and maps RTL horizontal arrows', a
     'status'
   );
 });
+
+test('@workspace-v2 keeps themed row surfaces opaque and aligned with pinned cells', async ({
+  page
+}) => {
+  const card = await gotoDictionaryTable(page);
+  const rows = card.locator('tbody[data-component="data-table-body"] tr[data-row-index]');
+  const firstRow = rows.first();
+  const stripedRow = rows.nth(1);
+  const firstPinnedSurface = firstRow.locator('[data-slot="data-table-pinned-cell-base"]').first();
+  const pinnedSurface = stripedRow.locator('[data-slot="data-table-pinned-cell-base"]').first();
+  const headerCell = card.locator('thead[data-component="data-table-header"] th').first();
+
+  for (const theme of ['claude', 'supabase', 'zen', 'vercel', 'mono', 'astro-vista']) {
+    for (const dark of [false, true]) {
+      await page.evaluate(
+        ({ nextTheme, nextDark }) => {
+          document.documentElement.setAttribute('data-theme', nextTheme);
+          document.documentElement.classList.toggle('dark', nextDark);
+        },
+        { nextTheme: theme, nextDark: dark }
+      );
+      await page.waitForTimeout(200);
+
+      const surfaces = await Promise.all([
+        firstRow.evaluate((element) => getComputedStyle(element).backgroundColor),
+        stripedRow.evaluate((element) => getComputedStyle(element).backgroundColor),
+        pinnedSurface.evaluate((element) => getComputedStyle(element).backgroundColor),
+        headerCell.evaluate((element) => getComputedStyle(element).backgroundColor)
+      ]);
+      const mode = dark ? 'dark' : 'light';
+
+      expect(surfaces[0], `${theme} ${mode} base row must be opaque`).not.toBe('rgba(0, 0, 0, 0)');
+      expect(surfaces[1], `${theme} ${mode} striped row must differ from base`).not.toBe(
+        surfaces[0]
+      );
+      expect(surfaces[2], `${theme} ${mode} pinned surface must match its row`).toBe(surfaces[1]);
+      expect(surfaces[3], `${theme} ${mode} header must be opaque`).not.toBe('rgba(0, 0, 0, 0)');
+    }
+  }
+
+  await page.evaluate(() => {
+    document.documentElement.setAttribute('data-theme', 'claude');
+    document.documentElement.classList.remove('dark');
+  });
+  await page.waitForTimeout(200);
+  const baseSurface = await firstRow.evaluate(
+    (element) => getComputedStyle(element).backgroundColor
+  );
+
+  await firstRow.hover();
+  await page.waitForTimeout(200);
+  const hoverSurface = await firstRow.evaluate(
+    (element) => getComputedStyle(element).backgroundColor
+  );
+
+  await firstRow.evaluate((element) => element.setAttribute('data-state', 'selected'));
+  await page.waitForTimeout(200);
+  const selectedSurface = await firstRow.evaluate(
+    (element) => getComputedStyle(element).backgroundColor
+  );
+
+  await firstRow.evaluate((element) => element.setAttribute('data-expanded', 'true'));
+  await page.waitForTimeout(200);
+  const expandedSurface = await firstRow.evaluate(
+    (element) => getComputedStyle(element).backgroundColor
+  );
+  const expandedPinnedSurface = await firstPinnedSurface.evaluate(
+    (element) => getComputedStyle(element).backgroundColor
+  );
+
+  expect(hoverSurface).not.toBe(baseSurface);
+  expect(selectedSurface).not.toBe(hoverSurface);
+  expect(expandedSurface).not.toBe(selectedSurface);
+  expect(expandedPinnedSurface).toBe(expandedSurface);
+});

@@ -117,7 +117,6 @@ function getHeaderClassName<TData>(
   separatorColumnIds: Set<string>
 ) {
   return cn(
-    'bg-muted',
     separatorColumnIds.has(header.column.id) &&
       'after:content-[""] after:pointer-events-none after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:w-px after:h-4 after:rounded-full after:bg-muted-foreground/25'
   );
@@ -280,7 +279,6 @@ export function DataTableHeader<TData>({
         key={`column-virtual-spacer-${side}`}
         aria-hidden='true'
         data-column-virtual-spacer={side}
-        className='bg-muted'
         style={{
           ...getColumnVirtualCellWidthStyle(size),
           position: 'sticky',
@@ -292,7 +290,7 @@ export function DataTableHeader<TData>({
   };
 
   return (
-    <TableHeader className='bg-muted'>
+    <TableHeader data-component='data-table-header'>
       {shouldVirtualizeColumns && flatHeaderGroup ? (
         // 列虚拟化路径：固定列始终渲染，中间列只渲染 virtualizer 窗口。
         <TableRow key={flatHeaderGroup.id} ref={headerRowRef}>
