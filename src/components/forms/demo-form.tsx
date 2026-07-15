@@ -142,7 +142,7 @@ function ComboboxField({
                 >
                   <Icons.check
                     className={cn(
-                      'mr-2 h-4 w-4',
+                      'mr-2 size-4 text-primary',
                       value === opt.value ? 'opacity-100' : 'opacity-0'
                     )}
                   />

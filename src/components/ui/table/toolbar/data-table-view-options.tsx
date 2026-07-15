@@ -204,7 +204,7 @@ function StaticDataTableViewOptionItem<TData>({
       <span className='truncate'>{label}</span>
       <Icons.check
         className={cn(
-          'ml-auto size-4 shrink-0',
+          'ml-auto size-4 shrink-0 text-primary',
           column.getIsVisible() ? 'opacity-100' : 'opacity-0'
         )}
       />
@@ -269,7 +269,7 @@ function SortableDataTableViewOptionItem<TData>({
         <span className='truncate'>{label}</span>
         <Icons.check
           className={cn(
-            'ml-auto size-4 shrink-0',
+            'ml-auto size-4 shrink-0 text-primary',
             column.getIsVisible() ? 'opacity-100' : 'opacity-0'
           )}
         />

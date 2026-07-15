@@ -164,7 +164,7 @@ export function MultiSelectCombobox({
                           : 'opacity-50 [&_svg]:invisible'
                       )}
                     >
-                      <Icons.check className='size-4' />
+                      <Icons.check className='size-4 text-primary-foreground' />
                     </span>
                     <span className='truncate'>{option.label}</span>
                   </CommandItem>

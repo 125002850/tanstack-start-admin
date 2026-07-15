@@ -18,6 +18,7 @@
   --border: oklch(0.9037 0 0);
   --input: oklch(0.9731 0 0);
   --ring: oklch(0.8348 0.1302 160.908);
+  --data-table-row-expanded-background: color-mix(in oklab, var(--card) 80%, var(--primary) 20%);
   --chart-1: oklch(0.8348 0.1302 160.908);
   --chart-2: oklch(0.6231 0.188 259.8145);
   --chart-3: oklch(0.6056 0.2189 292.7172);
@@ -31,6 +32,8 @@
   --sidebar-accent-foreground: oklch(0.2435 0 0);
   --sidebar-border: oklch(0.9037 0 0);
   --sidebar-ring: oklch(0.8348 0.1302 160.908);
+  --sidebar-active-background: var(--sidebar-primary);
+  --sidebar-active-foreground: var(--sidebar-primary-foreground);
   --font-sans: Outfit, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
   --font-mono: monospace;
@@ -73,6 +76,7 @@
   --border: oklch(0.2809 0 0);
   --input: oklch(0.2603 0 0);
   --ring: oklch(0.8003 0.1821 151.711);
+  --data-table-row-expanded-background: color-mix(in oklab, var(--card) 76%, var(--primary) 24%);
   --chart-1: oklch(0.8003 0.1821 151.711);
   --chart-2: oklch(0.7137 0.1434 254.624);
   --chart-3: oklch(0.709 0.1592 293.5412);
