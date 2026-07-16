@@ -1,6 +1,6 @@
 import type * as React from 'react';
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Icons } from '@/components/icons';
@@ -15,10 +15,11 @@ describe('DefaultErrorPage', () => {
   afterEach(() => {
     cleanup();
     document.documentElement.removeAttribute('data-theme');
+    document.documentElement.classList.remove('dark');
     localStorage.clear();
   });
 
-  it('renders a 404 state from the default minimal illustration family', () => {
+  it('renders a 404 state from the default monochrome illustration family', () => {
     render(
       <DefaultErrorPage
         code='404'
@@ -36,12 +37,13 @@ describe('DefaultErrorPage', () => {
     );
     expect(screen.getByTestId('default-error-illustration')).toHaveAttribute(
       'data-error-illustration-family',
-      'minimal'
+      'monochrome'
     );
+    expect(screen.getByText('HTTP 错误代码：404')).toHaveClass('sr-only');
     expect(screen.getByText('路由未匹配')).toBeInTheDocument();
   });
 
-  it('uses the botanical PNG illustration family for green themes', () => {
+  it('uses the botanical WebP illustration family for green themes', () => {
     renderWithTheme(
       <DefaultErrorPage
         code='403'
@@ -57,6 +59,45 @@ describe('DefaultErrorPage', () => {
     expect(illustration).toHaveAttribute('data-error-illustration', '403');
     expect(illustration).toHaveAttribute('data-error-illustration-family', 'botanical');
     expect(illustration.tagName).toBe('IMG');
+  });
+
+  it('uses the dark botanical asset in dark mode', async () => {
+    document.documentElement.classList.add('dark');
+
+    renderWithTheme(
+      <DefaultErrorPage
+        code='404'
+        title='页面不存在'
+        description='访问的页面不存在或已被移动。'
+        alertTitle='路由未匹配'
+        alertDescription='请检查地址是否正确。'
+      />,
+      'light-green'
+    );
+
+    const illustration = screen.getByTestId('default-error-illustration');
+    expect(illustration).toHaveAttribute('data-error-illustration-mode', 'dark');
+    await waitFor(() =>
+      expect(illustration.getAttribute('src')).toContain('empty-state-botanical-dark-404.webp')
+    );
+  });
+
+  it('falls back to the monochrome illustration family for unknown themes', () => {
+    renderWithTheme(
+      <DefaultErrorPage
+        code='404'
+        title='页面不存在'
+        description='访问的页面不存在或已被移动。'
+        alertTitle='路由未匹配'
+        alertDescription='请检查地址是否正确。'
+      />,
+      'unknown-theme'
+    );
+
+    expect(screen.getByTestId('default-error-illustration')).toHaveAttribute(
+      'data-error-illustration-family',
+      'monochrome'
+    );
   });
 
   it('uses the zen illustration family for zen themes', () => {
@@ -111,6 +152,7 @@ describe('DefaultErrorPage', () => {
     expect(illustration).toHaveAttribute('data-error-illustration', '404');
     expect(illustration).toHaveAttribute('data-error-illustration-family', 'astro');
     expect(illustration.tagName).toBe('IMG');
+    expect(screen.getByText('HTTP 404')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('renders action buttons for retryable 500 states', () => {
