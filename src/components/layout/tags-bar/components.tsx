@@ -54,6 +54,7 @@ interface TagContentProps {
   title: string;
   dirty: boolean;
   closable: boolean;
+  isActive: boolean;
   closeAriaLabel: string;
   interactiveClose?: boolean;
   onCloseClick?: (event: React.MouseEvent) => void;
@@ -68,6 +69,7 @@ function TagContent(props: TagContentProps) {
     title,
     dirty,
     closable,
+    isActive,
     closeAriaLabel,
     interactiveClose = false,
     onCloseClick,
@@ -96,6 +98,7 @@ function TagContent(props: TagContentProps) {
           onTouchStart={(event) => onClosePointerDown?.(event)}
           className={cn(
             'ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm',
+            isActive ? 'visible' : 'invisible group-hover:visible',
             'opacity-40 transition-opacity group-hover:opacity-100',
             'hover:text-foreground',
             'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
@@ -108,7 +111,10 @@ function TagContent(props: TagContentProps) {
       {closable && !interactiveClose ? (
         <span
           aria-hidden='true'
-          className='ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm opacity-40'
+          className={cn(
+            'ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm opacity-40',
+            isActive ? 'visible' : 'invisible'
+          )}
         >
           <Icons.close className='size-3' />
         </span>
@@ -170,6 +176,7 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
         title={title}
         dirty={dirty}
         closable={closable}
+        isActive={isActive}
         closeAriaLabel={`Close ${title}`}
         interactiveClose
         onCloseClick={onClose}
@@ -213,6 +220,7 @@ function PlaceholderTag(props: PlaceholderTagProps) {
         title={title}
         dirty={dirty}
         closable={closable}
+        isActive={isActive}
         closeAriaLabel={`Close ${title}`}
       />
     </div>
@@ -253,6 +261,7 @@ export function OverlayTag(props: OverlayTagProps) {
         title={title}
         dirty={dirty}
         closable={closable}
+        isActive={isActive}
         closeAriaLabel={`Close ${title}`}
       />
     </div>

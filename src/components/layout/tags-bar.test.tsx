@@ -212,11 +212,17 @@ describe('TagsBar', () => {
     expect(screen.queryByRole('button', { name: /Close 仪表盘/ })).not.toBeInTheDocument();
   });
 
-  it('closable tabs show a close button', () => {
+  it('shows close buttons only for the active or hovered tab while preserving their space', () => {
+    openTab('/dashboard/system-management/dictionaries', 'Dictionaries');
     openTab('/dashboard/chat', 'Chat');
     render(<TagsBar />);
 
-    expect(screen.getByRole('button', { name: /Close Chat/ })).toBeInTheDocument();
+    const inactiveClose = screen.getByRole('button', { name: /Close Dictionaries/ });
+    const activeClose = screen.getByRole('button', { name: /Close Chat/ });
+
+    expect(inactiveClose).toHaveClass('invisible', 'group-hover:visible', 'size-3.5');
+    expect(activeClose).toHaveClass('visible', 'size-3.5');
+    expect(activeClose).not.toHaveClass('invisible');
   });
 
   it('ArrowLeft and ArrowRight move focus across opened tabs', () => {
