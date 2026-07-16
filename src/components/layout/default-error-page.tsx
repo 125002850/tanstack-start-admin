@@ -300,7 +300,7 @@ export function DefaultErrorPage({
   return (
     <main
       className={cn(
-        'bg-background text-foreground relative isolate flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-6',
+        'bg-background text-foreground relative isolate flex min-h-screen w-full items-center justify-center overflow-hidden px-4 py-10 sm:px-6',
         'before:absolute before:inset-0 before:-z-10 before:bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] before:bg-[size:56px_56px] before:opacity-25',
         'after:bg-border after:absolute after:inset-x-0 after:top-0 after:-z-10 after:h-px',
         className

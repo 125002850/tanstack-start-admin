@@ -31,6 +31,7 @@ describe('DefaultErrorPage', () => {
     );
 
     expect(screen.getByRole('heading', { name: '页面不存在' })).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveClass('w-full');
     expect(screen.getByTestId('default-error-illustration')).toHaveAttribute(
       'data-error-illustration',
       '404'
