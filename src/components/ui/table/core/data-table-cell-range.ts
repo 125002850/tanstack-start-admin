@@ -105,6 +105,10 @@ export function getDataTableCellRangeEdges(
     return undefined;
   }
 
+  if (bounds.rowStart === bounds.rowEnd && bounds.columnStart === bounds.columnEnd) {
+    return undefined;
+  }
+
   const edges: DataTableCellRangeEdge[] = [];
   if (position.row === bounds.rowStart) edges.push('block-start');
   if (position.column === bounds.columnEnd) edges.push('inline-end');
