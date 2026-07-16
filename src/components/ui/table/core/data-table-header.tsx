@@ -20,6 +20,12 @@ import { getCommonPinningStyles } from '@/lib/data-table';
 import { getDataTableColumnLabel } from '@/lib/data-table-column-label';
 import { cn } from '@/lib/utils';
 import type { DataTableColumnRenderItem, DataTableColumnVirtualWindow } from '@/types/data-table';
+import {
+  clearDataTableColumnDragMotion,
+  publishDataTableColumnDragMotion,
+  type DataTableColumnDragMotion,
+  type DataTableColumnDragMotionMap
+} from '@/components/ui/table/dnd/data-table-column-drag-motion';
 
 /**
  * 表头渲染层。
@@ -43,6 +49,8 @@ interface DataTableHeaderProps<TData> {
   shouldVirtualizeColumns: boolean;
   separatorColumnIds: Set<string>;
   draggableColumnIdSet: Set<string>;
+  columnDragMotionById: DataTableColumnDragMotionMap;
+  tableElementRef: React.RefObject<HTMLTableElement | null>;
   headerRowRef: React.Ref<HTMLTableRowElement>;
   onHeaderClickCapture: React.MouseEventHandler<HTMLTableCellElement>;
 }
@@ -56,6 +64,8 @@ interface HeaderCellBaseProps<TData> {
     [key: `data-${string}`]: string | number | undefined;
   };
   onClickCapture?: React.MouseEventHandler<HTMLTableCellElement>;
+  columnDragMotion?: DataTableColumnDragMotion;
+  tableElementRef?: React.RefObject<HTMLTableElement | null>;
 }
 
 function getColumnVirtualCellWidthStyle(size: number): React.CSSProperties {
@@ -182,20 +192,46 @@ function SortableDataTableHeaderCell<TData>({
   className,
   style,
   dataAttributes,
-  onClickCapture
+  onClickCapture,
+  columnDragMotion,
+  tableElementRef
 }: HeaderCellBaseProps<TData>) {
-  const { listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: header.column.id });
+  const {
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isSorting
+  } = useSortable({ id: header.column.id });
 
   const sortableStyle = React.useMemo<React.CSSProperties>(
     () => ({
       ...style,
       opacity: isDragging ? 0.45 : style?.opacity,
-      transform: CSS.Transform.toString(transform),
-      transition
+      // 拖拽期间 header/body 共用 table CSS 变量，确保整列在同一 transition 时间线上移动。
+      ...(isSorting && columnDragMotion
+        ? columnDragMotion.elementStyle
+        : {
+            // 静止态只允许平移；忽略 dnd-kit 的 scale，避免不同列宽间拖动时 th 被压缩。
+            transform: CSS.Translate.toString(transform),
+            transition
+          })
     }),
-    [isDragging, style, transform, transition]
+    [columnDragMotion, isDragging, isSorting, style, transform, transition]
   );
+
+  const translateX = transform?.x ?? 0;
+
+  React.useLayoutEffect(() => {
+    const tableElement = tableElementRef?.current;
+    if (!tableElement || !columnDragMotion) return;
+
+    publishDataTableColumnDragMotion(tableElement, columnDragMotion, translateX, transition);
+
+    return () => clearDataTableColumnDragMotion(tableElement, columnDragMotion);
+  }, [columnDragMotion, tableElementRef, transition, translateX]);
 
   return (
     <TableHead
@@ -227,6 +263,8 @@ export function DataTableHeader<TData>({
   shouldVirtualizeColumns,
   separatorColumnIds,
   draggableColumnIdSet,
+  columnDragMotionById,
+  tableElementRef,
   headerRowRef,
   onHeaderClickCapture
 }: DataTableHeaderProps<TData>) {
@@ -259,6 +297,8 @@ export function DataTableHeader<TData>({
         header={header}
         className={getHeaderClassName(header, separatorColumnIds)}
         style={headerStyle}
+        columnDragMotion={columnDragMotionById.get(header.column.id)}
+        tableElementRef={tableElementRef}
         dataAttributes={{
           'aria-sort': getHeaderAriaSort(header),
           'data-column-id': item.columnId,
@@ -320,6 +360,8 @@ export function DataTableHeader<TData>({
                   style={getStickyHeaderCellStyles(header, headerGroupIndex, {
                     ...getCommonPinningStyles({ column: header.column })
                   })}
+                  columnDragMotion={columnDragMotionById.get(header.column.id)}
+                  tableElementRef={tableElementRef}
                   dataAttributes={{
                     'aria-sort': getHeaderAriaSort(header),
                     'data-column-id': header.column.id

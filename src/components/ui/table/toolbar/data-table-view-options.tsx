@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { restrictToFirstScrollableAncestor, restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Column, Table } from '@tanstack/react-table';
@@ -61,6 +61,7 @@ interface DataTableViewOptionItemProps<TData> {
 const COLUMN_ORDER_MOUSE_DISTANCE_PX = 4;
 const COLUMN_ORDER_TOUCH_DELAY_MS = 150;
 const COLUMN_ORDER_TOUCH_TOLERANCE_PX = 8;
+const COLUMN_ORDER_MODIFIERS = [restrictToVerticalAxis, restrictToFirstScrollableAncestor];
 
 function toggleColumnVisibility<TData>(column: Column<TData>) {
   column.toggleVisibility(!column.getIsVisible());
@@ -242,7 +243,7 @@ function SortableDataTableViewOptionItem<TData>({
   );
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} data-slot='data-table-view-option-sortable'>
       <CommandItem
         className='group/view-option'
         onPointerUpCapture={handlePointerUpCapture}
@@ -396,7 +397,7 @@ export function DataTableViewOptions<TData>({
               <DndContext
                 sensors={columnOrderSensors}
                 collisionDetection={closestCenter}
-                modifiers={[restrictToVerticalAxis]}
+                modifiers={COLUMN_ORDER_MODIFIERS}
                 onDragStart={handleColumnDragStart}
                 onDragEnd={handleColumnDragEnd}
                 onDragCancel={handleColumnDragCancel}
