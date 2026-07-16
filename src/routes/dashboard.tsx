@@ -22,6 +22,8 @@ import { ensureSsoLoginInfo } from '@/lib/api/sso/queries';
 import { isLoginForbiddenError } from '@/lib/api/sso/errors';
 import { LoginForbiddenPage } from '@/features/auth/components/login-forbidden-page';
 import { baseConfig } from '@/config';
+import { isRouteAccessForbiddenError } from '@/lib/router/route-access';
+import { RouteAccessForbiddenPage } from '@/features/auth/components/route-access-forbidden-page';
 
 const meta = defineRouteMeta({
   label: '工作台',
@@ -54,6 +56,10 @@ function getErrorMessage(error: unknown): string {
 function DashboardErrorComponent({ error, reset }: ErrorComponentProps) {
   if (isLoginForbiddenError(error)) {
     return <LoginForbiddenPage message={error.message} logoutUrl={error.logoutUrl} />;
+  }
+
+  if (isRouteAccessForbiddenError(error)) {
+    return <RouteAccessForbiddenPage message={error.message} />;
   }
 
   return (

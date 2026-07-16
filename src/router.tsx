@@ -8,6 +8,8 @@ import { DefaultErrorPage } from '@/components/layout/default-error-page';
 import { getQueryClient } from '@/lib/query-client';
 import { hydrateFromUrl } from '@/lib/api/sso/session';
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
+import { isRouteAccessForbiddenError } from '@/lib/router/route-access';
+import { RouteAccessForbiddenPage } from '@/features/auth/components/route-access-forbidden-page';
 import { routeTree } from './routeTree.gen';
 
 const DEFAULT_PENDING_MS = 2500;
@@ -31,6 +33,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 function DefaultRouterErrorComponent({ error, reset }: ErrorComponentProps) {
+  if (isRouteAccessForbiddenError(error)) {
+    return <RouteAccessForbiddenPage message={error.message} />;
+  }
+
   return (
     <DefaultErrorPage
       code='500'

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTheme } from 'next-themes';
 import { Icons } from '@/components/icons';
 import { useOptionalThemeConfig } from '@/components/themes/active-theme';
 import { DEFAULT_THEME } from '@/components/themes/theme.config';
@@ -7,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export type DefaultErrorCode = '403' | '404' | '500';
-type ErrorIllustrationFamily = 'botanical' | 'minimal' | 'zen' | 'brutal' | 'astro';
+type ErrorIllustrationFamily = 'botanical' | 'monochrome' | 'zen' | 'brutal' | 'astro';
+type ErrorIllustrationColorMode = 'light' | 'dark';
 
 type ErrorAction = {
   label: string;
@@ -59,36 +61,57 @@ const ERROR_STYLE: Record<
   }
 };
 
-const ERROR_ILLUSTRATION_MODULES = import.meta.glob<string>('/src/assets/empty-state-*.png', {
-  query: '?url',
-  import: 'default'
-});
+const ERROR_ILLUSTRATION_MODULES = import.meta.glob<string>(
+  [
+    '/src/assets/empty-state-40[34].webp',
+    '/src/assets/empty-state-500.webp',
+    '/src/assets/empty-state-botanical-dark-*.webp',
+    '/src/assets/empty-state-monochrome-*.webp',
+    '/src/assets/empty-state-zen-*.webp',
+    '/src/assets/empty-state-brutal-*.webp',
+    '/src/assets/empty-state-astro-v2-*.webp'
+  ],
+  {
+    query: '?url',
+    import: 'default'
+  }
+);
 
 const ERROR_ILLUSTRATION_PATH: Record<ErrorIllustrationFamily, Record<DefaultErrorCode, string>> = {
   botanical: {
-    '403': '/src/assets/empty-state-403.png',
-    '404': '/src/assets/empty-state-404.png',
-    '500': '/src/assets/empty-state-500.png'
+    '403': '/src/assets/empty-state-403.webp',
+    '404': '/src/assets/empty-state-404.webp',
+    '500': '/src/assets/empty-state-500.webp'
   },
-  minimal: {
-    '403': '/src/assets/empty-state-minimal-403.png',
-    '404': '/src/assets/empty-state-minimal-404.png',
-    '500': '/src/assets/empty-state-minimal-500.png'
+  monochrome: {
+    '403': '/src/assets/empty-state-monochrome-403.webp',
+    '404': '/src/assets/empty-state-monochrome-404.webp',
+    '500': '/src/assets/empty-state-monochrome-500.webp'
   },
   zen: {
-    '403': '/src/assets/empty-state-zen-403.png',
-    '404': '/src/assets/empty-state-zen-404.png',
-    '500': '/src/assets/empty-state-zen-500.png'
+    '403': '/src/assets/empty-state-zen-403.webp',
+    '404': '/src/assets/empty-state-zen-404.webp',
+    '500': '/src/assets/empty-state-zen-500.webp'
   },
   brutal: {
-    '403': '/src/assets/empty-state-brutal-403.png',
-    '404': '/src/assets/empty-state-brutal-404.png',
-    '500': '/src/assets/empty-state-brutal-500.png'
+    '403': '/src/assets/empty-state-brutal-403.webp',
+    '404': '/src/assets/empty-state-brutal-404.webp',
+    '500': '/src/assets/empty-state-brutal-500.webp'
   },
   astro: {
-    '403': '/src/assets/empty-state-astro-403.png',
-    '404': '/src/assets/empty-state-astro-404.png',
-    '500': '/src/assets/empty-state-astro-500.png'
+    '403': '/src/assets/empty-state-astro-v2-403.webp',
+    '404': '/src/assets/empty-state-astro-v2-404.webp',
+    '500': '/src/assets/empty-state-astro-v2-500.webp'
+  }
+};
+
+const ERROR_ILLUSTRATION_DARK_PATH: Partial<
+  Record<ErrorIllustrationFamily, Record<DefaultErrorCode, string>>
+> = {
+  botanical: {
+    '403': '/src/assets/empty-state-botanical-dark-403.webp',
+    '404': '/src/assets/empty-state-botanical-dark-404.webp',
+    '500': '/src/assets/empty-state-botanical-dark-500.webp'
   }
 };
 
@@ -96,8 +119,8 @@ const THEME_ILLUSTRATION_FAMILY: Record<string, ErrorIllustrationFamily> = {
   claude: 'zen',
   neobrutualism: 'brutal',
   supabase: 'botanical',
-  vercel: 'minimal',
-  mono: 'minimal',
+  vercel: 'monochrome',
+  mono: 'monochrome',
   notebook: 'zen',
   'light-green': 'botanical',
   zen: 'zen',
@@ -105,11 +128,45 @@ const THEME_ILLUSTRATION_FAMILY: Record<string, ErrorIllustrationFamily> = {
   whatsapp: 'botanical'
 };
 
-const ILLUSTRATION_CLASS_NAME = 'mx-auto aspect-[3/2] w-full max-w-[34rem] object-contain';
+const ILLUSTRATION_FRAME_CLASS_NAME: Record<ErrorIllustrationFamily, string> = {
+  botanical:
+    'before:absolute before:inset-x-[16%] before:inset-y-[20%] before:-z-10 before:rounded-full before:bg-primary/8 before:blur-3xl dark:before:bg-primary/12',
+  monochrome:
+    'before:absolute before:inset-x-[18%] before:inset-y-[22%] before:-z-10 before:rounded-full before:bg-muted/70 before:blur-3xl dark:before:bg-muted/30',
+  zen: 'before:absolute before:inset-x-[18%] before:inset-y-[22%] before:-z-10 before:rounded-full before:bg-accent/45 before:blur-3xl dark:before:bg-accent/20',
+  brutal:
+    'before:absolute before:inset-x-[16%] before:inset-y-[18%] before:-z-10 before:rounded-full before:bg-card/70 before:blur-3xl dark:before:bg-card/35',
+  astro:
+    'before:absolute before:inset-x-[14%] before:inset-y-[18%] before:-z-10 before:rounded-full before:bg-primary/8 before:blur-3xl dark:before:bg-primary/15'
+};
+
+const ILLUSTRATION_IMAGE_CLASS_NAME: Record<ErrorIllustrationFamily, string> = {
+  botanical:
+    'contrast-[1.08] saturate-[1.08] drop-shadow-[0_16px_22px_color-mix(in_oklab,var(--foreground)_10%,transparent)] dark:brightness-90 dark:saturate-[0.9]',
+  monochrome:
+    'drop-shadow-[0_16px_20px_color-mix(in_oklab,var(--foreground)_12%,transparent)] dark:brightness-95',
+  zen: 'drop-shadow-[0_16px_20px_color-mix(in_oklab,var(--foreground)_10%,transparent)] dark:brightness-95',
+  brutal:
+    'drop-shadow-[0_16px_18px_color-mix(in_oklab,var(--foreground)_16%,transparent)] dark:drop-shadow-[0_0_1px_color-mix(in_oklab,var(--foreground)_38%,transparent)]',
+  astro:
+    'contrast-[1.06] saturate-[1.08] drop-shadow-[0_18px_24px_color-mix(in_oklab,var(--primary)_16%,transparent)]'
+};
+
+const ILLUSTRATION_SCALE_CLASS_NAME: Record<
+  ErrorIllustrationFamily,
+  Record<DefaultErrorCode, string>
+> = {
+  botanical: { '403': 'scale-100', '404': 'scale-[1.08]', '500': 'scale-[1.06]' },
+  monochrome: { '403': 'scale-[1.04]', '404': 'scale-[0.98]', '500': 'scale-[1.08]' },
+  zen: { '403': 'scale-100', '404': 'scale-[0.92]', '500': 'scale-[0.96]' },
+  brutal: { '403': 'scale-[0.96]', '404': 'scale-[0.94]', '500': 'scale-[0.92]' },
+  astro: { '403': 'scale-100', '404': 'scale-[1.08]', '500': 'scale-[0.95]' }
+};
 
 type ErrorIllustrationProps = {
   code: DefaultErrorCode;
   family: ErrorIllustrationFamily;
+  colorMode: ErrorIllustrationColorMode;
 };
 
 function getDocumentActiveTheme() {
@@ -118,22 +175,33 @@ function getDocumentActiveTheme() {
 }
 
 function resolveErrorIllustrationFamily(theme: string) {
-  return THEME_ILLUSTRATION_FAMILY[theme] ?? 'minimal';
+  return THEME_ILLUSTRATION_FAMILY[theme] ?? 'monochrome';
 }
 
-function loadErrorIllustrationUrl(code: DefaultErrorCode, family: ErrorIllustrationFamily) {
-  const path = ERROR_ILLUSTRATION_PATH[family][code];
+function getDocumentColorMode(): ErrorIllustrationColorMode {
+  if (typeof document === 'undefined') return 'light';
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
+
+function loadErrorIllustrationUrl(
+  code: DefaultErrorCode,
+  family: ErrorIllustrationFamily,
+  colorMode: ErrorIllustrationColorMode
+) {
+  const path =
+    (colorMode === 'dark' ? ERROR_ILLUSTRATION_DARK_PATH[family]?.[code] : undefined) ??
+    ERROR_ILLUSTRATION_PATH[family][code];
   return ERROR_ILLUSTRATION_MODULES[path]?.();
 }
 
-function ErrorIllustrationImage({ code, family }: ErrorIllustrationProps) {
+function ErrorIllustrationImage({ code, family, colorMode }: ErrorIllustrationProps) {
   const [src, setSrc] = React.useState<string>();
 
   React.useEffect(() => {
     let cancelled = false;
     setSrc(undefined);
 
-    void loadErrorIllustrationUrl(code, family)
+    void loadErrorIllustrationUrl(code, family, colorMode)
       ?.then((url) => {
         if (!cancelled) {
           setSrc(url);
@@ -148,28 +216,50 @@ function ErrorIllustrationImage({ code, family }: ErrorIllustrationProps) {
     return () => {
       cancelled = true;
     };
-  }, [code, family]);
+  }, [code, colorMode, family]);
 
   return (
-    <img
-      alt=''
-      aria-hidden='true'
-      className={ILLUSTRATION_CLASS_NAME}
-      data-error-illustration={code}
-      data-error-illustration-family={family}
-      data-testid='default-error-illustration'
-      src={src}
-    />
+    <div
+      className={cn(
+        'relative isolate mx-auto aspect-[3/2] w-full max-w-[34rem]',
+        ILLUSTRATION_FRAME_CLASS_NAME[family]
+      )}
+    >
+      <img
+        alt=''
+        aria-hidden='true'
+        className={cn(
+          'size-full object-contain transition-[filter,transform] duration-300',
+          ILLUSTRATION_IMAGE_CLASS_NAME[family],
+          ILLUSTRATION_SCALE_CLASS_NAME[family][code]
+        )}
+        data-error-illustration={code}
+        data-error-illustration-family={family}
+        data-error-illustration-mode={colorMode}
+        data-testid='default-error-illustration'
+        src={src}
+      />
+      {family === 'astro' && (
+        <span
+          aria-hidden='true'
+          className='border-primary/30 bg-background/90 text-foreground/70 absolute right-[14%] bottom-[13%] rounded-full border px-2.5 py-1 font-mono text-[0.625rem] font-medium tracking-[0.16em] shadow-sm backdrop-blur-sm'
+        >
+          HTTP {code}
+        </span>
+      )}
+    </div>
   );
 }
 
 function ErrorIllustration({ code }: { code: DefaultErrorCode }) {
   const themeConfig = useOptionalThemeConfig();
+  const { resolvedTheme } = useTheme();
   const family = resolveErrorIllustrationFamily(
     themeConfig?.activeTheme ?? getDocumentActiveTheme()
   );
+  const colorMode = resolvedTheme === 'dark' ? 'dark' : getDocumentColorMode();
 
-  return <ErrorIllustrationImage code={code} family={family} />;
+  return <ErrorIllustrationImage code={code} family={family} colorMode={colorMode} />;
 }
 
 function ErrorActionButton({ action }: { action: ErrorAction }) {
@@ -217,6 +307,7 @@ export function DefaultErrorPage({
       )}
     >
       <section className='flex w-full max-w-4xl flex-col items-center gap-5 text-center'>
+        <p className='sr-only'>HTTP 错误代码：{code}</p>
         <div className='relative flex w-full flex-col items-center'>
           <ErrorIllustration code={code} />
         </div>

@@ -1,6 +1,8 @@
 import type { Icons } from '@/components/icons';
 import type { InfobarContent } from '@/components/ui/infobar';
 
+import { createMenuPermissionBeforeLoad } from './route-access';
+
 export const NAV_GROUP_META = {
   overview: { label: '概览', order: 10 },
   components: { label: '组件', order: 20 },
@@ -55,12 +57,15 @@ export interface AppRouteStaticData {
 }
 
 export function defineRouteMeta<T extends AppRouteStaticData>(data: T) {
+  const menuKey = data.nav?.menuKey;
+
   return {
     staticData: data,
     // Keep the common case declarative: route-local metadata plus a default document title.
     head: (): { meta: [{ title: string }] } => ({
       meta: [{ title: data.title ?? data.label }]
-    })
+    }),
+    ...(menuKey ? { beforeLoad: createMenuPermissionBeforeLoad(menuKey) } : {})
   };
 }
 
