@@ -147,6 +147,143 @@ test('@workspace-v2 auto-scrolls virtual rows and maps RTL horizontal arrows', a
   );
 });
 
+test('@workspace-v2 moves virtualized body cells with their headers during column drag', async ({
+  page
+}) => {
+  const card = await gotoDictionaryTable(page);
+  const table = card.locator('table[data-slot="table"]');
+  const sourceHeader = card.locator('th[data-column-id="dictItemCode"]');
+  const targetHeader = card.locator('th[data-column-id="dictItemName"]');
+  const sourceActivator = sourceHeader.locator('[data-slot="data-table-column-order-activator"]');
+  const sourceCell = card.locator('td[data-cell-column-id="dictItemCode"]').first();
+  const targetCell = card.locator('td[data-cell-column-id="dictItemName"]').first();
+
+  await expect(card.locator('tbody[data-virtual-enabled="true"]')).toBeVisible();
+
+  const sourceHeaderBefore = await sourceHeader.boundingBox();
+  const targetHeaderBefore = await targetHeader.boundingBox();
+  const sourceCellBefore = await sourceCell.boundingBox();
+  const targetCellBefore = await targetCell.boundingBox();
+  const sourceActivatorBox = await sourceActivator.boundingBox();
+  if (
+    !sourceHeaderBefore ||
+    !targetHeaderBefore ||
+    !sourceCellBefore ||
+    !targetCellBefore ||
+    !sourceActivatorBox
+  ) {
+    throw new Error('DataTable column drag bounding box unavailable');
+  }
+
+  await sourceActivator.dispatchEvent('mousedown', {
+    button: 0,
+    buttons: 1,
+    clientX: sourceActivatorBox.x + sourceActivatorBox.width / 2,
+    clientY: sourceActivatorBox.y + sourceActivatorBox.height / 2
+  });
+  await page.waitForTimeout(220);
+  await page.mouse.move(
+    targetHeaderBefore.x + targetHeaderBefore.width * 0.8,
+    targetHeaderBefore.y + targetHeaderBefore.height / 2,
+    { steps: 12 }
+  );
+
+  await expect(table).toHaveAttribute('data-column-reordering', 'true');
+  await expect(sourceCell).toHaveAttribute('data-column-drag-motion', 'true');
+  await expect(targetCell).toHaveAttribute('data-column-drag-motion', 'true');
+
+  await expect
+    .poll(async () => {
+      const [sourceHeaderDuring, sourceCellDuring, targetHeaderDuring, targetCellDuring] =
+        await Promise.all([
+          sourceHeader.boundingBox(),
+          sourceCell.boundingBox(),
+          targetHeader.boundingBox(),
+          targetCell.boundingBox()
+        ]);
+      if (!sourceHeaderDuring || !sourceCellDuring || !targetHeaderDuring || !targetCellDuring) {
+        return { columnsMoved: false, columnsSynchronized: false };
+      }
+
+      const sourceDeltaDifference = Math.abs(
+        sourceHeaderDuring.x - sourceHeaderBefore.x - (sourceCellDuring.x - sourceCellBefore.x)
+      );
+      const targetDeltaDifference = Math.abs(
+        targetHeaderDuring.x - targetHeaderBefore.x - (targetCellDuring.x - targetCellBefore.x)
+      );
+
+      return {
+        columnsMoved: Math.abs(sourceCellDuring.x - sourceCellBefore.x) > 10,
+        columnsSynchronized: sourceDeltaDifference <= 2 && targetDeltaDifference <= 2
+      };
+    })
+    .toEqual({ columnsMoved: true, columnsSynchronized: true });
+
+  await page.mouse.up();
+  await expect(table).not.toHaveAttribute('data-column-reordering');
+  await expect
+    .poll(async () => {
+      const [sourceHeaderAfter, sourceCellAfter, targetHeaderAfter, targetCellAfter] =
+        await Promise.all([
+          sourceHeader.boundingBox(),
+          sourceCell.boundingBox(),
+          targetHeader.boundingBox(),
+          targetCell.boundingBox()
+        ]);
+      if (!sourceHeaderAfter || !sourceCellAfter || !targetHeaderAfter || !targetCellAfter) {
+        return false;
+      }
+
+      return (
+        Math.abs(sourceHeaderAfter.width - sourceCellAfter.width) <= 1 &&
+        Math.abs(targetHeaderAfter.width - targetCellAfter.width) <= 1
+      );
+    })
+    .toBe(true);
+});
+
+test('@workspace-v2 constrains column view option dragging to the scrollable list', async ({
+  page
+}) => {
+  const card = await gotoDictionaryTable(page);
+  await card.getByRole('button', { name: '切换表格列显示' }).click();
+
+  const columnGroup = page.locator('[data-slot="command-group"]').first();
+  const dragHandle = page.getByRole('button', { name: /拖拽调整 .* 列顺序/ }).first();
+  const sortableItem = dragHandle.locator(
+    'xpath=ancestor::*[@data-slot="data-table-view-option-sortable"]'
+  );
+  const [groupBox, handleBox] = await Promise.all([
+    columnGroup.boundingBox(),
+    dragHandle.boundingBox()
+  ]);
+  if (!groupBox || !handleBox) {
+    throw new Error('DataTable view option drag bounding box unavailable');
+  }
+
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + handleBox.width / 2, groupBox.y + groupBox.height + 400, {
+    steps: 12
+  });
+
+  await expect
+    .poll(async () => {
+      const [currentGroupBox, currentItemBox] = await Promise.all([
+        columnGroup.boundingBox(),
+        sortableItem.boundingBox()
+      ]);
+      if (!currentGroupBox || !currentItemBox) return false;
+
+      return (
+        currentItemBox.y + currentItemBox.height <= currentGroupBox.y + currentGroupBox.height + 1
+      );
+    })
+    .toBe(true);
+
+  await page.mouse.up();
+});
+
 test('@workspace-v2 keeps themed row surfaces opaque and aligned with pinned cells', async ({
   page
 }) => {

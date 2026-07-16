@@ -10,6 +10,7 @@ import { type Column, type Table as TanstackTable } from '@tanstack/react-table'
 import * as React from 'react';
 
 import { getCanReorderColumn } from '@/components/ui/table/core/data-table-header';
+import { createDataTableColumnDragMotionMap } from '@/components/ui/table/dnd/data-table-column-drag-motion';
 import { moveDataTableColumnOrder } from '@/lib/data-table-state-persistence';
 
 /**
@@ -72,6 +73,10 @@ export function useDataTableColumnDnd<TData>({
     return draggableColumnIds.length > 1 ? draggableColumnIds : [];
   }, [centerVisibleLeafColumns, isFlatLeafHeader]);
   const draggableColumnIdSet = React.useMemo(() => new Set(sortableColumnIds), [sortableColumnIds]);
+  const columnDragMotionById = React.useMemo(
+    () => createDataTableColumnDragMotionMap(sortableColumnIds),
+    [sortableColumnIds]
+  );
   const activeDragHeader = activeColumnDrag?.columnId
     ? table.getFlatHeaders().find((header) => header.column.id === activeColumnDrag.columnId)
     : undefined;
@@ -156,12 +161,14 @@ export function useDataTableColumnDnd<TData>({
   return {
     activeColumnDrag,
     activeDragHeader,
+    columnDragMotionById,
     columnOrderSensors,
     draggableColumnIdSet,
     handleColumnDragCancel,
     handleColumnDragEnd,
     handleColumnDragStart,
     handleHeaderClickCapture,
+    isColumnDragging: activeColumnDrag !== null,
     sortableColumnIds
   };
 }

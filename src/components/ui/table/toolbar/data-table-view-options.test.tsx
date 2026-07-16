@@ -253,6 +253,9 @@ describe('DataTableViewOptions', () => {
     expect(screen.queryByRole('button', { name: '拖拽调整 编号 列顺序' })).toBeNull();
     expect(screen.getByRole('button', { name: '拖拽调整 姓名 列顺序' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '拖拽调整 编码 列顺序' })).toBeInTheDocument();
+    expect(
+      document.body.querySelectorAll('[data-slot="data-table-view-option-sortable"]')
+    ).toHaveLength(2);
   });
 
   it('renders columns in table order and keeps reset order at the bottom', async () => {

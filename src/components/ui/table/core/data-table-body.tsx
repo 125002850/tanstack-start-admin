@@ -27,6 +27,10 @@ import {
   type DataTableStatusConfig
 } from '@/components/ui/table/feedback/data-table-status';
 import { useDataTableCellSelection } from '@/components/ui/table/core/use-data-table-cell-selection';
+import {
+  resolveDataTableColumnDragCellMotion,
+  type DataTableColumnDragMotionMap
+} from '@/components/ui/table/dnd/data-table-column-drag-motion';
 
 /**
  * DataTable 的 tbody 渲染层。
@@ -42,6 +46,8 @@ interface DataTableBodyProps<TData> {
   status?: DataTableStatusConfig;
   virtualization?: DataTableResolvedVirtualizationOptions;
   columnVirtualWindow?: DataTableColumnVirtualWindow<TData>;
+  columnDragMotionById: DataTableColumnDragMotionMap;
+  isColumnDragging: boolean;
   useTransformFreeVirtualRows?: boolean;
   scrollViewportRef: React.RefObject<HTMLDivElement | null>;
   headerRowRef: React.RefObject<HTMLTableRowElement | null>;
@@ -76,19 +82,42 @@ function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: 
   return Boolean(target.closest(ROW_EXPAND_IGNORE_SELECTOR));
 }
 
-/** 虚拟行脱离原生表格布局后，必须从真实 th 读取列宽来对齐 td。 */
-function measureHeaderWidths(headerRow: HTMLTableRowElement): number[] {
-  return Array.from(headerRow.querySelectorAll('th')).map((th) => th.offsetWidth);
+/** 虚拟行脱离原生表格布局后，必须按 column id 从真实 th 读取列宽来对齐 td。 */
+function measureHeaderWidths(headerRow: HTMLTableRowElement): ReadonlyMap<string, number> {
+  const widths = new Map<string, number>();
+
+  for (const th of headerRow.querySelectorAll<HTMLTableCellElement>('th[data-column-id]')) {
+    const columnId = th.dataset.columnId;
+    if (columnId) {
+      widths.set(columnId, th.offsetWidth);
+    }
+  }
+
+  return widths;
 }
 
-/** 宽度数组相同则复用旧 state，减少 ResizeObserver 高频回调导致的重复渲染。 */
-function areColumnWidthsEqual(current: number[], next: number[]): boolean {
-  if (current.length !== next.length) {
+/** 首次布局测量完成前，直接按 column id 从现有 header DOM 读取对应宽度。 */
+function getHeaderWidth(headerRow: HTMLTableRowElement, columnId: string): number | undefined {
+  for (const th of headerRow.querySelectorAll<HTMLTableCellElement>('th[data-column-id]')) {
+    if (th.dataset.columnId === columnId) {
+      return th.offsetWidth;
+    }
+  }
+
+  return undefined;
+}
+
+/** 宽度映射相同则复用旧 state，减少 ResizeObserver 高频回调导致的重复渲染。 */
+function areColumnWidthsEqual(
+  current: ReadonlyMap<string, number>,
+  next: ReadonlyMap<string, number>
+): boolean {
+  if (current.size !== next.size) {
     return false;
   }
 
-  for (let index = 0; index < current.length; index += 1) {
-    if (current[index] !== next[index]) {
+  for (const [columnId, width] of current) {
+    if (next.get(columnId) !== width) {
       return false;
     }
   }
@@ -196,6 +225,8 @@ export function DataTableBody<TData>({
   status,
   virtualization,
   columnVirtualWindow,
+  columnDragMotionById,
+  isColumnDragging,
   useTransformFreeVirtualRows = false,
   scrollViewportRef,
   headerRowRef,
@@ -207,7 +238,7 @@ export function DataTableBody<TData>({
   // 运行时异常时关闭虚拟化，回退到普通 tbody，保证数据仍可见。
   const [runtimeFallback, setRuntimeFallback] = useState(false);
   // 从真实表头测得的列宽是虚拟 td 的唯一宽度来源；虚拟 td 已脱离表格流。
-  const [columnWidths, setColumnWidths] = useState<number[]>([]);
+  const [columnWidths, setColumnWidths] = useState<ReadonlyMap<string, number>>(() => new Map());
 
   const rows = table.getRowModel().rows;
   const { getCellSelectionProps } = useDataTableCellSelection<TData>({
@@ -384,6 +415,11 @@ export function DataTableBody<TData>({
       const cell = row.getVisibleCells()[item.leafIndex] as Cell<TData, unknown> | undefined;
       if (!cell) return null;
       const pinningStyles = getBodyCellPinningStyles(cell);
+      const columnDragMotion = resolveDataTableColumnDragCellMotion(
+        columnDragMotionById,
+        item.columnId,
+        isColumnDragging
+      );
 
       return (
         <TableCell
@@ -391,6 +427,7 @@ export function DataTableBody<TData>({
           data-column-id={item.columnId}
           data-column-leaf-index={item.leafIndex}
           data-column-center-index={item.centerIndex >= 0 ? item.centerIndex : undefined}
+          data-column-drag-motion={columnDragMotion ? 'true' : undefined}
           className={DATA_TABLE_BODY_CELL_CLASS_NAME}
           {...getCellSelectionProps(cell)}
           style={{
@@ -402,7 +439,8 @@ export function DataTableBody<TData>({
                 }
               : {}),
             ...pinningStyles,
-            ...getColumnVirtualCellWidthStyle(item.size)
+            ...getColumnVirtualCellWidthStyle(item.size),
+            ...columnDragMotion?.cellStyle
           }}
         >
           {renderDataTableCellSurface(
@@ -414,7 +452,7 @@ export function DataTableBody<TData>({
         </TableCell>
       );
     },
-    [getCellSelectionProps]
+    [columnDragMotionById, getCellSelectionProps, isColumnDragging]
   );
   const renderColumnVirtualCells = useCallback(
     (row: Row<TData>, isVirtualRow: boolean) => {
@@ -534,21 +572,24 @@ export function DataTableBody<TData>({
               >
                 {columnVirtualWindow?.enabled
                   ? renderColumnVirtualCells(row, true)
-                  : row.getVisibleCells().map((cell, ci) => {
-                      const measured = columnWidths[ci];
+                  : row.getVisibleCells().map((cell) => {
+                      const measured = columnWidths.get(cell.column.id);
                       const thWidth =
                         measured ??
                         (headerRowRef.current
-                          ? (
-                              headerRowRef.current.querySelectorAll('th')[ci] as
-                                | HTMLTableCellElement
-                                | undefined
-                            )?.offsetWidth
+                          ? getHeaderWidth(headerRowRef.current, cell.column.id)
                           : undefined);
                       const pinningStyles = getBodyCellPinningStyles(cell);
+                      const columnDragMotion = resolveDataTableColumnDragCellMotion(
+                        columnDragMotionById,
+                        cell.column.id,
+                        isColumnDragging
+                      );
                       return (
                         <TableCell
                           key={cell.id}
+                          data-column-id={cell.column.id}
+                          data-column-drag-motion={columnDragMotion ? 'true' : undefined}
                           className={DATA_TABLE_BODY_CELL_CLASS_NAME}
                           {...getCellSelectionProps(cell)}
                           style={{
@@ -561,7 +602,8 @@ export function DataTableBody<TData>({
                             width:
                               thWidth ??
                               (pinningStyles.width as number | undefined) ??
-                              cell.column.getSize()
+                              cell.column.getSize(),
+                            ...columnDragMotion?.cellStyle
                           }}
                         >
                           {renderDataTableCellSurface(
@@ -614,21 +656,34 @@ export function DataTableBody<TData>({
         >
           {columnVirtualWindow?.enabled
             ? renderColumnVirtualCells(row, false)
-            : row.getVisibleCells().map((cell) => (
-                <TableCell
-                  key={cell.id}
-                  className={DATA_TABLE_BODY_CELL_CLASS_NAME}
-                  {...getCellSelectionProps(cell)}
-                  style={getBodyCellPinningStyles(cell)}
-                >
-                  {renderDataTableCellSurface(
-                    cell,
-                    <DataTableCellContent cell={cell}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </DataTableCellContent>
-                  )}
-                </TableCell>
-              ))}
+            : row.getVisibleCells().map((cell) => {
+                const columnDragMotion = resolveDataTableColumnDragCellMotion(
+                  columnDragMotionById,
+                  cell.column.id,
+                  isColumnDragging
+                );
+
+                return (
+                  <TableCell
+                    key={cell.id}
+                    data-column-id={cell.column.id}
+                    data-column-drag-motion={columnDragMotion ? 'true' : undefined}
+                    className={DATA_TABLE_BODY_CELL_CLASS_NAME}
+                    {...getCellSelectionProps(cell)}
+                    style={{
+                      ...getBodyCellPinningStyles(cell),
+                      ...columnDragMotion?.cellStyle
+                    }}
+                  >
+                    {renderDataTableCellSurface(
+                      cell,
+                      <DataTableCellContent cell={cell}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </DataTableCellContent>
+                    )}
+                  </TableCell>
+                );
+              })}
         </TableRow>
       ))}
     </TableBody>

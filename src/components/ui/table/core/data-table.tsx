@@ -156,6 +156,8 @@ export function DataTable<TData>({
   const scrollViewportRef = React.useRef<HTMLDivElement>(null);
   // 表头行用于表体虚拟行测量真实列宽，尤其在 fixed table layout 下避免宽度漂移。
   const headerRowRef = React.useRef<HTMLTableRowElement>(null);
+  // 表头把列拖拽位移写入 table CSS 变量，body cells 继承变量后由合成层同步移动。
+  const tableElementRef = React.useRef<HTMLTableElement>(null);
 
   const rows = table.getRowModel().rows;
   const enableZebraStriping = table.options.meta?.enableZebraStriping ?? false;
@@ -202,12 +204,14 @@ export function DataTable<TData>({
   const {
     activeColumnDrag,
     activeDragHeader,
+    columnDragMotionById,
     columnOrderSensors,
     draggableColumnIdSet,
     handleColumnDragCancel,
     handleColumnDragEnd,
     handleColumnDragStart,
     handleHeaderClickCapture,
+    isColumnDragging,
     sortableColumnIds
   } = useDataTableColumnDnd({
     table,
@@ -338,7 +342,9 @@ export function DataTable<TData>({
             <SortableContext items={sortableColumnIds} strategy={horizontalListSortingStrategy}>
               {/* fixed table layout 配合 colgroup/虚拟列宽，保证列宽由 TanStack state 控制。 */}
               <Table
+                ref={tableElementRef}
                 aria-rowcount={ariaRowCount}
+                data-column-reordering={isColumnDragging ? 'true' : undefined}
                 data-column-virtual-enabled={shouldVirtualizeColumns ? 'true' : undefined}
                 data-column-virtual-count={
                   shouldVirtualizeColumns ? columnVirtualWindow.items.length : undefined
@@ -357,6 +363,8 @@ export function DataTable<TData>({
                   shouldVirtualizeColumns={shouldVirtualizeColumns}
                   separatorColumnIds={separatorColumnIds}
                   draggableColumnIdSet={draggableColumnIdSet}
+                  columnDragMotionById={columnDragMotionById}
+                  tableElementRef={tableElementRef}
                   headerRowRef={headerRowRef}
                   onHeaderClickCapture={handleHeaderClickCapture}
                 />
@@ -367,6 +375,8 @@ export function DataTable<TData>({
                   status={resolvedStatus}
                   virtualization={virtConfig}
                   columnVirtualWindow={columnVirtualWindow}
+                  columnDragMotionById={columnDragMotionById}
+                  isColumnDragging={isColumnDragging}
                   useTransformFreeVirtualRows={useTransformFreeVirtualRows}
                   scrollViewportRef={scrollViewportRef}
                   headerRowRef={headerRowRef}

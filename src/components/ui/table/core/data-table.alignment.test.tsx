@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, fireEvent } from '@testing-library/react';
 import {
   getCoreRowModel,
   useReactTable,
@@ -158,7 +158,10 @@ function extractWidth(styleAttr: string): string | undefined {
   return m?.[1];
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('DataTable column alignment', () => {
   it('colgroup is the single source of truth for column widths', () => {
@@ -242,6 +245,58 @@ describe('DataTable column alignment', () => {
       expect(style).toContain('height: 100%');
       expect(style).toContain('align-items: center');
     }
+  });
+
+  it('keeps virtualized td widths attached to column ids after column reorder', () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+      function (this: HTMLElement) {
+        if (!(this instanceof HTMLTableCellElement)) return 0;
+        if (this.dataset.columnId === 'id') return 80;
+        if (this.dataset.columnId === 'name') return 170;
+        if (this.dataset.columnId === 'price') return 111;
+        return 0;
+      }
+    );
+    const rows = makeRows(150);
+    const { container, getByRole } = render(
+      React.createElement(() => {
+        const [columnOrder, setColumnOrder] = React.useState(['id', 'name', 'price']);
+        const table = useReactTable({
+          data: rows,
+          columns: COLUMNS_WITH_SIZING,
+          getCoreRowModel: getCoreRowModel(),
+          getPaginationRowModel: getPaginationRowModel(),
+          enableColumnResizing: true,
+          state: { columnOrder },
+          onColumnOrderChange: setColumnOrder,
+          initialState: { pagination: { pageSize: 150, pageIndex: 0 } }
+        });
+
+        return (
+          <>
+            <button type='button' onClick={() => setColumnOrder(['id', 'price', 'name'])}>
+              Reorder columns
+            </button>
+            <DataTable
+              table={table}
+              virtualization={{ enabled: true, rowCountThreshold: 10, overscan: 0 }}
+            />
+          </>
+        );
+      })
+    );
+
+    fireEvent.click(getByRole('button', { name: 'Reorder columns' }));
+
+    const eventLikeCell = container.querySelector(
+      'tbody[data-virtual-enabled="true"] td[data-column-id="price"]'
+    );
+    const failureReasonLikeCell = container.querySelector(
+      'tbody[data-virtual-enabled="true"] td[data-column-id="name"]'
+    );
+
+    expect(extractWidth(eventLikeCell?.getAttribute('style') ?? '')).toBe('111px');
+    expect(extractWidth(failureReasonLikeCell?.getAttribute('style') ?? '')).toBe('170px');
   });
 
   it('column virtualized header and body cells share explicit render-item widths', () => {
