@@ -9,13 +9,20 @@ const loginInfoResponse = {
     phone: '00000000000',
     userName: 'workspace-e2e',
     realName: 'Workspace E2E',
-    menuData: [],
+    menuData: [
+      { code: 'dict-management', hiddenFlag: 'N', children: [] },
+      { code: 'export-center', hiddenFlag: 'N', children: [] }
+    ],
     loginUrl: '',
     logoutUrl: ''
   }
 };
 
 export async function mockLoginInfo(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('sso_token', 'workspace-e2e-token');
+  });
+
   await page.route('**/api/getLoginInfo', async (route) => {
     await route.fulfill({
       status: 200,
