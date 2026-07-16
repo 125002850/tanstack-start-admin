@@ -920,10 +920,7 @@ describe('DataTable cell selection', () => {
     await user.click(firstNameCell);
 
     expect(firstNameCell).toHaveAttribute('data-cell-selected', 'true');
-    expect(firstNameCell).toHaveAttribute(
-      'data-cell-range-edge',
-      'block-start inline-end block-end inline-start'
-    );
+    expect(firstNameCell).not.toHaveAttribute('data-cell-range-edge');
 
     const firstRowCheckbox = screen.getAllByRole('checkbox', { name: '选择行' })[0];
     await user.click(firstRowCheckbox);
