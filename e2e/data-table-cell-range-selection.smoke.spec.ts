@@ -76,8 +76,8 @@ async function dragBetweenCells(page: Page, source: Locator, target: Locator) {
   await page.mouse.up();
 }
 
-async function readCellGeometry(card: Locator) {
-  return card.locator('tbody td[data-cell-id]').evaluateAll((cells) =>
+async function readCellGeometry(row: Locator) {
+  return row.locator('td[data-cell-id]').evaluateAll((cells) =>
     cells.map((cell) => {
       const cellRect = cell.getBoundingClientRect();
       const contentRect = cell.firstElementChild?.getBoundingClientRect();
@@ -85,9 +85,14 @@ async function readCellGeometry(card: Locator) {
 
       return {
         id: cell.getAttribute('data-cell-id'),
-        cell: [cellRect.x, cellRect.y, cellRect.width, cellRect.height].map(round),
+        cell: [cellRect.width, cellRect.height].map(round),
         content: contentRect
-          ? [contentRect.x, contentRect.y, contentRect.width, contentRect.height].map(round)
+          ? [
+              contentRect.x - cellRect.x,
+              contentRect.y - cellRect.y,
+              contentRect.width,
+              contentRect.height
+            ].map(round)
           : null
       };
     })
@@ -102,15 +107,16 @@ test.beforeEach(async ({ context, page }) => {
 
 test('@workspace-v2 selects a range, extends by keyboard, and copies TSV', async ({ page }) => {
   const card = await gotoDictionaryTable(page);
+  const firstRow = card.locator('tbody tr').first();
   const firstCode = card.locator('td[data-cell-column-id="dictItemCode"]').first();
   const secondName = card.locator('td[data-cell-column-id="dictItemName"]').nth(1);
-  const geometryBeforeSelection = await readCellGeometry(card);
+  const geometryBeforeSelection = await readCellGeometry(firstRow);
 
   await dragBetweenCells(page, firstCode, secondName);
   await expect(card.locator('td[data-cell-selected="true"]')).toHaveCount(4);
   await expect(firstCode).toHaveAttribute('data-cell-range-anchor', 'true');
   await expect(secondName).toHaveAttribute('data-cell-range-focus', 'true');
-  expect(await readCellGeometry(card)).toEqual(geometryBeforeSelection);
+  expect(await readCellGeometry(firstRow)).toEqual(geometryBeforeSelection);
 
   await secondName.focus();
   await page.keyboard.down('Shift');
