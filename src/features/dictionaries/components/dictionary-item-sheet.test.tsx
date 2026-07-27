@@ -12,9 +12,9 @@ const ITEM: DictionaryItemRecord = {
   status: 'enable',
   sort: 10,
   remark: 'warm',
-  createBy: 1,
+  createBy: 'system',
   createTime: '2026-06-08 10:05:00',
-  updateBy: 1,
+  updateBy: 'system',
   updateTime: '2026-06-08 10:05:00'
 };
 

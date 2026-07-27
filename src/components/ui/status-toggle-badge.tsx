@@ -5,7 +5,9 @@ interface StatusToggleBadgeProps {
   status?: string;
   onClick: () => void;
   variant?: 'default' | 'destructive' | 'secondary' | 'outline';
-  getVariant?: (isEnabled: boolean) => 'default' | 'destructive' | 'secondary' | 'outline' | undefined;
+  getVariant?: (
+    isEnabled: boolean
+  ) => 'default' | 'destructive' | 'secondary' | 'outline' | undefined;
 }
 
 function isEnabledStatus(status?: string): boolean {
@@ -17,8 +19,10 @@ export function StatusToggleBadge({ status, onClick, getVariant }: StatusToggleB
   const variant = getVariant?.(enabled) ?? (enabled ? undefined : 'destructive');
 
   return (
-    <Badge variant={variant} className='cursor-pointer' onClick={onClick}>
-      {getStatusLabel(status)}
+    <Badge asChild variant={variant} className='cursor-pointer'>
+      <button type='button' onClick={onClick}>
+        {getStatusLabel(status)}
+      </button>
     </Badge>
   );
 }

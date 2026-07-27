@@ -9,9 +9,9 @@ import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-tab
  * 和时间合并成两列，避免每个管理页面重复写同样的 cell 布局。
  */
 export interface AuditFields {
-  createBy?: number | null;
+  createBy?: string | number | null;
   createTime?: string | null;
-  updateBy?: number | null;
+  updateBy?: string | number | null;
   updateTime?: string | null;
 }
 

@@ -7,7 +7,7 @@ description: 本仓库 AI Playwright 测试 SSO 登录态 SOP。处理本地 loc
 
 ## 使用边界
 
-用于当前仓库工作树的 AI E2E 登录态准备和验证。它不替代通用代码规范；如果需要修改代码，仍必须同时遵循仓库根目录 `AGENTS.md` 和当前分支的真实实现。
+用于当前仓库工作树的 AI E2E 登录态准备和验证。它不替代通用代码规范；如果需要修改代码，仍必须同时使用 `oig-tanstack-admin`，并遵循仓库根目录 `AGENTS.MD` 和当前分支的真实实现。
 
 不要把账号、密码、ticket、token 写入 Skill、文档、提交信息或控制台汇报。凭据只允许来自本地 ignored 文件或环境变量。
 
