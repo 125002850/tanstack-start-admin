@@ -9,6 +9,8 @@ import {
 import { WorkspacePageContext } from '../hooks/use-workspace-page';
 import { Activity } from './activity';
 import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary';
+import { Icons } from '@/components/icons';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RouterSuspenseProgressSignal } from '@/lib/router/progress';
 
 /**
@@ -69,7 +71,7 @@ export function WorkspaceViewport() {
         <WorkspaceSlotErrorBoundary
           key={tagId}
           tagId={tagId}
-          fallback={descriptor.errorFallback ?? <DefaultWorkspaceFallback />}
+          fallback={descriptor.errorFallback ?? renderDefaultWorkspaceFallback}
         >
           <PageContextProvider active={active} tagId={tagId}>
             <React.Suspense fallback={active ? <RouterSuspenseProgressSignal /> : null}>
@@ -147,21 +149,28 @@ function PageContextProvider({
   return <WorkspacePageContext.Provider value={value}>{children}</WorkspacePageContext.Provider>;
 }
 
-function DefaultWorkspaceFallback() {
-  return React.createElement(
-    'div',
-    {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        height: '100%',
-        minHeight: 200,
-        color: 'var(--muted-foreground)',
-        fontSize: 14
-      }
-    },
-    '糟糕，页面找不到了'
+function renderDefaultWorkspaceFallback(error: Error) {
+  return (
+    <div className='flex min-h-64 w-full items-center justify-center p-6'>
+      <Alert variant='destructive' className='max-w-2xl shadow-sm'>
+        <Icons.info className='size-4' aria-hidden='true' />
+        <AlertTitle>页面模块加载失败</AlertTitle>
+        <AlertDescription>
+          <p>页面依赖或当前构建产物可能不一致。请先刷新页面；如果问题持续，请联系开发人员排查。</p>
+          {import.meta.env.DEV ? (
+            <>
+              <p className='mt-2'>如果刚更新过接口契约，请依次运行：</p>
+              <code className='bg-muted text-foreground rounded px-2 py-1 font-mono text-xs'>
+                pnpm api &amp;&amp; pnpm typecheck
+              </code>
+              <details className='mt-2 w-full'>
+                <summary className='cursor-pointer font-medium'>技术详情</summary>
+                <code className='mt-1 block break-all font-mono text-xs'>{error.message}</code>
+              </details>
+            </>
+          ) : null}
+        </AlertDescription>
+      </Alert>
+    </div>
   );
 }

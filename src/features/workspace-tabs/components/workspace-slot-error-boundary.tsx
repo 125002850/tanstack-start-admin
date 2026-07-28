@@ -2,14 +2,16 @@ import * as React from 'react';
 import type { WorkspaceTabId } from '../types';
 import { useWorkspaceTabStore } from '../utils/store';
 
+type WorkspaceSlotErrorFallback = React.ReactNode | ((error: Error) => React.ReactNode);
+
 interface WorkspaceSlotErrorBoundaryProps {
   tagId: WorkspaceTabId;
-  fallback: React.ReactNode;
+  fallback: WorkspaceSlotErrorFallback;
   children: React.ReactNode;
 }
 
 interface State {
-  hasError: boolean;
+  error: Error | null;
 }
 
 /**
@@ -23,11 +25,11 @@ export class WorkspaceSlotErrorBoundary extends React.Component<
 > {
   constructor(props: WorkspaceSlotErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { error: null };
   }
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
@@ -43,8 +45,10 @@ export class WorkspaceSlotErrorBoundary extends React.Component<
   }
 
   render(): React.ReactNode {
-    if (this.state.hasError) {
-      return this.props.fallback;
+    if (this.state.error) {
+      return typeof this.props.fallback === 'function'
+        ? this.props.fallback(this.state.error)
+        : this.props.fallback;
     }
     return this.props.children;
   }

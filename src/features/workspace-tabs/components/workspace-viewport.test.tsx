@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { useWorkspaceTabStore } from '../utils/store';
 import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { WorkspaceViewport } from './workspace-viewport';
@@ -249,6 +249,41 @@ describe('WorkspaceViewport', () => {
       expect(useWorkspaceTabStore.getState().disabledKeepAliveIds.has('/dashboard/fallback')).toBe(
         true
       );
+      consoleSpy.mockRestore();
+    });
+
+    it('renders a generic module failure message without guessing the root cause', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const moduleError = new SyntaxError(
+        "The requested module '/src/example.ts' does not provide an export named 'example'"
+      );
+      const desc = makePageDescriptor({
+        tabId: '/dashboard/fallback',
+        render: () => {
+          throw moduleError;
+        }
+      });
+      setStoreState(
+        {
+          '/dashboard/fallback': {
+            id: '/dashboard/fallback',
+            keepAlive: true,
+            href: '/dashboard/fallback',
+            title: 'Fallback',
+            closable: true
+          }
+        },
+        '/dashboard/fallback',
+        [],
+        { pageDescriptors: { '/dashboard/fallback': desc } }
+      );
+
+      render(React.createElement(WorkspaceViewport));
+
+      expect(screen.getByText('页面模块加载失败')).toBeInTheDocument();
+      expect(screen.getByText(/页面依赖或当前构建产物可能不一致/)).toBeInTheDocument();
+      expect(screen.getByText(moduleError.message)).toBeInTheDocument();
+      expect(screen.queryByText(/API 客户端与页面代码不匹配/)).not.toBeInTheDocument();
       consoleSpy.mockRestore();
     });
 
