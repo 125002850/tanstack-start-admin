@@ -17,7 +17,9 @@ const pageOverlayRoots = new Map<WorkspaceTabId, HTMLElement>();
 const OPEN_TRIGGER_SELECTOR = [
   '[aria-expanded="true"]',
   '[data-slot$="-trigger"][data-state="open"]',
-  '[data-slot="combobox-trigger"][data-open]'
+  '[data-slot="combobox-trigger"][data-open]',
+  // Radix Tooltip data-state 是 "delayed-open" / "instant-open", 不是 "open"
+  '[data-slot="tooltip-trigger"][data-state]:not([data-state="closed"])'
 ].join(',');
 
 const OPEN_CONTENT_SELECTOR = [
@@ -37,6 +39,10 @@ const OPEN_CONTENT_SELECTOR = [
 ].join(',');
 
 const CONTROLLED_TRIGGER_SELECTOR = '[aria-controls]';
+const SETTLED_CLOSED_TOOLTIP_SELECTOR = [
+  '[data-slot="tooltip-content"][data-state="closed"]',
+  '[data-slot="data-table-cell-tooltip-content"][data-state="closed"]'
+].join(',');
 
 export function registerWorkspacePageOverlayRoot(tabId: WorkspaceTabId, root: HTMLElement) {
   pageOverlayRoots.set(tabId, root);
@@ -130,6 +136,29 @@ function dispatchClosePointerSequence(element: HTMLElement) {
   dispatchPointerEvent(element, 'pointerup', ownerDocument, 0);
   dispatchMouseEvent(element, 'mouseup', ownerDocument, 0);
   dispatchMouseEvent(element, 'click', ownerDocument, 0);
+  // pointerleave 不冒泡，React 事件代理无法捕获，直接派发到 trigger 上
+  // 这是关闭 Radix Tooltip / Popover 的关键事件（它们依赖 pointerleave 而非 click）
+  dispatchHoverLeaveEvent(element, 'pointerleave', ownerDocument);
+  dispatchHoverLeaveEvent(element, 'mouseleave', ownerDocument);
+}
+
+function dispatchHoverLeaveEvent(
+  target: EventTarget,
+  type: 'pointerleave' | 'mouseleave',
+  ownerDocument: Document
+) {
+  const win = ownerDocument.defaultView;
+  if (!win) return;
+
+  const EventCtor = type === 'pointerleave' ? (win.PointerEvent ?? win.MouseEvent) : win.MouseEvent;
+  target.dispatchEvent(
+    new EventCtor(type, {
+      bubbles: false,
+      cancelable: true,
+      composed: true,
+      ...(type === 'pointerleave' ? { pointerId: 1, pointerType: 'mouse' as const } : {})
+    })
+  );
 }
 
 function dispatchPointerEvent(
@@ -248,7 +277,7 @@ function overlayTargetsSettled(
   controlledContentIds: Set<string>
 ) {
   for (const target of targets) {
-    if (target.isConnected) return false;
+    if (target.isConnected && !target.matches(SETTLED_CLOSED_TOOLTIP_SELECTOR)) return false;
   }
 
   for (const id of controlledContentIds) {
