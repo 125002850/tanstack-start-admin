@@ -33,6 +33,10 @@ declare module '@tanstack/react-table' {
     };
     /** select/multiSelect/enum 列的可选项。 */
     options?: Option[];
+    /** editableField 生成的通用编辑器契约。 */
+    editableCell?: DataTableEditableColumnMeta<TData>;
+    /** 选择编辑器兼容契约；新运行时优先读取 editableCell。 */
+    editableChoice?: DataTableEditableChoiceColumnMeta<TData>;
     /** range 筛选的数值边界。 */
     range?: [number, number];
     /** 数值筛选或展示的单位。 */
@@ -62,6 +66,10 @@ declare module '@tanstack/react-table' {
     dataTableColumnOrder?: DataTableColumnOrderMeta;
     /** DataTable 是否展示斑马纹。 */
     enableZebraStriping?: boolean;
+    /** 远程选项 query key 使用的稳定表格标识。 */
+    dataTableId?: string;
+    /** DataTable 可编辑单元格的运行时状态与操作。 */
+    dataTableEditing?: DataTableEditingRuntime<TData>;
   }
 }
 
@@ -73,6 +81,159 @@ export interface Option {
   depth?: number;
   count?: number;
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
+}
+
+export type DataTableChoiceValue = string | number;
+
+export interface DataTableChoiceOption<TValue extends DataTableChoiceValue = DataTableChoiceValue> {
+  value: TValue;
+  label: string;
+  disabled?: boolean;
+}
+
+export interface DataTableRemoteOptionPage<TValue extends DataTableChoiceValue> {
+  items: DataTableChoiceOption<TValue>[];
+  total?: number;
+}
+
+export interface DataTableRemoteOptions<TValue extends DataTableChoiceValue> {
+  loadOptions(params: {
+    keyword: string;
+    pageNo: number;
+    pageSize: number;
+    signal: AbortSignal;
+  }): Promise<DataTableRemoteOptionPage<TValue>>;
+  resolveOptions?(params: {
+    values: readonly TValue[];
+    signal: AbortSignal;
+  }): Promise<DataTableChoiceOption<TValue>[]>;
+  debounceMs?: number;
+  pageSize?: number;
+}
+
+export type DataTableEditableChoiceType = 'enum' | 'select' | 'remoteSelect';
+export type DataTableEditChangeReason =
+  | 'blur'
+  | 'enter'
+  | 'tab'
+  | 'selection'
+  | 'paste'
+  | 'programmatic';
+
+export type DataTableCellChange<TData> = {
+  [K in Extract<keyof TData, string>]: {
+    rowId: string;
+    field: K;
+    previousValue: TData[K];
+    value: TData[K];
+  };
+}[Extract<keyof TData, string>];
+
+export interface DataTableEditSnapshot<TData> {
+  rows: TData[];
+  changedRows: TData[];
+  changes: DataTableCellChange<TData>[];
+  loadedPages: number[];
+}
+
+export interface DataTableCellEditableContext<TData> {
+  rowId: string;
+  row: TData;
+  columnId: string;
+}
+
+export interface DataTableEditChangeEvent<TData> {
+  changes: DataTableCellChange<TData>[];
+  snapshot: DataTableEditSnapshot<TData>;
+  reason: DataTableEditChangeReason;
+}
+
+export interface DataTableEditingOptions<TData> {
+  isCellEditable?: (context: DataTableCellEditableContext<TData>) => boolean;
+  onChange?: (event: DataTableEditChangeEvent<TData>) => void;
+}
+
+export interface DataTableEditingController<TData> {
+  getSnapshot(): DataTableEditSnapshot<TData>;
+  hasChanges(): boolean;
+  acceptChanges(
+    changes: readonly DataTableCellChange<TData>[],
+    serverRows?: readonly TData[]
+  ): void;
+  discardChanges(): void;
+}
+
+export type DataTableEditableChoiceColumnMeta<TData> = {
+  field: Extract<keyof TData, string>;
+  title: string;
+  type: DataTableEditableChoiceType;
+  selectionMode: 'single' | 'multiple';
+  allowEmpty: boolean;
+  maxSelected?: number;
+  valueOptions?: readonly DataTableChoiceOption[];
+  remoteOptions?: DataTableRemoteOptions<DataTableChoiceValue>;
+};
+
+export type DataTableEditableInputColumnMeta<TData> = {
+  field: Extract<keyof TData, string>;
+  title: string;
+  editor: 'input';
+  allowEmpty: boolean;
+  inputType: 'text' | 'tel' | 'email' | 'url' | 'search';
+  inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+  placeholder?: string;
+  maxLength?: number;
+};
+
+export type DataTableEditableSwitchColumnMeta<TData> = {
+  field: Extract<keyof TData, string>;
+  title: string;
+  editor: 'switch';
+  allowEmpty: false;
+  checkedValue: unknown;
+  uncheckedValue: unknown;
+  checkedLabel: string;
+  uncheckedLabel: string;
+};
+
+export type DataTableEditableColumnMeta<TData> =
+  | DataTableEditableChoiceColumnMeta<TData>
+  | DataTableEditableInputColumnMeta<TData>
+  | DataTableEditableSwitchColumnMeta<TData>;
+
+export interface DataTableActiveEditingCell<TData> extends DataTableCellEditableContext<TData> {
+  sessionId: number;
+  field: Extract<keyof TData, string>;
+  initialValue: unknown;
+  value: unknown;
+}
+
+export type DataTableEditingStartContext<TData> = Omit<
+  DataTableActiveEditingCell<TData>,
+  'sessionId'
+>;
+
+export type DataTableEditingCellCoordinate = Pick<
+  DataTableCellEditableContext<unknown>,
+  'rowId' | 'columnId'
+>;
+
+export interface DataTableCellCommit<TData> extends DataTableCellEditableContext<TData> {
+  field: Extract<keyof TData, string>;
+  value: unknown;
+}
+
+export interface DataTableEditingRuntime<TData> {
+  activeCell: DataTableActiveEditingCell<TData> | null;
+  readyCell: DataTableEditingCellCoordinate | null;
+  isCellEditable(context: DataTableCellEditableContext<TData>): boolean;
+  selectCell(context: DataTableCellEditableContext<TData>): void;
+  clearCellSelection(): void;
+  startEditing(context: DataTableEditingStartContext<TData>): number | null;
+  setActiveValue(sessionId: number, value: unknown): void;
+  finishEditing(sessionId: number, reason: DataTableEditChangeReason): void;
+  cancelEditing(sessionId: number): void;
+  commitValue(context: DataTableCellCommit<TData>, reason: DataTableEditChangeReason): void;
 }
 
 export type FilterOperator = DataTableConfig['operators'][number];
@@ -139,6 +300,8 @@ export type BuiltInColumnValueType =
   | 'dateTime'
   | 'boolean'
   | 'enum'
+  | 'select'
+  | 'remoteSelect'
   | 'fileSize';
 
 export type DataTableColumnValueType = BuiltInColumnValueType | (string & {});

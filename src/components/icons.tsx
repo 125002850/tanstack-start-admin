@@ -88,6 +88,7 @@ import {
   IconUserCircle,
   IconUserCog,
   IconUserEdit,
+  IconUserKey,
   IconUserShare,
   IconUserX,
   IconUsers,
@@ -145,6 +146,7 @@ export const Icons = {
   employee: IconUserX,
   userPen: IconUserEdit,
   userCog: IconUserCog,
+  userKey: IconUserKey,
   userShare: IconUserShare,
   teams: IconUsers,
 

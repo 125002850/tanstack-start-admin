@@ -38,6 +38,8 @@ const BUILT_IN_TYPE_KEYS = new Set<string>([
   'dateTime',
   'boolean',
   'enum',
+  'select',
+  'remoteSelect',
   'fileSize'
 ]);
 
@@ -118,6 +120,16 @@ export const dataTableColumnTypes = {
   enum: {
     size: 140,
     minSize: 100,
+    align: 'left'
+  },
+  select: {
+    size: 160,
+    minSize: 120,
+    align: 'left'
+  },
+  remoteSelect: {
+    size: 160,
+    minSize: 120,
     align: 'left'
   },
   fileSize: {

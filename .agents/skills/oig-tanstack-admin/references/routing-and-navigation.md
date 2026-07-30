@@ -50,7 +50,7 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 ### `nav`
 
 - `visible`：是否进入主导航。
-- `group`：顶部分组，当前为 `overview | components | systemManagement | account`。
+- `group`：顶部分组，当前为 `overview | components | examples | systemManagement | account`。
 - `order`：分组内排序权重，数值越小越靠前。
 - `menuKey`：可选的稳定权限键，用于匹配 SSO `menuData.code`；声明后 `defineRouteMeta()` 会自动注入 route `beforeLoad` 权限校验。
 - `icon`：`Icons` 对象中的图标键。

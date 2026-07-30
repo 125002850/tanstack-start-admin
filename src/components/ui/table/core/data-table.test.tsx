@@ -137,6 +137,7 @@ vi.mock('@/components/ui/table/toolbar/data-table-view-options', () => ({
 
 type TestRow = { id: number; name: string };
 type MoneyRow = { id: number; amount: number };
+type EditableRow = { id: number; status: 'DRAFT' | 'READY' | null };
 type TestVirtualizationProp =
   | boolean
   | DataTableVirtualizationOptions
@@ -167,6 +168,17 @@ const MONEY_COLUMN_DSL = createDataTableColumnDsl<MoneyRow>();
 const MONEY_COLUMNS: ColumnDef<MoneyRow>[] = [
   { accessorKey: 'id', header: 'ID' },
   MONEY_COLUMN_DSL.field('amount', 'Amount', { type: 'money' })
+];
+const EDITABLE_COLUMN_DSL = createDataTableColumnDsl<EditableRow>();
+const EDITABLE_COLUMNS = [
+  EDITABLE_COLUMN_DSL.editableField('status', '状态', {
+    type: 'enum',
+    valueOptions: [
+      { value: 'DRAFT', label: '草稿' },
+      { value: 'READY', label: '就绪' }
+    ],
+    edit: { selectionMode: 'single' }
+  })
 ];
 
 const FILTERABLE_COLUMNS: ColumnDef<TestRow>[] = [
@@ -373,6 +385,26 @@ function MoneyCopyHarness({ rows }: { rows: MoneyRow[] }) {
   });
 
   return <DataTable table={table} />;
+}
+
+function EditableSelectionHarness({
+  onChange
+}: {
+  onChange: NonNullable<Parameters<typeof useDataTable<EditableRow>>[0]['editing']>['onChange'];
+}) {
+  const { table } = useDataTable({
+    tableId: 'data-table-editable-selection',
+    rowId: 'id',
+    data: [
+      { id: 1, status: 'DRAFT' },
+      { id: 2, status: 'READY' }
+    ],
+    columns: EDITABLE_COLUMNS,
+    editing: { onChange },
+    showRowNumberColumn: false
+  });
+
+  return <DataTable table={table} virtualization={false} />;
 }
 
 function SizedHarness({ rows }: { rows: TestRow[] }) {
@@ -698,6 +730,10 @@ const originalDataTableVirtualization = envRecord.dataTableVirtualization;
 beforeEach(() => {
   virtualizerMocks.calls.length = 0;
   virtualizerMocks.instances.length = 0;
+  Element.prototype.hasPointerCapture ??= vi.fn(() => false);
+  Element.prototype.setPointerCapture ??= vi.fn();
+  Element.prototype.releasePointerCapture ??= vi.fn();
+  Element.prototype.scrollIntoView ??= vi.fn();
   window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
     callback(0);
     return 0;
@@ -789,6 +825,52 @@ describe('DataTable virtualization option resolution', () => {
 });
 
 describe('DataTable cell selection', () => {
+  it('keeps selected, edit-ready, and editing states exclusive across cells', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { container } = render(<EditableSelectionHarness onChange={onChange} />);
+    const cells = container.querySelectorAll<HTMLTableCellElement>(
+      'td[data-cell-column-id="status"]'
+    );
+    const firstCell = cells[0];
+    const secondCell = cells[1];
+    if (!firstCell || !secondCell) throw new Error('editable cells missing');
+
+    await user.click(firstCell);
+    expect(firstCell).toHaveAttribute('data-cell-selected', 'true');
+    expect(firstCell).toHaveAttribute('data-cell-interaction-state', 'selected');
+    expect(firstCell).not.toHaveAttribute('data-cell-edit-ready');
+    expect(firstCell).not.toHaveAttribute('data-cell-editing');
+    expect(screen.queryByRole('option', { name: '就绪' })).not.toBeInTheDocument();
+
+    fireEvent.keyDown(firstCell, { key: 'Enter' });
+    expect(firstCell).toHaveAttribute('data-cell-interaction-state', 'editing');
+    expect(firstCell).toHaveAttribute('data-cell-editing', 'true');
+    expect(await screen.findByRole('option', { name: '就绪' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(firstCell).toHaveAttribute('data-cell-interaction-state', 'edit-ready');
+    expect(firstCell).toHaveAttribute('data-cell-edit-ready', 'true');
+    expect(firstCell).not.toHaveAttribute('data-cell-editing');
+    expect(
+      firstCell.querySelector('[data-slot="data-table-choice-editor-ready-trigger"]')
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.click(secondCell);
+    expect(firstCell).not.toHaveAttribute('data-cell-interaction-state');
+    expect(firstCell).not.toHaveAttribute('data-cell-edit-ready');
+    expect(secondCell).toHaveAttribute('data-cell-interaction-state', 'selected');
+    expect(
+      container.querySelectorAll(
+        'td[data-cell-interaction-state="selected"], td[data-cell-interaction-state="edit-ready"], td[data-cell-interaction-state="editing"]'
+      )
+    ).toHaveLength(1);
+
+    await user.dblClick(secondCell);
+    expect(secondCell).toHaveAttribute('data-cell-interaction-state', 'editing');
+    expect(await screen.findByRole('option', { name: '草稿' })).toBeInTheDocument();
+  });
+
   it('selects the rectangular cells between pointer anchor and focus in either direction', () => {
     const { container } = render(<Harness rows={makeRows(2)} />);
     const firstIdCell = getBodyCell(container, 0, '1');

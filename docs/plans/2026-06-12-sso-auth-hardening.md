@@ -60,7 +60,7 @@
 - `401` 行为不再只靠源码推断，先通过 characterization test 固化当前 runtime 行为，再决定最终 `try/catch HttpError` 改法。
 - bootstrap login-info 请求采用“共享 auth header 注入 + token 刷新语义，但跳过 unauthorized redirect”的独立策略；它不是普通业务 transport 的同构调用。
 - `hydrateFromUrl()` 统一放在 `src/router.tsx` 的 `createRouter()` 客户端初始化阶段执行一次，确保任何 `dashboard` loader 之前都已完成 callback token 落盘与 URL 清理。
-- 当前仓库存在 [src/routes/dashboard.tsx](/Users/youdingte/studys/tanstack-start-admin/src/routes/dashboard.tsx:1) 这一层共享 shell，因此第一阶段仍以它作为受保护入口；若未来出现 `dashboard` 之外的受保护路由，再上提到更高层 protected root。
+- 当前仓库存在 [src/routes/dashboard.tsx](/Users/youdingte/learning/tanstack-start-admin/src/routes/dashboard.tsx:1) 这一层共享 shell，因此第一阶段仍以它作为受保护入口；若未来出现 `dashboard` 之外的受保护路由，再上提到更高层 protected root。
 
 ## File Structure
 

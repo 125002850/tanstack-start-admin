@@ -2,6 +2,11 @@ import type { CellContext, ColumnDef } from '@tanstack/react-table';
 import type { ComponentProps } from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { DataTableEditableChoiceCell } from '@/components/ui/table/cells/data-table-editable-choice-cell';
+import {
+  DataTableEditableInputCell,
+  DataTableEditableSwitchCell
+} from '@/components/ui/table/cells/data-table-editable-value-cell';
 import {
   createDataTableRowActionsResolver,
   renderDataTableActionsCell
@@ -40,7 +45,12 @@ import { nullableText } from '@/lib/display-formatters';
 import { cn } from '@/lib/utils';
 import type {
   DataTableColumnPanelOptions,
+  DataTableChoiceOption,
+  DataTableChoiceValue,
   DataTableColumnValueType,
+  DataTableEditableInputColumnMeta,
+  DataTableEditableSwitchColumnMeta,
+  DataTableRemoteOptions,
   DataTableRowActionOption
 } from '@/types/data-table';
 
@@ -80,6 +90,154 @@ interface FieldColumnOptions<TData, TKey extends DataTableColumnKey<TData>>
   renderCell?: (context: CellContext<TData, TData[TKey]>) => React.ReactNode;
   headerClassName?: string;
 }
+
+type SingleChoiceFieldKey<TData> = Extract<
+  {
+    [K in keyof TData]-?: Exclude<TData[K], null> extends DataTableChoiceValue
+      ? TData[K] extends readonly unknown[]
+        ? never
+        : K
+      : never;
+  }[keyof TData],
+  string
+>;
+
+type MultipleChoiceFieldKey<TData> = Extract<
+  {
+    [K in keyof TData]-?: TData[K] extends Array<infer TValue>
+      ? TValue extends DataTableChoiceValue
+        ? K
+        : never
+      : never;
+  }[keyof TData],
+  string
+>;
+
+type TextFieldKey<TData> = Extract<
+  {
+    [K in keyof TData]-?: Exclude<TData[K], null | undefined> extends string ? K : never;
+  }[keyof TData],
+  string
+>;
+
+type SingleChoiceFieldValue<TData, TKey extends keyof TData> = Extract<
+  Exclude<TData[TKey], null>,
+  DataTableChoiceValue
+>;
+
+type MultipleChoiceFieldValue<TData, TKey extends keyof TData> =
+  TData[TKey] extends Array<infer TValue> ? Extract<TValue, DataTableChoiceValue> : never;
+
+type StaticChoiceSource<TValue extends DataTableChoiceValue> = {
+  type: 'enum' | 'select';
+  valueOptions: readonly DataTableChoiceOption<TValue>[];
+  remoteOptions?: never;
+};
+
+type RemoteChoiceSource<TValue extends DataTableChoiceValue> = {
+  type: 'remoteSelect';
+  remoteOptions: DataTableRemoteOptions<TValue>;
+  valueOptions?: never;
+};
+
+type EditableChoiceBaseOptions<TData, TValue> = BaseColumnOptions<TData, TValue> &
+  DataTableColumnOptions<TData, TValue> & {
+    format?: (value: TValue, row: TData) => unknown;
+    formatValue?: (value: TValue, row: TData) => unknown;
+    headerClassName?: string;
+  };
+
+type EditableInputColumnOptions<
+  TData,
+  TKey extends TextFieldKey<TData>
+> = EditableChoiceBaseOptions<TData, TData[TKey]> & {
+  type: 'text';
+  edit?: {
+    control?: 'input';
+    allowEmpty?: boolean;
+    inputType?: 'text' | 'tel' | 'email' | 'url' | 'search';
+    inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+    placeholder?: string;
+    maxLength?: number;
+  };
+};
+
+type EditableSingleChoiceEdit = {
+  control?: 'combobox';
+  selectionMode?: 'single';
+  allowEmpty?: boolean;
+  maxSelected?: never;
+};
+
+type EditableSwitchEdit<TValue extends DataTableChoiceValue> = {
+  control: 'switch';
+  checkedValue: TValue;
+  uncheckedValue: TValue;
+  checkedLabel?: string;
+  uncheckedLabel?: string;
+  selectionMode?: never;
+  allowEmpty?: never;
+  maxSelected?: never;
+};
+
+type EditableSingleColumnOptions<
+  TData,
+  TKey extends SingleChoiceFieldKey<TData>
+> = EditableChoiceBaseOptions<TData, TData[TKey]> &
+  (
+    | ((
+        | StaticChoiceSource<SingleChoiceFieldValue<TData, TKey>>
+        | RemoteChoiceSource<SingleChoiceFieldValue<TData, TKey>>
+      ) & {
+        edit?: EditableSingleChoiceEdit;
+      })
+    | (StaticChoiceSource<SingleChoiceFieldValue<TData, TKey>> & {
+        edit: EditableSwitchEdit<SingleChoiceFieldValue<TData, TKey>>;
+      })
+  );
+
+type EditableMultipleColumnOptions<
+  TData,
+  TKey extends MultipleChoiceFieldKey<TData>
+> = EditableChoiceBaseOptions<TData, TData[TKey]> &
+  (
+    | StaticChoiceSource<MultipleChoiceFieldValue<TData, TKey>>
+    | RemoteChoiceSource<MultipleChoiceFieldValue<TData, TKey>>
+  ) & {
+    edit: {
+      selectionMode: 'multiple';
+      allowEmpty?: boolean;
+      maxSelected?: number;
+    };
+  };
+
+type EditableChoiceRuntimeOptions<TData> = EditableChoiceBaseOptions<TData, unknown> & {
+  type: 'enum' | 'select' | 'remoteSelect';
+  valueOptions?: readonly DataTableChoiceOption<DataTableChoiceValue>[];
+  remoteOptions?: DataTableRemoteOptions<DataTableChoiceValue>;
+  edit?: {
+    control?: 'combobox' | 'switch';
+    selectionMode?: 'single' | 'multiple';
+    allowEmpty?: boolean;
+    maxSelected?: number;
+    checkedValue?: DataTableChoiceValue;
+    uncheckedValue?: DataTableChoiceValue;
+    checkedLabel?: string;
+    uncheckedLabel?: string;
+  };
+};
+
+type EditableInputRuntimeOptions<TData> = EditableChoiceBaseOptions<TData, unknown> & {
+  type: 'text';
+  edit?: {
+    control?: 'input';
+    allowEmpty?: boolean;
+    inputType?: DataTableEditableInputColumnMeta<TData>['inputType'];
+    inputMode?: DataTableEditableInputColumnMeta<TData>['inputMode'];
+    placeholder?: string;
+    maxLength?: number;
+  };
+};
 
 /** badge 列配置：适合状态、枚举、标签类字段，展示为 shadcn Badge。 */
 interface BadgeDslColumnOptions<TData, TKey extends DataTableColumnKey<TData>>
@@ -226,6 +384,250 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     } satisfies ColumnDef<TData, TData[TKey]>);
   }
 
+  function editableField<TKey extends TextFieldKey<TData>>(
+    key: TKey,
+    title: string,
+    editableOptions: EditableInputColumnOptions<TData, TKey>
+  ): DataTableColumn<TData>;
+  function editableField<TKey extends SingleChoiceFieldKey<TData>>(
+    key: TKey,
+    title: string,
+    editableOptions: EditableSingleColumnOptions<TData, TKey>
+  ): DataTableColumn<TData>;
+  function editableField<TKey extends MultipleChoiceFieldKey<TData>>(
+    key: TKey,
+    title: string,
+    editableOptions: EditableMultipleColumnOptions<TData, TKey>
+  ): DataTableColumn<TData>;
+  function editableField(
+    key: DataTableColumnKey<TData>,
+    title: string,
+    editableOptionsInput: object
+  ): DataTableColumn<TData> {
+    if ((editableOptionsInput as { type?: unknown }).type === 'text') {
+      const editableOptions = editableOptionsInput as EditableInputRuntimeOptions<TData>;
+      const {
+        type,
+        edit,
+        format,
+        formatValue,
+        cellClassName,
+        headerClassName,
+        header,
+        ...columnOptions
+      } = editableOptions;
+      const typeDefaults = resolveDataTableColumnTypeDefaults<TData, unknown>(
+        type,
+        resolvedCustomTypes
+      );
+      const resolvedCellClassName = cn(
+        getDataTableAlignClassName(typeDefaults.align),
+        typeDefaults.cellClassName,
+        cellClassName
+      );
+      const resolvedHeaderClassName = cn(
+        getDataTableAlignClassName(typeDefaults.align),
+        typeDefaults.headerClassName,
+        headerClassName
+      );
+      const editableCell: DataTableEditableInputColumnMeta<TData> = {
+        field: key,
+        title,
+        editor: 'input',
+        allowEmpty: edit?.allowEmpty ?? true,
+        inputType: edit?.inputType ?? 'text',
+        inputMode: edit?.inputMode,
+        placeholder: edit?.placeholder,
+        maxLength: edit?.maxLength
+      };
+      const resolvedMeta = {
+        ...columnOptions.meta,
+        cellOwnsTooltip: true,
+        editableCell
+      };
+      const formatter = format ?? formatValue;
+
+      return eraseDataTableColumnValue({
+        accessorKey: key,
+        header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
+        cell: (context) => {
+          const value = context.getValue();
+          const row = context.row.original;
+          const formattedValue =
+            formatter?.(value, row) ??
+            typeDefaults.formatValue?.(value, row) ??
+            formatField(key, row);
+          return (
+            <DataTableEditableInputCell
+              context={context}
+              formattedValue={formattedValue}
+              className={resolvedCellClassName}
+            />
+          );
+        },
+        ...resolveDataTableColumnOptions<TData, unknown>({
+          title,
+          defaults: {
+            ...FIELD_COLUMN_DEFAULTS,
+            size: typeDefaults.size,
+            minSize: typeDefaults.minSize,
+            maxSize: typeDefaults.maxSize
+          },
+          options: {
+            ...columnOptions,
+            meta: resolvedMeta
+          }
+        })
+      } satisfies ColumnDef<TData, unknown>);
+    }
+
+    const editableOptions = editableOptionsInput as EditableChoiceRuntimeOptions<TData>;
+    const {
+      type,
+      valueOptions,
+      remoteOptions,
+      edit,
+      format,
+      formatValue,
+      cellClassName,
+      headerClassName,
+      header,
+      ...columnOptions
+    } = editableOptions;
+    const selectionMode = edit?.selectionMode ?? 'single';
+    const allowEmpty = edit?.allowEmpty ?? true;
+    const maxSelected = edit?.maxSelected;
+    if (
+      selectionMode === 'multiple' &&
+      maxSelected !== undefined &&
+      (!Number.isInteger(maxSelected) || maxSelected <= 0)
+    ) {
+      throw new Error('DataTable editable choice maxSelected must be a positive integer.');
+    }
+
+    const typeDefaults = resolveDataTableColumnTypeDefaults<TData, unknown>(
+      type,
+      resolvedCustomTypes
+    );
+    const resolvedCellClassName = cn(
+      getDataTableAlignClassName(typeDefaults.align),
+      typeDefaults.cellClassName,
+      cellClassName
+    );
+    const resolvedHeaderClassName = cn(
+      getDataTableAlignClassName(typeDefaults.align),
+      typeDefaults.headerClassName,
+      headerClassName
+    );
+    const derivedFilterOptions =
+      valueOptions &&
+      !columnOptions.filterOptions &&
+      (columnOptions.filter === 'select' || columnOptions.filter === 'multiSelect')
+        ? valueOptions.map((option) => ({
+            label: option.label,
+            value: String(option.value)
+          }))
+        : columnOptions.filterOptions;
+    if (edit?.control === 'switch') {
+      const { checkedValue, uncheckedValue } = edit;
+      if (checkedValue === undefined || uncheckedValue === undefined) {
+        throw new Error('DataTable editable switch requires checkedValue and uncheckedValue.');
+      }
+      if (Object.is(checkedValue, uncheckedValue)) {
+        throw new Error('DataTable editable switch values must be different.');
+      }
+      const optionByValue = new Map(
+        (valueOptions ?? []).map((option) => [option.value, option.label])
+      );
+      const editableCell: DataTableEditableSwitchColumnMeta<TData> = {
+        field: key,
+        title,
+        editor: 'switch',
+        allowEmpty: false,
+        checkedValue,
+        uncheckedValue,
+        checkedLabel: edit.checkedLabel ?? optionByValue.get(checkedValue) ?? String(checkedValue),
+        uncheckedLabel:
+          edit.uncheckedLabel ?? optionByValue.get(uncheckedValue) ?? String(uncheckedValue)
+      };
+      const resolvedMeta = {
+        ...columnOptions.meta,
+        cellOwnsTooltip: true,
+        editableCell
+      };
+
+      return eraseDataTableColumnValue({
+        accessorKey: key,
+        header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
+        cell: (context) => (
+          <DataTableEditableSwitchCell context={context} className={resolvedCellClassName} />
+        ),
+        ...resolveDataTableColumnOptions<TData, unknown>({
+          title,
+          defaults: {
+            ...FIELD_COLUMN_DEFAULTS,
+            size: typeDefaults.size,
+            minSize: typeDefaults.minSize,
+            maxSize: typeDefaults.maxSize
+          },
+          options: {
+            ...columnOptions,
+            filterOptions: derivedFilterOptions,
+            meta: resolvedMeta
+          }
+        })
+      } satisfies ColumnDef<TData, unknown>);
+    }
+
+    const editableChoice = {
+      field: key,
+      title,
+      type,
+      selectionMode,
+      allowEmpty,
+      maxSelected,
+      valueOptions,
+      remoteOptions
+    };
+    const resolvedMeta = {
+      ...columnOptions.meta,
+      cellOwnsTooltip: true,
+      editableCell: editableChoice,
+      editableChoice
+    };
+    const formatter = format ?? formatValue;
+
+    return eraseDataTableColumnValue({
+      accessorKey: key,
+      header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
+      cell: (context) => {
+        const value = context.getValue();
+        const row = context.row.original;
+        return (
+          <DataTableEditableChoiceCell
+            context={context}
+            formattedValue={formatter?.(value, row)}
+            className={resolvedCellClassName}
+          />
+        );
+      },
+      ...resolveDataTableColumnOptions<TData, unknown>({
+        title,
+        defaults: {
+          ...FIELD_COLUMN_DEFAULTS,
+          size: typeDefaults.size,
+          minSize: typeDefaults.minSize,
+          maxSize: typeDefaults.maxSize
+        },
+        options: {
+          ...columnOptions,
+          filterOptions: derivedFilterOptions,
+          meta: resolvedMeta
+        }
+      })
+    } satisfies ColumnDef<TData, unknown>);
+  }
+
   function badge<TKey extends DataTableColumnKey<TData>>(
     key: TKey,
     title: string,
@@ -319,6 +721,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
   return {
     formatField,
     field,
+    editableField,
     badge,
     actions,
     custom

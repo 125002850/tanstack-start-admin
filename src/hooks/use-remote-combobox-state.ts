@@ -64,6 +64,8 @@ export function useRemoteComboboxState<TItem, TRequest, TData>({
   const [debouncedKeyword, setDebouncedKeyword] = React.useState('');
   const [items, setItems] = React.useState<TItem[]>([]);
   const [total, setTotal] = React.useState(0);
+  const appliedPageRef = React.useRef(0);
+  const requestedPageRef = React.useRef(1);
   const getItemsRef = React.useRef(getItems);
   const getTotalRef = React.useRef(getTotal);
   const getItemKeyRef = React.useRef(getItemKey);
@@ -78,6 +80,8 @@ export function useRemoteComboboxState<TItem, TRequest, TData>({
     if (nextKeyword === debouncedKeyword) return;
 
     const timer = window.setTimeout(() => {
+      appliedPageRef.current = 0;
+      requestedPageRef.current = 1;
       setPageNo(1);
       setItems([]);
       setTotal(0);
@@ -92,7 +96,11 @@ export function useRemoteComboboxState<TItem, TRequest, TData>({
 
     setInputValue('');
     setDebouncedKeyword('');
+    appliedPageRef.current = 0;
+    requestedPageRef.current = 1;
     setPageNo(1);
+    setItems([]);
+    setTotal(0);
   }, [open]);
 
   const request = React.useMemo(
@@ -116,21 +124,40 @@ export function useRemoteComboboxState<TItem, TRequest, TData>({
   } as never) as UseQueryResult<TData, unknown>;
 
   React.useEffect(() => {
-    if (!query.data) return;
+    if (!query.data || query.isPlaceholderData) return;
 
     const nextItems = getItemsRef.current(query.data);
+    appliedPageRef.current = pageNo;
     setTotal(getTotalRef.current?.(query.data, nextItems) ?? nextItems.length);
     setItems((current) =>
       pageNo === 1 ? nextItems : mergeByKey(current, nextItems, getItemKeyRef.current)
     );
-  }, [pageNo, query.data]);
+  }, [pageNo, query.data, query.isPlaceholderData]);
+
+  const isError = query.isError;
+  const isFetching = query.isFetching;
+  const refetch = query.refetch;
+  const loadMore = React.useCallback(() => {
+    if (!open || disabled || isFetching || items.length >= total) return;
+
+    if (isError) {
+      void refetch();
+      return;
+    }
+
+    if (appliedPageRef.current !== pageNo || requestedPageRef.current !== pageNo) return;
+
+    const nextPage = pageNo + 1;
+    requestedPageRef.current = nextPage;
+    setPageNo(nextPage);
+  }, [disabled, isError, isFetching, items.length, open, pageNo, refetch, total]);
 
   return {
     hasMore: items.length < total,
     inputValue,
     isFetching: query.isFetching,
     items,
-    loadMore: () => setPageNo((current) => current + 1),
+    loadMore,
     query,
     setInputValue
   };

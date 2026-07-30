@@ -54,6 +54,9 @@ function getNav(mod: unknown):
       kind?: string;
       linkable?: boolean;
       parentId?: string;
+      isContainer?: true;
+      menuKey?: string;
+      icon?: string;
     }
   | undefined {
   const route = (mod as Record<string, unknown>)?.Route as
@@ -66,6 +69,9 @@ function getNav(mod: unknown):
               kind?: string;
               linkable?: boolean;
               parentId?: string;
+              isContainer?: true;
+              menuKey?: string;
+              icon?: string;
             };
           };
         };
@@ -78,12 +84,21 @@ const allPaths = Object.keys(routeModules);
 
 // Routes that explicitly opt out of keepAlive (keepAlive=false) with documented reasons:
 // - forms/index: 重定向路由，无实际页面内容
+// - basic-settings/index: 重定向路由，无实际页面内容
 // - system-management/index: 重定向路由，无实际页面内容
+// - log-management/index: 重定向路由，无实际页面内容
 // - dashboard/index: 重定向路由，无实际页面内容
+// - account/profile, account/password: 账号功能迁入侧边栏 Sheet，路由仅保留兼容重定向
+// - examples/data-table-editing: 大数据虚拟表格压测页，离开后释放 500 行当前页实例
 const keepAliveFalsePaths = new Set([
+  '/src/routes/dashboard/basic-settings/index.tsx',
   '/src/routes/dashboard/system-management/index.tsx',
+  '/src/routes/dashboard/log-management/index.tsx',
   '/src/routes/dashboard/forms/index.tsx',
-  '/src/routes/dashboard/index.tsx'
+  '/src/routes/dashboard/index.tsx',
+  '/src/routes/dashboard/account/profile.tsx',
+  '/src/routes/dashboard/account/password.tsx',
+  '/src/routes/dashboard/examples/data-table-editing.tsx'
 ]);
 
 const standardWorkspacePageRoutePaths = new Set([
@@ -96,8 +111,20 @@ const standardWorkspacePageRoutePaths = new Set([
   '/src/routes/dashboard/forms/sheet-form.tsx',
   '/src/routes/dashboard/forms/advanced.tsx',
   '/src/routes/dashboard/forms/overlay-contract.tsx',
+  '/src/routes/dashboard/examples/data-table-editing.tsx',
   '/src/routes/dashboard/system-management/dictionaries.tsx',
-  '/src/routes/dashboard/system-management/export-center.tsx'
+  '/src/routes/dashboard/system-management/export-center.tsx',
+  '/src/routes/dashboard/basic-settings/staff.tsx',
+  '/src/routes/dashboard/basic-settings/dept.tsx',
+  '/src/routes/dashboard/basic-settings/role.tsx',
+  '/src/routes/dashboard/basic-settings/menu.tsx',
+  '/src/routes/dashboard/log-management/login.tsx',
+  '/src/routes/dashboard/log-management/operation.tsx'
+]);
+
+const accountOverlayRedirectRoutePaths = new Set([
+  '/src/routes/dashboard/account/profile.tsx',
+  '/src/routes/dashboard/account/password.tsx'
 ]);
 
 // Hidden development/demo routes remain addressable for deep links and local UI checks,
@@ -132,12 +159,23 @@ describe('dashboard route inventory', () => {
         '/dashboard/system-management/',
         '/dashboard/system-management/dictionaries',
         '/dashboard/system-management/export-center',
+        '/dashboard/basic-settings/',
+        '/dashboard/basic-settings/staff',
+        '/dashboard/basic-settings/dept',
+        '/dashboard/basic-settings/role',
+        '/dashboard/basic-settings/menu',
+        '/dashboard/log-management/',
+        '/dashboard/log-management/login',
+        '/dashboard/log-management/operation',
+        '/dashboard/account/profile',
+        '/dashboard/account/password',
         '/dashboard/forms/',
         '/dashboard/forms/basic',
         '/dashboard/forms/multi-step',
         '/dashboard/forms/sheet-form',
         '/dashboard/forms/advanced',
-        '/dashboard/forms/overlay-contract'
+        '/dashboard/forms/overlay-contract',
+        '/dashboard/examples/data-table-editing'
       ])
     );
   });
@@ -161,13 +199,22 @@ describe('dashboard route inventory', () => {
     }
   });
 
-  it('every discovered route has a staticData with a label', () => {
+  it('every discovered route has a staticData with a label or menuKey', () => {
     for (const filePath of allPaths) {
       const mod = routeModules[filePath] as {
-        Route?: { options?: { staticData?: { label?: string } } };
+        Route?: {
+          options?: {
+            staticData?: {
+              label?: string;
+              title?: string;
+              nav?: { menuKey?: string };
+            };
+          };
+        };
       };
-      const label = mod?.Route?.options?.staticData?.label;
-      expect(label, `${extractRoutePath(filePath)} missing label`).toBeTruthy();
+      const staticData = mod?.Route?.options?.staticData;
+      const identity = staticData?.label ?? staticData?.title ?? staticData?.nav?.menuKey;
+      expect(identity, `${extractRoutePath(filePath)} missing identifying metadata`).toBeTruthy();
     }
   });
 
@@ -176,22 +223,36 @@ describe('dashboard route inventory', () => {
       routeModules['/src/routes/dashboard/system-management/dictionaries.tsx'];
     expect(dictionariesRoute).toBeDefined();
     expect(getTagEnabled(dictionariesRoute)).not.toBe(false);
-    expect(getNav(dictionariesRoute)).toMatchObject({
-      visible: true,
-      group: 'systemManagement'
-    });
+    expect(getNav(dictionariesRoute)?.menuKey).toBe('mdm_dict');
     expect(getNav(dictionariesRoute)?.parentId).toBeUndefined();
   });
 
   it('redirect group roots are hidden from navigation', () => {
-    const routeFiles = ['/src/routes/dashboard/system-management/index.tsx'];
+    const routeFiles = [
+      '/src/routes/dashboard/basic-settings/index.tsx',
+      '/src/routes/dashboard/system-management/index.tsx',
+      '/src/routes/dashboard/log-management/index.tsx'
+    ];
 
     for (const routeFile of routeFiles) {
       const route = routeModules[routeFile];
       expect(route).toBeDefined();
       expect(getKeepAlive(route)).toBe(false);
       expect(getTagEnabled(route)).toBe(false);
-      expect(getNav(route)?.visible).toBe(false);
+      expect(getNav(route)?.isContainer).toBe(true);
+    }
+  });
+
+  it('account overlay redirect routes are hidden from navigation and workspace tabs', () => {
+    for (const routeFile of accountOverlayRedirectRoutePaths) {
+      const route = routeModules[routeFile];
+      expect(route, `${extractRoutePath(routeFile)} route missing`).toBeDefined();
+      expect(getKeepAlive(route)).toBe(false);
+      expect(getTagEnabled(route)).toBe(false);
+      expect(getNav(route)).toMatchObject({
+        visible: false,
+        group: 'account'
+      });
     }
   });
 
@@ -210,20 +271,99 @@ describe('dashboard route inventory', () => {
     }
   });
 
+  it('exposes the table editing demo in the examples navigation group', () => {
+    const route = routeModules['/src/routes/dashboard/examples/data-table-editing.tsx'];
+    expect(route).toBeDefined();
+    expect(getTitle(route)).toBe('示例：表格编辑');
+    expect(getNav(route)).toMatchObject({
+      visible: true,
+      group: 'examples',
+      icon: 'edit'
+    });
+  });
+
   it('system management routes are top-level items in their group', () => {
     const expectations = [
-      ['/src/routes/dashboard/system-management/dictionaries.tsx', 'systemManagement'],
-      ['/src/routes/dashboard/system-management/export-center.tsx', 'systemManagement']
+      ['/src/routes/dashboard/system-management/dictionaries.tsx', 'mdm_dict'],
+      ['/src/routes/dashboard/system-management/export-center.tsx', 'export_center']
     ] as const;
 
-    for (const [routeFile, group] of expectations) {
+    for (const [routeFile, menuKey] of expectations) {
       const nav = getNav(routeModules[routeFile]);
-      expect(nav).toMatchObject({
-        visible: true,
-        group
-      });
+      expect(nav).toMatchObject({ menuKey });
+      expect(nav?.isContainer).toBeUndefined();
       expect(nav?.parentId).toBeUndefined();
     }
+  });
+
+  it('management routes keep titles, groups and menu keys aligned with the target menu tree', () => {
+    const expectations = [
+      [
+        '/src/routes/dashboard/basic-settings/staff.tsx',
+        '基础设置：员工管理',
+        'basicSettings',
+        'iam_staff'
+      ],
+      [
+        '/src/routes/dashboard/basic-settings/dept.tsx',
+        '基础设置：部门管理',
+        'basicSettings',
+        'iam_dept'
+      ],
+      [
+        '/src/routes/dashboard/basic-settings/role.tsx',
+        '基础设置：角色管理',
+        'basicSettings',
+        'iam_role'
+      ],
+      [
+        '/src/routes/dashboard/basic-settings/menu.tsx',
+        '基础设置：菜单管理',
+        'basicSettings',
+        'iam_menu'
+      ],
+      [
+        '/src/routes/dashboard/system-management/dictionaries.tsx',
+        '系统管理：字典管理',
+        'systemManagement',
+        'mdm_dict'
+      ],
+      [
+        '/src/routes/dashboard/system-management/export-center.tsx',
+        '系统管理：导出中心',
+        'systemManagement',
+        'export_center'
+      ],
+      [
+        '/src/routes/dashboard/log-management/login.tsx',
+        '日志管理：登录日志',
+        'logManagement',
+        'iam_login_log'
+      ],
+      [
+        '/src/routes/dashboard/log-management/operation.tsx',
+        '日志管理：操作日志',
+        'logManagement',
+        'iam_operation_log'
+      ]
+    ] as const;
+
+    for (const [routeFile, title, group, menuKey] of expectations) {
+      const route = routeModules[routeFile];
+      expect(route, `${routeFile} route missing`).toBeDefined();
+      expect(getTitle(route)).toBe(title);
+      expect(getNav(route)?.group).toBe(group);
+      expect(getNav(route)?.menuKey).toBe(menuKey);
+    }
+  });
+
+  it('uses domain-specific icons for department and role management', () => {
+    expect(getNav(routeModules['/src/routes/dashboard/basic-settings/dept.tsx'])?.icon).toBe(
+      'department'
+    );
+    expect(getNav(routeModules['/src/routes/dashboard/basic-settings/role.tsx'])?.icon).toBe(
+      'role'
+    );
   });
 
   it('standard workspace pages use WorkspacePageRoute for container and disabled-mode rendering', () => {

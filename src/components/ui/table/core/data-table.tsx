@@ -13,6 +13,10 @@ import { Icons } from '@/components/icons';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DataTableBody } from '@/components/ui/table/core/data-table-body';
 import { DataTableCellTooltipProvider } from '@/components/ui/table/cells/data-table-cell-tooltip';
+import {
+  DataTableRemoteChoiceLabelProvider,
+  hasDataTableRemoteChoiceLabelResolvers
+} from '@/components/ui/table/cells/data-table-editable-choice-cell';
 import { Separator } from '@/components/ui/separator';
 import { DataTableViewOptions } from '@/components/ui/table/toolbar/data-table-view-options';
 import { DataTableColGroup } from '@/components/ui/table/core/data-table-colgroup';
@@ -298,6 +302,43 @@ export function DataTable<TData>({
     return <DataTableSkeleton {...loadingSkeletonProps} />;
   }
 
+  const dataTableBody = (
+    <DataTableBody
+      table={table}
+      enableZebraStriping={enableZebraStriping}
+      emptyMessage={emptyMessage}
+      status={resolvedStatus}
+      virtualization={virtConfig}
+      columnVirtualWindow={columnVirtualWindow}
+      columnDragMotionById={columnDragMotionById}
+      isColumnDragging={isColumnDragging}
+      useTransformFreeVirtualRows={useTransformFreeVirtualRows}
+      scrollViewportRef={scrollViewportRef}
+      headerRowRef={headerRowRef}
+      onRowClick={
+        expandConfig
+          ? (rowKey) => {
+              // 点击当前已展开行不重复触发，避免关闭/重开造成详情面板闪烁。
+              if (rowKey === expandedRowKey) {
+                return;
+              }
+
+              onExpandedRowKeyChange?.(rowKey);
+            }
+          : undefined
+      }
+      expandedRowKey={expandedRowKey}
+      getExpandRowKey={expandConfig ? getExpandRowKey : undefined}
+    />
+  );
+  const resolvedDataTableBody = hasDataTableRemoteChoiceLabelResolvers(table) ? (
+    <DataTableRemoteChoiceLabelProvider table={table}>
+      {dataTableBody}
+    </DataTableRemoteChoiceLabelProvider>
+  ) : (
+    dataTableBody
+  );
+
   const tableViewport = (
     <div
       data-table-resize-overlay-root
@@ -368,33 +409,7 @@ export function DataTable<TData>({
                   headerRowRef={headerRowRef}
                   onHeaderClickCapture={handleHeaderClickCapture}
                 />
-                <DataTableBody
-                  table={table}
-                  enableZebraStriping={enableZebraStriping}
-                  emptyMessage={emptyMessage}
-                  status={resolvedStatus}
-                  virtualization={virtConfig}
-                  columnVirtualWindow={columnVirtualWindow}
-                  columnDragMotionById={columnDragMotionById}
-                  isColumnDragging={isColumnDragging}
-                  useTransformFreeVirtualRows={useTransformFreeVirtualRows}
-                  scrollViewportRef={scrollViewportRef}
-                  headerRowRef={headerRowRef}
-                  onRowClick={
-                    expandConfig
-                      ? (rowKey) => {
-                          // 点击当前已展开行不重复触发，避免关闭/重开造成详情面板闪烁。
-                          if (rowKey === expandedRowKey) {
-                            return;
-                          }
-
-                          onExpandedRowKeyChange?.(rowKey);
-                        }
-                      : undefined
-                  }
-                  expandedRowKey={expandedRowKey}
-                  getExpandRowKey={expandConfig ? getExpandRowKey : undefined}
-                />
+                {resolvedDataTableBody}
               </Table>
             </SortableContext>
             <DragOverlay>

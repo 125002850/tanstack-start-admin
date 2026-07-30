@@ -11,19 +11,41 @@
 
 ## 列定义 DSL
 
-- 业务页面列定义统一使用 `createDataTableColumnDsl<T>()` 生成 `ColumnDef<T>`；页面层只直接使用 `columnDsl.field`、`columnDsl.badge`、`columnDsl.actions`、`columnDsl.custom`。
+- 业务页面列定义统一使用 `createDataTableColumnDsl<T>()` 生成 `ColumnDef<T>`；页面层只直接使用 `columnDsl.field`、`columnDsl.editableField`、`columnDsl.badge`、`columnDsl.actions`、`columnDsl.custom`。
 - 旧入口 `dataTableColumns.*`、`columnDsl.text`、`columnDsl.longText`、`columnDsl.filterableText` 已删除，禁止恢复 alias、兼容 adapter 或新旧双写。
 - 普通字段列使用 `columnDsl.field('fieldName', '列标题', options)`；徽标语义使用 `columnDsl.badge`；行操作列使用 `columnDsl.actions`；一次性业务 cell 或复合 accessor 使用 `columnDsl.custom`。
 - 多处复用的展示行为必须优先进入 `type` registry 或新增稳定 DSL 方法；`custom` 只用于一次性、交互特化、复合搜索或尚未证明可复用的 cell。
 - `filter` 必须是扁平字段：`false | 'text' | 'select' | 'multiSelect' | 'date' | 'dateRange' | 'number' | 'numberRange' | 'boolean'`。禁止 `filter: { variant: 'text' }` 对象 API。
 - `filterPlaceholder`、`filterOptions`、`filterMin`、`filterMax`、`filterUnit` 必须作为列 option 的扁平字段传入；后端字段名、operator、序列化函数不得塞进 filter option。
 - 后端 DSL 查询语义只能放在 `dsl`：`filterField`、`sortField`、`filterOperator`、`serializeFilter`。禁止 `dsl.filter`、`serializeFilter: false`、`serializeSort: false`。
-- `type` 负责默认展示组合：`text`、`longText`、`number`、`int`、`decimal`、`money`、`percent`、`date`、`dateTime`、`boolean`、`enum`、`fileSize`；`type` 不隐式开启筛选。
+- `type` 负责默认展示组合：`text`、`longText`、`number`、`int`、`decimal`、`money`、`percent`、`date`、`dateTime`、`boolean`、`enum`、`select`、`remoteSelect`、`fileSize`；`type` 不隐式开启筛选。
 - DSL 的通用列宽优先直接传 `size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'`，factory 必须在生成 `ColumnDef` 前解析为数值；特殊布局可继续传精确数字，禁止为了套用预设改变既有视觉宽度。
 - 自定义列类型只能通过 `createDataTableColumnDsl({ customTypes })` 注册，且不得覆盖内置 type key。无 `renderCell` 时统一走 `formatValue + text cell` fallback。
 - `field` / `badge` / `custom` 默认进入列显示面板并允许面板内拖拽；`actions` 默认不进入列显示面板，且默认关闭 hiding / resizing / sorting / filtering。
 - 列面板只额外读取 `columnPanelVisible` 与 `columnPanelReorder`。隐藏能力仍以 TanStack `getCanHide()` / `enableHiding` 为准，禁止新增 `capabilities.hide/sort/filter/resize` 这类重复 TanStack 原生字段。
-- 预留但未实现的入口包括 `columnDsl.group`、`columnDsl.link`、`columnDsl.editableField`；需要新增时必须先补共享契约和测试。
+- 预留但未实现的入口包括 `columnDsl.group`、`columnDsl.link`；需要新增时必须先补共享契约和测试。
+
+## 可编辑单元格
+
+- `columnDsl.editableField()` 支持 `text`、`enum`、`select`、`remoteSelect`。`text` 默认生成 input editor；`enum` / `select` 必须提供标准化的 `valueOptions: { value, label, disabled? }[]`；`remoteSelect` 必须提供 `remoteOptions.loadOptions`。
+- 静态单选可通过 `edit: { control: 'switch', checkedValue, uncheckedValue }` 生成二态 Switch。Switch 直接点击或在选中 cell 上按 Enter/F2 即提交 `selection` 变更，不进入浮层编辑态；label 默认复用 `valueOptions`。
+- 单选字段值只能是 `string | number | null`；多选字段值只能是 `Array<string | number>`，并显式传 `edit: { selectionMode: 'multiple', maxSelected? }`。`edit.allowEmpty` 默认 `true`；设为 `false` 时必须隐藏清除入口，并同时阻止单选清空和多选移除最后一项。row 只保存 value，禁止保存完整 Option。
+- `maxSelected` 仅属于多选且必须是正整数。多选值按选择顺序去重；静态 option 找不到 value、远程解析缺失或失败时必须展示原始 value。
+- `remoteOptions.loadOptions` 和 `resolveOptions` 都必须消费 `AbortSignal`。远程查询统一经 React Query 与 `useRemoteComboboxState` 管理；query key 必须包含 `tableId + columnId + keyword + pageNo + pageSize`。
+- `resolveOptions` 按当前页和列聚合 value 后批量加载，禁止每个 cell 单独请求。首次解析显示 Skeleton；已有缓存时后台刷新保留 label；失败回退原始 value。
+- 普通单击仍用于范围选择；input/choice 通过双击、Enter、F2 进入编辑，单选 choice editor 进入编辑态时自动展开选项。Escape 取消，Enter 完成，Tab 完成并移动到相邻可编辑 cell，失焦或浮层关闭按 blur 完成。
+- 普通单击只进入 `selected`；无论 cell 原本是否选中，双击都直接进入 `editing`。Escape 取消或 blur 完成后进入该 cell 唯一的 `edit-ready`；选择其他 cell 必须直接完成旧 session 并清除旧 `edit-ready`。同一表格在任一时刻只能有一个 range focus、一个 `edit-ready` 或一个 `editing` 目标，三种交互态对当前目标互斥。
+- 每次 `editing` 必须拥有独立 session。editor 的完成、取消、blur 和浮层关闭只能作用于创建它的 session，旧 editor 的延迟事件不得结束或取消新 editor。
+- choice editor 进入编辑态后必须接管完整 cell：cell 取消 padding、切换为 `background` 表面并提供克制的编辑外阴影；trigger 使用轻微圆角、主色边框和 focus ring，禁止保留独立表单控件的默认阴影和外层间距。
+- editor 的 active value 必须同步进入 table 级 store。禁止把 cell 局部 state 作为唯一草稿源，否则虚拟行卸载会丢值；active value 只用于当前表格展示，不得在完成编辑前进入业务 `getSnapshot()` / `hasChanges()`。
+
+## 跨页草稿与持久化
+
+- `useDslDataTable()` 使用可编辑列时必须显式提供稳定 `rowId` 或 `getRowId`；index fallback 会在开发环境 warning 并关闭编辑。
+- 同一 filter、sorting、baseCondition、pageSize 组成一个编辑 scope；仅 pageNo 改变时累积已加载页。scope 改变前，业务页面负责通过 `editing.hasChanges()` 提示保存或放弃。
+- hook 返回的 `editing.getSnapshot()` 包含按页排序的 `rows`、`changedRows`、字段级 `changes` 和 `loadedPages`。refetch 只更新未修改字段，草稿字段优先。
+- DataTable 不执行持久化。自动保存由 `editing.onChange` 发起 mutation，成功后调用 `editing.acceptChanges(changes, serverRows?)`；手动保存先读取 snapshot，成功后确认 changes。
+- `acceptChanges()` 只确认传入 change 的已提交值。保存期间同一字段产生的新编辑不得被旧响应覆盖；放弃当前 scope 全部草稿使用 `editing.discardChanges()`。
 
 ## DSL 筛选契约
 

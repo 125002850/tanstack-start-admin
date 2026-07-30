@@ -3,7 +3,11 @@ import type { Column, ColumnDef } from '@tanstack/react-table';
 import { DataTableOverflowTooltipText } from '@/components/ui/table/cells/data-table-overflow-tooltip-text';
 import { DataTableColumnHeader } from '@/components/ui/table/columns/data-table-column-header';
 import { nullableText } from '@/lib/display-formatters';
-import type { DataTableColumnFilterOptions } from '@/types/data-table';
+import type {
+  DataTableChoiceOption,
+  DataTableChoiceValue,
+  DataTableColumnFilterOptions
+} from '@/types/data-table';
 
 /**
  * DataTable 列渲染工具。
@@ -67,4 +71,18 @@ export function resolveDataTableEnumLabel(value: unknown, options: DataTableColu
   }
 
   return options.filterOptions?.find((item) => item.value === normalizedValue)?.label;
+}
+
+/** 将选择列的标量/数组值映射为 label；未知值保留原值，多选保持原顺序。 */
+export function resolveDataTableChoiceLabel(
+  value: unknown,
+  options: readonly DataTableChoiceOption<DataTableChoiceValue>[]
+) {
+  const optionByValue = new Map(options.map((option) => [option.value, option.label]));
+  const resolveValue = (item: unknown) => {
+    if (typeof item !== 'string' && typeof item !== 'number') return String(item ?? '');
+    return optionByValue.get(item) ?? String(item);
+  };
+
+  return Array.isArray(value) ? value.map(resolveValue).join('、') : resolveValue(value);
 }
