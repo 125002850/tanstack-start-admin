@@ -5,6 +5,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEBOUNCE_MS } from '@/hooks/use-data-table/constants';
+import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 
 import { useDslDataTable } from './use-dsl-data-table';
 import type {
@@ -483,5 +484,175 @@ describe('useDslDataTable', () => {
 
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0]?.[0]).toBeInstanceOf(Error);
+  });
+
+  it('keeps editable drafts across loaded pages and merges refetched server fields', async () => {
+    type EditableRow = {
+      id: number;
+      name: string;
+      status: 'DRAFT' | 'READY' | null;
+    };
+    const editableColumnDsl = createDataTableColumnDsl<EditableRow>();
+    const editableColumns = [
+      editableColumnDsl.field('name', '名称'),
+      editableColumnDsl.editableField('status', '状态', {
+        type: 'enum',
+        valueOptions: [
+          { value: 'DRAFT', label: '草稿' },
+          { value: 'READY', label: '就绪' }
+        ],
+        edit: { selectionMode: 'single' }
+      })
+    ];
+    let firstPageName = '第一页';
+    const queryFactory = vi.fn((request: { pageNo: number }) =>
+      queryOptions({
+        queryKey: ['editable-rows', request],
+        queryFn: async () => ({
+          list: [
+            {
+              id: request.pageNo,
+              name: request.pageNo === 1 ? firstPageName : '第二页',
+              status: 'DRAFT' as const
+            }
+          ],
+          total: 20
+        })
+      })
+    ) as unknown as QueryOptionsFactory<EditableRow>;
+    const onChange = vi.fn();
+    localStorage.setItem('app-data-table-per-page:editable-rows', '10');
+    const { result } = renderHook(
+      () =>
+        useDslDataTable({
+          tableId: 'editable-rows',
+          columns: editableColumns,
+          queryOptions: queryFactory,
+          rowId: 'id',
+          editing: { onChange }
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.table.getRowModel().rows[0]?.id).toBe('1');
+    });
+    const firstRow = result.current.table.getRowModel().rows[0]!;
+
+    act(() => {
+      const runtime = result.current.table.options.meta?.dataTableEditing;
+      const sessionId = runtime?.startEditing({
+        rowId: firstRow.id,
+        row: firstRow.original,
+        columnId: 'status',
+        field: 'status',
+        initialValue: 'DRAFT',
+        value: 'DRAFT'
+      });
+      if (!runtime || sessionId == null) throw new Error('editing session was not started');
+      runtime.setActiveValue(sessionId, 'READY');
+      runtime.finishEditing(sessionId, 'selection');
+      result.current.table.setPageIndex(1);
+    });
+
+    await waitFor(() => {
+      expect(result.current.table.getRowModel().rows[0]?.id).toBe('2');
+    });
+    expect(result.current.editing.getSnapshot()).toMatchObject({
+      loadedPages: [1, 2],
+      rows: [
+        { id: 1, name: '第一页', status: 'READY' },
+        { id: 2, name: '第二页', status: 'DRAFT' }
+      ],
+      changedRows: [{ id: 1, name: '第一页', status: 'READY' }]
+    });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: 'selection',
+        changes: [
+          {
+            rowId: '1',
+            field: 'status',
+            previousValue: 'DRAFT',
+            value: 'READY'
+          }
+        ]
+      })
+    );
+
+    act(() => {
+      result.current.table.setPageIndex(0);
+    });
+    await waitFor(() => {
+      expect(result.current.table.getRowModel().rows[0]?.original.status).toBe('READY');
+    });
+
+    firstPageName = '服务端新名称';
+    await act(async () => {
+      await result.current.queryState.refetch();
+    });
+    await waitFor(() => {
+      expect(result.current.table.getRowModel().rows[0]?.original).toMatchObject({
+        name: '服务端新名称',
+        status: 'READY'
+      });
+    });
+
+    const submittedChanges = result.current.editing.getSnapshot().changes;
+    act(() => {
+      result.current.editing.acceptChanges(submittedChanges, [
+        { id: 1, name: '服务端规范化名称', status: 'READY' }
+      ]);
+    });
+    expect(result.current.editing.hasChanges()).toBe(false);
+    expect(result.current.editing.getSnapshot().rows[0]).toMatchObject({
+      name: '服务端规范化名称',
+      status: 'READY'
+    });
+  });
+
+  it('warns and disables editable cells without an explicit stable row id', async () => {
+    type EditableRow = { status: 'DRAFT' | 'READY' | null };
+    const editableColumnDsl = createDataTableColumnDsl<EditableRow>();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    localStorage.setItem('app-data-table-per-page:editable-without-row-id', '10');
+
+    const { result } = renderHook(
+      () =>
+        useDslDataTable({
+          tableId: 'editable-without-row-id',
+          columns: [
+            editableColumnDsl.editableField('status', '状态', {
+              type: 'enum',
+              valueOptions: [
+                { value: 'DRAFT', label: '草稿' },
+                { value: 'READY', label: '就绪' }
+              ]
+            })
+          ],
+          queryOptions: () =>
+            queryOptions({
+              queryKey: ['editable-without-row-id'],
+              queryFn: async () => ({
+                list: [{ status: 'DRAFT' as const }],
+                total: 1
+              })
+            })
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.table.getRowModel().rows).toHaveLength(1);
+    });
+    expect(result.current.table.options.meta?.dataTableEditing).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(
+      '[useDataTable] Cross-page editing requires an explicit stable rowId or getRowId.',
+      expect.objectContaining({
+        tableId: 'editable-without-row-id',
+        editing: 'disabled'
+      })
+    );
+    warn.mockRestore();
   });
 });

@@ -35,8 +35,10 @@ type SearchComboboxProps<TItem> = {
   searchPlaceholder: string;
   emptyText: string;
   loadingText?: string;
+  errorText?: string;
   disabled?: boolean;
   isLoading?: boolean;
+  isError?: boolean;
   className?: string;
   contentClassName?: string;
   allowClear?: boolean;
@@ -52,7 +54,9 @@ type SearchComboboxProps<TItem> = {
   isItemEqualToValue: (item?: TItem | null, value?: TItem | null) => boolean;
   getItemKey: (item: TItem, index: number) => React.Key;
   getItemAriaLabel?: (item: TItem, index: number) => string;
+  isItemDisabled?: (item: TItem, index: number) => boolean;
   renderItem: (item: TItem, index: number) => React.ReactNode;
+  onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
 };
 
 export function SearchCombobox<TItem>({
@@ -65,8 +69,10 @@ export function SearchCombobox<TItem>({
   searchPlaceholder,
   emptyText,
   loadingText = emptyText,
+  errorText = emptyText,
   disabled = false,
   isLoading = false,
+  isError = false,
   className,
   contentClassName,
   allowClear = false,
@@ -82,7 +88,9 @@ export function SearchCombobox<TItem>({
   isItemEqualToValue,
   getItemKey,
   getItemAriaLabel,
-  renderItem
+  isItemDisabled,
+  renderItem,
+  onKeyDown
 }: SearchComboboxProps<TItem>) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { container, getContainer, setTriggerNode, triggerRef } =
@@ -169,6 +177,7 @@ export function SearchCombobox<TItem>({
         sideOffset={4}
         initialFocus={inputRef}
         finalFocus={triggerRef}
+        onKeyDown={onKeyDown}
       >
         <div className='border-b p-1'>
           <ComboboxInput
@@ -179,7 +188,7 @@ export function SearchCombobox<TItem>({
             className='w-full'
           />
         </div>
-        <ComboboxEmpty>{isLoading ? loadingText : emptyText}</ComboboxEmpty>
+        <ComboboxEmpty>{isError ? errorText : isLoading ? loadingText : emptyText}</ComboboxEmpty>
         <ComboboxList>
           <ComboboxGroup>
             {items.map((item, index) => (
@@ -187,6 +196,7 @@ export function SearchCombobox<TItem>({
                 key={getItemKey(item, index)}
                 value={item}
                 index={index}
+                disabled={isItemDisabled?.(item, index)}
                 aria-label={getItemAriaLabel?.(item, index) ?? itemToStringLabel(item)}
               >
                 {renderItem(item, index)}
@@ -194,6 +204,11 @@ export function SearchCombobox<TItem>({
             ))}
           </ComboboxGroup>
         </ComboboxList>
+        {isError && items.length > 0 ? (
+          <div role='alert' className='border-t px-3 py-2 text-sm text-destructive'>
+            {errorText}
+          </div>
+        ) : null}
         {loadMore?.visible ? (
           <div className='border-t p-1'>
             <Button

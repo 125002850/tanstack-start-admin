@@ -52,6 +52,14 @@
 - `filter={null}` 由基础组件统一设置，调用方必须传入已过滤的 `items`。本地数据使用派生过滤结果；远程数据使用 `useRemoteComboboxState` 统一处理 debounce、分页、去重和关闭重置。
 - 远程选择器必须区分 `emptyText` 与 `loadingText`，并通过 `loadMore` 暴露分页状态；加载中和只读状态必须传入 `disabled`。
 
+## ChoiceCombobox
+
+- 单选和多选统一复用 `SingleChoiceCombobox` / `MultipleChoiceCombobox`，两者共享 ChoiceCombobox 弹层与底部操作区，并分别保持标量和数组值契约；`MultiSelectCombobox` 仅作为向后兼容包装。
+- value 必须由调用方受控；多选值保持用户选择顺序并按 value 去重。使用 `maxSelected` 时，达到上限后只禁用未选 option；`allowEmpty={false}` 时隐藏清除入口，并阻止移除最后一项。
+- 远程选择器同时受控 `open`、`inputValue`，通过 `loadMore` 传入分页状态，并使用 `searchMode='remote'` 避免二次本地过滤。
+- loading、empty、error、load more 必须使用不同文案；搜索翻页时需要保留已选 value，但不得实现“选择全部远程数据”。
+- DataTable 的 `editableField` 已封装上述远程状态、Portal 和焦点生命周期，业务列只声明 option source、selectionMode 与 allowEmpty，不直接拼装 Combobox。
+
 ### Workspace 与表单联动
 
 - 位于 workspace keep-alive 页面中的业务选择器应使用自身受控 `open` / `onOpenChange` 状态；页面失活或标签关闭前的浮层同步关闭由 `WorkspaceViewport` 与 `page-overlays` 的 DOM fallback 统一负责。

@@ -74,6 +74,31 @@ type UseDslDataTableResult<TData, TQueryData, TError> = ReturnType<typeof useDat
 
 const warnedUnsupportedFilterVariants = new Set<string>();
 
+type ResolvedDslData<TData> = PaginatedResponse<TData> & {
+  pageNo: number;
+  scopeKey: string;
+};
+
+function stableSerializeScope(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableSerializeScope).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .toSorted()
+      .map((key) => `${JSON.stringify(key)}:${stableSerializeScope(record[key])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function getDslEditingScopeKey(request: unknown) {
+  if (!request || typeof request !== 'object') return stableSerializeScope(request);
+  const { pageNo: _pageNo, ...scope } = request as Record<string, unknown>;
+  return stableSerializeScope(scope);
+}
+
 /** 默认假定后端返回 `{ list, total }`，缺失时回退为空列表和 0。 */
 function defaultMapQueryData<TData, TQueryData>(
   data: TQueryData | undefined
@@ -172,9 +197,11 @@ export function useDslDataTable<
 > {
   // pageSize 有本地偏好，isReady 前不发起 query，避免先用默认值请求再立刻改 pageSize。
   const { isReady, pageSize, setPageSize } = useDataTablePageSize({ tableId });
-  const [resolvedData, setResolvedData] = React.useState<PaginatedResponse<TData>>({
+  const [resolvedData, setResolvedData] = React.useState<ResolvedDslData<TData>>({
     list: [],
-    total: 0
+    total: 0,
+    pageNo: 1,
+    scopeKey: `${tableId}:initial`
   });
 
   React.useEffect(() => {
@@ -191,6 +218,9 @@ export function useDslDataTable<
     totalCount: total,
     pageSize,
     onPageSizeChange: setPageSize,
+    editingPageNo: resolvedData.pageNo,
+    editingScopeKey: resolvedData.scopeKey,
+    requireExplicitEditingRowId: true,
     debounceMs: debounceMs ?? DEBOUNCE_MS,
     showSelectColumn: showSelectColumn ?? true,
     showRowNumberColumn: showRowNumberColumn ?? true,
@@ -227,6 +257,7 @@ export function useDslDataTable<
   );
 
   const options = React.useMemo(() => queryOptions(request), [queryOptions, request]);
+  const currentEditingScopeKey = React.useMemo(() => getDslEditingScopeKey(request), [request]);
 
   const query = useQuery({
     ...options,
@@ -247,18 +278,31 @@ export function useDslDataTable<
   );
 
   React.useEffect(() => {
-    if (query.data === undefined) {
+    if (query.data === undefined || query.isPlaceholderData) {
       return;
     }
 
     // 只有 query 真正有数据时才更新 resolvedData，placeholderData 期间保留上一批表格数据。
-    setResolvedData((current) =>
-      current === mappedData ||
-      (current.total === mappedData.total && current.list === mappedData.list)
+    setResolvedData((current) => {
+      const pageNo = pagination.pageIndex + 1;
+      return current.total === mappedData.total &&
+        current.list === mappedData.list &&
+        current.pageNo === pageNo &&
+        current.scopeKey === currentEditingScopeKey
         ? current
-        : mappedData
-    );
-  }, [mappedData, query.data]);
+        : {
+            ...mappedData,
+            pageNo,
+            scopeKey: currentEditingScopeKey
+          };
+    });
+  }, [
+    currentEditingScopeKey,
+    mappedData,
+    pagination.pageIndex,
+    query.data,
+    query.isPlaceholderData
+  ]);
 
   const queryState = React.useMemo<QueryStateSubset<TQueryData, TError>>(
     () => ({

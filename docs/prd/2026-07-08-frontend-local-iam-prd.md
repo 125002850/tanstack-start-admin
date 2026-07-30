@@ -9,7 +9,7 @@
 | 最后更新 | 2026-07-10（按产品交互确认更新菜单图标与菜单管理操作） |
 | 目标仓库 | `tanstack-start-admin` |
 | 配套后端 | `java-demo` `main` 分支本地 IAM |
-| 后端 PRD | `/Users/youdingte/studys/java-demo/docs/prd/2026-07-08-main-local-iam-prd.md` |
+| 后端 PRD | `/Users/youdingte/learning/java-demo/docs/prd/2026-07-08-main-local-iam-prd.md` |
 | 前端形态 | 纯 SPA 管理后台，TanStack Router + React Query + Shadcn UI |
 
 ## 2. 背景

@@ -29,6 +29,7 @@ import {
   type DataTableCellRange
 } from './data-table-cell-range';
 import { useDataTableCellAutoScroll } from './use-data-table-cell-auto-scroll';
+import type { DataTableEditableColumnMeta, DataTableEditingRuntime } from '@/types/data-table';
 
 const DATA_TABLE_CELL_SELECTION_CHANGE_EVENT = 'data-table-cell-selection-change';
 const DATA_TABLE_CELL_COPY_FEEDBACK_DURATION_MS = 960;
@@ -55,7 +56,13 @@ type DataTableCellSelectionProps = {
   'data-cell-range-anchor'?: 'true';
   'data-cell-range-focus'?: 'true';
   'data-cell-range-edge'?: string;
+  'data-cell-editable'?: 'true';
+  'data-cell-edit-ready'?: 'true';
+  'data-cell-editing'?: 'true';
+  'data-cell-interaction-state'?: 'selected' | 'edit-ready' | 'editing';
+  onFocus: (event: React.FocusEvent<HTMLTableCellElement>) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLTableCellElement>) => void;
+  onDoubleClick: (event: React.MouseEvent<HTMLTableCellElement>) => void;
   onKeyDown: (event: ReactKeyboardEvent<HTMLTableCellElement>) => void;
 };
 
@@ -64,6 +71,7 @@ type UseDataTableCellSelectionOptions<TData> = {
   columns: readonly Column<TData, unknown>[];
   scrollViewportRef: RefObject<HTMLDivElement | null>;
   shouldIgnoreTarget?: (target: EventTarget | null, currentTarget: HTMLElement) => boolean;
+  editing?: DataTableEditingRuntime<TData>;
 };
 
 type ActivePointerSelection = {
@@ -120,6 +128,12 @@ function getCellCoordinate<TData>(cell: Cell<TData, unknown>): DataTableCellCoor
   return { rowId: cell.row.id, columnId: cell.column.id };
 }
 
+function getEditableCellMeta<TData>(
+  cell: Cell<TData, unknown>
+): DataTableEditableColumnMeta<TData> | undefined {
+  return cell.column.columnDef.meta?.editableCell ?? cell.column.columnDef.meta?.editableChoice;
+}
+
 function isSameCoordinate(left: DataTableCellCoordinate, right: DataTableCellCoordinate): boolean {
   return left.rowId === right.rowId && left.columnId === right.columnId;
 }
@@ -128,13 +142,15 @@ export function useDataTableCellSelection<TData>({
   rows,
   columns,
   scrollViewportRef,
-  shouldIgnoreTarget
+  shouldIgnoreTarget,
+  editing
 }: UseDataTableCellSelectionOptions<TData>) {
   const ownerRef = useRef(Symbol('data-table-cell-selection'));
   const ownerId = useId();
   const copyFeedbackTimeoutRef = useRef<number | null>(null);
   const nextCopyFeedbackRunRef = useRef<DataTableCellCopyFeedbackState['run']>('a');
   const activePointerRef = useRef<ActivePointerSelection | null>(null);
+  const suppressNextFocusSelectionRef = useRef(false);
   const stopAutoScrollRef = useRef<() => void>(() => undefined);
   const cellElementsRef = useRef(new Map<string, HTMLTableCellElement>());
   const [range, setRange] = useState<DataTableCellRange | null>(null);
@@ -192,11 +208,12 @@ export function useDataTableCellSelection<TData>({
 
   const clearCellSelection = useCallback(() => {
     finishPointerSelection();
+    editing?.clearCellSelection();
     activeCellSelectionOwner = null;
     emitDataTableCellSelectionChange(null);
     setRange(null);
     setCopyFeedback(null);
-  }, [finishPointerSelection]);
+  }, [editing, finishPointerSelection]);
 
   const flashCopiedRange = useCallback(
     (copiedRange: DataTableCellRange) => {
@@ -280,6 +297,14 @@ export function useDataTableCellSelection<TData>({
       const cell = findCellAtPointer(pointer);
       const coordinate = cell ? readCellCoordinate(cell) : null;
       if (coordinate) {
+        const dataCell = cellsByCoordinate.get(getCoordinateKey(coordinate));
+        if (dataCell) {
+          editing?.selectCell({
+            rowId: dataCell.row.id,
+            row: dataCell.row.original,
+            columnId: dataCell.column.id
+          });
+        }
         setRange((current) =>
           current && !isSameCoordinate(current.focus, coordinate)
             ? { ...current, focus: coordinate }
@@ -288,7 +313,7 @@ export function useDataTableCellSelection<TData>({
       }
       return cell;
     },
-    [findCellAtPointer, readCellCoordinate]
+    [cellsByCoordinate, editing, findCellAtPointer, readCellCoordinate]
   );
 
   const { stop: stopAutoScroll, updatePointer: updateAutoScrollPointer } =
@@ -324,6 +349,11 @@ export function useDataTableCellSelection<TData>({
       }
 
       const coordinate = getCellCoordinate(cell);
+      editing?.selectCell({
+        rowId: cell.row.id,
+        row: cell.row.original,
+        columnId: cell.column.id
+      });
       const nextRange =
         event.shiftKey && range && rangeBounds
           ? { anchor: range.anchor, focus: coordinate }
@@ -334,7 +364,9 @@ export function useDataTableCellSelection<TData>({
       emitDataTableCellSelectionChange(ownerRef.current);
       setRange(nextRange);
       setCopyFeedback(null);
+      suppressNextFocusSelectionRef.current = true;
       event.currentTarget.focus({ preventScroll: true });
+      suppressNextFocusSelectionRef.current = false;
       event.preventDefault();
       scrollViewportRef.current?.setAttribute('data-cell-range-dragging', 'true');
       event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -350,6 +382,7 @@ export function useDataTableCellSelection<TData>({
     },
     [
       clearCellSelection,
+      editing,
       finishPointerSelection,
       handleDocumentPointerMove,
       range,
@@ -360,12 +393,96 @@ export function useDataTableCellSelection<TData>({
   );
 
   const focusCoordinate = useCallback((coordinate: DataTableCellCoordinate) => {
+    suppressNextFocusSelectionRef.current = true;
     cellElementsRef.current.get(getCoordinateKey(coordinate))?.focus({ preventScroll: true });
+    suppressNextFocusSelectionRef.current = false;
   }, []);
+
+  const handleCellFocus = useCallback(
+    (event: React.FocusEvent<HTMLTableCellElement>, cell: Cell<TData, unknown>) => {
+      if (
+        suppressNextFocusSelectionRef.current ||
+        event.target !== event.currentTarget ||
+        !canSelectDataTableCell(cell)
+      ) {
+        return;
+      }
+
+      const coordinate = getCellCoordinate(cell);
+      editing?.selectCell({
+        rowId: cell.row.id,
+        row: cell.row.original,
+        columnId: cell.column.id
+      });
+      activeCellSelectionOwner = ownerRef.current;
+      emitDataTableCellSelectionChange(ownerRef.current);
+      setRange((current) =>
+        current?.anchor &&
+        current.focus &&
+        isSameCoordinate(current.anchor, coordinate) &&
+        isSameCoordinate(current.focus, coordinate)
+          ? current
+          : { anchor: coordinate, focus: coordinate }
+      );
+      setCopyFeedback(null);
+    },
+    [editing]
+  );
+
+  const isCellEditable = useCallback(
+    (cell: Cell<TData, unknown>) =>
+      Boolean(
+        getEditableCellMeta(cell) &&
+        editing?.isCellEditable({
+          rowId: cell.row.id,
+          row: cell.row.original,
+          columnId: cell.column.id
+        })
+      ),
+    [editing]
+  );
+
+  const startCellEditing = useCallback(
+    (cell: Cell<TData, unknown>) => {
+      const config = getEditableCellMeta(cell);
+      if (!config || !editing || !isCellEditable(cell)) return;
+      const value = cell.getValue();
+      if ('editor' in config && config.editor === 'switch') {
+        editing.commitValue(
+          {
+            rowId: cell.row.id,
+            row: cell.row.original,
+            columnId: cell.column.id,
+            field: config.field,
+            value: Object.is(value, config.checkedValue)
+              ? config.uncheckedValue
+              : config.checkedValue
+          },
+          'selection'
+        );
+        return;
+      }
+      editing.startEditing({
+        rowId: cell.row.id,
+        row: cell.row.original,
+        columnId: cell.column.id,
+        field: config.field,
+        initialValue: value,
+        value
+      });
+    },
+    [editing, isCellEditable]
+  );
 
   const handleCellKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLTableCellElement>, cell: Cell<TData, unknown>) => {
       if (event.target !== event.currentTarget || isEditableCopyTarget(event.target)) return;
+      if ((event.key === 'Enter' || event.key === 'F2') && isCellEditable(cell)) {
+        event.preventDefault();
+        event.stopPropagation();
+        startCellEditing(cell);
+        return;
+      }
       if (event.key === 'Escape') {
         event.preventDefault();
         clearCellSelection();
@@ -384,6 +501,14 @@ export function useDataTableCellSelection<TData>({
         rangeIndex
       );
       event.preventDefault();
+      const nextCell = cellsByCoordinate.get(getCoordinateKey(next));
+      if (nextCell) {
+        editing?.selectCell({
+          rowId: nextCell.row.id,
+          row: nextCell.row.original,
+          columnId: nextCell.column.id
+        });
+      }
       activeCellSelectionOwner = ownerRef.current;
       emitDataTableCellSelectionChange(ownerRef.current);
       setRange((current) => ({
@@ -392,7 +517,17 @@ export function useDataTableCellSelection<TData>({
       }));
       focusCoordinate(next);
     },
-    [clearCellSelection, focusCoordinate, rangeBounds, rangeIndex, scrollViewportRef]
+    [
+      clearCellSelection,
+      cellsByCoordinate,
+      editing,
+      focusCoordinate,
+      isCellEditable,
+      rangeBounds,
+      rangeIndex,
+      scrollViewportRef,
+      startCellEditing
+    ]
   );
 
   const getCellSelectionProps = useCallback(
@@ -407,6 +542,26 @@ export function useDataTableCellSelection<TData>({
         selectable && copyFeedbackBounds
           ? isDataTableCellInRange(coordinate, copyFeedbackBounds, rangeIndex)
           : false;
+      const editableConfig = getEditableCellMeta(cell);
+      const editable = isCellEditable(cell);
+      const editingCell = editing?.activeCell;
+      const readyCell = editing?.readyCell;
+      const isEditing =
+        editingCell?.rowId === coordinate.rowId && editingCell.columnId === coordinate.columnId;
+      const isEditReady =
+        editable &&
+        !isEditing &&
+        !(editableConfig && 'editor' in editableConfig && editableConfig.editor === 'switch') &&
+        readyCell?.rowId === coordinate.rowId &&
+        readyCell.columnId === coordinate.columnId;
+      const isRangeFocus = Boolean(range?.focus && isSameCoordinate(coordinate, range.focus));
+      const interactionState = isEditing
+        ? 'editing'
+        : isEditReady
+          ? 'edit-ready'
+          : isRangeFocus
+            ? 'selected'
+            : undefined;
 
       return {
         ref: (element) => {
@@ -434,7 +589,20 @@ export function useDataTableCellSelection<TData>({
           selectable && rangeBounds
             ? getDataTableCellRangeEdges(coordinate, rangeBounds, rangeIndex)
             : undefined,
+        'data-cell-editable': editable ? 'true' : undefined,
+        'data-cell-edit-ready': isEditReady ? 'true' : undefined,
+        'data-cell-editing': isEditing ? 'true' : undefined,
+        'data-cell-interaction-state': interactionState,
+        onFocus: (event) => handleCellFocus(event, cell),
         onPointerDown: (event) => beginPointerSelection(event, cell),
+        onDoubleClick: (event) => {
+          if (!editable || shouldIgnoreTarget?.(event.target, event.currentTarget)) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          startCellEditing(cell);
+        },
         onKeyDown: (event) => handleCellKeyDown(event, cell)
       };
     },
@@ -442,11 +610,16 @@ export function useDataTableCellSelection<TData>({
       beginPointerSelection,
       copyFeedback?.run,
       copyFeedbackBounds,
+      editing,
+      handleCellFocus,
       handleCellKeyDown,
       ownerId,
       range,
       rangeBounds,
-      rangeIndex
+      rangeIndex,
+      isCellEditable,
+      shouldIgnoreTarget,
+      startCellEditing
     ]
   );
 
@@ -459,6 +632,7 @@ export function useDataTableCellSelection<TData>({
       const detail = (event as CustomEvent<DataTableCellSelectionChangeDetail>).detail;
       if (detail?.owner !== ownerRef.current) {
         finishPointerSelection();
+        editing?.clearCellSelection();
         setRange(null);
         setCopyFeedback(null);
       }
@@ -466,7 +640,7 @@ export function useDataTableCellSelection<TData>({
     window.addEventListener(DATA_TABLE_CELL_SELECTION_CHANGE_EVENT, handleSelectionChange);
     return () =>
       window.removeEventListener(DATA_TABLE_CELL_SELECTION_CHANGE_EVENT, handleSelectionChange);
-  }, [finishPointerSelection]);
+  }, [editing, finishPointerSelection]);
 
   useEffect(() => {
     const handleWindowBlur = () => finishPointerSelection();

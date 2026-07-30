@@ -22,6 +22,114 @@
 
 ---
 
+## Cross-Cutting Design Decisions
+
+### 1. Visual Rendering Mechanism
+
+Range selection visual rendering uses **cell-internal styling**, not a cross-table absolute overlay.
+
+- **Background:** Each rendered cell determines `data-cell-selected` membership via `isDataTableCellInRange()` and draws its own range background using a low-opacity primary variable. This naturally works with virtualization — newly mounted cells re-evaluate membership from `anchor + focus` + current row/column index without overlay geometry management.
+- **Outer border:** Each cell on the logical range edge outputs `data-cell-range-edge` with space-separated logical sides (`block-start`, `block-end`, `inline-start`, `inline-end`). A CSS `::after` pseudo-element on edge cells draws a primary logical border at the range perimeter. Non-perimeter cells (inside the range boundary) do not produce the edge attribute, so only the outermost boundary renders the `::after` border.
+- **Focus ring:** The focus cell (`data-cell-range-focus="true"`) gets a distinct focus ring via `outline` or `box-shadow`, visually nested inside the range border.
+- **Pinned columns:** Pinned columns are excluded from the selectable column sequence per existing Invariants. V1 keeps this constraint: pinned cells never receive range background or edge border. Center-zone selection must not visually bleed or overlap pinned columns at the boundary. A dedicated E2E regression verifies pinned cells cannot start selection and there is no background/border pollution at the pinned/center seam. Cross-pinned/center range selection is not in scope and would require a separate design.
+- **Reduced motion:** `prefers-reduced-motion` applies `transition-duration: 1ms` to the copy-flash animation, which is the only animated range feedback. Range background and border are static and not animated.
+
+### 2. Accessibility Decision
+
+The DataTable keeps native `<table>`/`<tr>`/`<td>` semantics and is NOT an ARIA `grid` — this constrains which ARIA attributes are valid.
+
+- `aria-multiselectable` is **not added** in V1. Its ARIA baseline requires a widget role (`grid`, `listbox`, `tablist`, `tree`) with per-item `aria-selected`. Adding it to a native `<table>` without corresponding `gridcell` `aria-selected` would produce an incomplete and potentially misleading accessibility tree.
+- **Row selection** continues to use `<tr aria-selected>` — this existing semantic is unchanged and remains distinct from range selection.
+- **Roving focus:** When a range exists, only the focus cell is in the Tab sequence (`tabIndex=0`; all others `tabIndex=-1`), matching existing keyboard navigation practice.
+- **Live region:** A `sr-only` `aria-live="polite"` region announces the current range bounds (start cell, end cell) and cell count when the range changes. This gives screen reader users equivalent spatial awareness without conflicting with the native table semantics.
+- **Future ARIA grid upgrade:** If the component is later migrated to `role="grid"` + `role="gridcell"`, then `aria-multiselectable`, per-cell `aria-selected`, and the full ARIA grid keyboard contract (`Ctrl+Home`, `Ctrl+End`, page keys, etc.) must be implemented as a complete package — not incrementally.
+
+### 3. Public API Quick Reference
+
+The pure range-model module at `src/components/ui/table/core/data-table-cell-range.ts` exports the following:
+
+```ts
+export type DataTableCellCoordinate = {
+  rowId: string;
+  columnId: string;
+};
+
+export type DataTableCellRange = {
+  anchor: DataTableCellCoordinate;
+  focus: DataTableCellCoordinate;
+};
+
+export type DataTableCellRangeBounds = {
+  rowStart: number;
+  rowEnd: number;
+  columnStart: number;
+  columnEnd: number;
+};
+
+export type DataTableCellRangeIndex = {
+  rowIds: readonly string[];
+  columnIds: readonly string[];
+  rowIndexById: ReadonlyMap<string, number>;
+  columnIndexById: ReadonlyMap<string, number>;
+};
+
+export type DataTableCellRangeEdge = 'block-start' | 'inline-end' | 'block-end' | 'inline-start';
+
+// Internal — referenced by moveDataTableCellCoordinate
+type DataTableCellArrowKey = 'ArrowUp' | 'ArrowRight' | 'ArrowDown' | 'ArrowLeft';
+
+export function createDataTableCellRangeIndex(
+  rowIds: readonly string[],
+  columnIds: readonly string[]
+): DataTableCellRangeIndex;
+
+export function resolveDataTableCellRangeBounds(
+  range: DataTableCellRange,
+  index: DataTableCellRangeIndex
+): DataTableCellRangeBounds | null;
+
+export function isDataTableCellInRange(
+  coordinate: DataTableCellCoordinate,
+  bounds: DataTableCellRangeBounds,
+  index: DataTableCellRangeIndex
+): boolean;
+
+export function getDataTableCellRangeEdges(
+  coordinate: DataTableCellCoordinate,
+  bounds: DataTableCellRangeBounds,
+  index: DataTableCellRangeIndex
+): string | undefined;
+
+export function moveDataTableCellCoordinate(
+  coordinate: DataTableCellCoordinate,
+  key: DataTableCellArrowKey,
+  direction: 'ltr' | 'rtl',
+  index: DataTableCellRangeIndex
+): DataTableCellCoordinate;
+
+export function buildDataTableCellRangeTsv(
+  bounds: DataTableCellRangeBounds,
+  index: DataTableCellRangeIndex,
+  getText: (coordinate: DataTableCellCoordinate) => unknown
+): string;
+
+export function normalizeDataTableCellClipboardText(value: unknown): string;
+
+export function resolveDataTableCellClipboardText(params: {
+  copyValue?: unknown;
+  renderedText?: string;
+  rawValue: unknown;
+}): string;
+```
+
+### 4. Pointer Cursor and User-Select
+
+- **Cursor:** All selectable data cells apply `cursor: cell` in both idle and drag-selecting states. Interactive controls (buttons, links, inputs, checkboxes, contenteditable) inside cells do not inherit this cursor and cannot initiate range selection.
+- **user-select prevention:** `user-select: none` is applied to the DataTable viewport element _only after_ a valid primary-button `pointerdown` on a selectable cell. It is synchronously removed on all termination paths: `pointerup`, `pointercancel`, `Escape`, `window blur`, owner-table switch, and component unmount.
+- **Test coverage:** Unit tests must assert the `user-select` style is cleared after each termination path. Browser E2E verifies that normal text selection is re-enabled after drag completes (e.g., clicking an input or selecting page text outside the table works normally).
+
+---
+
 ### Task 1: Browser preflight gate
 
 **Type:** `infra`
@@ -263,13 +371,16 @@
 
 **Files**
 
-- Modify: `src/styles/globals.css`
+- Modify: `src/styles/globals.css` (range ::after border, cursor:cell, user-select lifecycle, focus ring)
 - Create: `e2e/data-table-cell-range-selection.smoke.spec.ts`
 - Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Modify: `src/components/ui/table/core/data-table-body.tsx` (pass range announcement to parent)
+- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts` (derive `rangeAnnouncement`)
+- Modify: `src/components/ui/table/core/data-table.tsx` (render sr-only aria-live region outside `<table>`)
 - Verify: all runtime and test files listed in this plan.
 - Read: `.agents/skills/oig-tanstack-admin/references/git-commits.md`
-- Integrate: `main` worktree at `/Users/youdingte/studys/tanstack-start-admin`
-- Integrate: `features/sso` worktree at `/Users/youdingte/studys/tanstack-start-admin-features-sso`
+- Integrate: `main` worktree at `/Users/youdingte/learning/tanstack-start-admin`
+- Integrate: `features/sso` worktree at `/Users/youdingte/learning/tanstack-start-admin-features-sso`
 
 **Dependencies**
 
@@ -277,7 +388,7 @@
 
 **Shared Runtime Contracts**
 
-- DataTable selection data attributes, row selection styling, pinned cell background, copy flash animation, column resize/DnD, row expand, ScrollArea, and LTR/RTL rendering.
+- DataTable selection data attributes, row selection styling, pinned cell background, copy flash animation, column resize/DnD, row expand, ScrollArea, LTR/RTL rendering, cursor:cell on selectable data cells, user-select prevention lifecycle, and sr-only aria-live range announcement.
 - Long-lived product branch policy: no whole-branch merge; the verified shared atomic commit is selectively cherry-picked.
 
 **Invariants**
@@ -298,9 +409,9 @@
 
 **Acceptance Criteria**
 
-- [ ] `profile: final-unit` passes all unit tests.
+- [ ] `profile: final-unit` passes all unit tests including `data-table.test.tsx` lifecycle coverage for user-select cleanup on pointerup, pointercancel, Escape, window blur, owner switch, and unmount.
 - [ ] `profile: final-static` passes lint, typecheck, and formatting check for the repository.
-- [ ] `profile: browser-regression` passes drag, keyboard, virtual auto-scroll, nested clipping, TSV copy, cleanup, and RTL cases.
+- [ ] `profile: browser-regression` passes drag, keyboard, virtual auto-scroll, nested clipping, TSV copy, cleanup, RTL, pinned non-selectable, user-select restored after real pointer interaction, cursor:cell on data cells, and aria-live range announcement cases.
 - [ ] `profile: final-diff` reports no whitespace errors or unintended dependency/lockfile changes.
 - [ ] One responsibility-focused feature commit is integrated into `main` and selectively cherry-picked into `features/sso`.
 - [ ] Targeted tests, lint, and typecheck pass independently in both long-lived branch worktrees.
@@ -339,16 +450,17 @@
 
 - `regression`
 
-- [ ] Step 1: Add logical range background/edge/focus styles and temporary drag-selection styling.
-- [ ] Step 2: Add Playwright cases for real drag, Shift keyboard selection, virtual edge auto-scroll, nested clipping, copy TSV, release cleanup, and RTL.
-- [ ] Step 3: Run `profile: final-unit`, then `profile: final-static`.
-- [ ] Step 4: Run `profile: browser-regression` and inspect all failures before changing code.
-- [ ] Step 5: Run `profile: final-diff` and remove only feature-related formatting issues.
-- [ ] Step 6: Re-read target branch status and Git commit rules; stop on unexpected dirty state.
-- [ ] Step 7: Commit the atomic feature on `feat/cell-range-selection`, run `profile: commit-policy`, and keep hooks enabled.
-- [ ] Step 8: Integrate the exact commit into `main` without a whole-branch merge and run `profile: branch-main`.
-- [ ] Step 9: Cherry-pick the exact shared commit into `features/sso`; add a separate adaptation commit only if code differences require it.
-- [ ] Step 10: Run `profile: branch-sso` and report both resulting commit IDs.
+- [ ] Step 1: Add range ::after logical border, cursor:cell, user-select lifecycle, focus ring styles in globals.css; derive `rangeAnnouncement` from selection hook, lift via DataTableBody props, and render sr-only `aria-live="polite" aria-atomic="true"` region in DataTable outside the native `<table>` element.
+- [ ] Step 2: Add unit tests in `data-table.test.tsx` covering user-select cleanup on pointerup, pointercancel, Escape, window blur, owner switch, and unmount.
+- [ ] Step 3: Add Playwright cases for real drag, Shift keyboard selection, virtual edge auto-scroll, nested clipping, copy TSV, release cleanup, RTL, pinned non-selectable, user-select restored after real pointer interaction, and aria-live range announcement.
+- [ ] Step 4: Run `profile: final-unit`, then `profile: final-static`.
+- [ ] Step 5: Run `profile: browser-regression` and inspect all failures before changing code.
+- [ ] Step 6: Run `profile: final-diff` and remove only feature-related formatting issues.
+- [ ] Step 7: Re-read target branch status and Git commit rules; stop on unexpected dirty state.
+- [ ] Step 8: Commit the atomic feature on `feat/cell-range-selection`, run `profile: commit-policy`, and keep hooks enabled.
+- [ ] Step 9: Integrate the exact commit into `main` without a whole-branch merge and run `profile: branch-main`.
+- [ ] Step 10: Cherry-pick the exact shared commit into `features/sso`; add a separate adaptation commit only if code differences require it.
+- [ ] Step 11: Run `profile: branch-sso` and report both resulting commit IDs.
 
 ---
 

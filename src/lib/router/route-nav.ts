@@ -35,6 +35,7 @@ interface RouteNavSource {
 const NAV_GROUP_META_STATIC: Record<string, { label: string; order: number }> = {
   overview: { label: '概览', order: 10 },
   components: { label: '组件', order: 20 },
+  examples: { label: '示例', order: 25 },
   basicSettings: { label: '基础设置', order: 30 },
   systemManagement: { label: '系统管理', order: 40 },
   logManagement: { label: '日志管理', order: 50 },

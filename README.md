@@ -41,7 +41,7 @@
 
 - **数据概览页**，包含卡片和基于 Suspense 的独立加载区块
 
-- **数据表格**，支持 React Query 路由加载、DSL 查询构建、列拖拽排序、列宽 / 排序 / 分页持久化、虚拟滚动、单元格复制反馈、搜索筛选与分页
+- **数据表格**，支持 React Query 路由加载、DSL 查询构建、类型安全的选择列编辑与跨页草稿、列拖拽排序、列宽 / 排序 / 分页持久化、虚拟滚动、单元格复制反馈、搜索筛选与分页
 
 - **类型安全的文件路由**，基于 TanStack Router 自动生成路由树
 
@@ -221,7 +221,10 @@ src/
 ### DataTable 开发规范
 
 - 新增表格列优先使用 `createDataTableColumnDsl()`，统一声明字段类型、筛选类型、展示格式、复制值和列面板行为。
+- 可编辑列使用 `columnDsl.editableField()`：`type: 'text'` 生成输入框 editor；`enum` / `select` 默认生成 choice editor，也可通过 `edit.control: 'switch'` 映射为二态 Switch；`remoteSelect` 提供可取消的 `remoteOptions.loadOptions`，已有值需要补 label 时提供批量 `resolveOptions`。
+- 单选字段必须是 `string | number | null`，多选字段必须是 `Array<string | number>`；`edit.allowEmpty` 控制是否允许清空，默认 `true`，多选通过 `edit: { selectionMode: 'multiple', maxSelected }` 声明；row 中只保存 value，不保存 Option 对象。
 - DSL 查询优先通过 `useDslDataTable()` 构建；仅 `text`、`select`、`multiSelect`、`date`、`dateRange` 会自动序列化为后端 DSL 条件，不支持的筛选类型只作为前端 UI 状态。
+- `useDslDataTable()` 的跨页草稿必须显式提供稳定 `rowId` 或 `getRowId`。持久化由业务层在 `editing.onChange` 中执行，读取/确认/放弃草稿分别使用返回值中的 `editing.getSnapshot()`、`acceptChanges()`、`discardChanges()`。
 - `useDslDataTable()` 默认启用斑马纹；仅在明确需要纯色表体时传 `enableZebraStriping: false`。直接使用 `useDataTable()` 时不隐式启用。
 - 表格状态统一由 `src/lib/data-table-state-persistence.ts` 管理，覆盖列宽、列顺序、排序和每页条数；不要再新增独立的 localStorage key。
 - `src/components/ui/table/*` 的旧 flat 导入路径保留为兼容转发，新代码优先使用分层路径，例如 `core/`、`columns/`、`cells/`、`toolbar/`。

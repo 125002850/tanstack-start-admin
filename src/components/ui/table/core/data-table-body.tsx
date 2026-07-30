@@ -245,7 +245,8 @@ export function DataTableBody<TData>({
     rows,
     columns: table.getVisibleLeafColumns(),
     scrollViewportRef,
-    shouldIgnoreTarget: shouldIgnoreRowExpandTarget
+    shouldIgnoreTarget: shouldIgnoreRowExpandTarget,
+    editing: table.options.meta?.dataTableEditing
   });
   // 行数达到阈值、环境支持并且没有运行时回退时才启用行虚拟化。
   const shouldVirtualize =

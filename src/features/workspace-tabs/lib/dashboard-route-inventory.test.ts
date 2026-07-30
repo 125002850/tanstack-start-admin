@@ -89,6 +89,7 @@ const allPaths = Object.keys(routeModules);
 // - log-management/index: 重定向路由，无实际页面内容
 // - dashboard/index: 重定向路由，无实际页面内容
 // - account/profile, account/password: 账号功能迁入侧边栏 Sheet，路由仅保留兼容重定向
+// - examples/data-table-editing: 大数据虚拟表格压测页，离开后释放 500 行当前页实例
 const keepAliveFalsePaths = new Set([
   '/src/routes/dashboard/basic-settings/index.tsx',
   '/src/routes/dashboard/system-management/index.tsx',
@@ -96,7 +97,8 @@ const keepAliveFalsePaths = new Set([
   '/src/routes/dashboard/forms/index.tsx',
   '/src/routes/dashboard/index.tsx',
   '/src/routes/dashboard/account/profile.tsx',
-  '/src/routes/dashboard/account/password.tsx'
+  '/src/routes/dashboard/account/password.tsx',
+  '/src/routes/dashboard/examples/data-table-editing.tsx'
 ]);
 
 const standardWorkspacePageRoutePaths = new Set([
@@ -109,6 +111,7 @@ const standardWorkspacePageRoutePaths = new Set([
   '/src/routes/dashboard/forms/sheet-form.tsx',
   '/src/routes/dashboard/forms/advanced.tsx',
   '/src/routes/dashboard/forms/overlay-contract.tsx',
+  '/src/routes/dashboard/examples/data-table-editing.tsx',
   '/src/routes/dashboard/system-management/dictionaries.tsx',
   '/src/routes/dashboard/system-management/export-center.tsx',
   '/src/routes/dashboard/basic-settings/staff.tsx',
@@ -171,7 +174,8 @@ describe('dashboard route inventory', () => {
         '/dashboard/forms/multi-step',
         '/dashboard/forms/sheet-form',
         '/dashboard/forms/advanced',
-        '/dashboard/forms/overlay-contract'
+        '/dashboard/forms/overlay-contract',
+        '/dashboard/examples/data-table-editing'
       ])
     );
   });
@@ -265,6 +269,17 @@ describe('dashboard route inventory', () => {
         group: 'components'
       });
     }
+  });
+
+  it('exposes the table editing demo in the examples navigation group', () => {
+    const route = routeModules['/src/routes/dashboard/examples/data-table-editing.tsx'];
+    expect(route).toBeDefined();
+    expect(getTitle(route)).toBe('示例：表格编辑');
+    expect(getNav(route)).toMatchObject({
+      visible: true,
+      group: 'examples',
+      icon: 'edit'
+    });
   });
 
   it('system management routes are top-level items in their group', () => {

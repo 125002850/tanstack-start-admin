@@ -22,6 +22,7 @@ import { getSelectedPageRows } from '@/lib/data-table';
 import type {
   ColumnOrderStorageMode,
   ColumnResizeStorageMode,
+  DataTableEditableColumnMeta,
   SortingStorageMode
 } from '@/types/data-table';
 
@@ -46,6 +47,7 @@ import { createSelectColumn } from './columns/select-column';
 import { resolveDataTableRowId, stringifyDataTableRowId } from './row-id';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
 import { useTableState } from './use-table-state';
+import { useDataTableEditing } from './use-data-table-editing';
 
 /**
  * DataTable 的核心状态装配 hook。
@@ -76,6 +78,22 @@ function usePaginationForRenderedData<TData>(
 
 const warnedSelectionFallbackTableIds = new Set<string>();
 const warnedAdvancedFilterTableIds = new Set<string>();
+const warnedEditingFallbackTableIds = new Set<string>();
+
+function collectEditableFields<TData>(columns: readonly ColumnDef<TData>[]) {
+  const fields = new Map<Extract<keyof TData, string>, DataTableEditableColumnMeta<TData>>();
+  const visit = (column: ColumnDef<TData>) => {
+    const editableCell = column.meta?.editableCell ?? column.meta?.editableChoice;
+    if (editableCell) {
+      fields.set(editableCell.field, editableCell);
+    }
+    if ('columns' in column && Array.isArray(column.columns)) {
+      column.columns.forEach(visit);
+    }
+  };
+  columns.forEach(visit);
+  return fields;
+}
 
 /**
  * 构建 API 查询参数的工厂函数。自动将 {@link ColumnFiltersState} 映射为后端接受的键值对。
@@ -139,6 +157,10 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     actionColumnPin = 'right',
     rowActions,
     expandConfig,
+    editing: editingOptions,
+    editingPageNo,
+    editingScopeKey = 'default',
+    requireExplicitEditingRowId = false,
     onColumnOrderChange: externalOnColumnOrderChange,
     ...tableProps
   } = props;
@@ -372,9 +394,68 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       }),
     [getRowId, rowId, tableId]
   );
+  const editableFields = React.useMemo(() => collectEditableFields(baseColumns), [baseColumns]);
+  const hasExplicitEditingRowId = Boolean(getRowId || rowId !== undefined);
+  const editingEnabled =
+    editableFields.size > 0 && (!requireExplicitEditingRowId || hasExplicitEditingRowId);
+  const resolvedEditableFields = React.useMemo(
+    () =>
+      editingEnabled
+        ? editableFields
+        : new Map<Extract<keyof TData, string>, DataTableEditableColumnMeta<TData>>(),
+    [editableFields, editingEnabled]
+  );
+  const editingState = useDataTableEditing({
+    tableId,
+    editableFields: resolvedEditableFields,
+    getRowId: (row, index) => resolvedGetRowId(row, index),
+    options: editingOptions
+  });
+  const loadEditingScopePage = editingState.loadScopePage;
+  const resolvedEditingPageNo = editingPageNo ?? pagination.pageIndex + 1;
+
+  React.useLayoutEffect(() => {
+    if (!editingEnabled) return;
+    loadEditingScopePage(editingScopeKey, resolvedEditingPageNo, tableProps.data);
+  }, [
+    editingEnabled,
+    editingScopeKey,
+    loadEditingScopePage,
+    resolvedEditingPageNo,
+    tableProps.data
+  ]);
+
+  React.useEffect(() => {
+    if (
+      !import.meta.env.DEV ||
+      editableFields.size === 0 ||
+      !requireExplicitEditingRowId ||
+      hasExplicitEditingRowId ||
+      warnedEditingFallbackTableIds.has(tableId)
+    ) {
+      return;
+    }
+    warnedEditingFallbackTableIds.add(tableId);
+    console.warn(
+      '[useDataTable] Cross-page editing requires an explicit stable rowId or getRowId.',
+      {
+        tableId,
+        editing: 'disabled',
+        rowIdSource: 'index-fallback'
+      }
+    );
+  }, [editableFields.size, hasExplicitEditingRowId, requireExplicitEditingRowId, tableId]);
+
+  const editingRows =
+    editingEnabled &&
+    editingState.scopeKey === editingScopeKey &&
+    editingState.hasLoadedPage(resolvedEditingPageNo)
+      ? editingState.getRowsForPage(resolvedEditingPageNo)
+      : tableProps.data;
 
   const table = useReactTable({
     ...tableProps,
+    data: editingRows,
     columns: resolvedColumns,
     initialState: resolvedInitialState,
     pageCount: resolvedPageCount,
@@ -386,7 +467,9 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
         // 列面板通过 meta 调用 reset，不需要知道持久化实现细节。
         hasCustomOrder: hasCustomColumnOrder,
         reset: resetColumnOrder
-      }
+      },
+      dataTableId: tableId,
+      dataTableEditing: editingEnabled ? editingState.runtime : undefined
     },
     state: {
       pagination,
@@ -474,6 +557,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     debounceMs,
     throttleMs: tableProps.throttleMs,
     resetColumnSizing,
+    editing: editingState.controller,
     expandConfig,
     expandedRowKey,
     setExpandedRowKey,

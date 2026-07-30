@@ -49,7 +49,7 @@ export const Route = createFileRoute('/dashboard/users')({
 ### `nav`
 
 - `visible`：是否进入主导航。
-- `group`：顶部分组，当前为 `overview | components | basicSettings | systemManagement | logManagement | account`。
+- `group`：顶部分组，当前为 `overview | components | examples | basicSettings | systemManagement | logManagement | account`。
 - `order`：分组内排序权重，数值越小越靠前。
 - `icon`：`Icons` 对象中的图标键。
 - `shortcut`：KBar 快捷键。

@@ -25,6 +25,39 @@ function MultiSelectHarness({ initialValue = [] }: { initialValue?: string[] }) 
   );
 }
 
+function NumericControlledHarness() {
+  const [value, setValue] = React.useState<number[]>([2, 2]);
+  const [open, setOpen] = React.useState(true);
+  const [inputValue, setInputValue] = React.useState('远程');
+
+  return (
+    <MultiSelectCombobox
+      triggerLabel='角色'
+      placeholder='请选择角色'
+      options={[
+        { value: 1, label: '管理员' },
+        { value: 1, label: '重复管理员' },
+        { value: 2, label: '审计员' },
+        { value: 3, label: '访客' }
+      ]}
+      value={value}
+      open={open}
+      inputValue={inputValue}
+      maxSelected={2}
+      isLoading
+      loadMore={{
+        visible: true,
+        isLoading: true,
+        label: '正在加载更多',
+        onClick: () => undefined
+      }}
+      onOpenChange={setOpen}
+      onInputValueChange={setInputValue}
+      onValueChange={setValue}
+    />
+  );
+}
+
 describe('MultiSelectCombobox', () => {
   afterEach(cleanup);
 
@@ -83,5 +116,28 @@ describe('MultiSelectCombobox', () => {
       expect(screen.queryByPlaceholderText('搜索任务分类')).not.toBeInTheDocument();
     });
     expect(trigger).toHaveFocus();
+  });
+
+  it('supports numeric values, controlled search, deduplication, max selection and loading', async () => {
+    const user = userEvent.setup();
+    render(<NumericControlledHarness />);
+
+    const trigger = screen.getByRole('button', { name: '角色' });
+    expect(trigger).toHaveTextContent('审计员');
+    expect(screen.getByPlaceholderText('搜索角色')).toHaveValue('远程');
+    expect(screen.queryByText('重复管理员')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '正在加载更多' })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('正在加载更多');
+
+    await user.clear(screen.getByPlaceholderText('搜索角色'));
+    await user.click(screen.getByText('管理员'));
+
+    await waitFor(() => {
+      expect(trigger).toHaveTextContent('审计员,管理员');
+    });
+    expect(screen.getByText('访客').closest('[cmdk-item]')).toHaveAttribute(
+      'data-disabled',
+      'true'
+    );
   });
 });

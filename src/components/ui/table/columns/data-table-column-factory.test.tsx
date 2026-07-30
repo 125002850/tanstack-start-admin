@@ -15,6 +15,13 @@ interface Row {
   phone?: string;
 }
 
+interface ChoiceRow {
+  id: number;
+  status: 'ENABLED' | 'DISABLED' | null;
+  roleIds: number[];
+  name: string;
+}
+
 function renderCell(column: { cell?: unknown }, row: Row) {
   if (typeof column.cell !== 'function') return undefined;
   const accessorKey = (column as { accessorKey?: keyof Row }).accessorKey;
@@ -330,10 +337,104 @@ describe('data-table-column-factory', () => {
       })
     ).toThrow('cannot override a built-in type');
   });
+
+  it('creates editable choice columns with static filter defaults and remote metadata', () => {
+    const columnDsl = createDataTableColumnDsl<ChoiceRow>();
+    const statusColumn = columnDsl.editableField('status', '状态', {
+      type: 'enum',
+      valueOptions: [
+        { value: 'ENABLED', label: '启用' },
+        { value: 'DISABLED', label: '停用' }
+      ],
+      edit: { selectionMode: 'single', allowEmpty: false },
+      filter: 'select'
+    });
+    const loadOptions = vi.fn();
+    const roleColumn = columnDsl.editableField('roleIds', '角色', {
+      type: 'remoteSelect',
+      remoteOptions: {
+        loadOptions
+      },
+      edit: { selectionMode: 'multiple', maxSelected: 3 }
+    });
+
+    expect((statusColumn as { accessorKey?: unknown }).accessorKey).toBe('status');
+    expect(statusColumn.meta?.options).toEqual([
+      { value: 'ENABLED', label: '启用' },
+      { value: 'DISABLED', label: '停用' }
+    ]);
+    expect(statusColumn.meta?.editableChoice).toMatchObject({
+      field: 'status',
+      type: 'enum',
+      selectionMode: 'single',
+      allowEmpty: false
+    });
+    expect(statusColumn.meta?.editableCell).toBe(statusColumn.meta?.editableChoice);
+    expect(roleColumn.meta?.editableChoice).toMatchObject({
+      field: 'roleIds',
+      type: 'remoteSelect',
+      selectionMode: 'multiple',
+      allowEmpty: true,
+      maxSelected: 3
+    });
+    expect(roleColumn.meta?.editableChoice?.remoteOptions?.loadOptions).toBe(loadOptions);
+  });
+
+  it('creates input and switch editors as first-class editable cells', () => {
+    const columnDsl = createDataTableColumnDsl<ChoiceRow>();
+    const inputColumn = columnDsl.editableField('name', '手机号', {
+      type: 'text',
+      edit: { control: 'input', inputType: 'tel', inputMode: 'tel' }
+    });
+    const switchColumn = columnDsl.editableField('status', '状态', {
+      type: 'enum',
+      valueOptions: [
+        { value: 'ENABLED', label: '启用' },
+        { value: 'DISABLED', label: '停用' }
+      ],
+      edit: {
+        control: 'switch',
+        checkedValue: 'ENABLED',
+        uncheckedValue: 'DISABLED'
+      }
+    });
+
+    expect(inputColumn.meta?.editableCell).toMatchObject({
+      field: 'name',
+      editor: 'input',
+      allowEmpty: true,
+      inputType: 'tel',
+      inputMode: 'tel'
+    });
+    expect(inputColumn.meta?.editableChoice).toBeUndefined();
+    expect(switchColumn.meta?.editableCell).toMatchObject({
+      field: 'status',
+      editor: 'switch',
+      allowEmpty: false,
+      checkedValue: 'ENABLED',
+      uncheckedValue: 'DISABLED',
+      checkedLabel: '启用',
+      uncheckedLabel: '停用'
+    });
+    expect(switchColumn.meta?.editableChoice).toBeUndefined();
+  });
+
+  it('rejects invalid editable multiple selection limits at runtime', () => {
+    const columnDsl = createDataTableColumnDsl<ChoiceRow>();
+
+    expect(() =>
+      columnDsl.editableField('roleIds', '角色', {
+        type: 'select',
+        valueOptions: [{ value: 1, label: '管理员' }],
+        edit: { selectionMode: 'multiple', maxSelected: 0 }
+      })
+    ).toThrow('maxSelected must be a positive integer');
+  });
 });
 
 function expectColumnDslTypeErrors() {
   const columnDsl = createDataTableColumnDsl<Row>();
+  const choiceColumnDsl = createDataTableColumnDsl<ChoiceRow>();
   const filterObjectApi = { variant: 'text' };
   const disabledSerializeFilter = false;
 
@@ -345,6 +446,61 @@ function expectColumnDslTypeErrors() {
 
   // @ts-expect-error size only accepts a known preset or an exact number
   columnDsl.field('name', '名称', { size: 'huge' });
+
+  choiceColumnDsl.editableField('status', '状态', {
+    type: 'enum',
+    valueOptions: [{ value: 'ENABLED', label: '启用' }],
+    edit: { selectionMode: 'single' }
+  });
+  choiceColumnDsl.editableField('roleIds', '角色', {
+    type: 'select',
+    valueOptions: [{ value: 1, label: '管理员' }],
+    edit: { selectionMode: 'multiple', maxSelected: 2 }
+  });
+  choiceColumnDsl.editableField('name', '手机号', {
+    type: 'text',
+    edit: { control: 'input', inputType: 'tel' }
+  });
+  choiceColumnDsl.editableField('status', '状态', {
+    type: 'enum',
+    valueOptions: [
+      { value: 'ENABLED', label: '启用' },
+      { value: 'DISABLED', label: '停用' }
+    ],
+    edit: {
+      control: 'switch',
+      checkedValue: 'ENABLED',
+      uncheckedValue: 'DISABLED'
+    }
+  });
+
+  // @ts-expect-error scalar fields cannot use multiple selection
+  choiceColumnDsl.editableField('status', '状态', {
+    type: 'enum',
+    valueOptions: [{ value: 'ENABLED', label: '启用' }],
+    edit: { selectionMode: 'multiple' }
+  });
+
+  choiceColumnDsl.editableField('roleIds', '角色', {
+    type: 'select',
+    valueOptions: [{ value: 1, label: '管理员' }],
+    // @ts-expect-error array fields cannot use single selection
+    edit: { selectionMode: 'single' }
+  });
+
+  // @ts-expect-error non-choice fields cannot use editableField
+  choiceColumnDsl.editableField('name', '名称', {
+    type: 'select',
+    valueOptions: [{ value: 'A', label: 'A' }],
+    edit: { selectionMode: 'multiple' }
+  });
+
+  // @ts-expect-error maxSelected belongs to multiple selection only
+  choiceColumnDsl.editableField('status', '状态', {
+    type: 'enum',
+    valueOptions: [{ value: 'ENABLED', label: '启用' }],
+    edit: { selectionMode: 'single', maxSelected: 2 }
+  });
 }
 
 void expectColumnDslTypeErrors;

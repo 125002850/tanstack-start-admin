@@ -41,6 +41,37 @@ describe('route nav', () => {
     expect(groups.map((group) => group.label)).toEqual(['基础设置', '系统管理', '日志管理']);
   });
 
+  it('maps the examples group to the static label and orders it before management groups', () => {
+    const groups = buildNavGroupsFromRoutes({
+      basic: {
+        id: '/dashboard/basic-settings/staff',
+        fullPath: '/dashboard/basic-settings/staff',
+        options: {
+          staticData: {
+            label: '员工管理',
+            nav: { visible: true, group: 'basicSettings', order: 10 }
+          }
+        }
+      },
+      example: {
+        id: '/dashboard/examples/data-table-editing',
+        fullPath: '/dashboard/examples/data-table-editing',
+        options: {
+          staticData: {
+            label: '表格编辑',
+            nav: { visible: true, group: 'examples', order: 10 }
+          }
+        }
+      }
+    });
+
+    expect(groups.map((group) => group.label)).toEqual(['示例', '基础设置']);
+    expect(groups[0]?.items[0]).toMatchObject({
+      title: '表格编辑',
+      url: '/dashboard/examples/data-table-editing'
+    });
+  });
+
   it('prefers an explicit route group over a stale backend ancestor group', () => {
     const routes = {
       staff: {

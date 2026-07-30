@@ -6,20 +6,22 @@ import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/table/core/data-table';
 import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
 import type { DataTableAction } from '@/components/ui/table/actions/data-table-actions-bar';
 import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
-import {
-  createDataTableColumnDsl,
-  dataTableTextCell
-} from '@/components/ui/table/columns/data-table-column-factory';
+import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
+import type {
+  DataTableCellChange,
+  DataTableChoiceOption,
+  DataTableEditChangeEvent,
+  DataTableEditingController
+} from '@/types/data-table';
 import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
 import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
 import { hasIamPermission } from '@/lib/api/iam/permissions';
@@ -35,14 +37,15 @@ import {
   type IamStaffPageRequest,
   type IamStaffPageResponse,
   type StaffCreateReqDTO,
+  type StaffRolesAssignReqDTO,
   type StaffRspDTO,
+  type StaffStatusUpdateReqDTO,
   type StaffUpdateReqDTO
 } from '@/lib/api/clients/service';
 import { nullableText } from '@/lib/display-formatters';
 import { iamDeptTreeQueryOptions, iamRoleOptionsQueryOptions } from '../api/query-options';
 import { ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS } from '../lib/constants';
-import { nextStatus, StatusBadge } from '../lib/format';
-import { deptMultiSelectOptions, deptSelectOptions } from '../lib/tree';
+import { deptMultiSelectOptions, deptSelectOptions, flattenDeptTree } from '../lib/tree';
 import { resolveStaffOperationAccess } from '../lib/staff-operation-access';
 import {
   dslConditionNumbers,
@@ -52,14 +55,129 @@ import {
 } from '../lib/table';
 
 import StaffFormSheet, { roleOptions } from './staff-form-sheet';
-import AssignRolesSheet from './assign-roles-sheet';
 import ResetPasswordSheet from './reset-password-sheet';
 import StaffDetailSheet from './staff-detail-sheet';
 
 const TABLE_ID = 'iam-staff-list';
 const STAFF_LIST_QUERY_KEY = ['service', 'iam-staff'] as const;
 
-const columnDsl = createDataTableColumnDsl<StaffRspDTO>();
+type StaffStatus = (typeof ENABLE_STATUS_OPTIONS)[number]['value'];
+
+export type StaffTableRow = Omit<StaffRspDTO, 'deptId' | 'status'> & {
+  deptId: number | null;
+  status: StaffStatus | null;
+  roleIds: number[];
+};
+
+export type StaffCellEditRequest =
+  | { kind: 'staff'; request: StaffUpdateReqDTO }
+  | { kind: 'status'; request: StaffStatusUpdateReqDTO }
+  | { kind: 'roles'; request: StaffRolesAssignReqDTO };
+
+const columnDsl = createDataTableColumnDsl<StaffTableRow>();
+
+function isStaffStatus(value: unknown): value is StaffStatus {
+  return ENABLE_STATUS_OPTIONS.some((option) => option.value === value);
+}
+
+function toStaffTableRow(staff: StaffRspDTO): StaffTableRow {
+  return {
+    ...staff,
+    deptId: staff.deptId ?? null,
+    status: isStaffStatus(staff.status) ? staff.status : null,
+    roleIds: (staff.roles ?? [])
+      .map((role) => role.roleId)
+      .filter((roleId): roleId is number => typeof roleId === 'number')
+  };
+}
+
+function toStaffRspDTO(staff: StaffRspDTO | StaffTableRow): StaffRspDTO {
+  if (!('roleIds' in staff)) return staff;
+  const { roleIds: _roleIds, ...row } = staff;
+  return {
+    ...row,
+    deptId: row.deptId ?? undefined,
+    status: row.status ?? undefined
+  };
+}
+
+export function mapStaffTableData(data: IamStaffPageResponse | undefined) {
+  return {
+    total: data?.total ?? 0,
+    list: (data?.list ?? []).map(toStaffTableRow)
+  };
+}
+
+function buildStaffUpdateRequest(row: StaffTableRow, deptId: number): StaffUpdateReqDTO | null {
+  const staffId = row.staffId;
+  const staffCode = row.staffCode?.trim();
+  const staffName = row.staffName?.trim();
+  if (staffId == null || !staffCode || !staffName) return null;
+
+  return {
+    staffId,
+    staffCode,
+    staffName,
+    deptId,
+    phone: row.phone?.trim() || undefined,
+    email: row.email?.trim() || undefined,
+    avatar: row.avatar?.trim() || undefined,
+    status: row.status ?? undefined,
+    remark: row.remark?.trim() || undefined
+  };
+}
+
+export function getStaffCellEditRequest(
+  row: StaffTableRow,
+  change: DataTableCellChange<StaffTableRow>
+): StaffCellEditRequest | null {
+  if (row.staffId == null) return null;
+
+  if (change.field === 'deptId') {
+    if (typeof change.value !== 'number' || !Number.isFinite(change.value)) return null;
+    const request = buildStaffUpdateRequest(row, change.value);
+    return request ? { kind: 'staff', request } : null;
+  }
+
+  if (change.field === 'phone') {
+    if (typeof change.value !== 'string' || typeof row.deptId !== 'number') return null;
+    const request = buildStaffUpdateRequest({ ...row, phone: change.value }, row.deptId);
+    return request ? { kind: 'staff', request } : null;
+  }
+
+  if (change.field === 'status') {
+    return isStaffStatus(change.value)
+      ? {
+          kind: 'status',
+          request: { staffId: row.staffId, status: change.value }
+        }
+      : null;
+  }
+
+  if (change.field === 'roleIds') {
+    return Array.isArray(change.value) &&
+      change.value.every((roleId) => typeof roleId === 'number' && Number.isFinite(roleId))
+      ? {
+          kind: 'roles',
+          request: { staffId: row.staffId, roleIds: change.value }
+        }
+      : null;
+  }
+
+  return null;
+}
+
+async function persistStaffCellEdit(request: StaffCellEditRequest) {
+  if (request.kind === 'staff') {
+    await iamStaffUpdate(request.request);
+    return;
+  }
+  if (request.kind === 'status') {
+    await iamStaffStatusUpdate(request.request);
+    return;
+  }
+  await iamStaffRolesAssign(request.request);
+}
 
 function invalidateStaffQueries(queryClient: ReturnType<typeof useQueryClient>) {
   return Promise.all([
@@ -83,10 +201,12 @@ export function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
   });
 }
 
-function getColumns(
-  onOpenDetail: (staff: StaffRspDTO) => void,
-  departmentOptions: ReturnType<typeof deptMultiSelectOptions>
-): Array<ColumnDef<StaffRspDTO>> {
+export function getStaffColumns(
+  onOpenDetail: (staff: StaffTableRow) => void,
+  departmentFilterOptions: ReturnType<typeof deptMultiSelectOptions>,
+  departmentEditorOptions: readonly DataTableChoiceOption<number>[],
+  roleEditorOptions: readonly DataTableChoiceOption<number>[]
+): Array<ColumnDef<StaffTableRow>> {
   return [
     columnDsl.field('staffCode', '工号', {
       size: 130,
@@ -114,46 +234,42 @@ function getColumns(
         </Button>
       )
     }),
-    columnDsl.custom({
-      id: 'deptId',
-      title: '部门',
-      accessorFn: (row) => row.deptName,
+    columnDsl.editableField('deptId', '部门', {
+      type: 'select',
+      valueOptions: departmentEditorOptions,
+      edit: { selectionMode: 'single', allowEmpty: false },
       size: 160,
       filter: 'multiSelect',
-      filterOptions: departmentOptions,
-      enableSorting: false,
-      cell: ({ row }) => dataTableTextCell(row.original.deptName, 'max-w-[160px]')
+      filterOptions: departmentFilterOptions,
+      enableSorting: false
     }),
-    columnDsl.field('phone', '手机号', {
+    columnDsl.editableField('phone', '手机号', {
+      type: 'text',
+      edit: { control: 'input', inputType: 'tel', inputMode: 'tel' },
       size: 140,
       filter: 'text',
       filterPlaceholder: '搜索手机号'
     }),
-    columnDsl.field('status', '状态', {
+    columnDsl.editableField('status', '状态', {
+      type: 'enum',
+      valueOptions: ENABLE_STATUS_OPTIONS,
+      edit: {
+        control: 'switch',
+        checkedValue: 'ENABLED',
+        uncheckedValue: 'DISABLED'
+      },
       size: 'sm',
       filter: 'multiSelect',
       filterOptions: [...ENABLE_STATUS_OPTIONS],
-      enableSorting: false,
-      renderCell: ({ row }) => <StatusBadge status={row.original.status} />
+      enableSorting: false
     }),
-    columnDsl.field('roles', '角色', {
+    columnDsl.editableField('roleIds', '角色', {
+      type: 'select',
+      valueOptions: roleEditorOptions,
+      edit: { selectionMode: 'multiple' },
       size: 'xl',
       enableSorting: false,
-      filter: false,
-      renderCell: ({ row }) => {
-        const roles = row.original.roles ?? [];
-        if (!roles.length) return <span className='text-muted-foreground'>-</span>;
-        return (
-          <div className='flex max-w-[220px] flex-wrap gap-1'>
-            {roles.slice(0, 3).map((role) => (
-              <Badge key={role.roleId ?? role.roleCode} variant='outline'>
-                {role.roleName ?? role.roleCode}
-              </Badge>
-            ))}
-            {roles.length > 3 && <Badge variant='secondary'>+{roles.length - 3}</Badge>}
-          </div>
-        );
-      }
+      filter: false
     }),
     columnDsl.field('mustChangePassword', '改密', {
       size: 'xs',
@@ -161,7 +277,7 @@ function getColumns(
       enableSorting: true,
       renderCell: ({ row }) => (row.original.mustChangePassword ? '是' : '否')
     }),
-    ...auditColumns<StaffRspDTO>()
+    ...auditColumns<StaffTableRow>()
   ];
 }
 
@@ -170,22 +286,54 @@ export default function StaffManagementPage() {
   const { data: me } = useQuery(getIamMeQueryOptions());
   const deptQuery = useQuery(iamDeptTreeQueryOptions());
   const roleQuery = useQuery(iamRoleOptionsQueryOptions());
-  const departments = React.useMemo(() => deptSelectOptions(deptQuery.data ?? [], { enabledOnly: true }), [deptQuery.data]);
+  const departments = React.useMemo(
+    () => deptSelectOptions(deptQuery.data ?? [], { enabledOnly: true }),
+    [deptQuery.data]
+  );
   const departmentFilterOptions = React.useMemo(
     () => deptMultiSelectOptions(deptQuery.data ?? []),
     [deptQuery.data]
   );
   const roles = React.useMemo(() => roleOptions(roleQuery.data ?? []), [roleQuery.data]);
+  const departmentEditorOptions = React.useMemo(() => {
+    const departmentsById = new Map(
+      flattenDeptTree(deptQuery.data ?? [])
+        .filter((department) => department.deptId != null)
+        .map((department) => [department.deptId!, department])
+    );
+    return deptSelectOptions(deptQuery.data ?? []).map((department) => {
+      const value = Number(department.value);
+      return {
+        value,
+        label: department.label,
+        disabled: departmentsById.get(value)?.status !== 'ENABLED'
+      };
+    });
+  }, [deptQuery.data]);
+  const roleEditorOptions = React.useMemo(
+    () =>
+      roles.map((role) => ({
+        value: Number(role.value),
+        label: role.label,
+        disabled: role.disabled
+      })),
+    [roles]
+  );
 
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingStaff, setEditingStaff] = React.useState<StaffRspDTO | null>(null);
   const [detailStaff, setDetailStaff] = React.useState<StaffRspDTO | null>(null);
-  const [rolesStaff, setRolesStaff] = React.useState<StaffRspDTO | null>(null);
   const [resetStaff, setResetStaff] = React.useState<StaffRspDTO | null>(null);
 
   const columns = React.useMemo(
-    () => getColumns(setDetailStaff, departmentFilterOptions),
-    [departmentFilterOptions]
+    () =>
+      getStaffColumns(
+        (staff) => setDetailStaff(toStaffRspDTO(staff)),
+        departmentFilterOptions,
+        departmentEditorOptions,
+        roleEditorOptions
+      ),
+    [departmentEditorOptions, departmentFilterOptions, roleEditorOptions]
   );
 
   const createMutation = useMutation({
@@ -209,22 +357,6 @@ export default function StaffManagementPage() {
       toast.success('员工已删除');
     }
   });
-  const statusMutation = useMutation({
-    mutationFn: (request: Parameters<typeof iamStaffStatusUpdate>[0]) =>
-      iamStaffStatusUpdate(request),
-    onSuccess: async () => {
-      await invalidateStaffQueries(queryClient);
-      toast.success('员工状态已更新');
-    }
-  });
-  const assignRolesMutation = useMutation({
-    mutationFn: (request: Parameters<typeof iamStaffRolesAssign>[0]) =>
-      iamStaffRolesAssign(request),
-    onSuccess: async () => {
-      await invalidateStaffQueries(queryClient);
-      toast.success('角色已分配');
-    }
-  });
   const resetPasswordMutation = useMutation({
     mutationFn: (request: Parameters<typeof iamStaffPasswordReset>[0]) =>
       iamStaffPasswordReset(request),
@@ -239,8 +371,8 @@ export default function StaffManagementPage() {
   const canDelete = hasIamPermission(me, IAM_PERMISSIONS.staff.delete);
   const canResetPassword = hasIamPermission(me, IAM_PERMISSIONS.staff.resetPassword);
   const getStaffOperationAccess = React.useCallback(
-    (staff: StaffRspDTO) =>
-      resolveStaffOperationAccess(staff, {
+    (staff: StaffRspDTO | StaffTableRow) =>
+      resolveStaffOperationAccess(toStaffRspDTO(staff), {
         canUpdate,
         canDelete,
         canResetPassword,
@@ -249,53 +381,25 @@ export default function StaffManagementPage() {
     [canDelete, canResetPassword, canUpdate, me?.staff.staffId]
   );
 
-  const rowActions = React.useMemo<DataTableRowAction<StaffRspDTO>[]>(
+  const rowActions = React.useMemo<DataTableRowAction<StaffTableRow>[]>(
     () => [
       {
-        label: '编辑',
+        label: '编辑资料',
         icon: <Icons.edit className='size-4' />,
         hidden: (staff) => !getStaffOperationAccess(staff).canEdit,
         onClick: (staff) => {
           if (!getStaffOperationAccess(staff).canEdit) return;
-          setEditingStaff(staff);
+          setEditingStaff(toStaffRspDTO(staff));
           setFormOpen(true);
         }
       },
       {
-        label: '角色',
-        icon: <Icons.userShare className='size-4' />,
-        hidden: (staff) => !getStaffOperationAccess(staff).canAssignRoles,
-        onClick: (staff) => {
-          if (!getStaffOperationAccess(staff).canAssignRoles) return;
-          setRolesStaff(staff);
-        }
-      },
-      {
-        label: '状态',
-        icon: <Icons.rotate className='size-4' />,
-        hidden: (staff) => !getStaffOperationAccess(staff).canUpdateStatus,
-        confirmDelete: {
-          title: '确认切换员工状态',
-          description: (staff) =>
-            `确认将 ${staff.staffName ?? staff.username ?? '该员工'} ${staff.status === 'ENABLED' ? '停用' : '启用'}？`,
-          confirmText: '确认',
-          cancelText: '取消'
-        },
-        onClick: async (staff) => {
-          if (!getStaffOperationAccess(staff).canUpdateStatus || staff.staffId == null) return;
-          await statusMutation.mutateAsync({
-            staffId: staff.staffId,
-            status: nextStatus(staff.status)
-          });
-        }
-      },
-      {
         label: '重置密码',
-        icon: <Icons.lock className='size-4' />,
+        icon: <Icons.userKey className='size-4' />,
         hidden: (staff) => !getStaffOperationAccess(staff).canResetPassword,
         onClick: (staff) => {
           if (!getStaffOperationAccess(staff).canResetPassword) return;
-          setResetStaff(staff);
+          setResetStaff(toStaffRspDTO(staff));
         }
       },
       {
@@ -304,7 +408,8 @@ export default function StaffManagementPage() {
         hidden: (staff) => !getStaffOperationAccess(staff).canDelete,
         confirmDelete: {
           title: '确认删除员工',
-          description: (staff) => `删除后 ${staff.staffName ?? staff.username ?? '该员工'} 将无法登录。`,
+          description: (staff) =>
+            `删除后 ${staff.staffName ?? staff.username ?? '该员工'} 将无法登录。`,
           confirmText: '确认删除',
           cancelText: '取消'
         },
@@ -314,9 +419,10 @@ export default function StaffManagementPage() {
         }
       }
     ],
-    [deleteMutation, getStaffOperationAccess, statusMutation]
+    [deleteMutation, getStaffOperationAccess]
   );
 
+  // 新增动作不读取行上下文；保留 API DTO 契约后适配到表格视图模型。
   const tableActions = React.useMemo<DataTableAction<StaffRspDTO>[]>(
     () => [
       {
@@ -330,10 +436,66 @@ export default function StaffManagementPage() {
       }
     ],
     [canCreate]
+  ) as unknown as DataTableAction<StaffTableRow>[];
+
+  const editingControllerRef = React.useRef<DataTableEditingController<StaffTableRow> | null>(null);
+  const handleCellEdit = React.useCallback(
+    ({ changes, snapshot }: DataTableEditChangeEvent<StaffTableRow>) => {
+      const editingController = editingControllerRef.current;
+      if (!editingController) return;
+
+      void (async () => {
+        const rowsById = new Map(snapshot.rows.map((row) => [String(row.staffId), row] as const));
+        const results = await Promise.allSettled(
+          changes.map(async (change) => {
+            const row = rowsById.get(change.rowId);
+            const request = row ? getStaffCellEditRequest(row, change) : null;
+            if (!request) throw new Error('员工单元格更新参数不完整');
+            await persistStaffCellEdit(request);
+            return change;
+          })
+        );
+        const acceptedChanges: DataTableCellChange<StaffTableRow>[] = [];
+        const failedChanges: DataTableCellChange<StaffTableRow>[] = [];
+        results.forEach((result, index) => {
+          const change = changes[index];
+          if (!change) return;
+          if (result.status === 'fulfilled') acceptedChanges.push(change);
+          else failedChanges.push(change);
+        });
+
+        let refreshFailed = false;
+        if (acceptedChanges.length > 0) {
+          editingController.acceptChanges(acceptedChanges);
+          try {
+            await invalidateStaffQueries(queryClient);
+          } catch {
+            refreshFailed = true;
+            toast.error('员工字段已保存，但列表刷新失败');
+          }
+        }
+        if (failedChanges.length > 0) {
+          const rollbackRowsById = new Map<string, StaffTableRow>();
+          for (const change of failedChanges) {
+            const currentRow = rollbackRowsById.get(change.rowId) ?? rowsById.get(change.rowId);
+            if (!currentRow) continue;
+            rollbackRowsById.set(change.rowId, {
+              ...currentRow,
+              [change.field]: change.previousValue
+            });
+          }
+          editingController.acceptChanges(failedChanges, [...rollbackRowsById.values()]);
+          toast.error('部分员工字段更新失败，已回滚');
+          return;
+        }
+        if (!refreshFailed) toast.success('员工字段已更新');
+      })();
+    },
+    [queryClient]
   );
 
-  const { table, total, queryState, refreshProps } = useDslDataTable<
-    StaffRspDTO,
+  const { table, editing, total, queryState, refreshProps } = useDslDataTable<
+    StaffTableRow,
     DataTableDslPageRequestBase,
     IamStaffPageResponse,
     ApiClientError,
@@ -342,15 +504,27 @@ export default function StaffManagementPage() {
     tableId: TABLE_ID,
     columns,
     queryOptions: staffTableQueryOptions,
+    mapQueryData: mapStaffTableData,
     rowActions,
     rowId: 'staffId',
     showSelectColumn: false,
+    editing: {
+      isCellEditable: ({ row }) => getStaffOperationAccess(row).canEdit,
+      onChange: handleCellEdit
+    },
     refreshBehavior: {
       onSuccess: () => {
         toast.success('员工列表已刷新');
       }
     }
   });
+
+  React.useEffect(() => {
+    editingControllerRef.current = editing;
+    return () => {
+      editingControllerRef.current = null;
+    };
+  }, [editing]);
 
   return (
     <>
@@ -359,7 +533,7 @@ export default function StaffManagementPage() {
           {queryState.isFetching && !queryState.data ? (
             <DataTableSkeleton columnCount={8} filterCount={5} />
           ) : (
-            <DataTable
+            <DataTable<StaffTableRow>
               table={table}
               statusTotalCount={total}
               tableActions={tableActions}
@@ -386,16 +560,6 @@ export default function StaffManagementPage() {
             if (!editingStaff?.staffId || !getStaffOperationAccess(editingStaff).canEdit) return;
             await updateMutation.mutateAsync(payload);
           }
-        }}
-      />
-      <AssignRolesSheet
-        open={!!rolesStaff}
-        onOpenChange={(open) => !open && setRolesStaff(null)}
-        staff={rolesStaff}
-        roles={roles}
-        onSubmit={async (roleIds) => {
-          if (!rolesStaff?.staffId || !getStaffOperationAccess(rolesStaff).canAssignRoles) return;
-          await assignRolesMutation.mutateAsync({ staffId: rolesStaff.staffId, roleIds });
         }}
       />
       <ResetPasswordSheet

@@ -6,6 +6,7 @@ import type {
   ColumnResizeStorageMode,
   ExpandConfigEdge,
   ExtendedColumnSort,
+  DataTableEditingOptions,
   SortingStorageMode
 } from '@/types/data-table';
 import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
@@ -121,4 +122,12 @@ export interface UseDataTableProps<TData> extends Omit<
   rowActions?: DataTableRowAction<TData>[];
   /** 行展开配置。传入后启用行点击展开和详情面板，不再额外注入展开图标列。 */
   expandConfig?: ExpandConfigEdge<TData>;
+  /** editableField 的行级权限与编辑完成通知。 */
+  editing?: DataTableEditingOptions<TData>;
+  /** @internal 当前 data 对应的服务端页码；useDslDataTable 用于识别 placeholderData。 */
+  editingPageNo?: number;
+  /** @internal 当前 data 所属的查询范围。 */
+  editingScopeKey?: string;
+  /** @internal 跨页编辑是否要求显式稳定 row ID。 */
+  requireExplicitEditingRowId?: boolean;
 }
