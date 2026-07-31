@@ -24,6 +24,8 @@ declare module '@tanstack/react-table' {
     placeholder?: string;
     /** DataTableToolbar 用于选择筛选控件的类型。 */
     variant?: FilterVariant;
+    /** 表头“当前页筛选”的独立配置，不参与服务端查询或 TanStack columnFilters。 */
+    localFilter?: DataTableLocalFilterMeta<TData>;
     /** useDslDataTable 读取的后端查询序列化配置。 */
     query?: {
       operator?: DataTableDslOperator;
@@ -70,6 +72,8 @@ declare module '@tanstack/react-table' {
     dataTableId?: string;
     /** DataTable 可编辑单元格的运行时状态与操作。 */
     dataTableEditing?: DataTableEditingRuntime<TData>;
+    /** 表头“当前页筛选”的独立运行时；不会写入 TanStack columnFilters。 */
+    dataTableLocalFiltering?: DataTableLocalFilteringRuntime;
   }
 }
 
@@ -634,16 +638,61 @@ export type DataTableColumnFilterVariant =
   | 'numberRange'
   | 'boolean';
 
+/** 表头本地筛选控件配置；与服务端搜索栏使用的扁平 meta 字段完全隔离。 */
+export interface DataTableLocalFilterMeta<TData = unknown> {
+  variant: FilterVariant;
+  placeholder?: string;
+  options?: Option[];
+  range?: [number, number];
+  unit?: string;
+  /** 将原始字段值转换成 Set Filter 候选项文案。 */
+  formatValue?: (value: unknown, row: TData) => unknown;
+}
+
+/** Set Filter 候选项；key 保留原始值类型，label 只负责展示与搜索。 */
+export interface DataTableLocalFilterOption {
+  key: string;
+  label: string;
+}
+
+/** undefined 表示全选/未筛选，空 selectedKeys 表示明确不选择任何值。 */
+export interface DataTableLocalSetFilterValue {
+  kind: 'set';
+  selectedKeys: string[];
+}
+
+/** 表头本地筛选状态；只作用于当前已经加载到浏览器的数据。 */
+export interface DataTableLocalColumnFilter {
+  id: string;
+  value: DataTableLocalSetFilterValue;
+}
+
+/** 表头本地筛选运行时，由 useDataTable 注入 TableMeta 供列头控件消费。 */
+export interface DataTableLocalFilteringRuntime {
+  filters: readonly DataTableLocalColumnFilter[];
+  getFilterOptions: (columnId: string) => readonly DataTableLocalFilterOption[];
+  getFilterValue: (columnId: string) => DataTableLocalSetFilterValue | undefined;
+  setFilterValue: (columnId: string, value: DataTableLocalSetFilterValue | undefined) => void;
+  reset: () => void;
+}
+
 export type DataTableFilterOption = Option;
 
 export interface DataTableColumnFilterOptions {
-  /** false 表示关闭筛选；字符串值表示筛选控件类型。 */
+  /** false 表示关闭服务端搜索筛选；字符串值表示搜索栏控件类型。 */
   filter?: false | DataTableColumnFilterVariant;
   filterPlaceholder?: string;
   filterOptions?: readonly DataTableFilterOption[];
   filterMin?: number | Date;
   filterMax?: number | Date;
   filterUnit?: string;
+  /** 表头当前页筛选；默认按字段 type 推导，false 可单独关闭。 */
+  localFilter?: false | DataTableColumnFilterVariant;
+  localFilterPlaceholder?: string;
+  localFilterOptions?: readonly DataTableFilterOption[];
+  localFilterMin?: number;
+  localFilterMax?: number;
+  localFilterUnit?: string;
 }
 
 export interface DataTableColumnDslQueryOptions<TData, TValue> {

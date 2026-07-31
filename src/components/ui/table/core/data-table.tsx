@@ -166,13 +166,16 @@ export function DataTable<TData>({
   const rows = table.getRowModel().rows;
   const enableZebraStriping = table.options.meta?.enableZebraStriping ?? false;
   const columnFilters = table.getState().columnFilters;
+  const localColumnFilters = table.options.meta?.dataTableLocalFiltering?.filters;
   // 只把有实际值的筛选计入状态判断；空字符串、空数组都视为未筛选。
-  const hasFilters = columnFilters.some((filter) => {
-    const value = filter.value;
-    if (value === '' || value === null || value === undefined) return false;
-    if (Array.isArray(value)) return value.length > 0;
-    return true;
-  });
+  const hasFilters =
+    (localColumnFilters?.length ?? 0) > 0 ||
+    columnFilters.some((filter) => {
+      const value = filter.value;
+      if (value === '' || value === null || value === undefined) return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return true;
+    });
   const resolvedStatus: DataTableStatusConfig | undefined = getStatusConfig?.({
     rows,
     totalCount: statusTotalCount ?? 0,

@@ -247,7 +247,10 @@ function SortableDataTableHeaderCell<TData>({
       <div
         ref={setActivatorNodeRef}
         data-slot='data-table-column-order-activator'
-        className={cn('flex min-w-0 items-center', isDragging ? 'cursor-grabbing' : 'cursor-grab')}
+        className={cn(
+          'flex w-full min-w-0 items-center',
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        )}
         {...listeners}
       >
         {header.isPlaceholder ? null : renderHeaderContent(header)}

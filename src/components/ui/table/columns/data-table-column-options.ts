@@ -41,6 +41,7 @@ export interface DataTableColumnResolvedDefaults {
   enableHiding?: boolean;
   enableResizing?: boolean;
   enableColumnFilter?: boolean;
+  localFilter?: false | DataTableColumnFilterVariant;
   columnMenuVisible?: boolean;
   columnPanelVisible?: boolean;
   columnPanelReorder?: boolean;
@@ -49,7 +50,10 @@ export interface DataTableColumnResolvedDefaults {
 export type DataTableColumnOptions<TData, TValue> = DataTableColumnInputOptions<TData, TValue> &
   DataTableColumnFilterOptions &
   DataTableColumnDslQueryOptions<TData, TValue> &
-  DataTableColumnPanelOptions;
+  DataTableColumnPanelOptions & {
+    /** DSL builder 注入的候选项展示格式；业务通常通过 format/formatValue 间接配置。 */
+    localFilterFormatValue?: (value: unknown, row: TData) => unknown;
+  };
 
 interface ResolveDataTableColumnOptionsParams<TData, TValue> {
   title: string;
@@ -110,6 +114,41 @@ function resolveFilterMeta<TData, TValue>(
     options: options.filterOptions ? [...options.filterOptions] : undefined,
     range,
     unit: options.filterUnit
+  };
+}
+
+/** 解析独立的当前页筛选配置；默认类型由列 builder 根据字段 type 提供。 */
+function resolveLocalFilterMeta<TData, TValue>(
+  title: string,
+  defaults: DataTableColumnResolvedDefaults,
+  options: DataTableColumnOptions<TData, TValue>
+): DataTableColumnMeta<TData, TValue>['localFilter'] {
+  if (options.localFilter === false) return undefined;
+
+  const filter = options.localFilter ?? defaults.localFilter;
+  if (!filter) return options.meta?.localFilter;
+
+  const min = options.localFilterMin ?? options.filterMin;
+  const max = options.localFilterMax ?? options.filterMax;
+  const range =
+    typeof min === 'number' && typeof max === 'number'
+      ? ([min, max] satisfies [number, number])
+      : undefined;
+
+  return {
+    variant: FILTER_VARIANT_META[filter],
+    placeholder:
+      options.localFilterPlaceholder ??
+      options.filterPlaceholder ??
+      inferFilterPlaceholder(filter, title),
+    options: options.localFilterOptions
+      ? [...options.localFilterOptions]
+      : options.filterOptions
+        ? [...options.filterOptions]
+        : undefined,
+    range,
+    unit: options.localFilterUnit ?? options.filterUnit,
+    formatValue: options.localFilterFormatValue ?? options.meta?.localFilter?.formatValue
   };
 }
 
@@ -178,6 +217,7 @@ function resolveMeta<TData, TValue>(
         ? baseMeta.label
         : title,
     ...resolveFilterMeta(title, options),
+    localFilter: resolveLocalFilterMeta(title, defaults, options),
     query,
     columnMenuVisible: options.columnMenuVisible ?? defaults.columnMenuVisible,
     columnPanelVisible: options.columnPanelVisible ?? defaults.columnPanelVisible,

@@ -61,6 +61,35 @@ import type {
 type BadgeVariant = ComponentProps<typeof Badge>['variant'];
 type DataTableColumn<TData> = ColumnDef<TData>;
 
+/** 字段 type 到当前页筛选控件的默认映射；未知扩展类型按文本匹配兜底。 */
+function inferLocalFilterVariant(
+  type: DataTableColumnValueType,
+  selectionMode?: 'single' | 'multiple'
+): DataTableColumnOptions<unknown, unknown>['localFilter'] {
+  switch (type) {
+    case 'number':
+    case 'int':
+    case 'decimal':
+    case 'money':
+    case 'percent':
+    case 'fileSize':
+      return 'number';
+    case 'date':
+    case 'dateTime':
+      return 'date';
+    case 'boolean':
+      return 'boolean';
+    case 'enum':
+    case 'select':
+      return selectionMode === 'multiple' ? 'multiSelect' : 'select';
+    case 'remoteSelect':
+    case 'text':
+    case 'longText':
+    default:
+      return 'text';
+  }
+}
+
 /**
  * createDataTableColumnDsl 的全局选项。
  *
@@ -465,6 +494,19 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       typeDefaults.headerClassName,
       headerClassName
     );
+    const columnFormatter = format ?? formatValue;
+    const resolveFieldFormattedValue = (value: unknown, row: TData) => {
+      const typedValue = value as TData[TKey];
+      const enumLabel =
+        type === 'enum' ? resolveDataTableEnumLabel(typedValue, columnOptions) : undefined;
+
+      return (
+        columnFormatter?.(typedValue, row) ??
+        enumLabel ??
+        typeDefaults.formatValue?.(typedValue, row) ??
+        formatField(key, row)
+      );
+    };
     const resolvedMeta = typeDefaults.copyValue
       ? {
           // copyValue 放进 meta，单元格复制逻辑会优先读取它。
@@ -489,16 +531,8 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
 
         const value = context.getValue() as TData[TKey];
         const row = context.row.original;
-        const formatter = format ?? formatValue;
-        const enumLabel =
-          // enum 类型优先从 filterOptions 里解析 label，保证筛选选项和展示文案一致。
-          type === 'enum' ? resolveDataTableEnumLabel(value, columnOptions) : undefined;
-        const formattedValue =
-          // 展示值优先级：列级 formatter -> enum label -> 类型默认 formatter -> 全局字段 formatter。
-          formatter?.(value, row) ??
-          enumLabel ??
-          typeDefaults.formatValue?.(value, row) ??
-          formatField(key, row);
+        // 展示值优先级：列级 formatter -> enum label -> 类型默认 formatter -> 全局字段 formatter。
+        const formattedValue = resolveFieldFormattedValue(value, row);
 
         return renderDataTableTextCell(formattedValue, resolvedCellClassName);
       },
@@ -506,12 +540,14 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
         title,
         defaults: {
           ...FIELD_COLUMN_DEFAULTS,
+          localFilter: inferLocalFilterVariant(type),
           size: typeDefaults.size,
           minSize: typeDefaults.minSize,
           maxSize: typeDefaults.maxSize
         },
         options: {
           ...columnOptions,
+          localFilterFormatValue: resolveFieldFormattedValue,
           meta: resolvedMeta
         }
       })
@@ -592,6 +628,13 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
             value: String(option.value)
           }))
         : columnOptions.filterOptions;
+    const derivedLocalFilterOptions =
+      valueOptions && !columnOptions.localFilterOptions
+        ? valueOptions.map((option) => ({
+            label: option.label,
+            value: String(option.value)
+          }))
+        : columnOptions.localFilterOptions;
     const resolvedEditable = resolveDataTableEditableCell<TData>({
       type,
       field: key,
@@ -642,6 +685,14 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     const typeFormatter = typeDefaults.formatValue as
       | ((value: unknown, row: TData) => unknown)
       | undefined;
+    const resolveEditableFormattedValue = (value: unknown, row: TData) =>
+      resolvedEditable.resolveFormattedValue({
+        value,
+        row,
+        columnFormatter,
+        typeFormatter,
+        fallbackFormatter: () => formatField(key, row)
+      });
 
     return eraseDataTableColumnValue({
       accessorKey: key,
@@ -651,13 +702,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
         const row = context.row.original;
         return resolvedEditable.renderCell({
           context,
-          formattedValue: resolvedEditable.resolveFormattedValue({
-            value,
-            row,
-            columnFormatter,
-            typeFormatter,
-            fallbackFormatter: () => formatField(key, row)
-          }),
+          formattedValue: resolveEditableFormattedValue(value, row),
           className: resolvedCellClassName
         });
       },
@@ -665,6 +710,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
         title,
         defaults: {
           ...FIELD_COLUMN_DEFAULTS,
+          localFilter: inferLocalFilterVariant(type, edit?.selectionMode),
           size: typeDefaults.size,
           minSize: typeDefaults.minSize,
           maxSize: typeDefaults.maxSize
@@ -672,6 +718,8 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
         options: {
           ...columnOptions,
           filterOptions: derivedFilterOptions,
+          localFilterOptions: derivedLocalFilterOptions,
+          localFilterFormatValue: resolveEditableFormattedValue,
           meta: resolvedMeta
         }
       })
@@ -695,8 +743,12 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     const formatter = format ?? formatValue;
     const resolvedOptions = resolveDataTableColumnOptions<TData, TData[TKey]>({
       title,
-      defaults: BADGE_COLUMN_DEFAULTS,
-      options: columnOptions
+      defaults: { ...BADGE_COLUMN_DEFAULTS, localFilter: 'text' },
+      options: {
+        ...columnOptions,
+        localFilterFormatValue: (value, row) =>
+          formatter ? formatter(value as TData[TKey], row) : value
+      }
     });
 
     return eraseDataTableColumnValue({

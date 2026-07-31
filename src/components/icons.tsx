@@ -43,6 +43,7 @@ import {
   IconFileTypeCsv,
   IconFileTypeXls,
   IconFileZip,
+  IconFilter2,
   IconFolder,
   IconGripVertical,
   IconHelpCircle,
@@ -124,6 +125,7 @@ export const Icons = {
   spinner: IconLoader2,
   search: IconSearch,
   settings: IconSettings,
+  filter: IconFilter2,
   trash: IconTrash,
 
   // Navigation / Chevrons

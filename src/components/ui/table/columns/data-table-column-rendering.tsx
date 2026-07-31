@@ -1,4 +1,4 @@
-import type { Column, ColumnDef } from '@tanstack/react-table';
+import type { Column, ColumnDef, Table } from '@tanstack/react-table';
 
 import { DataTableOverflowTooltipText } from '@/components/ui/table/cells/data-table-overflow-tooltip-text';
 import { DataTableColumnHeader } from '@/components/ui/table/columns/data-table-column-header';
@@ -21,9 +21,12 @@ export type ColumnHeader<TData> = ColumnDef<TData>['header'];
 export function dataTableHeader<TData>(
   column: Column<TData, unknown>,
   title: string,
-  className?: string
+  className?: string,
+  table?: Table<TData>
 ) {
-  return <DataTableColumnHeader column={column} title={title} className={className} />;
+  return (
+    <DataTableColumnHeader column={column} table={table} title={title} className={className} />
+  );
 }
 
 /** 返回 TanStack ColumnDef.header 可直接使用的工厂函数。 */
@@ -31,7 +34,7 @@ export function dataTableHeaderFactory<TData>(
   title: string,
   className?: string
 ): ColumnHeader<TData> {
-  return ({ column }) => dataTableHeader(column, title, className);
+  return ({ column, table }) => dataTableHeader(column, title, className, table);
 }
 
 /** 渲染普通文本 cell，统一空值占位、截断和 Tooltip。 */

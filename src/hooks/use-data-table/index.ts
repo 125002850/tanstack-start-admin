@@ -48,6 +48,7 @@ import { resolveDataTableRowId, stringifyDataTableRowId } from './row-id';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
 import { useTableState } from './use-table-state';
 import { useDataTableEditing } from './use-data-table-editing';
+import { useDataTableLocalFiltering } from './use-data-table-local-filtering';
 
 /**
  * DataTable 的核心状态装配 hook。
@@ -453,9 +454,25 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       ? editingState.getRowsForPage(resolvedEditingPageNo)
       : tableProps.data;
 
+  const localFilteringResetScope = React.useMemo(
+    () =>
+      JSON.stringify({
+        pagination,
+        sorting,
+        columnFilters,
+        editingScopeKey
+      }),
+    [columnFilters, editingScopeKey, pagination, sorting]
+  );
+  const localFiltering = useDataTableLocalFiltering({
+    data: editingRows,
+    columns: resolvedColumns,
+    resetScope: localFilteringResetScope
+  });
+
   const table = useReactTable({
     ...tableProps,
-    data: editingRows,
+    data: localFiltering.data,
     columns: resolvedColumns,
     initialState: resolvedInitialState,
     pageCount: resolvedPageCount,
@@ -469,7 +486,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
         reset: resetColumnOrder
       },
       dataTableId: tableId,
-      dataTableEditing: editingEnabled ? editingState.runtime : undefined
+      dataTableEditing: editingEnabled ? editingState.runtime : undefined,
+      dataTableLocalFiltering: localFiltering.runtime
     },
     state: {
       pagination,

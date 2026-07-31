@@ -332,6 +332,7 @@ export function DataTableBody<TData>({
   const pagination = table.getState().pagination;
   const sorting = table.getState().sorting;
   const columnFilters = table.getState().columnFilters;
+  const localColumnFilters = table.options.meta?.dataTableLocalFiltering?.filters;
 
   const handleRowClick = useCallback(
     (event: React.MouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
@@ -380,13 +381,13 @@ export function DataTableBody<TData>({
 
   // 分页、排序、筛选变化后回到顶部；useLayoutEffect 保证在浏览器绘制前完成滚动复位。
   useLayoutEffect(() => {
-    const key = `${pagination.pageIndex}-${pagination.pageSize}-${JSON.stringify(sorting)}-${JSON.stringify(columnFilters)}`;
+    const key = `${pagination.pageIndex}-${pagination.pageSize}-${JSON.stringify(sorting)}-${JSON.stringify(columnFilters)}-${JSON.stringify(localColumnFilters ?? [])}`;
     if (prevKeyRef.current && prevKeyRef.current !== key) {
       rowVirtualizer.scrollToIndex(0, { behavior: 'auto' });
     }
     prevKeyRef.current = key;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.pageIndex, pagination.pageSize, sorting, columnFilters]);
+  }, [pagination.pageIndex, pagination.pageSize, sorting, columnFilters, localColumnFilters]);
 
   // KeepAlive 隐藏保护：当 viewport 被隐藏到 0x0 时暂停测量，重新可见后强制 measure。
   const frozenRef = useRef(false);
