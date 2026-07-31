@@ -8,10 +8,6 @@ import {
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
-import { useDataTable } from '@/hooks/use-data-table';
-import { DEBOUNCE_MS } from '@/hooks/use-data-table/constants';
-import type { UseDataTableProps } from '@/hooks/use-data-table/types';
-import { useDataTablePageSize } from '@/hooks/use-data-table/use-data-table-page-size';
 import type { ExtendedColumnSort } from '@/types/data-table';
 
 import {
@@ -22,7 +18,11 @@ import {
   type DataTableDslSortItem,
   type PaginatedResponse,
   type QueryOptionsFactory
-} from './use-dsl-data-table.dsl';
+} from './dsl';
+import { DEBOUNCE_MS } from './constants';
+import type { UseDataTableProps } from './types';
+import { useDataTable } from './use-data-table';
+import { useDataTablePageSize } from './use-data-table-page-size';
 
 /**
  * 基于 DSL 后端查询的 DataTable hook。

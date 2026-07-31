@@ -4,15 +4,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEBOUNCE_MS } from '@/hooks/use-data-table/constants';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 
+import { DEBOUNCE_MS } from './constants';
+import type { DataTableDslPageRequestBase, PaginatedResponse, QueryOptionsFactory } from './dsl';
 import { useDslDataTable } from './use-dsl-data-table';
-import type {
-  DataTableDslPageRequestBase,
-  PaginatedResponse,
-  QueryOptionsFactory
-} from './use-dsl-data-table.dsl';
 
 type DictionaryTypeRow = {
   id?: number;

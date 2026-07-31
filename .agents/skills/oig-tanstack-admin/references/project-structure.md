@@ -47,9 +47,7 @@ src/components/data-table/
 ├── toolbar/                 # 工具栏与列面板
 └── virtualization/          # 行列虚拟化
 
-src/hooks/use-data-table/    # TanStack Table 状态装配、编辑、本地筛选、持久化接入
-src/hooks/use-dsl-data-table.ts
-                              # 服务端 DSL 查询与 useDataTable 组合
+src/hooks/use-data-table/    # TanStack Table 状态装配、服务端 DSL、编辑、本地筛选与持久化
 src/config/data-table*.ts    # 全局开关、尺寸 preset、消息
 src/lib/data-table*.ts       # 非 React 的共享算法与持久化
 src/types/data-table.ts      # 跨层公共类型和 TanStack module augmentation
@@ -62,4 +60,5 @@ src/types/data-table.ts      # 跨层公共类型和 TanStack module augmentatio
 - 只服务单一业务域的组件放入对应 `features/<feature>`。只有出现稳定的跨 feature 复用后才上移到 `components`。
 - route 文件只负责路由、metadata 和页面边界；业务查询、交互与布局组合下沉到 feature。
 - `hooks` 负责共享状态编排，`lib` 负责无 UI 算法，`types` 只放跨层契约；禁止用任一目录作为无法归类代码的兜底。
+- 只被单一 feature 或共享子系统消费的 hook 必须与消费者同层放置；只有稳定跨 feature 复用的状态编排才放入顶层 `hooks`。
 - 搬迁公共入口时一次性更新源码、测试和有效文档，删除旧入口；禁止增加兼容转发、同名 alias 或新旧路径双写。

@@ -22,7 +22,7 @@ type StepState = {
 };
 
 /**
- * Hook for managing multi-step form navigation and validation
+ * Hook for managing multi-step form navigation and validation.
  *
  * @param schemas - Array of Zod schemas for each step
  * @returns Object with stepper state and methods

@@ -109,8 +109,7 @@ src/
 │   └── router/                     # route metadata、导航派生与菜单权限
 ├── config/                         # 环境变量与特性配置
 ├── hooks/                          # 跨 feature 状态编排
-│   ├── use-data-table/             # 表格状态、编辑和本地筛选运行时
-│   └── use-dsl-data-table.ts       # 服务端 DSL 查询组合
+│   └── use-data-table/             # 表格状态、服务端 DSL、编辑和本地筛选运行时
 ├── styles/                         # 全局样式与主题
 └── types/                          # TypeScript 类型
 ```

@@ -13,8 +13,7 @@ import {
 } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
-import { useDslDataTable } from '@/hooks/use-dsl-data-table';
-import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
+import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
 import type { DataTableDateValue } from '@/types/data-table';
 
 const MOCK_ROW_COUNT = 10_000;

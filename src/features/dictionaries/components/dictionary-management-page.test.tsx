@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { DataTableDslCondition } from '@/hooks/use-dsl-data-table.dsl';
+import type { DataTableDslCondition } from '@/hooks/use-data-table';
 
 const serviceMocks = vi.hoisted(() => ({
   mdmDictGlobalTypesListAll: vi.fn(),
@@ -572,11 +572,9 @@ describe('DictionaryManagementPage', () => {
     });
     const requestCountBeforeToggle = itemRequests.length;
 
-    const itemRow = screen.getByText('已支付').closest('tr');
-    if (!itemRow) {
-      throw new Error('Expected dictionary item row to be rendered');
-    }
-    await user.click(within(itemRow).getByRole('button', { name: '启用' }));
+    const paidItemRow = screen.getByText('已支付').closest('tr');
+    expect(paidItemRow).not.toBeNull();
+    fireEvent.click(within(paidItemRow!).getByText('启用'));
     expect(await screen.findByText('确认停用字典项「已支付」？')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '确认切换' }));
 

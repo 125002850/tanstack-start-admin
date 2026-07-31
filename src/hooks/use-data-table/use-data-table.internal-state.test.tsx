@@ -12,15 +12,14 @@ import {
   getDataTableRowActionsColumnWidth,
   type DataTableRowAction
 } from '@/components/data-table/actions/data-table-row-action';
-import type { RowNumberDisplayMode } from '@/hooks/use-data-table/columns/row-number-column';
-import { resolveDataTableRowId } from '@/hooks/use-data-table/row-id';
+import type { RowNumberDisplayMode } from './columns/row-number-column';
+import { resolveDataTableRowId } from './row-id';
+import { useDataTable } from './use-data-table';
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({}),
   useNavigate: () => vi.fn()
 }));
-
-import { useDataTable } from '@/hooks/use-data-table';
 
 type TestRow = { id: number; name: string };
 const ROW_NUMBER_COLUMN_ID = '__rowNumber';

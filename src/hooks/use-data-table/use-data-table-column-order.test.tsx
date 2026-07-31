@@ -2,8 +2,9 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ColumnDef } from '@tanstack/react-table';
 
-import { useDataTable } from '@/hooks/use-data-table';
 import { saveDataTableColumnOrder } from '@/lib/data-table-state-persistence';
+
+import { useDataTable } from './use-data-table';
 
 type TestRow = { id: number; name: string };
 

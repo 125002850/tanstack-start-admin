@@ -10,7 +10,7 @@ import type {
 import type { DataTableDslOperator, FilterVariant } from '@/types/data-table';
 
 /**
- * DataTable DSL 请求构建器。
+ * DataTable 服务端 DSL 请求构建器。
  *
  * 该文件把 TanStack Table 的 pagination/sorting/columnFilters 转换为后端分页 DSL：
  * pageNo/pageSize、condition 条件树和 sort 数组。它只支持项目明确约定的筛选类型。
