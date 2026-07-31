@@ -1,4 +1,4 @@
-import { StatusToggleBadge } from '@/components/ui/status-toggle-badge';
+import { StatusToggleBadge } from '@/features/dictionaries/components/status-toggle-badge';
 import type { DictionaryItemRecord } from '../api/types';
 import type { ColumnDef } from '@tanstack/react-table';
 import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';

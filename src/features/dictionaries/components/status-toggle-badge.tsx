@@ -1,5 +1,5 @@
 import { DictStatus, getStatusLabel } from '@/constants/enums';
-import { Badge } from './badge';
+import { Badge } from '@/components/ui/badge';
 
 interface StatusToggleBadgeProps {
   status?: string;
