@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { mockLoginInfo } from './support/mock-login-info';
 
 const DICTIONARY_ROUTE = '/dashboard/system-management/dictionaries';
+const EDITING_ROUTE = '/dashboard/examples/data-table-editing';
 
 function apiEnvelope<T>(data: T) {
   return { code: 200, msg: 'ok', data };
@@ -76,8 +77,22 @@ async function dragBetweenCells(page: Page, source: Locator, target: Locator) {
   await page.mouse.up();
 }
 
-async function readCellGeometry(row: Locator) {
-  return row.locator('td[data-cell-id]').evaluateAll((cells) =>
+async function dispatchMatrixPaste(target: Locator, text: string) {
+  return target.evaluate((element, clipboardText) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData('text/plain', clipboardText);
+    const event = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData
+    });
+    element.dispatchEvent(event);
+    return event.defaultPrevented;
+  }, text);
+}
+
+async function readCellGeometry(card: Locator) {
+  return card.locator('tbody td[data-cell-id]').evaluateAll((cells) =>
     cells.map((cell) => {
       const cellRect = cell.getBoundingClientRect();
       const contentRect = cell.firstElementChild?.getBoundingClientRect();
@@ -129,6 +144,180 @@ test('@workspace-v2 selects a range, extends by keyboard, and copies TSV', async
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe('code-001\tName 1\ncode-002\tName 2\ncode-003\tName 3');
+});
+
+test('@workspace-v2 applies an Excel-compatible matrix atomically and rejects invalid plans', async ({
+  page
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('app-data-table-per-page:data-table-editing-example', '500');
+  });
+  await page.goto(EDITING_ROUTE);
+  await expect(page).toHaveURL(new RegExp(`${EDITING_ROUTE}$`));
+  const example = page.getByTestId('data-table-editing-example');
+  await expect(example).toBeVisible();
+
+  const firstPhone = example.locator('td[data-cell-row-id="1"][data-cell-column-id="phone"]');
+  const firstRemark = example.locator('td[data-cell-row-id="1"][data-cell-column-id="remark"]');
+  const secondPhone = example.locator('td[data-cell-row-id="2"][data-cell-column-id="phone"]');
+  const secondRemark = example.locator('td[data-cell-row-id="2"][data-cell-column-id="remark"]');
+  await expect(firstPhone).toBeVisible();
+  await expect(secondRemark).toBeVisible();
+
+  await dragBetweenCells(page, firstPhone, secondRemark);
+  await expect(example.locator('td[data-cell-selected="true"]')).toHaveCount(4);
+  expect(
+    await dispatchMatrixPaste(
+      firstPhone,
+      '13900000001\t"首行\r\n第二行，含 ""引号"""\r\n13900000002\t普通备注'
+    )
+  ).toBe(true);
+
+  await expect(firstPhone).toContainText('13900000001');
+  await expect(firstRemark).toContainText('首行');
+  await expect(firstRemark).toContainText('第二行，含 "引号"');
+  await expect(secondPhone).toContainText('13900000002');
+  await expect(secondRemark).toContainText('普通备注');
+  await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('paste');
+
+  const firstScore = example.locator('td[data-cell-row-id="1"][data-cell-column-id="score"]');
+  const secondScore = example.locator('td[data-cell-row-id="2"][data-cell-column-id="score"]');
+  const beforeInvalidPaste = await Promise.all([
+    firstPhone.innerText(),
+    firstRemark.innerText(),
+    firstScore.innerText(),
+    secondPhone.innerText(),
+    secondRemark.innerText(),
+    secondScore.innerText()
+  ]);
+
+  await dragBetweenCells(page, firstPhone, secondScore);
+  await expect(example.locator('td[data-cell-selected="true"]')).toHaveCount(6);
+  expect(
+    await dispatchMatrixPaste(
+      firstPhone,
+      '13800000001\t会失败的备注\tbad-number\r\n13800000002\t也不能写入\t99.5'
+    )
+  ).toBe(true);
+
+  const errorToast = page.locator('[data-sonner-toast][data-type="error"]');
+  await expect(errorToast).toBeVisible();
+  await expect(errorToast).toContainText('不允许使用科学计数法。');
+  await expect(errorToast).toContainText('来源：第 1 行第 3 列 → 目标：第 1 行第 4 列（score）');
+  await expect
+    .poll(() =>
+      Promise.all([
+        firstPhone.innerText(),
+        firstRemark.innerText(),
+        firstScore.innerText(),
+        secondPhone.innerText(),
+        secondRemark.innerText(),
+        secondScore.innerText()
+      ])
+    )
+    .toEqual(beforeInvalidPaste);
+});
+
+test('@workspace-v2 starts printable drafts and applies keyboard deletion atomically', async ({
+  page
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('app-data-table-per-page:data-table-editing-example', '500');
+  });
+  await page.goto(EDITING_ROUTE);
+  await expect(page).toHaveURL(new RegExp(`${EDITING_ROUTE}$`));
+  const example = page.getByTestId('data-table-editing-example');
+  await expect(example).toBeVisible();
+
+  const firstPhone = example.locator('td[data-cell-row-id="1"][data-cell-column-id="phone"]');
+  const firstRemark = example.locator('td[data-cell-row-id="1"][data-cell-column-id="remark"]');
+  await expect(firstPhone).toContainText('13800000001');
+  const beforeRejectedDelete = await Promise.all([firstPhone.innerText(), firstRemark.innerText()]);
+
+  await dragBetweenCells(page, firstPhone, firstRemark);
+  await expect(example.locator('td[data-cell-selected="true"]')).toHaveCount(2);
+  await firstRemark.press('Delete');
+
+  const errorToast = page.locator('[data-sonner-toast][data-type="error"]');
+  await expect(errorToast).toBeVisible();
+  await expect(errorToast).toContainText('此项为必填项。');
+  await expect(errorToast).toContainText('来源：第 1 行第 2 列 → 目标：第 1 行第 3 列（remark）');
+  await expect
+    .poll(() => Promise.all([firstPhone.innerText(), firstRemark.innerText()]))
+    .toEqual(beforeRejectedDelete);
+  await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('-');
+
+  await firstPhone.click();
+  await firstPhone.press('Backspace');
+  await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('delete');
+  await expect(firstPhone).not.toContainText('13800000001');
+  await expect(firstPhone).toHaveAttribute('data-cell-range-focus', 'true');
+
+  await firstPhone.press('7');
+  await expect(page.getByRole('textbox', { name: '编辑手机号' })).toHaveValue('7');
+  await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('delete');
+  await page.keyboard.press('Escape');
+});
+
+test('@workspace-v2 fills from the accessible handle and rejects readonly targets atomically', async ({
+  page
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('app-data-table-per-page:data-table-editing-example', '500');
+  });
+  await page.goto(EDITING_ROUTE);
+  await expect(page).toHaveURL(new RegExp(`${EDITING_ROUTE}$`));
+  const example = page.getByTestId('data-table-editing-example');
+  await expect(example).toBeVisible();
+  await expect(example.locator('tbody[data-virtual-enabled="true"]')).toBeVisible();
+
+  const firstName = example.locator('td[data-cell-row-id="1"][data-cell-column-id="name"]');
+  const firstPhone = example.locator('td[data-cell-row-id="1"][data-cell-column-id="phone"]');
+  const secondPhone = example.locator('td[data-cell-row-id="2"][data-cell-column-id="phone"]');
+  await firstPhone.click();
+  const handle = example.getByRole('button', { name: '填充所选单元格' });
+  await expect(handle).toBeVisible();
+
+  const handleBox = await handle.boundingBox();
+  const firstNameBox = await firstName.boundingBox();
+  if (!handleBox || !firstNameBox) throw new Error('Fill handle geometry unavailable');
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    firstNameBox.x + firstNameBox.width / 2,
+    firstNameBox.y + firstNameBox.height / 2,
+    { steps: 8 }
+  );
+  await expect(firstName).toHaveAttribute('data-cell-fill-preview', 'true');
+  await page.mouse.up();
+
+  const errorToast = page.locator('[data-sonner-toast][data-type="error"]');
+  await expect(errorToast).toBeVisible();
+  await expect(errorToast).toContainText('矩阵粘贴的目标列不可编辑。');
+  await expect(errorToast).toContainText('来源：第 1 行第 2 列 → 目标：第 1 行第 1 列（name）');
+  await expect(firstName).toContainText('记录 001');
+  await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('-');
+
+  const nextHandle = example.getByRole('button', { name: '填充所选单元格' });
+  const nextHandleBox = await nextHandle.boundingBox();
+  const secondPhoneBox = await secondPhone.boundingBox();
+  if (!nextHandleBox || !secondPhoneBox) throw new Error('Fill target geometry unavailable');
+  await page.mouse.move(
+    nextHandleBox.x + nextHandleBox.width / 2,
+    nextHandleBox.y + nextHandleBox.height / 2
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    secondPhoneBox.x + secondPhoneBox.width / 2,
+    secondPhoneBox.y + secondPhoneBox.height / 2,
+    { steps: 8 }
+  );
+  await expect(secondPhone).toHaveAttribute('data-cell-fill-preview', 'true');
+  await page.mouse.up();
+
+  await expect(secondPhone).toContainText('13800000001');
+  await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('fill');
+  await expect(example.locator('td[data-cell-selected="true"]')).toHaveCount(2);
 });
 
 test('@workspace-v2 auto-scrolls virtual rows and maps RTL horizontal arrows', async ({ page }) => {

@@ -31,6 +31,10 @@ export const dataTableColumnSizes = {
 export type DataTableColumnSizePreset = keyof typeof dataTableColumnSizes;
 export type DataTableColumnSize = number | DataTableColumnSizePreset;
 
+/** DataTable 日期类字段的固定可见格式；领域值的存储语义仍由各自 codec 负责。 */
+export const DATA_TABLE_DATE_DISPLAY_FORMAT = 'YYYY-MM-DD';
+export const DATA_TABLE_DATE_TIME_DISPLAY_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+
 /** 将 DSL 的语义列宽转换为 TanStack ColumnDef 接受的数值。 */
 export function resolveDataTableColumnSize(size: DataTableColumnSize | undefined) {
   return typeof size === 'string' ? dataTableColumnSizes[size] : size;

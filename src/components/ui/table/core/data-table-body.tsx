@@ -241,13 +241,42 @@ export function DataTableBody<TData>({
   const [columnWidths, setColumnWidths] = useState<ReadonlyMap<string, number>>(() => new Map());
 
   const rows = table.getRowModel().rows;
-  const { getCellSelectionProps } = useDataTableCellSelection<TData>({
-    rows,
-    columns: table.getVisibleLeafColumns(),
-    scrollViewportRef,
-    shouldIgnoreTarget: shouldIgnoreRowExpandTarget,
-    editing: table.options.meta?.dataTableEditing
-  });
+  const { getCellFillHandleProps, getCellSelectionProps, getCellServerError } =
+    useDataTableCellSelection<TData>({
+      rows,
+      columns: table.getVisibleLeafColumns(),
+      matrixPasteColumns: table.getCenterLeafColumns(),
+      scrollViewportRef,
+      shouldIgnoreTarget: shouldIgnoreRowExpandTarget,
+      editing: table.options.meta?.dataTableEditing
+    });
+  const renderCellServerError = useCallback(
+    (cell: Cell<TData, unknown>) => {
+      const state = getCellServerError(cell);
+      return state ? (
+        <>
+          <span
+            aria-hidden='true'
+            data-slot='data-table-cell-server-error-marker'
+            className='pointer-events-none absolute top-1 left-1 z-30 flex size-3.5 items-center justify-center rounded-full text-[10px] leading-none font-bold'
+          >
+            !
+          </span>
+          <span id={state.id} role='alert' className='sr-only'>
+            {state.error.messages.join(' ')}
+          </span>
+        </>
+      ) : null;
+    },
+    [getCellServerError]
+  );
+  const renderCellFillHandle = useCallback(
+    (cell: Cell<TData, unknown>) => {
+      const props = getCellFillHandleProps(cell);
+      return props ? <button {...props} /> : null;
+    },
+    [getCellFillHandleProps]
+  );
   // 行数达到阈值、环境支持并且没有运行时回退时才启用行虚拟化。
   const shouldVirtualize =
     typeof window !== 'undefined' &&
@@ -450,10 +479,18 @@ export function DataTableBody<TData>({
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </DataTableCellContent>
           )}
+          {renderCellServerError(cell)}
+          {renderCellFillHandle(cell)}
         </TableCell>
       );
     },
-    [columnDragMotionById, getCellSelectionProps, isColumnDragging]
+    [
+      columnDragMotionById,
+      getCellSelectionProps,
+      isColumnDragging,
+      renderCellFillHandle,
+      renderCellServerError
+    ]
   );
   const renderColumnVirtualCells = useCallback(
     (row: Row<TData>, isVirtualRow: boolean) => {
@@ -613,6 +650,8 @@ export function DataTableBody<TData>({
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </DataTableCellContent>
                           )}
+                          {renderCellServerError(cell)}
+                          {renderCellFillHandle(cell)}
                         </TableCell>
                       );
                     })}
@@ -682,6 +721,8 @@ export function DataTableBody<TData>({
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </DataTableCellContent>
                     )}
+                    {renderCellServerError(cell)}
+                    {renderCellFillHandle(cell)}
                   </TableCell>
                 );
               })}

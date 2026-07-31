@@ -5,6 +5,15 @@ import { mockIamSession } from './support/mock-iam-session';
 const EXAMPLE_ROUTE = '/dashboard/examples/data-table-editing';
 const EDITOR_LABELS = [
   'text · input',
+  'longText · textarea',
+  'number · numeric',
+  'int · numeric',
+  'decimal · numeric',
+  'money · numeric',
+  'percent · numeric',
+  'date · calendar',
+  'dateTime · instant',
+  'dateTime · local',
   'enum · single',
   'enum · multiple',
   'select · single',
@@ -78,6 +87,44 @@ test('@workspace-v2 exposes every editor in a visible examples menu', async ({ p
   expect(metrics.lastIndex).toBeLessThan(500);
 });
 
+test('@workspace-v2 renders and clears server cell errors across virtual unmounts', async ({
+  page
+}) => {
+  const example = page.getByTestId('data-table-editing-example');
+  await page.getByRole('button', { name: '模拟服务端校验失败' }).click();
+  await expect(page.getByTestId('editable-choice-server-error-count')).toHaveText('1');
+
+  const phoneCell = example.locator('td[data-cell-row-id="1"][data-cell-column-id="phone"]');
+  await expect(phoneCell).toHaveAttribute('aria-invalid', 'true');
+  await expect(phoneCell).toHaveAttribute('data-cell-server-invalid', 'true');
+  const descriptionId = await phoneCell.getAttribute('aria-describedby');
+  expect(descriptionId).toBeTruthy();
+  await expect(page.locator(`[id="${descriptionId}"]`)).toHaveText('手机号已被服务端占用');
+  await expect(phoneCell.locator('[data-slot="data-table-cell-server-error-marker"]')).toHaveText(
+    '!'
+  );
+
+  const viewport = example.locator('[data-slot="scroll-area-viewport"]');
+  await viewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(page.locator('td[data-cell-row-id="1"]')).toHaveCount(0);
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(phoneCell).toHaveAttribute('data-cell-server-invalid', 'true');
+
+  await phoneCell.dblclick();
+  const input = page.getByRole('textbox', { name: '编辑手机号' });
+  await input.fill('13700000000');
+  await input.press('Enter');
+  await expect(phoneCell).not.toHaveAttribute('data-cell-server-invalid');
+  await expect(page.getByTestId('editable-choice-server-error-count')).toHaveText('0');
+  await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('enter');
+});
+
 test('@workspace-v2 edits all supported editor variants through virtual row unmounts', async ({
   page
 }) => {
@@ -87,6 +134,132 @@ test('@workspace-v2 edits all supported editor variants through virtual row unmo
   await phoneInput.fill('13900000000');
   await phoneInput.press('Enter');
   await expect(phoneCell).toContainText('13900000000');
+
+  const remarkCell = cell(page, 'remark');
+  await remarkCell.dblclick();
+  const remarkInput = page.getByRole('textbox', { name: '编辑备注' });
+  await expect(remarkInput).toBeFocused();
+  await remarkInput.fill('首行\r\n第二行');
+  await expect(page.getByRole('dialog', { name: '备注多行文本编辑器' })).toContainText('7 / 120');
+  await page.getByRole('button', { name: '确认', exact: true }).click();
+  await expect(remarkCell).toContainText('首行');
+  await expect(remarkCell).toContainText('第二行');
+
+  const scoreCell = cell(page, 'score');
+  const quantityCell = cell(page, 'quantity');
+  const weightCell = cell(page, 'weight');
+  const budgetCell = cell(page, 'budget');
+  const completionRateCell = cell(page, 'completionRate');
+  const effectiveDateCell = cell(page, 'effectiveDate');
+
+  await scoreCell.dblclick();
+  const scoreInput = page.getByRole('textbox', { name: '编辑评分' });
+  await scoreInput.fill('88.25');
+  await scoreInput.press('Tab');
+  await expect(scoreCell).toContainText('88.25');
+  await expect(quantityCell).toBeFocused();
+
+  await quantityCell.press('Enter');
+  const quantityInput = page.getByRole('textbox', { name: '编辑数量' });
+  const quantityStepper = page.getByRole('group', { name: '数量步进控件' });
+  const increaseQuantity = page.getByRole('button', { name: '增加数量' });
+  const decreaseQuantity = page.getByRole('button', { name: '减少数量' });
+  await expect(quantityStepper).toHaveAttribute('data-orientation', 'vertical');
+  const increaseBox = await increaseQuantity.boundingBox();
+  const decreaseBox = await decreaseQuantity.boundingBox();
+  expect(increaseBox).not.toBeNull();
+  expect(decreaseBox).not.toBeNull();
+  expect(increaseBox!.y).toBeLessThan(decreaseBox!.y);
+  await quantityInput.fill('7.2');
+  await expect(quantityInput).toHaveAttribute('aria-invalid', 'true');
+  await quantityInput.fill('7');
+  await quantityInput.press('Tab');
+  await expect(quantityCell).toContainText('7');
+  await expect(weightCell).toBeFocused();
+
+  await weightCell.press('Enter');
+  const weightInput = page.getByRole('textbox', { name: '编辑重量' });
+  await weightInput.fill('12.345');
+  await weightInput.press('Tab');
+  await expect(weightCell).toContainText('12.345');
+  await expect(budgetCell).toBeFocused();
+
+  await budgetCell.press('Enter');
+  const budgetInput = page.getByRole('textbox', { name: '编辑预算' });
+  await budgetInput.fill('CNY 2,345.67');
+  await budgetInput.press('Tab');
+  await expect(budgetCell).toContainText('2,345.67');
+  await expect(completionRateCell).toBeFocused();
+
+  await completionRateCell.press('Enter');
+  const completionRateInput = page.getByRole('textbox', { name: '编辑完成率' });
+  await completionRateInput.fill('12.34%');
+  await completionRateInput.press('Enter');
+  await expect(completionRateCell).toContainText('12.34%');
+
+  await effectiveDateCell.dblclick();
+  const dateDialog = page.getByRole('dialog', { name: '生效日期日历' });
+  await expect(dateDialog).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '编辑生效日期' })).toHaveCount(0);
+  await expect(dateDialog.locator('input')).toHaveCount(0);
+  const dialogBox = await dateDialog.boundingBox();
+  const calendarBox = await dateDialog.locator('[role="grid"]').boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(calendarBox).not.toBeNull();
+  expect(calendarBox!.width).toBeGreaterThan(dialogBox!.width * 0.85);
+  const selectedDate = dateDialog.locator('[data-day="2026-07-01"]');
+  await expect(selectedDate).toHaveAttribute('aria-selected', 'true');
+  const selectedDateButton = selectedDate.locator('button');
+  await expect
+    .poll(() => selectedDate.evaluate((element) => getComputedStyle(element).backgroundColor))
+    .toBe('rgba(0, 0, 0, 0)');
+  const selectedBackground = await selectedDateButton.evaluate(
+    (element) => getComputedStyle(element).backgroundColor
+  );
+  expect(selectedBackground).not.toBe('rgba(0, 0, 0, 0)');
+  await expect
+    .poll(() =>
+      selectedDateButton.evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('--tw-ring-shadow').includes('calc(0px +')
+      )
+    )
+    .toBe(true);
+  await selectedDateButton.hover();
+  await expect
+    .poll(() => selectedDateButton.evaluate((element) => getComputedStyle(element).backgroundColor))
+    .toBe(selectedBackground);
+  await expect(dateDialog.locator('[data-day="2026-07-31"] button')).toBeDisabled();
+  await dateDialog.locator('[data-day="2026-08-01"] button').click();
+  await expect(dateDialog).toHaveCount(0);
+  await expect(effectiveDateCell).toContainText('2026-08-01');
+
+  const executeAtCell = cell(page, 'executeAt');
+  await executeAtCell.dblclick();
+  const executeAtDialog = page.getByRole('dialog', { name: '执行时间日期时间编辑器' });
+  await expect(executeAtDialog).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '编辑执行时间' })).toHaveCount(0);
+  await expect(executeAtDialog.locator('input[type="text"]')).toHaveCount(0);
+  await expect(executeAtDialog.locator('input[type="time"]')).toHaveCount(1);
+  const executeAtTimeInput = page.getByLabel('执行时间：时间');
+  await expect(executeAtTimeInput).toHaveValue('12:05');
+  await executeAtTimeInput.fill('12:10');
+  await executeAtDialog.locator('[data-day="2026-08-01"] button').click();
+  await executeAtDialog.getByRole('button', { name: '确定' }).click();
+  await expect(executeAtCell).toContainText('2026-08-01 12:10:00');
+
+  const localStartsAtCell = cell(page, 'localStartsAt');
+  await localStartsAtCell.dblclick();
+  const localStartsAtDialog = page.getByRole('dialog', {
+    name: '本地开始时间日期时间编辑器'
+  });
+  await expect(page.getByRole('textbox', { name: '编辑本地开始时间' })).toHaveCount(0);
+  const localStartsAtTimeInput = page.getByLabel('本地开始时间：时间');
+  await localStartsAtDialog.locator('[data-day="2026-08-01"] button').click();
+  await localStartsAtTimeInput.fill('12:00:01');
+  await expect(localStartsAtTimeInput).toHaveAttribute('aria-invalid', 'true');
+  await localStartsAtTimeInput.fill('12:00:30');
+  await localStartsAtTimeInput.press('Enter');
+  await expect(localStartsAtCell).toContainText('2026-08-01 12:00:30');
 
   const availabilityCell = cell(page, 'availability');
   await page.getByRole('switch', { name: '启用状态：启用' }).first().click();
@@ -128,9 +301,21 @@ test('@workspace-v2 edits all supported editor variants through virtual row unmo
 
   const snapshot = page.getByTestId('editable-choice-snapshot');
   await expect(snapshot).toContainText('"phone":"13900000000"');
+  await expect(snapshot).toContainText('"remark":"首行\\n第二行"');
+  await expect(snapshot).toContainText('"score":88.25');
+  await expect(snapshot).toContainText('"quantity":7');
+  await expect(snapshot).toContainText('"weight":12.345');
+  await expect(snapshot).toContainText('"budget":2345.67');
+  await expect(snapshot).toContainText('"completionRate":0.1234');
+  await expect(snapshot).toContainText('"effectiveDate":"2026-08-01"');
+  await expect(snapshot).toContainText('"executeAt":"2026-08-01T04:10:00.000Z"');
+  await expect(snapshot).toContainText('"localStartsAt":"2026-08-01T12:00:30"');
   await expect(snapshot).toContainText('"labels":["CORE","URGENT"]');
   await expect(snapshot).toContainText('"departmentId":202');
   await expect(snapshot).toContainText('"reviewerIds":[102,101]');
+
+  await phoneCell.dblclick();
+  await page.getByRole('textbox', { name: '编辑手机号' }).fill('13700000000');
 
   const viewport = page
     .getByTestId('data-table-editing-example')
@@ -140,13 +325,63 @@ test('@workspace-v2 edits all supported editor variants through virtual row unmo
     element.dispatchEvent(new Event('scroll'));
   });
   await expect(page.locator('td[data-cell-row-id="1"]')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: '编辑手机号' })).toHaveCount(0);
 
   await viewport.evaluate((element) => {
     element.scrollTop = 0;
     element.dispatchEvent(new Event('scroll'));
   });
   await expect(cell(page, 'name')).toContainText('记录 001');
-  await expect(cell(page, 'phone')).toContainText('13900000000');
+  await expect(cell(page, 'phone')).toContainText('13700000000');
+  await expect(cell(page, 'remark')).toContainText('首行');
+  await expect(cell(page, 'score')).toContainText('88.25');
+  await expect(cell(page, 'budget')).toContainText('2,345.67');
+  await expect(cell(page, 'completionRate')).toContainText('12.34%');
+  await expect(cell(page, 'effectiveDate')).toContainText('2026-08-01');
+  await expect(cell(page, 'executeAt')).toContainText('2026-08-01 12:10:00');
+  await expect(cell(page, 'localStartsAt')).toContainText('2026-08-01 12:00:30');
   await expect(cell(page, 'labels')).toContainText('核心、紧急');
   await expect(cell(page, 'reviewerIds')).toContainText('李四、张三');
+  await page.getByRole('button', { name: '读取草稿' }).click();
+  await expect(snapshot).toContainText('"phone":"13700000000"');
+
+  await cell(page, 'score').dblclick();
+  await page.getByRole('textbox', { name: '编辑评分' }).fill('99.5');
+  await viewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(page.getByRole('textbox', { name: '编辑评分' })).toHaveCount(0);
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(cell(page, 'score')).toContainText('99.5');
+
+  await cell(page, 'remark').dblclick();
+  await page.getByRole('textbox', { name: '编辑备注' }).fill('虚拟卸载不得提交');
+  await viewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(page.getByRole('dialog', { name: '备注多行文本编辑器' })).toHaveCount(0);
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(cell(page, 'remark')).toContainText('首行');
+  await expect(cell(page, 'remark')).not.toContainText('虚拟卸载不得提交');
+
+  await cell(page, 'executeAt').dblclick();
+  await page.getByLabel('执行时间：时间').fill('13:10');
+  await viewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(page.getByRole('dialog', { name: '执行时间日期时间编辑器' })).toHaveCount(0);
+  await viewport.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(cell(page, 'executeAt')).toContainText('2026-08-01 12:10:00');
 });

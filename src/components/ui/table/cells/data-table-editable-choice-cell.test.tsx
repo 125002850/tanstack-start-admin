@@ -134,6 +134,19 @@ describe('DataTableEditableChoiceCell', () => {
     expect(statusCell).not.toHaveAttribute('data-cell-edit-ready');
     expect(statusCell).toHaveAttribute('data-cell-editing', 'true');
     expect(await screen.findByRole('option', { name: '就绪' })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    const secondStatusCell = getCell('status', 1);
+    await user.click(secondStatusCell);
+
+    expect(statusCell).not.toHaveAttribute('data-cell-interaction-state');
+    expect(statusCell).not.toHaveAttribute('data-cell-edit-ready');
+    expect(secondStatusCell).toHaveAttribute('data-cell-interaction-state', 'selected');
+    expect(
+      document.querySelectorAll(
+        'td[data-cell-interaction-state="selected"], td[data-cell-interaction-state="edit-ready"], td[data-cell-interaction-state="editing"]'
+      )
+    ).toHaveLength(1);
   });
 
   it('edits enum values by double click and cancels with Escape', async () => {
@@ -478,6 +491,7 @@ describe('DataTableEditableChoiceCell', () => {
         expect.objectContaining({ keyword: 'li', pageNo: 1 })
       );
     });
+    expect(screen.queryByRole('option', { name: '李四' })).not.toBeInTheDocument();
     const optionList = document.querySelector<HTMLElement>('[data-slot="command-list"]');
     expect(optionList).not.toBeNull();
     Object.defineProperties(optionList!, {
@@ -494,7 +508,7 @@ describe('DataTableEditableChoiceCell', () => {
     });
     if (!liSiOption) throw new Error('remote option missing');
     await user.click(liSiOption);
-    await user.keyboard('{Enter}');
+    await user.keyboard('{Tab}');
 
     await waitFor(() => expect(getCell('ownerIds')).toHaveTextContent('张三、李四'));
     const calls = loadOptions.mock.calls;

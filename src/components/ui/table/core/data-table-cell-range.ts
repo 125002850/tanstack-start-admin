@@ -154,7 +154,7 @@ export function buildDataTableCellRangeTsv(
     for (let columnIndex = bounds.columnStart; columnIndex <= bounds.columnEnd; columnIndex += 1) {
       const columnId = index.columnIds[columnIndex];
       if (columnId === undefined) continue;
-      cells.push(normalizeDataTableCellClipboardText(getText({ rowId, columnId })));
+      cells.push(escapeDataTableCellClipboardText(getText({ rowId, columnId })));
     }
 
     lines.push(cells.join('\t'));
@@ -165,6 +165,11 @@ export function buildDataTableCellRangeTsv(
 
 export function normalizeDataTableCellClipboardText(value: unknown): string {
   return String(value ?? '').replace(/\r\n?/g, '\n');
+}
+
+export function escapeDataTableCellClipboardText(value: unknown): string {
+  const normalized = normalizeDataTableCellClipboardText(value);
+  return /["\t\n]/.test(normalized) ? `"${normalized.replaceAll('"', '""')}"` : normalized;
 }
 
 export function resolveDataTableCellClipboardText({

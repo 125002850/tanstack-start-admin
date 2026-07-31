@@ -240,6 +240,21 @@ test('@workspace-v2 edits static and remote choices with keyboard-safe lifecycle
   await expect(ownerCell).toContainText('远程人员 021');
 });
 
+test('@workspace-v2 filters remote multiple choice options by keyword', async ({ page }) => {
+  const reviewersCell = cell(page, 'reviewerIds');
+  await reviewersCell.dblclick();
+
+  const searchInput = page.getByPlaceholder('搜索协作人');
+  await expect(searchInput).toBeVisible();
+  await expect(page.getByRole('option', { name: '张三' })).toBeVisible();
+
+  await searchInput.fill('远程人员 100');
+
+  await expect(page.getByRole('option', { name: '远程人员 100' })).toBeVisible();
+  await expect(page.getByRole('option', { name: '李四' })).toBeVisible();
+  await expect(page.getByRole('option', { name: '张三' })).toHaveCount(0);
+});
+
 test('@workspace-v2 preserves cross-page drafts through refetch and virtual unmount', async ({
   page
 }) => {
@@ -278,8 +293,9 @@ test('@workspace-v2 preserves cross-page drafts through refetch and virtual unmo
   await expect(page.locator('td[data-cell-row-id="2"]').first()).toBeVisible();
   const restoredRoleCell = cell(page, 'roleIds', 1);
   await expect(restoredRoleCell).toContainText('999、审计员');
-  await expect(restoredRoleCell).toHaveAttribute('data-cell-interaction-state', 'edit-ready');
-  await expect(page.getByRole('button', { name: '准备编辑角色' })).toBeVisible();
+  await expect(restoredRoleCell).toHaveAttribute('data-cell-interaction-state', 'selected');
+  await expect(restoredRoleCell).not.toHaveAttribute('data-cell-edit-ready');
+  await expect(page.getByRole('button', { name: '准备编辑角色' })).toHaveCount(0);
 
   await page.getByRole('button', { name: '确认草稿' }).click();
   await expect(page.getByTestId('editable-choice-snapshot')).toContainText('"changedRows":[]');

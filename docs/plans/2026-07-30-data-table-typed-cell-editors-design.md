@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-30
 
-**Status:** PROPOSED — 等待架构确认，尚未实施
+**Status:** APPROVED — 首席架构师已于 2026-07-30 批准，按 task 拓扑实施
 
 **Goal:** 在现有 `columnDsl.editableField()`、单元格编辑 session 和跨页草稿能力之上，增加 `number`、`money`、`percent`、`date`、`dateTime`、`longText/textarea` 编辑能力，并统一解析、校验、粘贴、键盘导航和浮层生命周期。
 
@@ -1613,3 +1613,88 @@ typed matrix paste 的默认 policy 在 `atomic` 与 `valid-cells` 之间待定�
 - [MDN — input type=datetime-local](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/datetime-local)
 - [MDN — textarea](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea)
 - [MDN — Intl.NumberFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/NumberFormat)
+
+### Update (2026-07-30)
+
+- 实现状态：架构已批准；Task 01 契约冻结与回归基线已完成，未修改生产行为。
+- 依赖关系：Task 01 的目标 Vitest、类型检查和 lint 已通过，Task 02 已解除前置依赖。
+- 实现状态：Task 02 已完成 column-bound codec、adapter registry 与 public capability
+  gate；legacy public editable type 和服务端筛选 DSL 保持不变。
+- 依赖关系：Task 02 验证已通过，Task 03 已解除前置依赖。
+- 实现状态：Task 03 已完成 editing session 单一状态模型、结构化 finish result 与统一
+  `commitCandidate()`；text、choice、switch 已迁移且外部 change / snapshot 契约保持兼容。
+- 依赖关系：Task 03 目标回归、类型检查和 lint 已通过，Task 04 已解除前置依赖。
+- 实现状态：Task 04 已完成共享 keyboard shell、结果感知的前后导航、IME 与 portal
+  事件边界；text 和 choice 已移除重复键盘 lifecycle。
+- 依赖关系：Task 04 的 unit、typecheck、lint、build 和浏览器 smoke 已通过，Task 05
+  已解除前置依赖。
+- 实现状态：Task 05 已完成 raw / typed programmatic write、single-cell paste 与统一
+  validated commit transaction；matrix paste 继续 fail-closed。
+- 依赖关系：Task 05 目标回归、类型检查和 lint 已通过，Task 06 已解除前置依赖。
+- 实现状态：Task 06 已完成 session-aware anchor lifecycle、StrictMode 重挂载保护和
+  virtualization detach commit / revert fallback；未修改 virtualizer range / pinning。
+- 依赖关系：Task 06 目标 unit、typecheck、lint、build 与两组浏览器 smoke 已通过，
+  Task 07 已解除前置依赖；Phase 1 全仓 `pnpm check` 仍受两个无关既有 unit 基线失败阻塞。
+- 实现状态：Task 07 已完成 longText codec、textarea popup、字符限制、类型约束和真实
+  虚拟卸载回退，并已开放 `longText` public capability gate。
+- 依赖关系：Task 07 的目标 unit、typecheck、lint、build 与浏览器 smoke 已通过，
+  Task 08 已解除前置依赖。
+- 实现状态：Task 08 已完成共享 Numeric Editor、严格数值 codec、领域单位约束、
+  step / copy / paste / programmatic write、money currency 与 percent 比例换算；
+  `number`、`int`、`decimal`、`money`、`percent` public capability gate 已按顺序开放。
+- 依赖关系：Task 08 的目标 unit、typecheck、lint、build 与浏览器 smoke 已通过，
+  Task 09 已解除前置依赖；money V1 的 `number` 精度边界保持不变。
+- 实现状态：Task 09 已完成严格 `YYYY-MM-DD` Date Editor、civil date codec、
+  Calendar / 手工输入统一提交、nullable 类型约束、overlay 可访问性与虚拟卸载回退；
+  `date` public capability gate 已开放。
+- 依赖关系：Task 09 的目标 unit、typecheck、lint、build 与浏览器 smoke 已通过，
+  Task 10 已解除前置依赖；DateTime 仍须通过显式时区与 DST dependency gate。
+- 实现状态：Task 10 已完成 instant / local DateTime Editor、column → table → app
+  IANA 时区解析、DST gap / overlap fail-closed、offset / Z 规范化、minute / second
+  约束与 explicit-confirm 生命周期；`dateTime` public capability gate 已开放。
+- 依赖关系：Task 10 的目标 unit、typecheck、lint、build 与两组浏览器 smoke 已通过，
+  Task 11 已解除前置依赖；V1 全仓检查仅保留两个已记录的无关 unit 基线失败。
+
+### Update (2026-07-31)
+
+- 实现状态：Task 11 已完成 Phase 6 能力审计、性能证据、架构裁决和二次拆分；matrix
+  paste 使用 `atomic`，virtualizer pinning 为 `no-go`。
+- 依赖关系：首席架构师批准使用带 provenance 的合成 Excel-compatible E01–E03
+  fixture 替代本次真实 Excel clipboard 采样；Task 12 已解除前置依赖，Task 13 /
+  Task 14 依赖 Task 12，Task 15 依赖 Task 11。
+- 实现状态：Task 12 已完成 atomic matrix paste parser、immutable plan、editing batch
+  transaction、失败坐标反馈、10k 上限 / 分块取消与 V1 editor domain round-trip。
+- 依赖关系：Task 12 的目标 unit、typecheck、lint、format、build 和浏览器 smoke
+  已通过；Task 13、Task 14 已解除前置依赖。
+- 实现状态：Task 13 已完成 printable key 首字符 draft 与 atomic Delete / Backspace；
+  required、readonly 和 active session 失败保持零写入，键盘焦点与选区保持稳定。
+- 依赖关系：Task 13 的目标 unit、typecheck、lint、format 与区域选择浏览器 smoke
+  已通过；Task 14 仍依赖已完成的 Task 12，Task 15 仍依赖已完成的 Task 11。
+- 实现状态：Task 14 已完成 accessible fill handle、单值 / 规则矩形重复、四向填充、
+  atomic typed revalidation 与虚拟表 auto-scroll；numeric / date sequence 未开放。
+- 依赖关系：Task 14 的目标 unit、typecheck、lint、format、build 与区域选择浏览器
+  smoke 已通过；Task 15 仍依赖已完成的 Task 11。
+- 实现状态：Task 15 已完成 typed server cell error 批量入口、per-cell revision stale
+  response 防护、可访问 cell 状态与员工页 partial-save 适配；未新增业务 API。
+- 依赖关系：Task 15 的目标 unit、typecheck、lint、format、build 与编辑示例浏览器
+  smoke 已通过；Task 01–15 全部完成，无剩余实现依赖。
+- 实现状态：Task 09/10 后续格式收口已完成；Date 保持 `YYYY-MM-DD`，DateTime 的
+  编辑、展示与复制统一为 `YYYY-MM-DD HH:mm:ss`，界面不再展示时区来源，领域存储
+  与 DST 校验语义保持不变。
+- 依赖关系：本次格式收口未新增依赖、未重新打开 capability gate，也未改变
+  Task 01–15 的完成状态与依赖拓扑。
+- 实现状态：Task 08 数字步进器已改为上 `+`、下 `−` 的垂直 `ButtonGroup`；Task 09
+  纯 Date 编辑已改为进入编辑即打开 Calendar，并移除日历顶部 Date 文本输入。
+- 实现状态：Task 09/10 的 Calendar 已统一为标题两侧导航与整宽七列布局；Date 仍选日
+  立即提交；DateTime 已移除顶部完整日期时间文本 Input，保留 Calendar、时间控件与
+  显式确认。
+- 依赖关系：本次交互收口仅复用既有 shadcn `InputGroup`、`ButtonGroup`、`Calendar`
+  与 `Popover`，未新增或升级依赖，也未改变 capability gate 与任务依赖拓扑。
+
+### Update (2026-07-31)
+
+- 实现状态：Task 02/05/09/10/12/14 的用户可见校验与批量操作错误已切换到类型化
+  `zh-CN` DataTable 消息目录；共享 Calendar 的 selected modifier 现在直接约束日期
+  按钮，选中背景在 hover/focus 下保持主色。
+- 依赖关系：本次只复用锁定的 `react-day-picker@9.14.0` 与现有 shadcn Calendar，
+  未新增或升级依赖，未改变 Task 01–15 的 capability gate 和依赖拓扑。

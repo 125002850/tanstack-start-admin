@@ -2,11 +2,6 @@ import type { CellContext, ColumnDef } from '@tanstack/react-table';
 import type { ComponentProps } from 'react';
 
 import { Badge } from '@/components/ui/badge';
-import { DataTableEditableChoiceCell } from '@/components/ui/table/cells/data-table-editable-choice-cell';
-import {
-  DataTableEditableInputCell,
-  DataTableEditableSwitchCell
-} from '@/components/ui/table/cells/data-table-editable-value-cell';
 import {
   createDataTableRowActionsResolver,
   renderDataTableActionsCell
@@ -17,6 +12,10 @@ import {
   CUSTOM_COLUMN_DEFAULTS,
   FIELD_COLUMN_DEFAULTS
 } from '@/components/ui/table/columns/data-table-column-defaults';
+import {
+  resolveDataTableEditableCell,
+  type ResolveDataTableEditableCellContext
+} from '@/components/ui/table/columns/data-table-edit-adapters';
 import type {
   DataTableColumnKey,
   DataTableFieldFormatter,
@@ -48,8 +47,13 @@ import type {
   DataTableChoiceOption,
   DataTableChoiceValue,
   DataTableColumnValueType,
-  DataTableEditableInputColumnMeta,
-  DataTableEditableSwitchColumnMeta,
+  DataTableDateEditOptions,
+  DataTableDateTimeEditOptions,
+  DataTableEditableNumericType,
+  DataTableMoneyEditOptions,
+  DataTableNumericEditOptions,
+  DataTableTextareaEditOptions,
+  PlannedEditableType,
   DataTableRemoteOptions,
   DataTableRowActionOption
 } from '@/types/data-table';
@@ -67,6 +71,9 @@ interface DataTableColumnDslOptions<TData> {
   fieldFormatters?: Array<DataTableFieldFormatterRule<TData>>;
   fallbackFormatValue?: DataTableFieldFormatter<TData>;
   customTypes?: DataTableColumnTypeRegistry<TData>;
+  tableId?: string;
+  tableTimeZone?: string;
+  appTimeZone?: string;
 }
 
 interface BaseColumnOptions<TData, TValue = unknown> {
@@ -120,6 +127,30 @@ type TextFieldKey<TData> = Extract<
   string
 >;
 
+type NumericFieldKey<TData> = Extract<
+  {
+    [K in keyof TData]-?: [Exclude<TData[K], null | undefined>] extends [never]
+      ? never
+      : Exclude<TData[K], null | undefined> extends number
+        ? K
+        : never;
+  }[keyof TData],
+  string
+>;
+
+type DateFieldKey<TData> = Extract<
+  {
+    [K in keyof TData]-?: [Exclude<TData[K], null>] extends [never]
+      ? never
+      : TData[K] extends string | null
+        ? Exclude<TData[K], null> extends string
+          ? K
+          : never
+        : never;
+  }[keyof TData],
+  string
+>;
+
 type SingleChoiceFieldValue<TData, TKey extends keyof TData> = Extract<
   Exclude<TData[TKey], null>,
   DataTableChoiceValue
@@ -160,6 +191,127 @@ type EditableInputColumnOptions<
     placeholder?: string;
     maxLength?: number;
   };
+};
+
+type EditableTextareaEdit<TValue> = Omit<DataTableTextareaEditOptions, 'emptyValue'> & {
+  emptyValue?: null extends TValue ? '' | null : '';
+};
+
+type EditableTextareaColumnOptions<
+  TData,
+  TKey extends TextFieldKey<TData>
+> = EditableChoiceBaseOptions<TData, TData[TKey]> & {
+  type: 'longText';
+  edit: EditableTextareaEdit<TData[TKey]>;
+};
+
+type EditableNumericEditConstraint<TValue, TEdit> = TEdit extends { allowEmpty: false }
+  ? 'emptyValue' extends keyof TEdit
+    ? never
+    : unknown
+  : 'emptyValue' extends keyof TEdit
+    ? TEdit extends { emptyValue: infer TEmpty }
+      ? [TEmpty] extends [null]
+        ? null extends TValue
+          ? unknown
+          : never
+        : [TEmpty] extends [undefined]
+          ? undefined extends TValue
+            ? unknown
+            : never
+          : never
+      : never
+    : null extends TValue
+      ? unknown
+      : never;
+
+type EditableNumericColumnOptions<
+  TData,
+  TKey extends NumericFieldKey<TData>,
+  TType extends Exclude<DataTableEditableNumericType, 'money'>,
+  TEdit extends DataTableNumericEditOptions
+> = EditableChoiceBaseOptions<TData, TData[TKey]> & {
+  type: TType;
+} & (null extends TData[TKey]
+    ? {
+        edit?: TEdit & EditableNumericEditConstraint<TData[TKey], TEdit>;
+      }
+    : {
+        edit: TEdit & EditableNumericEditConstraint<TData[TKey], TEdit>;
+      });
+
+type EditableMoneyColumnOptions<
+  TData,
+  TKey extends NumericFieldKey<TData>,
+  TEdit extends DataTableMoneyEditOptions
+> = EditableChoiceBaseOptions<TData, TData[TKey]> & {
+  type: 'money';
+} & (null extends TData[TKey]
+    ? {
+        edit?: TEdit & EditableNumericEditConstraint<TData[TKey], TEdit>;
+      }
+    : {
+        edit: TEdit & EditableNumericEditConstraint<TData[TKey], TEdit>;
+      });
+
+type EditableDateEdit<TData, TValue> = Omit<
+  DataTableDateEditOptions<TData>,
+  'allowEmpty' | 'emptyValue'
+> &
+  (null extends TValue
+    ?
+        | {
+            allowEmpty?: true;
+            emptyValue?: null;
+          }
+        | {
+            allowEmpty: false;
+            emptyValue?: never;
+          }
+    : {
+        allowEmpty: false;
+        emptyValue?: never;
+      });
+
+type EditableDateColumnOptions<TData, TKey extends DateFieldKey<TData>> = EditableChoiceBaseOptions<
+  TData,
+  TData[TKey]
+> & {
+  type: 'date';
+} & (null extends TData[TKey]
+    ? {
+        edit?: EditableDateEdit<TData, TData[TKey]>;
+      }
+    : {
+        edit: EditableDateEdit<TData, TData[TKey]>;
+      });
+
+type OmitDateTimeEmptyOptions<TOptions> = TOptions extends DataTableDateTimeEditOptions
+  ? Omit<TOptions, 'allowEmpty' | 'emptyValue'>
+  : never;
+
+type EditableDateTimeEdit<TValue> = OmitDateTimeEmptyOptions<DataTableDateTimeEditOptions> &
+  (null extends TValue
+    ?
+        | {
+            allowEmpty?: true;
+            emptyValue?: null;
+          }
+        | {
+            allowEmpty: false;
+            emptyValue?: never;
+          }
+    : {
+        allowEmpty: false;
+        emptyValue?: never;
+      });
+
+type EditableDateTimeColumnOptions<
+  TData,
+  TKey extends DateFieldKey<TData>
+> = EditableChoiceBaseOptions<TData, TData[TKey]> & {
+  type: 'dateTime';
+  edit: EditableDateTimeEdit<TData[TKey]>;
 };
 
 type EditableSingleChoiceEdit = {
@@ -211,32 +363,11 @@ type EditableMultipleColumnOptions<
     };
   };
 
-type EditableChoiceRuntimeOptions<TData> = EditableChoiceBaseOptions<TData, unknown> & {
-  type: 'enum' | 'select' | 'remoteSelect';
+type EditableRuntimeOptions<TData> = EditableChoiceBaseOptions<TData, unknown> & {
+  type: PlannedEditableType;
   valueOptions?: readonly DataTableChoiceOption<DataTableChoiceValue>[];
   remoteOptions?: DataTableRemoteOptions<DataTableChoiceValue>;
-  edit?: {
-    control?: 'combobox' | 'switch';
-    selectionMode?: 'single' | 'multiple';
-    allowEmpty?: boolean;
-    maxSelected?: number;
-    checkedValue?: DataTableChoiceValue;
-    uncheckedValue?: DataTableChoiceValue;
-    checkedLabel?: string;
-    uncheckedLabel?: string;
-  };
-};
-
-type EditableInputRuntimeOptions<TData> = EditableChoiceBaseOptions<TData, unknown> & {
-  type: 'text';
-  edit?: {
-    control?: 'input';
-    allowEmpty?: boolean;
-    inputType?: DataTableEditableInputColumnMeta<TData>['inputType'];
-    inputMode?: DataTableEditableInputColumnMeta<TData>['inputMode'];
-    placeholder?: string;
-    maxLength?: number;
-  };
+  edit?: ResolveDataTableEditableCellContext<TData>['edit'];
 };
 
 /** badge 列配置：适合状态、枚举、标签类字段，展示为 shadcn Badge。 */
@@ -288,7 +419,10 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
   const {
     fieldFormatters = [],
     fallbackFormatValue = (value) => nullableText(value),
-    customTypes = {}
+    customTypes = {},
+    tableId,
+    tableTimeZone,
+    appTimeZone
   } = options;
   const resolvedCustomTypes = validateDataTableColumnTypeRegistry(customTypes);
 
@@ -389,6 +523,38 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     title: string,
     editableOptions: EditableInputColumnOptions<TData, TKey>
   ): DataTableColumn<TData>;
+  function editableField<TKey extends TextFieldKey<TData>>(
+    key: TKey,
+    title: string,
+    editableOptions: EditableTextareaColumnOptions<TData, TKey>
+  ): DataTableColumn<TData>;
+  function editableField<
+    TKey extends NumericFieldKey<TData>,
+    TType extends Exclude<DataTableEditableNumericType, 'money'>,
+    const TEdit extends DataTableNumericEditOptions = never
+  >(
+    key: TKey,
+    title: string,
+    editableOptions: EditableNumericColumnOptions<TData, TKey, TType, TEdit>
+  ): DataTableColumn<TData>;
+  function editableField<
+    TKey extends NumericFieldKey<TData>,
+    const TEdit extends DataTableMoneyEditOptions = never
+  >(
+    key: TKey,
+    title: string,
+    editableOptions: EditableMoneyColumnOptions<TData, TKey, TEdit>
+  ): DataTableColumn<TData>;
+  function editableField<TKey extends DateFieldKey<TData>>(
+    key: TKey,
+    title: string,
+    editableOptions: EditableDateColumnOptions<TData, TKey>
+  ): DataTableColumn<TData>;
+  function editableField<TKey extends DateFieldKey<TData>>(
+    key: TKey,
+    title: string,
+    editableOptions: EditableDateTimeColumnOptions<TData, TKey>
+  ): DataTableColumn<TData>;
   function editableField<TKey extends SingleChoiceFieldKey<TData>>(
     key: TKey,
     title: string,
@@ -404,84 +570,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     title: string,
     editableOptionsInput: object
   ): DataTableColumn<TData> {
-    if ((editableOptionsInput as { type?: unknown }).type === 'text') {
-      const editableOptions = editableOptionsInput as EditableInputRuntimeOptions<TData>;
-      const {
-        type,
-        edit,
-        format,
-        formatValue,
-        cellClassName,
-        headerClassName,
-        header,
-        ...columnOptions
-      } = editableOptions;
-      const typeDefaults = resolveDataTableColumnTypeDefaults<TData, unknown>(
-        type,
-        resolvedCustomTypes
-      );
-      const resolvedCellClassName = cn(
-        getDataTableAlignClassName(typeDefaults.align),
-        typeDefaults.cellClassName,
-        cellClassName
-      );
-      const resolvedHeaderClassName = cn(
-        getDataTableAlignClassName(typeDefaults.align),
-        typeDefaults.headerClassName,
-        headerClassName
-      );
-      const editableCell: DataTableEditableInputColumnMeta<TData> = {
-        field: key,
-        title,
-        editor: 'input',
-        allowEmpty: edit?.allowEmpty ?? true,
-        inputType: edit?.inputType ?? 'text',
-        inputMode: edit?.inputMode,
-        placeholder: edit?.placeholder,
-        maxLength: edit?.maxLength
-      };
-      const resolvedMeta = {
-        ...columnOptions.meta,
-        cellOwnsTooltip: true,
-        editableCell
-      };
-      const formatter = format ?? formatValue;
-
-      return eraseDataTableColumnValue({
-        accessorKey: key,
-        header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
-        cell: (context) => {
-          const value = context.getValue();
-          const row = context.row.original;
-          const formattedValue =
-            formatter?.(value, row) ??
-            typeDefaults.formatValue?.(value, row) ??
-            formatField(key, row);
-          return (
-            <DataTableEditableInputCell
-              context={context}
-              formattedValue={formattedValue}
-              className={resolvedCellClassName}
-            />
-          );
-        },
-        ...resolveDataTableColumnOptions<TData, unknown>({
-          title,
-          defaults: {
-            ...FIELD_COLUMN_DEFAULTS,
-            size: typeDefaults.size,
-            minSize: typeDefaults.minSize,
-            maxSize: typeDefaults.maxSize
-          },
-          options: {
-            ...columnOptions,
-            meta: resolvedMeta
-          }
-        })
-      } satisfies ColumnDef<TData, unknown>);
-    }
-
-    const editableOptions = editableOptionsInput as EditableChoiceRuntimeOptions<TData>;
+    const editableOptions = editableOptionsInput as EditableRuntimeOptions<TData>;
     const {
       type,
       valueOptions,
@@ -494,15 +583,38 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       header,
       ...columnOptions
     } = editableOptions;
-    const selectionMode = edit?.selectionMode ?? 'single';
-    const allowEmpty = edit?.allowEmpty ?? true;
-    const maxSelected = edit?.maxSelected;
-    if (
-      selectionMode === 'multiple' &&
-      maxSelected !== undefined &&
-      (!Number.isInteger(maxSelected) || maxSelected <= 0)
-    ) {
-      throw new Error('DataTable editable choice maxSelected must be a positive integer.');
+    const derivedFilterOptions =
+      valueOptions &&
+      !columnOptions.filterOptions &&
+      (columnOptions.filter === 'select' || columnOptions.filter === 'multiSelect')
+        ? valueOptions.map((option) => ({
+            label: option.label,
+            value: String(option.value)
+          }))
+        : columnOptions.filterOptions;
+    const resolvedEditable = resolveDataTableEditableCell<TData>({
+      type,
+      field: key,
+      title,
+      edit,
+      tableId,
+      tableTimeZone,
+      appTimeZone,
+      valueOptions,
+      remoteOptions
+    });
+    if (!resolvedEditable) {
+      const readOnlyOptions = {
+        ...columnOptions,
+        type,
+        format,
+        formatValue,
+        cellClassName,
+        headerClassName,
+        header,
+        filterOptions: derivedFilterOptions
+      } as FieldColumnOptions<TData, DataTableColumnKey<TData>>;
+      return field(key, title, readOnlyOptions);
     }
 
     const typeDefaults = resolveDataTableColumnTypeDefaults<TData, unknown>(
@@ -519,83 +631,17 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       typeDefaults.headerClassName,
       headerClassName
     );
-    const derivedFilterOptions =
-      valueOptions &&
-      !columnOptions.filterOptions &&
-      (columnOptions.filter === 'select' || columnOptions.filter === 'multiSelect')
-        ? valueOptions.map((option) => ({
-            label: option.label,
-            value: String(option.value)
-          }))
-        : columnOptions.filterOptions;
-    if (edit?.control === 'switch') {
-      const { checkedValue, uncheckedValue } = edit;
-      if (checkedValue === undefined || uncheckedValue === undefined) {
-        throw new Error('DataTable editable switch requires checkedValue and uncheckedValue.');
-      }
-      if (Object.is(checkedValue, uncheckedValue)) {
-        throw new Error('DataTable editable switch values must be different.');
-      }
-      const optionByValue = new Map(
-        (valueOptions ?? []).map((option) => [option.value, option.label])
-      );
-      const editableCell: DataTableEditableSwitchColumnMeta<TData> = {
-        field: key,
-        title,
-        editor: 'switch',
-        allowEmpty: false,
-        checkedValue,
-        uncheckedValue,
-        checkedLabel: edit.checkedLabel ?? optionByValue.get(checkedValue) ?? String(checkedValue),
-        uncheckedLabel:
-          edit.uncheckedLabel ?? optionByValue.get(uncheckedValue) ?? String(uncheckedValue)
-      };
-      const resolvedMeta = {
-        ...columnOptions.meta,
-        cellOwnsTooltip: true,
-        editableCell
-      };
-
-      return eraseDataTableColumnValue({
-        accessorKey: key,
-        header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
-        cell: (context) => (
-          <DataTableEditableSwitchCell context={context} className={resolvedCellClassName} />
-        ),
-        ...resolveDataTableColumnOptions<TData, unknown>({
-          title,
-          defaults: {
-            ...FIELD_COLUMN_DEFAULTS,
-            size: typeDefaults.size,
-            minSize: typeDefaults.minSize,
-            maxSize: typeDefaults.maxSize
-          },
-          options: {
-            ...columnOptions,
-            filterOptions: derivedFilterOptions,
-            meta: resolvedMeta
-          }
-        })
-      } satisfies ColumnDef<TData, unknown>);
-    }
-
-    const editableChoice = {
-      field: key,
-      title,
-      type,
-      selectionMode,
-      allowEmpty,
-      maxSelected,
-      valueOptions,
-      remoteOptions
-    };
     const resolvedMeta = {
       ...columnOptions.meta,
       cellOwnsTooltip: true,
-      editableCell: editableChoice,
-      editableChoice
+      ...resolvedEditable.columnMeta
     };
-    const formatter = format ?? formatValue;
+    const columnFormatter = (format ?? formatValue) as
+      | ((value: unknown, row: TData) => unknown)
+      | undefined;
+    const typeFormatter = typeDefaults.formatValue as
+      | ((value: unknown, row: TData) => unknown)
+      | undefined;
 
     return eraseDataTableColumnValue({
       accessorKey: key,
@@ -603,13 +649,17 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       cell: (context) => {
         const value = context.getValue();
         const row = context.row.original;
-        return (
-          <DataTableEditableChoiceCell
-            context={context}
-            formattedValue={formatter?.(value, row)}
-            className={resolvedCellClassName}
-          />
-        );
+        return resolvedEditable.renderCell({
+          context,
+          formattedValue: resolvedEditable.resolveFormattedValue({
+            value,
+            row,
+            columnFormatter,
+            typeFormatter,
+            fallbackFormatter: () => formatField(key, row)
+          }),
+          className: resolvedCellClassName
+        });
       },
       ...resolveDataTableColumnOptions<TData, unknown>({
         title,

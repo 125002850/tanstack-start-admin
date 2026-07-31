@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDataTableCellRangeTsv,
   createDataTableCellRangeIndex,
+  escapeDataTableCellClipboardText,
   getDataTableCellRangeEdges,
   isDataTableCellInRange,
   moveDataTableCellCoordinate,
@@ -117,5 +118,23 @@ describe('DataTable cell range model', () => {
       'Rendered'
     );
     expect(resolveDataTableCellClipboardText({ rawValue: null })).toBe('');
+  });
+
+  it('quotes multiline, Tab, and double-quote cells for an Excel-compatible round-trip', () => {
+    expect(escapeDataTableCellClipboardText('Line 1\r\nLine "2"')).toBe('"Line 1\nLine ""2"""');
+    expect(escapeDataTableCellClipboardText('left\tright')).toBe('"left\tright"');
+    expect(
+      buildDataTableCellRangeTsv(
+        {
+          rowStart: 0,
+          rowEnd: 0,
+          columnStart: 0,
+          columnEnd: 2
+        },
+        index,
+        ({ columnId }) =>
+          columnId === 'name' ? 'Line 1\nLine 2' : columnId === 'amount' ? 'He said "yes"' : 'READY'
+      )
+    ).toBe('"Line 1\nLine 2"\t"He said ""yes"""\tREADY');
   });
 });

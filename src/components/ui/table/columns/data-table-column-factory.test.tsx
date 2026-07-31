@@ -2,7 +2,11 @@ import * as React from 'react';
 import type { Row as TanStackRow } from '@tanstack/react-table';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createDataTableColumnDsl, dataTableColumnFormatters } from './data-table-column-factory';
+import {
+  createDataTableColumnDsl,
+  dataTableColumnFormatters,
+  percentPoints
+} from './data-table-column-factory';
 
 interface Row {
   id?: number;
@@ -20,6 +24,16 @@ interface ChoiceRow {
   status: 'ENABLED' | 'DISABLED' | null;
   roleIds: number[];
   name: string;
+  strictRemark: string;
+  remark: string | null;
+  amount: number;
+  nullableAmount: number | null;
+  optionalAmount?: number;
+  strictDate: string;
+  effectiveDate: string | null;
+  optionalDate?: string;
+  executeAt: string | null;
+  localStartsAt: string;
 }
 
 function renderCell(column: { cell?: unknown }, row: Row) {
@@ -382,6 +396,9 @@ describe('data-table-column-factory', () => {
 
   it('creates input and switch editors as first-class editable cells', () => {
     const columnDsl = createDataTableColumnDsl<ChoiceRow>();
+    const defaultInputColumn = columnDsl.editableField('name', '名称', {
+      type: 'text'
+    });
     const inputColumn = columnDsl.editableField('name', '手机号', {
       type: 'text',
       edit: { control: 'input', inputType: 'tel', inputMode: 'tel' }
@@ -399,6 +416,12 @@ describe('data-table-column-factory', () => {
       }
     });
 
+    expect(defaultInputColumn.meta?.editableCell).toMatchObject({
+      field: 'name',
+      editor: 'input',
+      allowEmpty: true,
+      inputType: 'text'
+    });
     expect(inputColumn.meta?.editableCell).toMatchObject({
       field: 'name',
       editor: 'input',
@@ -429,6 +452,123 @@ describe('data-table-column-factory', () => {
         edit: { selectionMode: 'multiple', maxSelected: 0 }
       })
     ).toThrow('maxSelected must be a positive integer');
+  });
+
+  it('creates typed numeric columns with machine-readable copy metadata', () => {
+    const columnDsl = createDataTableColumnDsl<ChoiceRow>();
+    const numberColumn = columnDsl.editableField('amount', '数量', {
+      type: 'number',
+      edit: { allowEmpty: false, min: 0, step: 0.1 }
+    });
+    const moneyColumn = columnDsl.editableField('nullableAmount', '金额', {
+      type: 'money',
+      edit: { currency: 'CNY' }
+    });
+    const percentColumn = columnDsl.editableField('nullableAmount', '比例', {
+      type: 'percent',
+      edit: { min: percentPoints(5), max: percentPoints(100) }
+    });
+
+    expect(numberColumn.meta?.editableCell).toMatchObject({
+      type: 'number',
+      editor: 'number',
+      allowEmpty: false,
+      min: 0,
+      step: 0.1
+    });
+    expect(moneyColumn.meta?.editableCell).toMatchObject({
+      type: 'money',
+      editor: 'number',
+      currency: 'CNY'
+    });
+    expect(percentColumn.meta?.editableCell).toMatchObject({
+      type: 'percent',
+      min: 0.05,
+      max: 1
+    });
+    expect(percentColumn.meta?.copyValue?.(0.125, {} as ChoiceRow)).toBe('12.5');
+  });
+
+  it('creates typed date columns with strict nullable metadata', () => {
+    const columnDsl = createDataTableColumnDsl<ChoiceRow>();
+    const required = columnDsl.editableField('strictDate', '必填日期', {
+      type: 'date',
+      edit: {
+        allowEmpty: false,
+        min: '2026-01-01',
+        max: '2026-12-31'
+      }
+    });
+    const optional = columnDsl.editableField('effectiveDate', '生效日期', {
+      type: 'date'
+    });
+
+    expect(required.meta?.editableCell).toMatchObject({
+      type: 'date',
+      editor: 'date',
+      allowEmpty: false,
+      min: '2026-01-01',
+      max: '2026-12-31'
+    });
+    expect(optional.meta?.editableCell).toMatchObject({
+      type: 'date',
+      editor: 'date',
+      allowEmpty: true,
+      emptyValue: null
+    });
+  });
+
+  it('creates typed dateTime columns with bound time zone metadata', () => {
+    const columnDsl = createDataTableColumnDsl<ChoiceRow>({
+      tableId: 'orders',
+      tableTimeZone: 'Asia/Shanghai',
+      appTimeZone: 'UTC'
+    });
+    const instant = columnDsl.editableField('executeAt', '执行时间', {
+      type: 'dateTime',
+      edit: {
+        valueKind: 'instant',
+        granularity: 'minute',
+        step: 5
+      }
+    });
+    const local = columnDsl.editableField('localStartsAt', '本地开始时间', {
+      type: 'dateTime',
+      edit: {
+        valueKind: 'local',
+        granularity: 'second',
+        allowEmpty: false
+      }
+    });
+
+    expect(instant.meta?.editableCell).toMatchObject({
+      type: 'dateTime',
+      editor: 'dateTime',
+      valueKind: 'instant',
+      timeZone: 'Asia/Shanghai',
+      timeZoneSource: 'table',
+      commitMode: 'explicit-confirm'
+    });
+    expect(local.meta?.editableCell).toMatchObject({
+      type: 'dateTime',
+      editor: 'dateTime',
+      valueKind: 'local',
+      timeZone: undefined
+    });
+  });
+
+  it('fails closed to a read-only column when a disabled adapter bypasses the type gate', () => {
+    const columnDsl = createDataTableColumnDsl<ChoiceRow>();
+    const unsafeEditableField = columnDsl.editableField as unknown as (
+      key: 'amount',
+      title: string,
+      options: { type: 'unsupported' }
+    ) => ReturnType<typeof columnDsl.field>;
+
+    const column = unsafeEditableField('amount', '未知类型', { type: 'unsupported' });
+
+    expect(column.meta?.editableCell).toBeUndefined();
+    expect(column.meta?.editableChoice).toBeUndefined();
   });
 });
 
@@ -472,6 +612,134 @@ function expectColumnDslTypeErrors() {
       checkedValue: 'ENABLED',
       uncheckedValue: 'DISABLED'
     }
+  });
+
+  choiceColumnDsl.editableField('strictRemark', '备注', {
+    type: 'longText',
+    edit: { control: 'textarea' }
+  });
+  choiceColumnDsl.editableField('remark', '可空备注', {
+    type: 'longText',
+    edit: { control: 'textarea', emptyValue: null }
+  });
+
+  choiceColumnDsl.editableField('amount', '数量', {
+    type: 'int',
+    edit: { allowEmpty: false, min: 0, step: 1 }
+  });
+  choiceColumnDsl.editableField('nullableAmount', '金额', {
+    type: 'money',
+    edit: { currency: 'CNY' }
+  });
+  choiceColumnDsl.editableField('nullableAmount', '比例', {
+    type: 'percent',
+    edit: { maxFractionDigits: 2 }
+  });
+  choiceColumnDsl.editableField('optionalAmount', '可空数值', {
+    type: 'decimal',
+    edit: { allowEmpty: true, emptyValue: undefined }
+  });
+  choiceColumnDsl.editableField('strictDate', '必填日期', {
+    type: 'date',
+    edit: { allowEmpty: false }
+  });
+  choiceColumnDsl.editableField('effectiveDate', '生效日期', {
+    type: 'date'
+  });
+  choiceColumnDsl.editableField('executeAt', '执行时间', {
+    type: 'dateTime',
+    edit: { valueKind: 'instant', timeZone: 'Asia/Shanghai' }
+  });
+  choiceColumnDsl.editableField('localStartsAt', '本地开始时间', {
+    type: 'dateTime',
+    edit: { valueKind: 'local', allowEmpty: false }
+  });
+
+  // @ts-expect-error textarea cannot target a number field
+  choiceColumnDsl.editableField('amount', '金额备注', {
+    type: 'longText',
+    edit: { control: 'textarea' }
+  });
+
+  // @ts-expect-error emptyValue null requires a nullable string field
+  choiceColumnDsl.editableField('strictRemark', '严格备注', {
+    type: 'longText',
+    edit: { control: 'textarea', emptyValue: null }
+  });
+
+  // @ts-expect-error numeric editors cannot target string fields
+  choiceColumnDsl.editableField('name', '数量', {
+    type: 'number'
+  });
+
+  // @ts-expect-error non-nullable number fields must explicitly reject empty input
+  choiceColumnDsl.editableField('amount', '数量', {
+    type: 'number'
+  });
+
+  // @ts-expect-error null empty values require a nullable number field
+  choiceColumnDsl.editableField('amount', '数量', {
+    type: 'number',
+    edit: { allowEmpty: true, emptyValue: null }
+  });
+
+  // @ts-expect-error undefined empty values require an optional number field
+  choiceColumnDsl.editableField('nullableAmount', '金额', {
+    type: 'money',
+    edit: { allowEmpty: true, emptyValue: undefined }
+  });
+
+  // @ts-expect-error optional number fields must explicitly select undefined or reject empty input
+  choiceColumnDsl.editableField('optionalAmount', '可空数值', {
+    type: 'decimal',
+    edit: { allowEmpty: true }
+  });
+
+  // @ts-expect-error date editors cannot target number fields
+  choiceColumnDsl.editableField('amount', '日期', {
+    type: 'date',
+    edit: { allowEmpty: false }
+  });
+
+  // @ts-expect-error non-nullable date fields must explicitly reject empty input
+  choiceColumnDsl.editableField('strictDate', '必填日期', {
+    type: 'date'
+  });
+
+  // @ts-expect-error nullable date values are required when allowEmpty is enabled
+  choiceColumnDsl.editableField('strictDate', '必填日期', {
+    type: 'date',
+    edit: { allowEmpty: true, emptyValue: null }
+  });
+
+  // @ts-expect-error undefined is not part of the Date Editor domain contract
+  choiceColumnDsl.editableField('optionalDate', '可选日期', {
+    type: 'date',
+    edit: { allowEmpty: false }
+  });
+
+  // @ts-expect-error dateTime valueKind is required
+  choiceColumnDsl.editableField('executeAt', '执行时间', {
+    type: 'dateTime',
+    edit: { timeZone: 'Asia/Shanghai' }
+  });
+
+  // @ts-expect-error local dateTime cannot configure an instant time zone
+  choiceColumnDsl.editableField('localStartsAt', '本地开始时间', {
+    type: 'dateTime',
+    edit: { valueKind: 'local', timeZone: 'Asia/Shanghai', allowEmpty: false }
+  });
+
+  // @ts-expect-error non-nullable dateTime fields must reject empty input
+  choiceColumnDsl.editableField('localStartsAt', '本地开始时间', {
+    type: 'dateTime',
+    edit: { valueKind: 'local' }
+  });
+
+  // @ts-expect-error dateTime editors cannot target number fields
+  choiceColumnDsl.editableField('amount', '执行时间', {
+    type: 'dateTime',
+    edit: { valueKind: 'instant', timeZone: 'UTC', allowEmpty: false }
   });
 
   // @ts-expect-error scalar fields cannot use multiple selection

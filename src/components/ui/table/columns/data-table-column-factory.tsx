@@ -5,6 +5,7 @@
  * createDataTableColumnDsl、内置 formatter 和 header/text cell 工具。
  */
 export { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-builders';
+export { percentPoints } from '@/components/ui/table/columns/data-table-edit-adapters';
 export {
   dataTableColumnFormatters,
   type DataTableFieldFormatterRule

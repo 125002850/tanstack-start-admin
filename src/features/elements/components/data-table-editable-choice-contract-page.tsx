@@ -15,6 +15,7 @@ import { DataTable } from '@/components/ui/table/core/data-table';
 import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
+import type { DataTableDateValue } from '@/types/data-table';
 
 const MOCK_ROW_COUNT = 10_000;
 const VIRTUAL_STRESS_PAGE_SIZE = 500;
@@ -27,6 +28,15 @@ type ContractRow = {
   id: number;
   name: string;
   phone: string;
+  remark: string;
+  score: number | null;
+  quantity: number;
+  weight: number | null;
+  budget: number | null;
+  completionRate: number | null;
+  effectiveDate: DataTableDateValue | null;
+  executeAt: string | null;
+  localStartsAt: string;
   availability: 'ENABLED' | 'DISABLED';
   status: 'DRAFT' | 'READY' | null;
   labels: Array<'CORE' | 'URGENT' | 'EXTERNAL'>;
@@ -71,6 +81,15 @@ const PERSON_OPTIONS = [
 ];
 const EDITOR_COVERAGE = [
   'text · input',
+  'longText · textarea',
+  'number · numeric',
+  'int · numeric',
+  'decimal · numeric',
+  'money · numeric',
+  'percent · numeric',
+  'date · calendar',
+  'dateTime · instant',
+  'dateTime · local',
   'enum · single',
   'enum · multiple',
   'select · single',
@@ -131,13 +150,95 @@ function createRemoteOptions() {
   };
 }
 
-const columnDsl = createDataTableColumnDsl<ContractRow>();
+const columnDsl = createDataTableColumnDsl<ContractRow>({
+  tableId: 'data-table-editing-example',
+  tableTimeZone: 'Asia/Shanghai'
+});
 const columns = [
   columnDsl.field('name', '名称', { size: 'sm' }),
   columnDsl.editableField('phone', '手机号', {
     type: 'text',
     size: 'md',
     edit: { control: 'input', inputType: 'tel', inputMode: 'tel' }
+  }),
+  columnDsl.editableField('remark', '备注', {
+    type: 'longText',
+    size: 'xl',
+    edit: {
+      control: 'textarea',
+      allowEmpty: false,
+      minLength: 2,
+      maxLength: 120,
+      rows: 5
+    }
+  }),
+  columnDsl.editableField('score', '评分', {
+    type: 'number',
+    edit: {
+      maxFractionDigits: 2
+    }
+  }),
+  columnDsl.editableField('quantity', '数量', {
+    type: 'int',
+    edit: {
+      allowEmpty: false,
+      min: 0,
+      max: 9999,
+      step: 1,
+      showStepperButtons: true
+    }
+  }),
+  columnDsl.editableField('weight', '重量', {
+    type: 'decimal',
+    edit: {
+      min: 0,
+      step: 0.001,
+      maxFractionDigits: 3
+    }
+  }),
+  columnDsl.editableField('budget', '预算', {
+    type: 'money',
+    edit: {
+      currency: 'CNY',
+      min: 0,
+      step: 0.01,
+      maxFractionDigits: 2
+    }
+  }),
+  columnDsl.editableField('completionRate', '完成率', {
+    type: 'percent',
+    edit: {
+      min: 0,
+      max: 1,
+      step: 0.0001,
+      maxFractionDigits: 2
+    }
+  }),
+  columnDsl.editableField('effectiveDate', '生效日期', {
+    type: 'date',
+    edit: {
+      min: '2026-01-01',
+      max: '2026-12-31',
+      isDateUnavailable: (value) => value === '2026-07-31'
+    }
+  }),
+  columnDsl.editableField('executeAt', '执行时间', {
+    type: 'dateTime',
+    edit: {
+      valueKind: 'instant',
+      granularity: 'minute',
+      step: 5,
+      defaultTime: '09:30'
+    }
+  }),
+  columnDsl.editableField('localStartsAt', '本地开始时间', {
+    type: 'dateTime',
+    edit: {
+      valueKind: 'local',
+      granularity: 'second',
+      step: 15,
+      allowEmpty: false
+    }
   }),
   columnDsl.editableField('availability', '启用状态', {
     type: 'enum',
@@ -191,6 +292,15 @@ function createRows(): ContractRow[] {
     id: index + 1,
     name: `记录 ${String(index + 1).padStart(3, '0')}`,
     phone: `138${String(index + 1).padStart(8, '0')}`,
+    remark: `记录 ${String(index + 1).padStart(3, '0')} 的第一行备注\n第二行备注`,
+    score: 80 + (index % 10) + 0.5,
+    quantity: index + 1,
+    weight: 10 + (index % 10) * 0.125,
+    budget: 1000 + index * 10.5,
+    completionRate: ((index % 9) + 1) / 10,
+    effectiveDate: `2026-07-${String((index % 28) + 1).padStart(2, '0')}` as DataTableDateValue,
+    executeAt: `2026-07-${String((index % 28) + 1).padStart(2, '0')}T04:05:00.000Z`,
+    localStartsAt: `2026-07-${String((index % 28) + 1).padStart(2, '0')}T12:00:15`,
     availability: index % 2 === 0 ? 'ENABLED' : 'DISABLED',
     status: (index + 1) % 7 === 0 ? null : index % 2 === 0 ? 'DRAFT' : 'READY',
     labels: [LABEL_VALUES[index % LABEL_VALUES.length]!],
@@ -321,9 +431,37 @@ export function DataTableEditableChoiceContractPage({
           >
             放弃草稿
           </Button>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => {
+              editing.setServerCellErrors({
+                revision: editing.getRevision(),
+                errors: [
+                  {
+                    rowId: '1',
+                    field: 'phone',
+                    messages: ['手机号已被服务端占用'],
+                    code: 'PHONE_TAKEN'
+                  }
+                ]
+              });
+            }}
+          >
+            模拟服务端校验失败
+          </Button>
+          <Button type='button' variant='outline' onClick={() => editing.clearServerCellErrors()}>
+            清除服务端错误
+          </Button>
           <Badge variant='secondary'>
             最近提交：
             <span data-testid='editable-choice-last-reason'>{lastReason}</span>
+          </Badge>
+          <Badge variant='secondary'>
+            服务端错误：
+            <span data-testid='editable-choice-server-error-count'>
+              {editing.getServerCellErrors().length}
+            </span>
           </Badge>
         </div>
         <pre

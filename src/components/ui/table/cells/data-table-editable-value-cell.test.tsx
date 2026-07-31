@@ -17,7 +17,7 @@ const columnDsl = createDataTableColumnDsl<Row>();
 const COLUMNS = [
   columnDsl.editableField('phone', '手机号', {
     type: 'text',
-    edit: { control: 'input', inputType: 'tel', inputMode: 'tel' }
+    edit: { control: 'input', inputType: 'tel', inputMode: 'tel', allowEmpty: false }
   }),
   columnDsl.editableField('status', '状态', {
     type: 'enum',
@@ -33,14 +33,30 @@ const COLUMNS = [
   })
 ];
 
+const BLOCKING_COLUMNS = [
+  {
+    ...COLUMNS[0]!,
+    meta: {
+      ...COLUMNS[0]!.meta,
+      editableCell: {
+        ...COLUMNS[0]!.meta!.editableCell!,
+        invalidEditBehavior: 'block' as const
+      }
+    }
+  },
+  COLUMNS[1]!
+];
+
 function EditableValueTable({
-  onChange = () => undefined
+  onChange = () => undefined,
+  blockInvalidPhone = false
 }: {
   onChange?: (event: DataTableEditChangeEvent<Row>) => void;
+  blockInvalidPhone?: boolean;
 }) {
   const { table } = useDataTable({
     tableId: 'editable-value-test',
-    columns: COLUMNS,
+    columns: blockInvalidPhone ? BLOCKING_COLUMNS : COLUMNS,
     data: [{ id: 1, phone: '13800000000', status: 'ENABLED' }],
     rowId: 'id',
     editing: { onChange },
@@ -93,9 +109,19 @@ describe('DataTable editable input and switch cells', () => {
     expect(phoneCell).not.toHaveAttribute('data-cell-editing');
     expect(screen.queryByRole('textbox', { name: '编辑手机号' })).not.toBeInTheDocument();
     await waitFor(() =>
-      expect(onChange).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          reason: 'enter',
+      expect(onChange).toHaveBeenLastCalledWith({
+        reason: 'enter',
+        changes: [
+          {
+            rowId: '1',
+            field: 'phone',
+            previousValue: '13800000000',
+            value: '13900000000'
+          }
+        ],
+        snapshot: {
+          rows: [{ id: 1, phone: '13900000000', status: 'ENABLED' }],
+          changedRows: [{ id: 1, phone: '13900000000', status: 'ENABLED' }],
           changes: [
             {
               rowId: '1',
@@ -103,10 +129,81 @@ describe('DataTable editable input and switch cells', () => {
               previousValue: '13800000000',
               value: '13900000000'
             }
-          ]
-        })
-      )
+          ],
+          loadedPages: [1]
+        }
+      })
     );
+  });
+
+  it('starts text editing with Enter and F2, cancels with Escape, and commits with Tab or blur', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<EditableValueTable onChange={onChange} />);
+
+    const phoneCell = getCell('phone');
+    await user.click(phoneCell);
+    fireEvent.keyDown(phoneCell, { key: 'Enter' });
+
+    const enterInput = screen.getByRole('textbox', { name: '编辑手机号' });
+    expect(phoneCell).toHaveAttribute('data-cell-interaction-state', 'editing');
+    await user.clear(enterInput);
+    await user.type(enterInput, '13900000000');
+    await user.keyboard('{Escape}');
+
+    await waitFor(() =>
+      expect(screen.queryByRole('textbox', { name: '编辑手机号' })).not.toBeInTheDocument()
+    );
+    expect(phoneCell).toHaveTextContent('13800000000');
+    expect(phoneCell).toHaveAttribute('data-cell-interaction-state', 'edit-ready');
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(phoneCell, { key: 'F2' });
+    const f2Input = screen.getByRole('textbox', { name: '编辑手机号' });
+    await user.clear(f2Input);
+    await user.type(f2Input, '13700000000');
+    await user.keyboard('{Tab}');
+
+    await waitFor(() => expect(phoneCell).toHaveTextContent('13700000000'));
+    const statusCell = getCell('status');
+    expect(statusCell).toHaveFocus();
+    expect(statusCell).toHaveAttribute('data-cell-interaction-state', 'selected');
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ reason: 'tab' }));
+
+    await user.dblClick(phoneCell);
+    const blurInput = screen.getByRole('textbox', { name: '编辑手机号' });
+    fireEvent.change(blurInput, { target: { value: '13600000000' } });
+    fireEvent.blur(blurInput);
+
+    await waitFor(() => expect(phoneCell).toHaveTextContent('13600000000'));
+    expect(phoneCell).toHaveAttribute('data-cell-interaction-state', 'edit-ready');
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ reason: 'blur' }));
+  });
+
+  it('keeps a blocked input editor focused and restores the initial value with Escape', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<EditableValueTable onChange={onChange} blockInvalidPhone />);
+
+    const phoneCell = getCell('phone');
+    await user.dblClick(phoneCell);
+    const input = screen.getByRole('textbox', { name: '编辑手机号' });
+    await user.clear(input);
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('');
+    expect(phoneCell).toHaveAttribute('data-cell-interaction-state', 'editing');
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() =>
+      expect(screen.queryByRole('textbox', { name: '编辑手机号' })).not.toBeInTheDocument()
+    );
+    expect(phoneCell).toHaveTextContent('13800000000');
+    expect(phoneCell).toHaveAttribute('data-cell-interaction-state', 'edit-ready');
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('commits a switch directly and toggles it from the selected cell with Enter', async () => {
@@ -122,6 +219,8 @@ describe('DataTable editable input and switch cells', () => {
     await waitFor(() =>
       expect(screen.getByRole('switch', { name: '状态：停用' })).not.toBeChecked()
     );
+    expect(statusCell).not.toHaveAttribute('data-cell-editing');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(onChange).toHaveBeenLastCalledWith(
       expect.objectContaining({
         reason: 'selection',
@@ -141,6 +240,8 @@ describe('DataTable editable input and switch cells', () => {
     fireEvent.keyDown(statusCell, { key: 'Enter' });
 
     await waitFor(() => expect(screen.getByRole('switch', { name: '状态：启用' })).toBeChecked());
+    expect(statusCell).not.toHaveAttribute('data-cell-editing');
+    expect(statusCell).not.toHaveAttribute('data-cell-edit-ready');
     expect(onChange).toHaveBeenCalledTimes(2);
   });
 });
