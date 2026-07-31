@@ -13,8 +13,7 @@ import type {
 import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
-import { useDslDataTable } from '@/hooks/use-dsl-data-table';
-import type { DataTableDslCondition } from '@/hooks/use-dsl-data-table.dsl';
+import { type DataTableDslCondition, useDslDataTable } from '@/hooks/use-data-table';
 import type { MdmDictGlobalItemsByTypeResponse } from '@/lib/api/clients/service';
 
 import type {

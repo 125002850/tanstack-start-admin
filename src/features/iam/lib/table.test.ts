@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { DataTableDslCondition } from '@/hooks/use-dsl-data-table.dsl';
+import type { DataTableDslCondition } from '@/hooks/use-data-table';
 
 import { dslConditionNumbers, dslConditionValues } from './table';
 

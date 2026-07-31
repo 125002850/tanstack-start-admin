@@ -23,7 +23,7 @@ import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-s
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { useDict } from '@/hooks/use-dict';
-import { useDslDataTable } from '@/hooks/use-dsl-data-table';
+import { useDslDataTable } from '@/hooks/use-data-table';
 import { EXPORT_RECORD_STATUS } from '@/constants/enums';
 import { downloadFileFromUrl } from '@/lib/download-file';
 import { getDictLabel, nullableText } from '@/lib/display-formatters';

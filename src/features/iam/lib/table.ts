@@ -1,8 +1,5 @@
 import type { ColumnFiltersState, PaginationState } from '@tanstack/react-table';
-import type {
-  DataTableDslCondition,
-  DataTableDslPageRequestBase
-} from '@/hooks/use-dsl-data-table.dsl';
+import type { DataTableDslCondition, DataTableDslPageRequestBase } from '@/hooks/use-data-table';
 import type { DateTimeRangeReqDTO } from '@/lib/api/clients/service';
 
 export function pageRequestFromPagination(pagination: PaginationState) {

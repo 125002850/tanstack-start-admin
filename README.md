@@ -138,8 +138,7 @@ src/
 │
 ├── lib/                           # 核心工具（query-client、parsers 等）
 ├── hooks/                         # 跨 feature 状态编排
-│   ├── use-data-table/            # 表格状态、编辑和本地筛选运行时
-│   └── use-dsl-data-table.ts      # 服务端 DSL 查询组合
+│   └── use-data-table/            # 表格状态、服务端 DSL、编辑和本地筛选运行时
 ├── config/                        # infobar、data table 等配置
 ├── constants/                     # Mock 数据
 ├── styles/                        # 全局样式与主题文件

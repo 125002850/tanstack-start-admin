@@ -7,9 +7,10 @@ import { Icons } from '@/components/icons';
 import { FieldDescription } from '@/components/ui/field';
 import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'motion/react';
-import { useFormStepper } from '@/hooks/use-stepper';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+
+import { useFormStepper } from '../hooks/use-form-stepper';
 
 const configFormSchema = z.object({
   name: z.string().min(2, '配置项名称至少需要 2 个字符'),

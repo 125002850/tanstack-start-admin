@@ -14,8 +14,7 @@ import type { DataTableAction } from '@/components/data-table/actions/data-table
 import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
-import { useDslDataTable } from '@/hooks/use-dsl-data-table';
-import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
+import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
 import type {
   DataTableCellChange,
   DataTableChoiceOption,

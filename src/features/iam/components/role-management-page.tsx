@@ -14,8 +14,7 @@ import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-s
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import type { DataTableAction } from '@/components/data-table/actions/data-table-actions-bar';
 import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
-import { useDslDataTable } from '@/hooks/use-dsl-data-table';
-import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
+import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
 import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
 import {
   iamRoleCreate,

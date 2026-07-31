@@ -6,13 +6,13 @@ import type {
   SortingState
 } from '@tanstack/react-table';
 
-import type { DataTableDslCondition } from './use-dsl-data-table.dsl';
+import type { DataTableDslCondition } from './dsl';
 import {
   DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS,
   buildDataTableDslRequest,
   isDataTableDslFilterVariantSupported,
   isDataTableDslOperatorCompatibleWithVariant
-} from './use-dsl-data-table.dsl';
+} from './dsl';
 
 type DictionaryTypeRow = {
   id: number;

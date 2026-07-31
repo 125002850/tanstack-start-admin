@@ -13,13 +13,14 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DataTableEditorKeyboardShell } from '@/components/data-table/cells/data-table-editor-keyboard-shell';
 import { renderDataTableTextCell } from '@/components/data-table/columns/data-table-column-rendering';
-import { useRemoteComboboxState } from '@/hooks/use-remote-combobox-state';
 import type {
   DataTableChoiceOption,
   DataTableChoiceValue,
   DataTableEditableChoiceColumnMeta,
   DataTableRemoteOptionPage
 } from '@/types/data-table';
+
+import { useRemoteComboboxState } from './use-remote-combobox-state';
 
 type RemoteLabelColumnState = {
   isError: boolean;
