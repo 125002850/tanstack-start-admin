@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DeptRspDTO } from '@/lib/api/clients/service';
 import DeptDataTable from './dept-data-table';
 
-vi.mock('@/components/ui/table/toolbar/data-table-view-options', () => ({
+vi.mock('@/components/data-table/toolbar/data-table-view-options', () => ({
   DataTableViewOptions: () => null
 }));
 

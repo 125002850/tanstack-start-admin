@@ -5,10 +5,10 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { DataTable } from '@/components/ui/table/core/data-table';
-import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
-import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
-import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
+import { DataTable } from '@/components/data-table/core/data-table';
+import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-skeleton';
+import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
+import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { useDict } from '@/hooks/use-dict';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';

@@ -11,8 +11,8 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import { DataTable } from '@/components/ui/table/core/data-table';
-import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
+import { DataTable } from '@/components/data-table/core/data-table';
+import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslPageRequestBase } from '@/hooks/use-dsl-data-table.dsl';
 import type { DataTableDateValue } from '@/types/data-table';
