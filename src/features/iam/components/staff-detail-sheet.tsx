@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
-import { DetailProfileCard } from '@/components/ui/detail/detail-profile-card';
-import { DetailSection } from '@/components/ui/detail/detail-section';
+import { DetailProfileCard } from '@/features/iam/components/detail/detail-profile-card';
+import { DetailSection } from '@/features/iam/components/detail/detail-section';
 import { FieldItem } from '@/components/ui/detail-field';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import type { StaffRspDTO } from '@/lib/api/clients/service';
