@@ -1,7 +1,7 @@
 import { Icons } from '@/components/icons';
 import PageContainer from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
-import { NotificationCard } from '@/components/ui/notification-card';
+import { NotificationCard } from '@/features/notifications/components/notification-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRouter } from '@tanstack/react-router';
 import { useNotificationStore } from '../utils/store';
