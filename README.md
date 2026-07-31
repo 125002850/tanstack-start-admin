@@ -227,7 +227,7 @@ src/
 - `useDslDataTable()` 的跨页草稿必须显式提供稳定 `rowId` 或 `getRowId`。持久化由业务层在 `editing.onChange` 中执行，读取/确认/放弃草稿分别使用返回值中的 `editing.getSnapshot()`、`acceptChanges()`、`discardChanges()`。
 - `useDslDataTable()` 默认启用斑马纹；仅在明确需要纯色表体时传 `enableZebraStriping: false`。直接使用 `useDataTable()` 时不隐式启用。
 - 表格状态统一由 `src/lib/data-table-state-persistence.ts` 管理，覆盖列宽、列顺序、排序和每页条数；不要再新增独立的 localStorage key。
-- `src/components/ui/table/*` 的旧 flat 导入路径保留为兼容转发，新代码优先使用分层路径，例如 `core/`、`columns/`、`cells/`、`toolbar/`。
+- `src/components/ui/table/*` 统一使用分层导入路径，例如 `core/`、`columns/`、`cells/`、`toolbar/`；禁止新增旧 flat 导入路径或兼容转发。
 
 ## 路由元数据规范
 
