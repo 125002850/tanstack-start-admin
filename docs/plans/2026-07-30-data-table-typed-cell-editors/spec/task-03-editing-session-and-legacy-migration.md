@@ -19,11 +19,11 @@
 - Modify: `src/types/data-table.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.test.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-value-cell.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-value-cell.test.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-choice-cell.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/cells/data-table-editable-value-cell.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-value-cell.test.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-choice-cell.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-choice-cell.test.tsx`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
 
 ## Invariants
 
@@ -68,7 +68,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/ui/table/cells/data-table-editable-value-cell.test.tsx src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx src/components/ui/table/columns/data-table-column-factory.test.tsx
+pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/data-table/cells/data-table-editable-value-cell.test.tsx src/components/data-table/cells/data-table-editable-choice-cell.test.tsx src/components/data-table/columns/data-table-column-factory.test.tsx
 pnpm typecheck
 pnpm lint
 ```

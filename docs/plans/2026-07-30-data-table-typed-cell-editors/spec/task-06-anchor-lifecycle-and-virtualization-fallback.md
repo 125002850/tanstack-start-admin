@@ -18,11 +18,11 @@
 
 - Modify: `src/hooks/use-data-table/use-data-table-editing.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.test.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-value-cell.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-choice-cell.tsx`
-- Modify: `src/components/ui/table/core/data-table-body.tsx`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
-- Modify: `src/components/ui/table/virtualization/use-data-table-virtualization.ts`
+- Modify: `src/components/data-table/cells/data-table-editable-value-cell.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-choice-cell.tsx`
+- Modify: `src/components/data-table/core/data-table-body.tsx`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
+- Modify: `src/components/data-table/virtualization/use-data-table-virtualization.ts`
 - Modify: `e2e/data-table-editing-example.smoke.spec.ts`
 
 ## Invariants
@@ -73,7 +73,7 @@ revert 必须返回可观察的：
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/ui/table/cells/data-table-editable-value-cell.test.tsx src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx src/components/ui/table/core/data-table.test.tsx
+pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/data-table/cells/data-table-editable-value-cell.test.tsx src/components/data-table/cells/data-table-editable-choice-cell.test.tsx src/components/data-table/core/data-table.test.tsx
 pnpm typecheck
 pnpm lint
 pnpm test:e2e:smoke e2e/data-table-editing-example.smoke.spec.ts --grep @workspace-v2

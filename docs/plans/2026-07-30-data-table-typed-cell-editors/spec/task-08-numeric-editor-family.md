@@ -16,16 +16,16 @@
 
 ## Files
 
-- Create: `src/components/ui/table/cells/data-table-editable-number-cell.tsx`
-- Create: `src/components/ui/table/cells/data-table-editable-number-cell.test.tsx`
-- Modify: `src/components/ui/table/columns/data-table-edit-codecs.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-codecs.test.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-adapters.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-adapters.test.ts`
-- Modify: `src/components/ui/table/columns/data-table-column-builders.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-factory.test.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-number-cell.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-number-cell.test.tsx`
+- Modify: `src/components/data-table/columns/data-table-edit-codecs.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-codecs.test.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-adapters.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-adapters.test.ts`
+- Modify: `src/components/data-table/columns/data-table-column-builders.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-factory.test.tsx`
 - Modify: `src/types/data-table.ts`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
 - Modify: `src/features/elements/components/data-table-editable-choice-contract-page.tsx`
 - Modify: `e2e/data-table-editing-example.smoke.spec.ts`
 
@@ -71,7 +71,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/components/ui/table/cells/data-table-editable-number-cell.test.tsx src/components/ui/table/columns/data-table-edit-codecs.test.ts src/components/ui/table/columns/data-table-edit-adapters.test.ts src/components/ui/table/columns/data-table-column-factory.test.tsx src/components/ui/table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
+pnpm exec vitest run src/components/data-table/cells/data-table-editable-number-cell.test.tsx src/components/data-table/columns/data-table-edit-codecs.test.ts src/components/data-table/columns/data-table-edit-adapters.test.ts src/components/data-table/columns/data-table-column-factory.test.tsx src/components/data-table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
 pnpm typecheck
 pnpm lint
 pnpm test:e2e:smoke e2e/data-table-editing-example.smoke.spec.ts --grep @workspace-v2
@@ -108,7 +108,7 @@ pnpm test:e2e:smoke e2e/data-table-editing-example.smoke.spec.ts --grep @workspa
 
 ### 验证结果
 
-- `pnpm exec vitest run src/components/ui/table/cells/data-table-editable-number-cell.test.tsx src/components/ui/table/columns/data-table-edit-codecs.test.ts src/components/ui/table/columns/data-table-edit-adapters.test.ts src/components/ui/table/columns/data-table-column-factory.test.tsx src/components/ui/table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx`
+- `pnpm exec vitest run src/components/data-table/cells/data-table-editable-number-cell.test.tsx src/components/data-table/columns/data-table-edit-codecs.test.ts src/components/data-table/columns/data-table-edit-adapters.test.ts src/components/data-table/columns/data-table-column-factory.test.tsx src/components/data-table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx`
   通过：6 个测试文件、156 个测试。
 - `pnpm typecheck` 通过。
 - `pnpm lint` 通过：0 warning、0 error。

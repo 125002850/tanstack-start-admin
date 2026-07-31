@@ -27,12 +27,12 @@
 
 相关实现：
 
-- [列 DSL builder](../../src/components/ui/table/columns/data-table-column-builders.tsx)
-- [列类型 registry](../../src/components/ui/table/columns/data-table-column-types.tsx)
+- [列 DSL builder](../../src/components/data-table/columns/data-table-column-builders.tsx)
+- [列类型 registry](../../src/components/data-table/columns/data-table-column-types.tsx)
 - [编辑 runtime](../../src/hooks/use-data-table/use-data-table-editing.ts)
 - [共享编辑类型](../../src/types/data-table.ts)
-- [现有 input / switch editor](../../src/components/ui/table/cells/data-table-editable-value-cell.tsx)
-- [现有 choice editor](../../src/components/ui/table/cells/data-table-editable-choice-cell.tsx)
+- [现有 input / switch editor](../../src/components/data-table/cells/data-table-editable-value-cell.tsx)
+- [现有 choice editor](../../src/components/data-table/cells/data-table-editable-choice-cell.tsx)
 
 当前缺口：
 
@@ -1274,7 +1274,7 @@ columnDsl.editableField('remark', '备注', {
 建议局部扩展现有结构：
 
 ```text
-src/components/ui/table/
+src/components/data-table/
 ├── cells/
 │   ├── data-table-editable-choice-cell.tsx
 │   ├── data-table-editable-value-cell.tsx

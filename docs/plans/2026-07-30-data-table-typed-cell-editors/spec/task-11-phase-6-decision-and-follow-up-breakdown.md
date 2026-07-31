@@ -19,8 +19,8 @@
 - Create: `docs/plans/2026-07-30-data-table-typed-cell-editors/reviews/phase-6-decision.md`
 - Create after decisions: `docs/plans/2026-07-30-data-table-typed-cell-editors/spec/task-12-*.md`
 - Modify status/dependencies only: `docs/plans/2026-07-30-data-table-typed-cell-editors-design.md`
-- Reference: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Reference: `src/components/ui/table/virtualization/use-data-table-virtualization.ts`
+- Reference: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Reference: `src/components/data-table/virtualization/use-data-table-virtualization.ts`
 - Reference: `e2e/data-table-editing-example.smoke.spec.ts`
 
 ## Decision A：Typed Matrix Paste

@@ -1,5 +1,42 @@
 # DataTable 开发规范
 
+## 目录
+
+- [目录与依赖边界](#目录与依赖边界)
+- [团队代码风格](#团队代码风格)
+- [Hook 选型](#hook-选型)
+- [列定义 DSL](#列定义-dsl)
+- [可编辑单元格](#可编辑单元格)
+- [跨页草稿与持久化](#跨页草稿与持久化)
+- [DSL 筛选契约](#dsl-筛选契约)
+- [表头本地列值筛选](#表头本地列值筛选)
+- [页面组合](#页面组合)
+- [分页、选择与虚拟化](#分页选择与虚拟化)
+- [表格操作](#表格操作)
+- [可访问性语义](#可访问性语义)
+- [高级筛选开关](#高级筛选开关)
+- [回归测试](#回归测试)
+- [审计字段列](#审计字段列)
+
+## 目录与依赖边界
+
+- 完整目录图与组件归属规则见 [项目结构与组件归属](project-structure.md)。
+- Shadcn Table 原语固定保留在 `src/components/ui/table.tsx`；完整 DataTable 子系统固定放在 `src/components/data-table/`。
+- DataTable 内部按职责使用 `actions/`、`cells/`、`columns/`、`core/`、`dnd/`、`expand/`、`export/`、`feedback/`、`filters/`、`toolbar/`、`virtualization/`。
+- 跨目录引用使用 `@/components/data-table/<layer>/<file>`；同目录实现与测试可以使用相对路径。禁止新增 flat barrel、旧路径 alias、兼容转发或新旧路径双写。
+- 共享状态编排放在 `src/hooks/use-data-table/`，跨层类型放在 `src/types/data-table.ts`，特性配置放在 `src/config/data-table*.ts`，无 UI 算法和持久化放在 `src/lib/data-table*.ts`。
+- 禁止 `src/components/data-table/` 反向导入 `src/features/`。只服务单一业务域的 cell、操作或详情组件必须留在对应 feature。
+
+## 团队代码风格
+
+- 业务页面只通过列 DSL、`useDataTable()` / `useDslDataTable()` 和公开组件组合 DataTable；禁止直接写 `ColumnMeta`、`TableMeta` 或复制内部状态机。
+- 新增行为先确定唯一职责层：列声明进 `columns`，展示/编辑进 `cells`，表格生命周期进 `core` 或 hook，纯算法进 `lib`；禁止以“方便”为由跨层堆入 `data-table.tsx`。
+- 优先扩展既有稳定契约。只有多处复用且语义稳定时才扩展 DSL、type registry 或 runtime；一次性业务行为留在 feature 的 `custom` cell。
+- 使用判别联合、typed key 和显式状态表达语义；禁止依赖展示字符串、DOM 顺序或隐式 truthy/falsy 区分业务状态。
+- 保持用户输入、候选值、已提交草稿和服务端数据边界清晰；任何自动归一化都必须有测试，禁止静默四舍五入或改变领域单位。
+- 将性能成本收敛到使用点：候选值、虚拟列表和派生数据按需计算；禁止在关闭的浮层或未启用的能力上执行全量扫描。
+- 测试与实现同层放置；纯算法优先单测，跨 hook/组件状态补集成测试，虚拟化、焦点、Popover 和真实指针竞争补 Playwright 回归。
+
 ## Hook 选型
 
 - 标准 DSL 服务端分页表格统一使用 `useDslDataTable`。
@@ -33,11 +70,14 @@
 - `maxSelected` 仅属于多选且必须是正整数。多选值按选择顺序去重；静态 option 找不到 value、远程解析缺失或失败时必须展示原始 value。
 - `remoteOptions.loadOptions` 和 `resolveOptions` 都必须消费 `AbortSignal`。远程查询统一经 React Query 与 `useRemoteComboboxState` 管理；query key 必须包含 `tableId + columnId + keyword + pageNo + pageSize`。
 - `resolveOptions` 按当前页和列聚合 value 后批量加载，禁止每个 cell 单独请求。首次解析显示 Skeleton；已有缓存时后台刷新保留 label；失败回退原始 value。
-- 普通单击仍用于范围选择；input/choice 通过双击、Enter、F2 进入编辑，单选 choice editor 进入编辑态时自动展开选项。Escape 取消，Enter 完成，Tab 完成并移动到相邻可编辑 cell，失焦或浮层关闭按 blur 完成。
-- 普通单击只进入 `selected`；无论 cell 原本是否选中，双击都直接进入 `editing`。Escape 取消或 blur 完成后进入该 cell 唯一的 `edit-ready`；选择其他 cell 必须直接完成旧 session 并清除旧 `edit-ready`。同一表格在任一时刻只能有一个 range focus、一个 `edit-ready` 或一个 `editing` 目标，三种交互态对当前目标互斥。
+- 普通单击仍用于范围选择；input/choice 通过双击、Enter、F2 进入编辑，单选 choice editor 进入编辑态时自动展开选项。Escape 取消，Enter 完成，Tab 完成后再尝试移动到相邻可编辑 cell。
+- `commitMode: 'blur'` 在失焦或选择其他 cell 时提交合法值；`commitMode: 'selection'` 只由有效选择动作提交；`commitMode: 'explicit-confirm'` 只能由 Enter、Ctrl/Cmd+Enter 或 Tab 主动提交，blur、点击其他 cell、浮层关闭和虚拟卸载都必须回滚且不得触发业务 `onChange`。
+- 普通单击只进入 `selected`；无论 cell 原本是否选中，双击都直接进入 `editing`。Escape 取消或 blur 完成/回滚后进入该 cell 唯一的 `edit-ready`；选择其他 cell 必须结束旧 session 并清除旧 `edit-ready`。同一表格在任一时刻只能有一个 range focus、一个 `edit-ready` 或一个 `editing` 目标，三种交互态对当前目标互斥。
 - 每次 `editing` 必须拥有独立 session。editor 的完成、取消、blur 和浮层关闭只能作用于创建它的 session，旧 editor 的延迟事件不得结束或取消新 editor。
+- Tab 导航只能基于确定的相邻 editable cell 执行；列虚拟化启用时必须 fail-closed，提交仍可完成，但禁止通过当前 DOM 猜测或跳过未渲染列。
 - choice editor 进入编辑态后必须接管完整 cell：cell 取消 padding、切换为 `background` 表面并提供克制的编辑外阴影；trigger 使用轻微圆角、主色边框和 focus ring，禁止保留独立表单控件的默认阴影和外层间距。
 - editor 的 active value 必须同步进入 table 级 store。禁止把 cell 局部 state 作为唯一草稿源，否则虚拟行卸载会丢值；active value 只用于当前表格展示，不得在完成编辑前进入业务 `getSnapshot()` / `hasChanges()`。
+- 数值 `maxFractionDigits` 必须对 canonical 数值结果计数：允许 `12.340` 在两位精度下归一化为 `12.34`，拒绝 `12.345`，且禁止为了通过校验自动四舍五入。
 
 ## 跨页草稿与持久化
 
@@ -53,6 +93,17 @@
 - `number`、`range`、`boolean` 仍可用于非 DSL / 本地 `useDataTable` 表格 UI，但不得被 `buildDataTableDslRequest()` 静默序列化为后端 DSL 请求。
 - 标准 DSL 表格列使用不支持的 filter variant 时，开发环境必须按 `tableId + columnId + variant` 去重 warning，提示该 variant 不支持自动 DSL 序列化。
 - 页面层禁止分散编写 DSL variant 兼容补丁；新增后端筛选能力必须先扩展共享 DSL 序列化测试。
+
+## 表头本地列值筛选
+
+- `filter*` 只描述 DataTableToolbar / 服务端 DSL 筛选；`localFilter*` 只描述表头对当前已加载数据的 Set Filter。两套状态必须隔离，表头筛选不得写入 TanStack `columnFilters` 或后端 request。
+- `field`、`editableField` 和 `badge` 由 column type 推导默认 `localFilter`；业务只在需要覆盖候选项或单独关闭时传 `localFilterOptions` 或 `localFilter: false`，禁止直接手写 `meta.localFilter`。
+- 本地筛选只消费当前浏览器已加载且已合并编辑草稿的数据；pagination、sorting、服务端 `columnFilters` 或 editing scope 改变时必须清空本地条件，禁止让旧页选择静默污染新 scope。
+- 候选项必须按原始类型生成 typed key；字符串 `"1"`、数字 `1`、boolean、Date 和空白值不得合并。数组 cell 按任一元素命中，空数组按空白处理。
+- 多列条件使用 AND；计算某列候选项时应用其他列条件但排除本列条件，使级联候选保持可恢复。`undefined` 表示全选/未筛选，空 `selectedKeys` 是有效条件并表示不匹配任何行。
+- 搜索框只收窄候选列表，不直接修改表格数据；勾选立即生效，全选只作用于当前可见候选，搜索后 Enter 使用当前匹配项替换该列选择。
+- 候选值只在 Popover 打开时收集，长列表必须虚拟化。禁止在每次表格 render 或浮层关闭时扫描整列、创建全部 option DOM。
+- 表头漏斗入口必须独立于排序/隐藏菜单，使用固定尺寸且不得挤压标题到不可读；active 状态必须同时提供视觉提示和 `aria-pressed`。
 
 ## 页面组合
 
@@ -104,7 +155,14 @@
 
 ## 回归测试
 
-新增服务端表格 feature 至少补一组页面级回归测试，覆盖以下项目中的核心路径：
+新增或修改 DataTable 能力时按职责选择验证层：
+
+- `columns` / codec / adapter / 纯算法必须补同目录单测。
+- hook 状态、scope reset、跨页草稿和本地筛选必须补 `src/hooks/use-data-table/` 测试。
+- 表头、Popover、键盘焦点、虚拟化和 pointer 竞争必须补真实浏览器测试；禁止仅凭 jsdom 判断交互已正确。
+- 迁移目录或公共入口后至少运行 `pnpm lint`、`pnpm typecheck`、`pnpm vitest run src/components/data-table src/hooks/use-data-table` 和 `pnpm build`。
+
+新增服务端表格 feature 还必须至少补一组页面级回归测试，覆盖以下项目中的核心路径：
 
 - 总数文案
 - 空态
@@ -116,7 +174,7 @@
 所有包含 `createTime`、`createBy`、`updateTime`、`updateBy` 的表格列定义，必须使用 `auditColumns`，禁止手写内联列：
 
 ```tsx
-import { auditColumns } from "@/components/ui/table/columns/data-table-audit-columns";
+import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
 
 export const xxxColumns: ColumnDef<XxxRecord>[] = [
   // ...其他列

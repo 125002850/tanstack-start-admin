@@ -17,9 +17,9 @@
 ## Files
 
 - Modify: `src/hooks/use-data-table/use-data-table-editing.test.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-value-cell.test.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-factory.test.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-value-cell.test.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-choice-cell.test.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-factory.test.tsx`
 - Modify only if browser coverage is missing: `e2e/data-table-editing-example.smoke.spec.ts`
 - Reference: `src/hooks/use-data-table/use-data-table-editing.ts`
 - Reference: `src/types/data-table.ts`
@@ -58,7 +58,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/ui/table/cells/data-table-editable-value-cell.test.tsx src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx src/components/ui/table/columns/data-table-column-factory.test.tsx
+pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/data-table/cells/data-table-editable-value-cell.test.tsx src/components/data-table/cells/data-table-editable-choice-cell.test.tsx src/components/data-table/columns/data-table-column-factory.test.tsx
 pnpm typecheck
 pnpm lint
 ```

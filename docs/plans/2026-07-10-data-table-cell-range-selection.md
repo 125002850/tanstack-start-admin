@@ -10,13 +10,13 @@
 
 - Reference: `docs/superpowers/specs/2026-07-10-data-table-cell-range-selection-design.md`
 - Reference: `.agents/skills/oig-tanstack-admin/references/data-table.md`
-- Create: `src/components/ui/table/core/data-table-cell-range.ts`
-- Create: `src/components/ui/table/core/data-table-cell-range.test.ts`
-- Create: `src/components/ui/table/core/use-data-table-cell-auto-scroll.ts`
-- Create: `src/components/ui/table/core/use-data-table-cell-auto-scroll.test.ts`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table-body.tsx`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Create: `src/components/data-table/core/data-table-cell-range.ts`
+- Create: `src/components/data-table/core/data-table-cell-range.test.ts`
+- Create: `src/components/data-table/core/use-data-table-cell-auto-scroll.ts`
+- Create: `src/components/data-table/core/use-data-table-cell-auto-scroll.test.ts`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table-body.tsx`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
 - Modify: `src/styles/globals.css`
 - Create: `e2e/data-table-cell-range-selection.smoke.spec.ts`
 
@@ -46,7 +46,7 @@ The DataTable keeps native `<table>`/`<tr>`/`<td>` semantics and is NOT an ARIA 
 
 ### 3. Public API Quick Reference
 
-The pure range-model module at `src/components/ui/table/core/data-table-cell-range.ts` exports the following:
+The pure range-model module at `src/components/data-table/core/data-table-cell-range.ts` exports the following:
 
 ```ts
 export type DataTableCellCoordinate = {
@@ -183,9 +183,9 @@ export function resolveDataTableCellClipboardText(params: {
 
 **Files**
 
-- Create: `src/components/ui/table/core/data-table-cell-range.ts`
-- Create: `src/components/ui/table/core/data-table-cell-range.test.ts`
-- Reference: `src/components/ui/table/core/use-data-table-cell-selection.ts`
+- Create: `src/components/data-table/core/data-table-cell-range.ts`
+- Create: `src/components/data-table/core/data-table-cell-range.test.ts`
+- Reference: `src/components/data-table/core/use-data-table-cell-selection.ts`
 
 **Dependencies**
 
@@ -216,9 +216,9 @@ export function resolveDataTableCellClipboardText(params: {
 **Verification Profile**
 
 - `profile: range-model-red`
-  - `pnpm test:unit src/components/ui/table/core/data-table-cell-range.test.ts`
+  - `pnpm test:unit src/components/data-table/core/data-table-cell-range.test.ts`
 - `profile: range-model-green`
-  - `pnpm test:unit src/components/ui/table/core/data-table-cell-range.test.ts`
+  - `pnpm test:unit src/components/data-table/core/data-table-cell-range.test.ts`
 - `Expected Signals:` RED reports missing behavior; GREEN reports one passing file and zero failed tests.
 
 **Verification Strategy**
@@ -243,10 +243,10 @@ export function resolveDataTableCellClipboardText(params: {
 
 **Files**
 
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table-body.tsx`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
-- Use: `src/components/ui/table/core/data-table-cell-range.ts`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table-body.tsx`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
+- Use: `src/components/data-table/core/data-table-cell-range.ts`
 
 **Dependencies**
 
@@ -280,9 +280,9 @@ export function resolveDataTableCellClipboardText(params: {
 **Verification Profile**
 
 - `profile: cell-interaction-red`
-  - `pnpm test:unit src/components/ui/table/core/data-table.test.tsx`
+  - `pnpm test:unit src/components/data-table/core/data-table.test.tsx`
 - `profile: cell-interaction-green`
-  - `pnpm test:unit src/components/ui/table/core/data-table.test.tsx src/components/ui/table/core/data-table-cell-range.test.ts`
+  - `pnpm test:unit src/components/data-table/core/data-table.test.tsx src/components/data-table/core/data-table-cell-range.test.ts`
 - `Expected Signals:` RED fails only new selection assertions; GREEN reports both files passing with existing 70 tests plus new cases.
 
 **Verification Strategy**
@@ -308,11 +308,11 @@ export function resolveDataTableCellClipboardText(params: {
 
 **Files**
 
-- Create: `src/components/ui/table/core/use-data-table-cell-auto-scroll.ts`
-- Create: `src/components/ui/table/core/use-data-table-cell-auto-scroll.test.ts`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table-body.tsx`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Create: `src/components/data-table/core/use-data-table-cell-auto-scroll.ts`
+- Create: `src/components/data-table/core/use-data-table-cell-auto-scroll.test.ts`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table-body.tsx`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
 
 **Dependencies**
 
@@ -344,9 +344,9 @@ export function resolveDataTableCellClipboardText(params: {
 **Verification Profile**
 
 - `profile: auto-scroll-red`
-  - `pnpm test:unit src/components/ui/table/core/use-data-table-cell-auto-scroll.test.ts src/components/ui/table/core/data-table.test.tsx`
+  - `pnpm test:unit src/components/data-table/core/use-data-table-cell-auto-scroll.test.ts src/components/data-table/core/data-table.test.tsx`
 - `profile: auto-scroll-green`
-  - `pnpm test:unit src/components/ui/table/core/use-data-table-cell-auto-scroll.test.ts src/components/ui/table/core/data-table.test.tsx src/components/ui/table/core/data-table-cell-range.test.ts`
+  - `pnpm test:unit src/components/data-table/core/use-data-table-cell-auto-scroll.test.ts src/components/data-table/core/data-table.test.tsx src/components/data-table/core/data-table-cell-range.test.ts`
 - `Expected Signals:` RED fails new auto-scroll assertions; GREEN reports all selected files passing and no leaked timer/listener warnings.
 
 **Verification Strategy**
@@ -373,10 +373,10 @@ export function resolveDataTableCellClipboardText(params: {
 
 - Modify: `src/styles/globals.css` (range ::after border, cursor:cell, user-select lifecycle, focus ring)
 - Create: `e2e/data-table-cell-range-selection.smoke.spec.ts`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
-- Modify: `src/components/ui/table/core/data-table-body.tsx` (pass range announcement to parent)
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts` (derive `rangeAnnouncement`)
-- Modify: `src/components/ui/table/core/data-table.tsx` (render sr-only aria-live region outside `<table>`)
+- Modify: `src/components/data-table/core/data-table.test.tsx`
+- Modify: `src/components/data-table/core/data-table-body.tsx` (pass range announcement to parent)
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts` (derive `rangeAnnouncement`)
+- Modify: `src/components/data-table/core/data-table.tsx` (render sr-only aria-live region outside `<table>`)
 - Verify: all runtime and test files listed in this plan.
 - Read: `.agents/skills/oig-tanstack-admin/references/git-commits.md`
 - Integrate: `main` worktree at `/Users/youdingte/learning/tanstack-start-admin`
@@ -433,11 +433,11 @@ export function resolveDataTableCellClipboardText(params: {
 - `profile: commit-policy`
   - `pnpm lint:commit -- --from HEAD~1 --to HEAD`
 - `profile: branch-main`
-  - `pnpm test:unit src/components/ui/table/core/data-table-cell-range.test.ts src/components/ui/table/core/use-data-table-cell-auto-scroll.test.ts src/components/ui/table/core/data-table.test.tsx`
+  - `pnpm test:unit src/components/data-table/core/data-table-cell-range.test.ts src/components/data-table/core/use-data-table-cell-auto-scroll.test.ts src/components/data-table/core/data-table.test.tsx`
   - `pnpm lint`
   - `pnpm typecheck`
 - `profile: branch-sso`
-  - `pnpm test:unit src/components/ui/table/core/data-table-cell-range.test.ts src/components/ui/table/core/use-data-table-cell-auto-scroll.test.ts src/components/ui/table/core/data-table.test.tsx`
+  - `pnpm test:unit src/components/data-table/core/data-table-cell-range.test.ts src/components/data-table/core/use-data-table-cell-auto-scroll.test.ts src/components/data-table/core/data-table.test.tsx`
   - `pnpm lint`
   - `pnpm typecheck`
 - `Expected Signals:` every command exits 0; Playwright reports zero failures; package and lockfile diff is empty; commitlint/hooks pass; both target worktrees report zero selected test, lint, and typecheck failures.
@@ -476,20 +476,20 @@ export function resolveDataTableCellClipboardText(params: {
 ### Task 2 Execution
 
 - Result: pass
-- Files changed: `src/components/ui/table/core/data-table-cell-range.ts`, `src/components/ui/table/core/data-table-cell-range.test.ts`.
+- Files changed: `src/components/data-table/core/data-table-cell-range.ts`, `src/components/data-table/core/data-table-cell-range.test.ts`.
 - Verification: `profile: range-model-red` -> FAIL because the module did not exist; `profile: range-model-green` -> PASS (6 passed, 0 failed).
 - Notes: The pure model stores only anchor/focus and row/column indexes; it does not materialize a selected-cell ID set and has no React or DOM dependency.
 
 ### Task 3 Execution
 
 - Result: pass
-- Files changed: `src/components/ui/table/core/use-data-table-cell-selection.ts`, `src/components/ui/table/core/data-table-body.tsx`, `src/components/ui/table/core/data-table.test.tsx`.
+- Files changed: `src/components/data-table/core/use-data-table-cell-selection.ts`, `src/components/data-table/core/data-table-body.tsx`, `src/components/data-table/core/data-table.test.tsx`.
 - Verification: `profile: cell-interaction-red` -> FAIL (4 new failures, existing 70 passed); `profile: cell-interaction-green` -> PASS (80 passed, 0 failed across two files); `pnpm typecheck` -> PASS; `pnpm lint` -> PASS with 0 warnings.
 - Notes: Pointer selection uses owner-scoped DOM targeting with geometric fallback, keyboard selection uses one roving tab stop, and clipboard serialization iterates the current row/column model in row-major order.
 
 ### Task 4 Execution
 
 - Result: pass
-- Files changed: `src/components/ui/table/core/use-data-table-cell-auto-scroll.ts`, `src/components/ui/table/core/use-data-table-cell-auto-scroll.test.ts`, `src/components/ui/table/core/use-data-table-cell-selection.ts`, `src/components/ui/table/core/data-table.test.tsx`.
+- Files changed: `src/components/data-table/core/use-data-table-cell-auto-scroll.ts`, `src/components/data-table/core/use-data-table-cell-auto-scroll.test.ts`, `src/components/data-table/core/use-data-table-cell-selection.ts`, `src/components/data-table/core/data-table.test.tsx`.
 - Verification: `profile: auto-scroll-red` -> FAIL because the module did not exist and the integration did not schedule RAF; `profile: auto-scroll-green` -> PASS (86 passed, 0 failed across three files); `pnpm typecheck` -> PASS; `pnpm lint` -> PASS with 0 warnings.
 - Notes: One RAF loop scrolls only the DataTable viewport, uses effective clipping intersection and dynamic cell-size metrics, re-hit-tests after each frame, and stops on pointer completion or unmount.

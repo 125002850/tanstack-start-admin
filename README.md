@@ -41,7 +41,7 @@
 
 - **数据概览页**，包含卡片和基于 Suspense 的独立加载区块
 
-- **数据表格**，支持 React Query 路由加载、DSL 查询构建、类型安全的选择列编辑与跨页草稿、列拖拽排序、列宽 / 排序 / 分页持久化、虚拟滚动、单元格复制反馈、搜索筛选与分页
+- **数据表格**，支持 React Query 路由加载、DSL 查询构建、表头本地列值多选筛选、类型安全编辑与跨页草稿、列拖拽排序、状态持久化、虚拟滚动、复制粘贴与分页
 
 - **类型安全的文件路由**，基于 TanStack Router 自动生成路由树
 
@@ -104,12 +104,28 @@ src/
 │       └── system-management/     # 系统管理（字典管理、导出中心）
 │
 ├── components/                    # 共享组件
-│   ├── ui/                        # UI 基础组件（button、input、kanban 等）
+│   ├── ui/                        # Shadcn UI 基础原语（button、input、table 等）
+│   ├── data-table/                # DataTable 共享子系统
+│   │   ├── actions/               # 顶层、选择和行操作
+│   │   ├── cells/                 # 展示单元格与 typed editor
+│   │   ├── columns/               # 列 DSL、type registry、codec 与 header
+│   │   ├── core/                  # 表格壳、表头/表体、选择、粘贴与填充
+│   │   ├── dnd/                   # 列拖拽
+│   │   ├── expand/                # 展开分屏
+│   │   ├── export/                # 导出交互
+│   │   ├── feedback/              # loading、empty、error 状态
+│   │   ├── filters/               # 工具栏筛选与表头本地 Set Filter
+│   │   ├── toolbar/               # 工具栏与列面板
+│   │   └── virtualization/        # 行列虚拟化
+│   ├── forms/                     # 共享表单组合
 │   ├── layout/                    # 布局组件（header、sidebar 等）
+│   ├── modal/                     # 共享 modal 组合
 │   ├── themes/                    # 主题系统（selector、mode toggle、config）
 │   └── kbar/                      # Command+K 命令面板
 │
 ├── features/                      # 按功能组织的模块
+│   ├── iam/                       # IAM API、页面组件与领域工具
+│   │   └── components/detail/     # IAM 专属详情展示组件
 │   ├── overview/                  # 控制台数据概览（图表、卡片）
 │   ├── kanban/                    # 拖拽任务看板
 │   ├── chat/                      # 聊天模块（会话、气泡、输入框）
@@ -121,12 +137,14 @@ src/
 │   └── forms/                     # 表单展示模块
 │
 ├── lib/                           # 核心工具（query-client、parsers 等）
-├── hooks/                         # 自定义 hooks（use-data-table、use-media-query 等）
+├── hooks/                         # 跨 feature 状态编排
+│   ├── use-data-table/            # 表格状态、编辑和本地筛选运行时
+│   └── use-dsl-data-table.ts      # 服务端 DSL 查询组合
 ├── config/                        # infobar、data table 等配置
 ├── constants/                     # Mock 数据
 ├── styles/                        # 全局样式与主题文件
 │   └── themes/                    # 各主题独立 CSS（OKLCH）
-└── types/                         # TypeScript 类型定义
+└── types/                         # 跨层 TypeScript 类型定义（含 data-table.ts）
 ```
 
 ## UI 组件开发规范
@@ -220,14 +238,11 @@ src/
 
 ### DataTable 开发规范
 
-- 新增表格列优先使用 `createDataTableColumnDsl()`，统一声明字段类型、筛选类型、展示格式、复制值和列面板行为。
-- 可编辑列使用 `columnDsl.editableField()`：`type: 'text'` 生成输入框 editor；`enum` / `select` 默认生成 choice editor，也可通过 `edit.control: 'switch'` 映射为二态 Switch；`remoteSelect` 提供可取消的 `remoteOptions.loadOptions`，已有值需要补 label 时提供批量 `resolveOptions`。
-- 单选字段必须是 `string | number | null`，多选字段必须是 `Array<string | number>`；`edit.allowEmpty` 控制是否允许清空，默认 `true`，多选通过 `edit: { selectionMode: 'multiple', maxSelected }` 声明；row 中只保存 value，不保存 Option 对象。
-- DSL 查询优先通过 `useDslDataTable()` 构建；仅 `text`、`select`、`multiSelect`、`date`、`dateRange` 会自动序列化为后端 DSL 条件，不支持的筛选类型只作为前端 UI 状态。
-- `useDslDataTable()` 的跨页草稿必须显式提供稳定 `rowId` 或 `getRowId`。持久化由业务层在 `editing.onChange` 中执行，读取/确认/放弃草稿分别使用返回值中的 `editing.getSnapshot()`、`acceptChanges()`、`discardChanges()`。
-- `useDslDataTable()` 默认启用斑马纹；仅在明确需要纯色表体时传 `enableZebraStriping: false`。直接使用 `useDataTable()` 时不隐式启用。
-- 表格状态统一由 `src/lib/data-table-state-persistence.ts` 管理，覆盖列宽、列顺序、排序和每页条数；不要再新增独立的 localStorage key。
-- `src/components/ui/table/*` 统一使用分层导入路径，例如 `core/`、`columns/`、`cells/`、`toolbar/`；禁止新增旧 flat 导入路径或兼容转发。
+- `src/components/ui/table.tsx` 只提供 Shadcn Table 原语；完整 DataTable 固定放在 `src/components/data-table/`。
+- 页面通过 `createDataTableColumnDsl()`、`useDataTable()` 或 `useDslDataTable()` 接入，禁止直接拼装共享运行时内部状态。
+- 服务端工具栏筛选与表头当前已加载数据的本地 Set Filter 是两套独立状态，业务代码不得混用。
+- DataTable 内部按 `core/`、`columns/`、`cells/`、`filters/` 等职责使用分层导入，不新增 flat 入口、兼容转发或新旧路径双写。
+- 完整团队规范以 [oig-tanstack-admin DataTable 开发规范](.agents/skills/oig-tanstack-admin/references/data-table.md) 为准。
 
 ## 路由元数据规范
 

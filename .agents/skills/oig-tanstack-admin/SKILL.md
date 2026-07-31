@@ -1,6 +1,6 @@
 ---
 name: oig-tanstack-admin
-description: oig tanstack admin 团队开发规范与任务路由。分析、设计、修改或审查本仓库代码，处理 React 页面、Shadcn UI、表单、SearchCombobox、overlay portal、Card、PageContainer、DataTable、路由导航、workspace tabs、环境配置、OpenAPI/API transport，或创建 Git 提交时使用。
+description: oig tanstack admin 团队开发规范与任务路由。分析、设计、修改或审查本仓库代码，处理项目结构与目录归属、React 页面、Shadcn UI、表单、SearchCombobox、overlay portal、Card、PageContainer、DataTable、路由导航、workspace tabs、环境配置、OpenAPI/API transport，或创建 Git 提交时使用。
 ---
 
 # Oig Tanstack Admin
@@ -21,6 +21,7 @@ description: oig tanstack admin 团队开发规范与任务路由。分析、设
 
 | 任务                                                                      | 必读文件                                                              |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 项目结构、目录归属、共享组件与 feature 分层                               | `references/project-structure.md`                                     |
 | Card、图标、页面布局、PageContainer、Management 页面                      | `references/ui-components.md`                                         |
 | DataTable、服务端分页、虚拟化、审计字段列                                 | `references/data-table.md`                                            |
 | 新增或修改表格页面                                                        | `references/data-table.md`、`references/ui-components.md`             |
