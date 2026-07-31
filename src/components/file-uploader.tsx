@@ -109,12 +109,12 @@ export function FileUploader(props: FileUploaderProps) {
   const onDrop = React.useCallback(
     (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       if (!multiple && maxFiles === 1 && acceptedFiles.length > 1) {
-        toast.error('Cannot upload more than 1 file at a time');
+        toast.error('单文件模式一次只能上传 1 个文件');
         return;
       }
 
       if ((files?.length ?? 0) + acceptedFiles.length > maxFiles) {
-        toast.error(`Cannot upload more than ${maxFiles} files`);
+        toast.error(`最多只能上传 ${maxFiles} 个文件`);
         return;
       }
 
@@ -130,20 +130,20 @@ export function FileUploader(props: FileUploaderProps) {
 
       if (rejectedFiles.length > 0) {
         rejectedFiles.forEach(({ file }) => {
-          toast.error(`File ${file.name} was rejected`);
+          toast.error(`文件「${file.name}」未通过校验`);
         });
       }
 
       if (onUpload && updatedFiles.length > 0 && updatedFiles.length <= maxFiles) {
-        const target = updatedFiles.length > 0 ? `${updatedFiles.length} files` : `file`;
+        const target = `${updatedFiles.length} 个文件`;
 
         toast.promise(onUpload(updatedFiles), {
-          loading: `Uploading ${target}...`,
+          loading: `正在上传${target}...`,
           success: () => {
             setFiles([]);
-            return `${target} uploaded`;
+            return `${target}上传成功`;
           },
-          error: `Failed to upload ${target}`
+          error: `${target}上传失败`
         });
       }
     },
@@ -201,7 +201,7 @@ export function FileUploader(props: FileUploaderProps) {
                 <div className='rounded-full border border-dashed p-3'>
                   <Icons.upload className='text-muted-foreground size-7' aria-hidden='true' />
                 </div>
-                <p className='text-muted-foreground font-medium'>Drop the files here</p>
+                <p className='text-muted-foreground font-medium'>请将文件拖放到此处</p>
               </div>
             ) : (
               <div className='flex flex-col items-center justify-center gap-4 sm:px-5'>
@@ -210,14 +210,13 @@ export function FileUploader(props: FileUploaderProps) {
                 </div>
                 <div className='space-y-px'>
                   <p className='text-muted-foreground font-medium'>
-                    Drag {`'n'`} drop files here, or click to select files
+                    将文件拖放到此处，或点击选择文件
                   </p>
                   <p className='text-muted-foreground/70 text-sm'>
-                    You can upload
+                    可上传
                     {maxFiles > 1
-                      ? ` ${maxFiles === Infinity ? 'multiple' : maxFiles}
-                      files (up to ${formatBytes(maxSize)} each)`
-                      : ` a file with ${formatBytes(maxSize)}`}
+                      ? ` ${maxFiles === Infinity ? '多个' : maxFiles} 个文件（每个不超过 ${formatBytes(maxSize)}）`
+                      : ` 1 个文件（不超过 ${formatBytes(maxSize)}）`}
                   </p>
                 </div>
               </div>
@@ -281,7 +280,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
           className='size-8 rounded-full'
         >
           <Icons.close className='text-muted-foreground' />
-          <span className='sr-only'>Remove file</span>
+          <span className='sr-only'>移除文件</span>
         </Button>
       </div>
     </div>
