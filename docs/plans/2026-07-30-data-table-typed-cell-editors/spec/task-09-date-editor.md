@@ -16,14 +16,14 @@
 
 ## Files
 
-- Create: `src/components/ui/table/cells/data-table-editable-date-cell.tsx`
-- Create: `src/components/ui/table/cells/data-table-editable-date-cell.test.tsx`
-- Modify: `src/components/ui/table/columns/data-table-edit-codecs.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-codecs.test.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-adapters.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-adapters.test.ts`
-- Modify: `src/components/ui/table/columns/data-table-column-builders.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-factory.test.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-date-cell.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-date-cell.test.tsx`
+- Modify: `src/components/data-table/columns/data-table-edit-codecs.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-codecs.test.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-adapters.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-adapters.test.ts`
+- Modify: `src/components/data-table/columns/data-table-column-builders.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-factory.test.tsx`
 - Modify: `src/types/data-table.ts`
 - Modify: `src/features/elements/components/data-table-editable-choice-contract-page.tsx`
 - Modify: `e2e/data-table-editing-example.smoke.spec.ts`
@@ -66,7 +66,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/components/ui/table/cells/data-table-editable-date-cell.test.tsx src/components/ui/table/columns/data-table-edit-codecs.test.ts src/components/ui/table/columns/data-table-edit-adapters.test.ts src/components/ui/table/columns/data-table-column-factory.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
+pnpm exec vitest run src/components/data-table/cells/data-table-editable-date-cell.test.tsx src/components/data-table/columns/data-table-edit-codecs.test.ts src/components/data-table/columns/data-table-edit-adapters.test.ts src/components/data-table/columns/data-table-column-factory.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
 pnpm typecheck
 pnpm lint
 pnpm test:e2e:smoke e2e/data-table-editing-example.smoke.spec.ts --grep @workspace-v2

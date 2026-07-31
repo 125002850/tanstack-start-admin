@@ -11,14 +11,14 @@
 当前基线已在隔离工作树验证：
 
 ```text
-pnpm test:unit src/components/ui/table/core/data-table.test.tsx
+pnpm test:unit src/components/data-table/core/data-table.test.tsx
 Test Files  1 passed (1)
 Tests      70 passed (70)
 ```
 
 ## 背景
 
-`src/components/ui/table/core/use-data-table-cell-selection.ts` 当前只维护一个 `activeCell`：
+`src/components/data-table/core/use-data-table-cell-selection.ts` 当前只维护一个 `activeCell`：
 
 - 单击普通业务单元格后，仅该 cell 获得 `data-cell-selected="true"`
 - `Cmd/Ctrl+C` 只复制当前 cell
@@ -297,16 +297,16 @@ row 2 col 1\trow 2 col 2
 
 预计运行时代码：
 
-- 修改 `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- 修改 `src/components/ui/table/core/data-table-body.tsx`
-- 新增 `src/components/ui/table/core/data-table-cell-range.ts`
-- 新增 `src/components/ui/table/core/use-data-table-cell-auto-scroll.ts`
+- 修改 `src/components/data-table/core/use-data-table-cell-selection.ts`
+- 修改 `src/components/data-table/core/data-table-body.tsx`
+- 新增 `src/components/data-table/core/data-table-cell-range.ts`
+- 新增 `src/components/data-table/core/use-data-table-cell-auto-scroll.ts`
 - 修改 `src/styles/globals.css`
 
 预计测试：
 
-- 修改 `src/components/ui/table/core/data-table.test.tsx`
-- 新增 `src/components/ui/table/core/data-table-cell-range.test.ts`
+- 修改 `src/components/data-table/core/data-table.test.tsx`
+- 新增 `src/components/data-table/core/data-table-cell-range.test.ts`
 - 新增 `e2e/data-table-cell-range-selection.smoke.spec.ts`
 
 公共 `DataTableProps` 不新增配置项，页面调用方不需要迁移。

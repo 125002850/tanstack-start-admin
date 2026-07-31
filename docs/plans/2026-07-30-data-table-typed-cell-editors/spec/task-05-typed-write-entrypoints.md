@@ -19,9 +19,9 @@
 - Modify: `src/types/data-table.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.test.tsx`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
-- Modify: `src/components/ui/table/columns/data-table-edit-codecs.test.ts`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
+- Modify: `src/components/data-table/columns/data-table-edit-codecs.test.ts`
 
 ## Invariants
 
@@ -63,7 +63,7 @@ type DataTableProgrammaticEditInput<TValue> =
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/ui/table/core/data-table.test.tsx src/components/ui/table/columns/data-table-edit-codecs.test.ts
+pnpm exec vitest run src/hooks/use-data-table/use-data-table-editing.test.tsx src/components/data-table/core/data-table.test.tsx src/components/data-table/columns/data-table-edit-codecs.test.ts
 pnpm typecheck
 pnpm lint
 ```

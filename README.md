@@ -73,8 +73,22 @@ src/
 │   ├── dashboard.tsx               # SSO 登录信息 loader 与控制台布局
 │   └── dashboard/                  # 控制台内容页
 ├── components/
-│   ├── ui/                         # Shadcn 基础组件与 DataTable
+│   ├── ui/                         # Shadcn UI 基础原语（button、input、table 等）
+│   ├── data-table/                 # DataTable 共享子系统
+│   │   ├── actions/                # 顶层、选择和行操作
+│   │   ├── cells/                  # 展示单元格与 typed editor
+│   │   ├── columns/                # 列 DSL、type registry、codec 与 header
+│   │   ├── core/                   # 表格壳、表头/表体、选择、粘贴与填充
+│   │   ├── dnd/                    # 列拖拽
+│   │   ├── expand/                 # 展开分屏
+│   │   ├── export/                 # 导出交互
+│   │   ├── feedback/               # loading、empty、error 状态
+│   │   ├── filters/                # 工具栏筛选与表头本地 Set Filter
+│   │   ├── toolbar/                # 工具栏与列面板
+│   │   └── virtualization/         # 行列虚拟化
+│   ├── forms/                      # 共享表单组合
 │   ├── layout/                     # Header、Sidebar、PageContainer
+│   ├── modal/                      # 共享 modal 组合
 │   ├── themes/                     # 主题系统
 │   └── kbar/                       # Command+K 命令面板
 ├── features/
@@ -94,7 +108,9 @@ src/
 │   │   └── clients/                # OpenAPI 生成客户端
 │   └── router/                     # route metadata、导航派生与菜单权限
 ├── config/                         # 环境变量与特性配置
-├── hooks/                          # 共享 hooks
+├── hooks/                          # 跨 feature 状态编排
+│   ├── use-data-table/             # 表格状态、编辑和本地筛选运行时
+│   └── use-dsl-data-table.ts       # 服务端 DSL 查询组合
 ├── styles/                         # 全局样式与主题
 └── types/                          # TypeScript 类型
 ```

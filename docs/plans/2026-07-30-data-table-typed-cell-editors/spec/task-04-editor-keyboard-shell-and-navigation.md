@@ -16,14 +16,14 @@
 
 ## Files
 
-- Create: `src/components/ui/table/cells/data-table-editor-keyboard-shell.tsx`
-- Create: `src/components/ui/table/cells/data-table-editor-keyboard-shell.test.tsx`
-- Create: `src/components/ui/table/core/data-table-editor-navigation.ts`
-- Create: `src/components/ui/table/core/data-table-editor-navigation.test.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-value-cell.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-choice-cell.tsx`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Create: `src/components/data-table/cells/data-table-editor-keyboard-shell.tsx`
+- Create: `src/components/data-table/cells/data-table-editor-keyboard-shell.test.tsx`
+- Create: `src/components/data-table/core/data-table-editor-navigation.ts`
+- Create: `src/components/data-table/core/data-table-editor-navigation.test.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-value-cell.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-choice-cell.tsx`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
 
 ## Invariants
 
@@ -63,7 +63,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/components/ui/table/cells/data-table-editor-keyboard-shell.test.tsx src/components/ui/table/core/data-table-editor-navigation.test.tsx src/components/ui/table/cells/data-table-editable-value-cell.test.tsx src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx src/components/ui/table/core/data-table.test.tsx
+pnpm exec vitest run src/components/data-table/cells/data-table-editor-keyboard-shell.test.tsx src/components/data-table/core/data-table-editor-navigation.test.tsx src/components/data-table/cells/data-table-editable-value-cell.test.tsx src/components/data-table/cells/data-table-editable-choice-cell.test.tsx src/components/data-table/core/data-table.test.tsx
 pnpm typecheck
 pnpm lint
 pnpm test:e2e:smoke e2e/data-table-editing-example.smoke.spec.ts --grep @workspace-v2

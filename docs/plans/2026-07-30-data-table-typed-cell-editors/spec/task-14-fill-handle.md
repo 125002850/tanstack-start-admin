@@ -17,10 +17,10 @@
 
 ## Files
 
-- Create: `src/components/ui/table/core/data-table-fill-plan.ts`
-- Create: `src/components/ui/table/core/data-table-fill-plan.test.ts`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table.tsx`
+- Create: `src/components/data-table/core/data-table-fill-plan.ts`
+- Create: `src/components/data-table/core/data-table-fill-plan.test.ts`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table.tsx`
 - Modify: `src/types/data-table.ts`
 - Modify: `e2e/data-table-cell-range-selection.smoke.spec.ts`
 
@@ -45,7 +45,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/components/ui/table/core/data-table-fill-plan.test.ts src/components/ui/table/core/data-table.test.tsx
+pnpm exec vitest run src/components/data-table/core/data-table-fill-plan.test.ts src/components/data-table/core/data-table.test.tsx
 pnpm typecheck
 pnpm lint
 pnpm test:e2e:smoke e2e/data-table-cell-range-selection.smoke.spec.ts --grep @workspace-v2

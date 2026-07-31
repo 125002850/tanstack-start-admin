@@ -18,8 +18,8 @@ readonly 和 nullable 契约。
 
 ## Files
 
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.test.tsx`
 - Modify: `e2e/data-table-cell-range-selection.smoke.spec.ts`
@@ -44,7 +44,7 @@ readonly 和 nullable 契约。
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/components/ui/table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
+pnpm exec vitest run src/components/data-table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
 pnpm typecheck
 pnpm lint
 pnpm test:e2e:smoke e2e/data-table-cell-range-selection.smoke.spec.ts --grep @workspace-v2

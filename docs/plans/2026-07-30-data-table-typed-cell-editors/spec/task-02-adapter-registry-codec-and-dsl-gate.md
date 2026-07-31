@@ -16,12 +16,12 @@
 
 ## Files
 
-- Create: `src/components/ui/table/columns/data-table-edit-codecs.ts`
-- Create: `src/components/ui/table/columns/data-table-edit-codecs.test.ts`
-- Create: `src/components/ui/table/columns/data-table-edit-adapters.ts`
-- Create: `src/components/ui/table/columns/data-table-edit-adapters.test.ts`
-- Modify: `src/components/ui/table/columns/data-table-column-builders.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-factory.test.tsx`
+- Create: `src/components/data-table/columns/data-table-edit-codecs.ts`
+- Create: `src/components/data-table/columns/data-table-edit-codecs.test.ts`
+- Create: `src/components/data-table/columns/data-table-edit-adapters.ts`
+- Create: `src/components/data-table/columns/data-table-edit-adapters.test.ts`
+- Modify: `src/components/data-table/columns/data-table-column-builders.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-factory.test.tsx`
 - Modify: `src/types/data-table.ts`
 
 ## Invariants
@@ -64,7 +64,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/components/ui/table/columns/data-table-edit-codecs.test.ts src/components/ui/table/columns/data-table-edit-adapters.test.ts src/components/ui/table/columns/data-table-column-factory.test.tsx
+pnpm exec vitest run src/components/data-table/columns/data-table-edit-codecs.test.ts src/components/data-table/columns/data-table-edit-adapters.test.ts src/components/data-table/columns/data-table-column-factory.test.tsx
 pnpm typecheck
 pnpm lint
 ```

@@ -18,14 +18,14 @@
 
 ## Files
 
-- Create: `src/components/ui/table/core/data-table-matrix-paste.ts`
-- Create: `src/components/ui/table/core/data-table-matrix-paste.test.ts`
+- Create: `src/components/data-table/core/data-table-matrix-paste.ts`
+- Create: `src/components/data-table/core/data-table-matrix-paste.test.ts`
 - Reference: `../reviews/fixtures/phase-6-synthetic-excel-clipboard.json`
-- Modify: `src/components/ui/table/core/data-table-cell-range.ts`
-- Modify: `src/components/ui/table/core/data-table-body.tsx`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-codecs.ts`
-- Modify: `src/components/ui/table/columns/data-table-edit-adapters.ts`
+- Modify: `src/components/data-table/core/data-table-cell-range.ts`
+- Modify: `src/components/data-table/core/data-table-body.tsx`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-codecs.ts`
+- Modify: `src/components/data-table/columns/data-table-edit-adapters.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.ts`
 - Modify: `src/hooks/use-data-table/use-data-table-editing.test.tsx`
 - Modify: `src/types/data-table.ts`
@@ -57,7 +57,7 @@
 ## Verification Profile
 
 ```bash
-pnpm exec vitest run src/components/ui/table/core/data-table-matrix-paste.test.ts src/components/ui/table/core/data-table-cell-range.test.ts src/components/ui/table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
+pnpm exec vitest run src/components/data-table/core/data-table-matrix-paste.test.ts src/components/data-table/core/data-table-cell-range.test.ts src/components/data-table/core/data-table.test.tsx src/hooks/use-data-table/use-data-table-editing.test.tsx
 pnpm typecheck
 pnpm lint
 pnpm test:e2e:smoke e2e/data-table-cell-range-selection.smoke.spec.ts --grep @workspace-v2

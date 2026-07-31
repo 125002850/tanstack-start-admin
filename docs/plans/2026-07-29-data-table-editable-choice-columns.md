@@ -466,13 +466,13 @@ finishEditing({
 ## 8. 目标文件结构
 
 - Modify: `src/types/data-table.ts`
-- Modify: `src/components/ui/table/columns/data-table-column-builders.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-options.ts`
-- Modify: `src/components/ui/table/columns/data-table-column-types.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-rendering.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-factory.test.tsx`
-- Create: `src/components/ui/table/cells/data-table-editable-choice-cell.tsx`
-- Create: `src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-builders.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-options.ts`
+- Modify: `src/components/data-table/columns/data-table-column-types.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-rendering.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-factory.test.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-choice-cell.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-choice-cell.test.tsx`
 - Modify: `src/components/ui/search-combobox.tsx`
 - Modify: `src/components/ui/multi-select-combobox.tsx`
 - Modify: `src/components/ui/multi-select-combobox.test.tsx`
@@ -483,9 +483,9 @@ finishEditing({
 - Modify: `src/hooks/use-data-table/index.ts`
 - Modify: `src/hooks/use-dsl-data-table.ts`
 - Modify: `src/hooks/use-dsl-data-table.test.tsx`
-- Modify: `src/components/ui/table/core/data-table-body.tsx`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Modify: `src/components/data-table/core/data-table-body.tsx`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
 - Create: `e2e/data-table-editable-choice-columns.smoke.spec.ts`
 - Modify after implementation: `.agents/skills/oig-tanstack-admin/references/data-table.md`
 - Modify after implementation: `.agents/skills/oig-tanstack-admin/references/forms.md`
@@ -502,8 +502,8 @@ finishEditing({
 **Files**
 
 - Modify: `src/types/data-table.ts`
-- Modify: `src/components/ui/table/columns/data-table-column-builders.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-factory.test.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-builders.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-factory.test.tsx`
 
 **Acceptance Criteria**
 
@@ -517,7 +517,7 @@ finishEditing({
 **Verification**
 
 ```bash
-pnpm test:unit src/components/ui/table/columns/data-table-column-factory.test.tsx
+pnpm test:unit src/components/data-table/columns/data-table-column-factory.test.tsx
 pnpm typecheck
 ```
 
@@ -551,10 +551,10 @@ pnpm typecheck
 
 **Files**
 
-- Create: `src/components/ui/table/cells/data-table-editable-choice-cell.tsx`
-- Create: `src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-types.tsx`
-- Modify: `src/components/ui/table/columns/data-table-column-rendering.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-choice-cell.tsx`
+- Create: `src/components/data-table/cells/data-table-editable-choice-cell.test.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-types.tsx`
+- Modify: `src/components/data-table/columns/data-table-column-rendering.tsx`
 - Modify: `src/components/ui/multi-select-combobox.tsx`
 - Modify: `src/components/ui/multi-select-combobox.test.tsx`
 
@@ -572,9 +572,9 @@ pnpm typecheck
 
 ```bash
 pnpm test:unit \
-  src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx \
+  src/components/data-table/cells/data-table-editable-choice-cell.test.tsx \
   src/components/ui/multi-select-combobox.test.tsx \
-  src/components/ui/table/columns/data-table-column-factory.test.tsx
+  src/components/data-table/columns/data-table-column-factory.test.tsx
 ```
 
 ### Task 3：实现 remoteSelect 与 label hydration
@@ -584,8 +584,8 @@ pnpm test:unit \
 - Modify: `src/components/ui/search-combobox.tsx`
 - Modify: `src/components/ui/multi-select-combobox.tsx`
 - Modify: `src/hooks/use-remote-combobox-state.ts`
-- Modify: `src/components/ui/table/cells/data-table-editable-choice-cell.tsx`
-- Modify: `src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-choice-cell.tsx`
+- Modify: `src/components/data-table/cells/data-table-editable-choice-cell.test.tsx`
 
 **Acceptance Criteria**
 
@@ -602,7 +602,7 @@ pnpm test:unit \
 
 ```bash
 pnpm test:unit \
-  src/components/ui/table/cells/data-table-editable-choice-cell.test.tsx \
+  src/components/data-table/cells/data-table-editable-choice-cell.test.tsx \
   src/components/ui/multi-select-combobox.test.tsx
 pnpm typecheck
 ```
@@ -637,9 +637,9 @@ pnpm typecheck
 
 **Files**
 
-- Modify: `src/components/ui/table/core/data-table-body.tsx`
-- Modify: `src/components/ui/table/core/use-data-table-cell-selection.ts`
-- Modify: `src/components/ui/table/core/data-table.test.tsx`
+- Modify: `src/components/data-table/core/data-table-body.tsx`
+- Modify: `src/components/data-table/core/use-data-table-cell-selection.ts`
+- Modify: `src/components/data-table/core/data-table.test.tsx`
 
 **Acceptance Criteria**
 
@@ -656,8 +656,8 @@ pnpm typecheck
 
 ```bash
 pnpm test:unit \
-  src/components/ui/table/core/data-table.test.tsx \
-  src/components/ui/table/core/data-table-cell-range.test.ts
+  src/components/data-table/core/data-table.test.tsx \
+  src/components/data-table/core/data-table-cell-range.test.ts
 ```
 
 ### Task 6：回归、浏览器验证和规范同步
