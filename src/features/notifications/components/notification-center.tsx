@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { NotificationCard } from '@/components/ui/notification-card';
+import { NotificationCard } from '@/features/notifications/components/notification-card';
 import { useNotificationStore } from '../utils/store';
 import { useRouter } from '@tanstack/react-router';
 
