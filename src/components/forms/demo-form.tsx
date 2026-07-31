@@ -34,24 +34,24 @@ import { cn } from '@/lib/utils';
 
 // Schema (form-level safety net — onSubmit catches anything field-level missed)
 const demoFormSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.email('Invalid email address'),
-  age: z.number().min(18, 'Must be at least 18 years old'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: z.string().min(10, 'Phone must be at least 10 digits'),
-  website: z.string().url('Invalid URL').or(z.literal('')),
-  bio: z.string().min(10, 'Bio must be at least 10 characters'),
-  country: z.string().min(1, 'Please select a country'),
-  framework: z.string().min(1, 'Please select a framework'),
-  interests: z.array(z.string()).min(1, 'Select at least one interest'),
-  gender: z.string().min(1, 'Please select gender'),
+  name: z.string().min(2, '姓名至少需要 2 个字符'),
+  email: z.email('请输入有效的邮箱地址'),
+  age: z.number().min(18, '年龄不能小于 18 岁'),
+  password: z.string().min(8, '密码至少需要 8 个字符'),
+  phone: z.string().min(10, '手机号至少需要 10 位数字'),
+  website: z.string().url('请输入有效的网址').or(z.literal('')),
+  bio: z.string().min(10, '个人简介至少需要 10 个字符'),
+  country: z.string().min(1, '请选择国家或地区'),
+  framework: z.string().min(1, '请选择框架'),
+  interests: z.array(z.string()).min(1, '请至少选择一项兴趣'),
+  gender: z.string().min(1, '请选择性别'),
   newsletter: z.boolean(),
   rating: z.number().min(0).max(10),
   birthDate: z.date().optional(),
   dateRange: z.any().optional(),
   eventTime: z.string().optional(),
   favoriteColor: z.string().optional(),
-  otp: z.string().min(6, 'Please enter 6 digits'),
+  otp: z.string().min(6, '请输入 6 位数字'),
   formatting: z.array(z.string()).optional(),
   tags: z.array(z.string()).min(1, 'Add at least one tag'),
   terms: z.boolean().refine((val) => val === true, 'You must accept the terms'),
@@ -321,7 +321,7 @@ export default function DemoForm() {
                   required
                   placeholder='John Doe'
                   validators={{
-                    onBlur: z.string().min(2, 'Name must be at least 2 characters')
+                    onBlur: z.string().min(2, '姓名至少需要 2 个字符')
                   }}
                 />
                 {/* Async validation: simulated server-side email check */}
@@ -332,13 +332,13 @@ export default function DemoForm() {
                   type='email'
                   placeholder='john@example.com'
                   validators={{
-                    onBlur: z.string().email('Invalid email address'),
+                    onBlur: z.string().email('请输入有效的邮箱地址'),
                     onChangeAsync: async ({ value }: { value: string }) => {
                       if (!value || value.length < 3) return undefined;
                       // Simulated server check — replace with real API call
                       await new Promise((r) => setTimeout(r, 500));
                       if (value === 'taken@example.com') {
-                        return 'This email is already registered';
+                        return '该邮箱已被注册';
                       }
                       return undefined;
                     },
@@ -352,7 +352,7 @@ export default function DemoForm() {
                   type='password'
                   placeholder='Min 8 characters'
                   validators={{
-                    onBlur: z.string().min(8, 'Password must be at least 8 characters')
+                    onBlur: z.string().min(8, '密码至少需要 8 个字符')
                   }}
                 />
                 <FormTextField
@@ -364,7 +364,7 @@ export default function DemoForm() {
                   max={100}
                   placeholder='18'
                   validators={{
-                    onBlur: z.number().min(18, 'Must be at least 18 years old')
+                    onBlur: z.number().min(18, '年龄不能小于 18 岁')
                   }}
                 />
                 <FormTextField
@@ -374,7 +374,7 @@ export default function DemoForm() {
                   type='tel'
                   placeholder='+1 (555) 000-0000'
                   validators={{
-                    onBlur: z.string().min(10, 'Phone must be at least 10 digits')
+                    onBlur: z.string().min(10, '手机号至少需要 10 位数字')
                   }}
                 />
                 <FormTextField
@@ -394,7 +394,7 @@ export default function DemoForm() {
                 maxLength={500}
                 rows={4}
                 validators={{
-                  onBlur: z.string().min(10, 'Bio must be at least 10 characters')
+                  onBlur: z.string().min(10, '个人简介至少需要 10 个字符')
                 }}
               />
 
@@ -410,7 +410,7 @@ export default function DemoForm() {
                   options={countryOptions}
                   placeholder='Select your country'
                   validators={{
-                    onBlur: z.string().min(1, 'Please select a country')
+                    onBlur: z.string().min(1, '请选择国家或地区')
                   }}
                   listeners={{
                     onChange: ({ value }) => {
@@ -499,7 +499,7 @@ export default function DemoForm() {
                 required
                 options={genderOptions}
                 validators={{
-                  onBlur: z.string().min(1, 'Please select gender')
+                  onBlur: z.string().min(1, '请选择性别')
                 }}
               />
 
