@@ -101,17 +101,24 @@ src/
 │   ├── kanban/                     # 看板
 │   ├── chat/                       # 聊天
 │   └── notifications/              # 通知中心
-├── lib/
-│   ├── api/
-│   │   ├── sso/                    # SSO bootstrap、session、headers、queries
-│   │   ├── transport.ts            # OpenAPI generated client 共享 transport
-│   │   └── clients/                # OpenAPI 生成客户端
-│   └── router/                     # route metadata、导航派生与菜单权限
-├── config/                         # 环境变量与特性配置
-├── hooks/                          # 跨 feature 状态编排
-│   └── use-data-table/             # 表格状态、服务端 DSL、编辑和本地筛选运行时
-├── styles/                         # 全局样式与主题
-└── types/                          # TypeScript 类型
+├── lib/                           # 无 UI 的跨 feature 共享运行时与纯算法
+│   ├── api/                       # API transport、SSO 会话与生成客户端适配
+│   │   ├── sso/                   # SSO bootstrap、session、headers、queries
+│   │   ├── transport.ts           # OpenAPI generated client 共享 transport
+│   │   └── clients/               # OpenAPI 生成客户端
+│   ├── data-table/                # DataTable 纯算法与状态持久化
+│   ├── formatters/                # 日期、数字和展示格式化
+│   ├── router/                    # 路由元数据、守卫与导航算法
+│   ├── query-client.ts            # React Query 客户端配置
+│   └── utils.ts                   # 仅保留通用 cn() 类名合并
+├── config/                        # 环境变量与特性配置
+├── hooks/                         # 跨 feature 状态编排
+│   └── use-data-table/            # 表格状态、服务端 DSL、编辑和本地筛选运行时
+├── styles/                        # 全局样式与主题
+├── test/                          # 跨子系统测试基础设施与项目级契约
+│   ├── contracts/                 # 架构、OpenAPI adoption 等项目级契约测试
+│   └── smoke/                     # 冒烟测试
+└── types/                         # TypeScript 类型
 ```
 
 ## SSO 运行时

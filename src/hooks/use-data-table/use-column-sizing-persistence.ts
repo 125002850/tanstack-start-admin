@@ -4,7 +4,7 @@ import * as React from 'react';
 import {
   clearDataTableColumnSizing,
   saveDataTableColumnSizing
-} from '@/lib/data-table-state-persistence';
+} from '@/lib/data-table/state-persistence';
 import type { ColumnResizeStorageMode } from '@/types/data-table';
 
 import { omitFixedWidthColumnSizing } from './column-sizing';

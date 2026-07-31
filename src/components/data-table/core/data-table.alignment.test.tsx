@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { useDataTable } from '@/hooks/use-data-table';
-import { DATA_TABLE_PINNED_SHADOWS } from '@/lib/data-table';
+import { DATA_TABLE_PINNED_SHADOWS } from './data-table-pinning';
 import * as React from 'react';
 import { vi } from 'vitest';
 

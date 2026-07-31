@@ -9,8 +9,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { getSelectedPageRowCount } from '@/lib/data-table';
-import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table-state-persistence';
+import { getSelectedPageRowCount } from '@/lib/data-table/selection';
+import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table/state-persistence';
 import { cn } from '@/lib/utils';
 
 /**

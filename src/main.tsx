@@ -1,6 +1,6 @@
 import { Matches, RouterContextProvider } from '@tanstack/react-router';
 import { createRoot } from 'react-dom/client';
-import { RouterProgressBar } from './lib/router/progress';
+import { RouterProgressBar } from './components/layout/router-progress';
 import { createRouter } from './router';
 
 const router = createRouter();

@@ -3,7 +3,7 @@ import {
   clampWidth,
   calculateOverlayLeft,
   type OverlayPositionParams
-} from '@/lib/data-table-column-resize-overlay';
+} from './column-resize-overlay';
 
 describe('clampWidth', () => {
   it('returns startWidth when deltaX is zero', () => {

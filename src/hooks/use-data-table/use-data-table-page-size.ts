@@ -5,7 +5,7 @@ import {
   normalizeDataTablePageSize,
   readDataTablePageSize,
   writeDataTablePageSize
-} from '@/lib/data-table-state-persistence';
+} from '@/lib/data-table/state-persistence';
 
 type UseDataTablePageSizeOptions = {
   tableId?: string;

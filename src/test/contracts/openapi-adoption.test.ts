@@ -83,12 +83,12 @@ describe('OpenAPI package adoption contract', () => {
     const queriesSource = readProjectFile('src/lib/api/clients/service/generated/queries.ts');
     const mutationsSource = readProjectFile('src/lib/api/clients/service/generated/mutations.ts');
 
-    expect(sdkSource).toContain("@oig/react-query-generator/core");
-    expect(queriesSource).toContain("@oig/react-query-generator/core");
-    expect(mutationsSource).toContain("@oig/react-query-generator/core");
-    expect(sdkSource).not.toContain("@/lib/api/core");
-    expect(queriesSource).not.toContain("@/lib/api/core");
-    expect(mutationsSource).not.toContain("@/lib/api/core");
+    expect(sdkSource).toContain('@oig/react-query-generator/core');
+    expect(queriesSource).toContain('@oig/react-query-generator/core');
+    expect(mutationsSource).toContain('@oig/react-query-generator/core');
+    expect(sdkSource).not.toContain('@/lib/api/core');
+    expect(queriesSource).not.toContain('@/lib/api/core');
+    expect(mutationsSource).not.toContain('@/lib/api/core');
   });
 
   it('relies on the package generator for generated-file typecheck suppression', () => {
@@ -120,9 +120,7 @@ describe('OpenAPI package adoption contract', () => {
   });
 
   it('keeps feature and adapter imports off the OpenAPI CLI shim', () => {
-    const roots = [
-      resolve(process.cwd(), 'src/features')
-    ];
+    const roots = [resolve(process.cwd(), 'src/features')];
     const sourceExtensions = new Set(['.ts', '.tsx']);
     const shimImportPattern =
       /from\s+['"][^'"]*(?:openapi\/\.generated|service-orval-mutator)[^'"]*['"]/;

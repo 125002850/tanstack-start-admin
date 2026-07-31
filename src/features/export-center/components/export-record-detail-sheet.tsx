@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/sheet';
 import { detailExportRecordQueryOptions, type ExportRecordRspDTO } from '@/lib/api/clients/service';
 
-import { nullableDateTime, nullableFileSize, nullableText } from '@/lib/display-formatters';
+import { nullableDateTime, nullableFileSize, nullableText } from '@/lib/formatters/display';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   const displayValue = value === null || value === undefined || value === '' ? '-' : value;

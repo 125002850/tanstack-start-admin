@@ -7,7 +7,7 @@ import {
   nullableMoney,
   nullablePercent,
   nullableText
-} from '@/lib/display-formatters';
+} from '@/lib/formatters/display';
 import type {
   BuiltInColumnValueType,
   DataTableColumnTypeDefinition,

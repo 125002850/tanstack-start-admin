@@ -24,7 +24,7 @@ const downloadFileMocks = vi.hoisted(() => ({
   downloadFileFromUrl: vi.fn()
 }));
 
-vi.mock('@/lib/download-file', () => ({
+vi.mock('../lib/download-file', () => ({
   downloadFileFromUrl: downloadFileMocks.downloadFileFromUrl
 }));
 

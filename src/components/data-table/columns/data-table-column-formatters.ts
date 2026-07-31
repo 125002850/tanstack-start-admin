@@ -5,7 +5,7 @@ import {
   nullableMoney,
   nullableRawPercent,
   nullableYesNo
-} from '@/lib/display-formatters';
+} from '@/lib/formatters/display';
 
 /**
  * DataTable 字段格式化规则集合。

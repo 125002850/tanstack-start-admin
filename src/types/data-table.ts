@@ -1,5 +1,4 @@
 import type { DataTableConfig } from '@/config/data-table';
-import type { FilterItemSchema } from '@/lib/parsers';
 import type {
   CellContext,
   Column,
@@ -759,10 +758,6 @@ export interface DataTableRowActionOption<TData> {
 }
 
 export interface ExtendedColumnSort<TData> extends Omit<ColumnSort, 'id'> {
-  id: Extract<keyof TData, string>;
-}
-
-export interface ExtendedColumnFilter<TData> extends FilterItemSchema {
   id: Extract<keyof TData, string>;
 }
 

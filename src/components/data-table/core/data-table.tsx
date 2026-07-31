@@ -41,7 +41,7 @@ import {
   DataTableSkeleton,
   type DataTableSkeletonProps
 } from '@/components/data-table/feedback/data-table-skeleton';
-import { getSelectedPageRowCount } from '@/lib/data-table';
+import { getSelectedPageRowCount } from '@/lib/data-table/selection';
 import { useDataTableColumnDnd } from '@/components/data-table/dnd/use-data-table-column-dnd';
 import { useDataTableExpandPanel } from '@/components/data-table/expand/use-data-table-expand-panel';
 import { useDataTableVirtualization } from '@/components/data-table/virtualization/use-data-table-virtualization';

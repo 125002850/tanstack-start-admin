@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Icons } from '@/components/icons';
-import { getSelectedPageRows } from '@/lib/data-table';
+import { getSelectedPageRows } from '@/lib/data-table/selection';
 import { cn } from '@/lib/utils';
 
 /**

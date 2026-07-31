@@ -9,11 +9,11 @@ import {
   nullableText,
   nullableTrimmedText,
   nullableYesNo
-} from './display-formatters';
+} from './display';
 
 const getTestDictLabel = (code: string) => (code === '2' ? '成功' : code);
 
-describe('display-formatters', () => {
+describe('display formatters', () => {
   it('uses the standard empty placeholder', () => {
     expect(nullableText(null)).toBe('-');
     expect(nullableText('')).toBe('-');

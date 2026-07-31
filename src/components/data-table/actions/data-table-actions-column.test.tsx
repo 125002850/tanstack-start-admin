@@ -5,7 +5,7 @@ import * as React from 'react';
 
 import { DataTable } from '@/components/data-table/core/data-table';
 import { useDataTable } from '@/hooks/use-data-table';
-import { DATA_TABLE_PINNED_SHADOWS } from '@/lib/data-table';
+import { DATA_TABLE_PINNED_SHADOWS } from '@/components/data-table/core/data-table-pinning';
 import {
   getDataTableRowActionsColumnWidth,
   type DataTableRowAction

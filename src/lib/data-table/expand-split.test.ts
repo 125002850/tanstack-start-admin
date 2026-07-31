@@ -5,7 +5,7 @@ import {
   DATA_TABLE_EXPAND_SPLIT_HANDLE_PX,
   clampExpandSplitTop,
   resolveExpandSplitLayout
-} from '@/lib/data-table-expand-split';
+} from './expand-split';
 
 describe('data-table expand split math', () => {
   it('resolves a configured initial table height without stretching to the host maximum', () => {
