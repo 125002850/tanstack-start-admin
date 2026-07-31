@@ -935,14 +935,20 @@ export function useDataTableEditing<TData>({
         };
       }
 
-      if (isVirtualizationDetach && activeCell.editableCell.commitMode === 'explicit-confirm') {
+      if (
+        activeCell.editableCell.commitMode === 'explicit-confirm' &&
+        (reason === 'blur' || isVirtualizationDetach)
+      ) {
         clearEditorAnchor(sessionId);
         activeCellRef.current = null;
-        readyCellRef.current = null;
+        readyCellRef.current =
+          !isVirtualizationDetach && nextInteractionState === 'edit-ready'
+            ? { rowId: activeCell.rowId, columnId: activeCell.columnId }
+            : null;
         notify();
         return {
           status: 'reverted',
-          reason: 'virtualization-detach'
+          reason: isVirtualizationDetach ? 'virtualization-detach' : 'explicit-confirm-detach'
         };
       }
 

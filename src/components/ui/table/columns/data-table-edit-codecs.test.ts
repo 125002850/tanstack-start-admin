@@ -114,6 +114,10 @@ describe('data-table-edit-codecs', () => {
       value: 1234.5
     });
     expect(codec.parse('12.340', ROW)).toEqual({
+      status: 'valid',
+      value: 12.34
+    });
+    expect(codec.parse('12.345', ROW)).toEqual({
       status: 'invalid',
       errors: ['小数位最多允许 2 位。']
     });
@@ -209,7 +213,7 @@ describe('data-table-edit-codecs', () => {
     expect(codec.formatForEdit(0.125, ROW)).toBe('12.5');
     expect(codec.parse('12.5%', ROW)).toEqual({ status: 'valid', value: 0.125 });
     expect(codec.parse('１２．３４％', ROW)).toEqual({ status: 'valid', value: 0.1234 });
-    expect(codec.parse('12.340', ROW).status).toBe('invalid');
+    expect(codec.parse('12.340', ROW)).toEqual({ status: 'valid', value: 0.1234 });
 
     const excessivePrecisionDraft = codec.formatForEdit(0.123456, ROW);
     expect(excessivePrecisionDraft).toBe('12.3456');

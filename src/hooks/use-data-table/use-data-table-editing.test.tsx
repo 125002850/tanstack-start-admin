@@ -609,6 +609,48 @@ describe('useDataTableEditing', () => {
     expect(onChange).toHaveBeenCalledOnce();
   });
 
+  it('reverts an explicit-confirm draft when another cell is selected', () => {
+    const onChange = vi.fn();
+    const blurMeta = resolveEditableCell({
+      field: 'name',
+      title: '名称',
+      type: 'text',
+      edit: { allowEmpty: false }
+    });
+    const explicitConfirmMeta = {
+      ...blurMeta,
+      commitMode: 'explicit-confirm' as const
+    };
+    const fields = new Map(editableFields);
+    fields.set('name', blurMeta);
+    const { result } = renderEditing(onChange, fields);
+    const row: Row = { id: 1, name: '原名称', status: 'DRAFT', roleIds: [1] };
+    let sessionId: number | null = null;
+
+    act(() => {
+      result.current.loadPage(1, [row]);
+      sessionId = result.current.runtime.startEditing({
+        rowId: '1',
+        row,
+        columnId: 'name',
+        field: 'name',
+        initialValue: '原名称',
+        editableCell: explicitConfirmMeta
+      });
+      result.current.runtime.setActiveDraft(requireSession(sessionId), '不得隐式提交');
+      result.current.runtime.selectCell({
+        rowId: '1',
+        row,
+        columnId: 'status'
+      });
+    });
+
+    expect(result.current.activeCell).toBeNull();
+    expect(result.current.readyCell).toBeNull();
+    expect(result.current.getSnapshot().rows[0]?.name).toBe('原名称');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('cancels a detach when the same session anchor remounts in the microtask window', async () => {
     const onChange = vi.fn();
     const closePopup = vi.fn();
