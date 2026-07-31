@@ -25,8 +25,8 @@ import {
   CommandSeparator
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { getDataTableColumnLabel } from '@/lib/data-table-column-label';
-import { moveDataTableColumnOrder } from '@/lib/data-table-state-persistence';
+import { getDataTableColumnLabel } from '@/lib/data-table/column-label';
+import { moveDataTableColumnOrder } from '@/lib/data-table/state-persistence';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
 

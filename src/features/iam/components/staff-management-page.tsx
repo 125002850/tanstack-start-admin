@@ -42,7 +42,7 @@ import {
   type StaffStatusUpdateReqDTO,
   type StaffUpdateReqDTO
 } from '@/lib/api/clients/service';
-import { nullableText } from '@/lib/display-formatters';
+import { nullableText } from '@/lib/formatters/display';
 import { iamDeptTreeQueryOptions, iamRoleOptionsQueryOptions } from '../api/query-options';
 import { ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS } from '../lib/constants';
 import { deptMultiSelectOptions, deptSelectOptions, flattenDeptTree } from '../lib/tree';

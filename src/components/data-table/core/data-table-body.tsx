@@ -11,7 +11,7 @@ import {
   getColumnPinningShadow,
   getColumnPinningShadowOverlayStyle,
   getCommonPinningStyles
-} from '@/lib/data-table';
+} from '@/components/data-table/core/data-table-pinning';
 import type {
   DataTableColumnRenderItem,
   DataTableColumnVirtualWindow,

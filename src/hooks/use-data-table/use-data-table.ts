@@ -18,7 +18,7 @@ import type {
 import * as React from 'react';
 
 import { dataTableColumnSizes, dataTableConfig } from '@/config/data-table';
-import { getSelectedPageRows } from '@/lib/data-table';
+import { getSelectedPageRows } from '@/lib/data-table/selection';
 import type {
   ColumnOrderStorageMode,
   ColumnResizeStorageMode,

@@ -1,5 +1,5 @@
-import { formatDateTime } from '@/lib/format';
-import { formatBytes, formatDate, formatInt, formatMoney, formatPercent } from '@/lib/utils';
+import { formatDateOnly, formatDateTime } from './date';
+import { formatFileSize, formatInt, formatMoney, formatPercent } from './number';
 
 export function nullableText(value: unknown) {
   if (value == null || value === '') return '-';
@@ -14,7 +14,7 @@ export function nullableTrimmedText(value: unknown) {
 export function nullableDate(value: string | null | undefined) {
   if (value == null || value === '') return '-';
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  return formatDate(value);
+  return formatDateOnly(value) || '-';
 }
 
 export function nullableDateTime(value: string | number | Date | null | undefined) {
@@ -23,7 +23,7 @@ export function nullableDateTime(value: string | number | Date | null | undefine
 
 export function nullableFileSize(value: number | null | undefined) {
   if (typeof value !== 'number') return '-';
-  return formatBytes(value);
+  return formatFileSize(value);
 }
 
 export function nullableMoney(value: number | null | undefined) {

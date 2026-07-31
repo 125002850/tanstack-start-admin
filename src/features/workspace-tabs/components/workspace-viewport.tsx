@@ -10,8 +10,8 @@ import { WorkspacePageContext } from '../hooks/use-workspace-page';
 import { Activity } from './activity';
 import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary';
 import { Icons } from '@/components/icons';
+import { RouterSuspenseProgressSignal } from '@/components/layout/router-progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { RouterSuspenseProgressSignal } from '@/lib/router/progress';
 
 /**
  * WorkspaceViewport is the ActivityHost — the single owner of all page instances

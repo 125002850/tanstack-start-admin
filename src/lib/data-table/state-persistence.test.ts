@@ -19,7 +19,7 @@ import {
   saveDataTableColumnSizing,
   saveDataTableSorting,
   writeDataTablePageSize
-} from './data-table-state-persistence';
+} from './state-persistence';
 
 const TABLE_ID = 'test-table';
 const COLUMN_SIZING_STORAGE_KEY = 'data-table:test-table:column-sizing';

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { formatDateOnly } from '@/lib/format';
+import { formatDateOnly } from '@/lib/formatters/date';
 
 /**
  * 日期/日期范围筛选控件。

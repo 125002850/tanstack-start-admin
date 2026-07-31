@@ -39,7 +39,7 @@ import {
   validateDataTableColumnTypeRegistry,
   type DataTableColumnTypeRegistry
 } from '@/components/data-table/columns/data-table-column-types';
-import { nullableText } from '@/lib/display-formatters';
+import { nullableText } from '@/lib/formatters/display';
 import { cn } from '@/lib/utils';
 import type { DataTableColumnSize } from '@/config/data-table';
 import type {

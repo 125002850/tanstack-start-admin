@@ -136,13 +136,21 @@ src/
 │   ├── auth/                      # 认证相关组件
 │   └── forms/                     # 表单展示模块
 │
-├── lib/                           # 核心工具（query-client、parsers 等）
+├── lib/                           # 无 UI 的跨 feature 共享运行时与纯算法
+│   ├── api/                       # API transport、IAM 运行时与生成客户端适配
+│   ├── data-table/                # DataTable 纯算法与状态持久化
+│   ├── formatters/                # 日期、数字和展示格式化
+│   ├── router/                    # 路由元数据、守卫与导航算法
+│   ├── query-client.ts            # React Query 客户端配置
+│   └── utils.ts                   # 仅保留通用 cn() 类名合并
 ├── hooks/                         # 跨 feature 状态编排
 │   └── use-data-table/            # 表格状态、服务端 DSL、编辑和本地筛选运行时
 ├── config/                        # infobar、data table 等配置
 ├── constants/                     # Mock 数据
 ├── styles/                        # 全局样式与主题文件
 │   └── themes/                    # 各主题独立 CSS（OKLCH）
+├── test/                          # 跨子系统测试基础设施与项目级契约
+│   └── contracts/                 # 架构、OpenAPI adoption 等项目级契约测试
 └── types/                         # 跨层 TypeScript 类型定义（含 data-table.ts）
 ```
 

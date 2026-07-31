@@ -25,7 +25,7 @@ import { createPortal } from 'react-dom';
 import userEvent from '@testing-library/user-event';
 import { env } from '@/config';
 import { resolveDataTableVirtualizationOptions } from '@/config/data-table';
-import { DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING } from '@/lib/data-table-expand-split';
+import { DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING } from '@/lib/data-table/expand-split';
 
 const virtualizerMocks = vi.hoisted(() => ({
   calls: [] as Array<{

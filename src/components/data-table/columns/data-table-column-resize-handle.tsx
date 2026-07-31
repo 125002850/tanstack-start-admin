@@ -7,7 +7,7 @@ import {
 } from 'react';
 import type { Header } from '@tanstack/react-table';
 
-import { clampWidth, calculateOverlayLeft } from '@/lib/data-table-column-resize-overlay';
+import { clampWidth, calculateOverlayLeft } from '@/lib/data-table/column-resize-overlay';
 
 /**
  * 列宽拖拽 handle。

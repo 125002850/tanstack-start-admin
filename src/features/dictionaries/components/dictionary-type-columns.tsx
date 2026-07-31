@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
-import { nullableText } from '@/lib/display-formatters';
+import { nullableText } from '@/lib/formatters/display';
 
 import type { DictionaryTypeRecord } from '../api/types';
 

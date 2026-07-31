@@ -25,10 +25,15 @@ src/
 │   └── workspace-tabs/
 ├── hooks/                   # 跨 feature 的状态编排 hook
 ├── config/                  # 环境与特性配置
-├── lib/                     # 无 UI 的共享运行时、适配器和持久化逻辑
+├── lib/                     # 无 UI 的跨 feature 共享运行时与纯算法
+│   ├── api/                 # API transport、生成客户端适配与 IAM 运行时
+│   ├── data-table/          # DataTable 纯算法与状态持久化
+│   ├── formatters/          # 日期、数字和展示格式化
+│   └── router/              # 路由元数据、守卫与导航算法
 ├── types/                   # 跨层共享类型契约
 ├── styles/                  # 全局样式与主题 token
-└── test/                    # 共享测试基础设施
+└── test/                    # 共享测试基础设施与项目级契约
+    └── contracts/           # 架构、OpenAPI adoption 等项目级契约测试
 ```
 
 ## DataTable 子系统
@@ -49,7 +54,7 @@ src/components/data-table/
 
 src/hooks/use-data-table/    # TanStack Table 状态装配、服务端 DSL、编辑、本地筛选与持久化
 src/config/data-table*.ts    # 全局开关、尺寸 preset、消息
-src/lib/data-table*.ts       # 非 React 的共享算法与持久化
+src/lib/data-table/          # 非 React 的共享算法与持久化
 src/types/data-table.ts      # 跨层公共类型和 TanStack module augmentation
 ```
 
@@ -59,6 +64,8 @@ src/types/data-table.ts      # 跨层公共类型和 TanStack module augmentatio
 - 跨多个 feature 复用且拥有独立运行时、目录或测试矩阵的能力放入 `components/<subsystem>`；DataTable 固定使用 `components/data-table`。
 - 只服务单一业务域的组件放入对应 `features/<feature>`。只有出现稳定的跨 feature 复用后才上移到 `components`。
 - route 文件只负责路由、metadata 和页面边界；业务查询、交互与布局组合下沉到 feature。
-- `hooks` 负责共享状态编排，`lib` 负责无 UI 算法，`types` 只放跨层契约；禁止用任一目录作为无法归类代码的兜底。
+- `hooks` 负责共享状态编排，`lib` 负责无 UI 的跨 feature 运行时与纯算法，`types` 只放跨层契约；禁止用任一目录作为无法归类代码的兜底。
+- `lib` 禁止放置 JSX、可渲染组件或仅服务单一 feature 的工具；前者归入 `components`，后者归入对应 `features/<feature>/lib`。同一子系统存在多个稳定模块时使用 `lib/<subsystem>/`，禁止继续扩展根目录同前缀平铺文件。
+- 项目级架构、边界和 adoption 契约测试统一放入 `src/test/contracts/`；模块行为测试继续与实现同目录放置。
 - 只被单一 feature 或共享子系统消费的 hook 必须与消费者同层放置；只有稳定跨 feature 复用的状态编排才放入顶层 `hooks`。
 - 搬迁公共入口时一次性更新源码、测试和有效文档，删除旧入口；禁止增加兼容转发、同名 alias 或新旧路径双写。

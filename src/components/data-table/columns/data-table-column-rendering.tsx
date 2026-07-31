@@ -2,7 +2,7 @@ import type { Column, ColumnDef, Table } from '@tanstack/react-table';
 
 import { DataTableOverflowTooltipText } from '@/components/data-table/cells/data-table-overflow-tooltip-text';
 import { DataTableColumnHeader } from '@/components/data-table/columns/data-table-column-header';
-import { nullableText } from '@/lib/display-formatters';
+import { nullableText } from '@/lib/formatters/display';
 import type {
   DataTableChoiceOption,
   DataTableChoiceValue,

@@ -10,7 +10,7 @@ vi.mock('file-saver', () => ({
 
 import { downloadFileFromUrl } from './download-file';
 
-describe('downloadFileFromUrl', () => {
+describe('export-center downloadFileFromUrl', () => {
   beforeEach(() => {
     fileSaverMocks.saveAs.mockReset();
   });

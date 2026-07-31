@@ -5,7 +5,7 @@ import {
   DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING,
   DATA_TABLE_EXPAND_KEYBOARD_STEP_PX,
   resolveExpandSplitLayout
-} from '@/lib/data-table-expand-split';
+} from '@/lib/data-table/expand-split';
 import type { ExpandConfigEdge } from '@/types/data-table';
 
 /**

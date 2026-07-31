@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useControllableState } from '@/hooks/use-controllable-state';
-import { cn, formatBytes } from '@/lib/utils';
+import { formatFileSize } from '@/lib/formatters/number';
+import { cn } from '@/lib/utils';
 
 export interface FileUploaderProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
@@ -215,8 +216,8 @@ export function FileUploader(props: FileUploaderProps) {
                   <p className='text-muted-foreground/70 text-sm'>
                     可上传
                     {maxFiles > 1
-                      ? ` ${maxFiles === Infinity ? '多个' : maxFiles} 个文件（每个不超过 ${formatBytes(maxSize)}）`
-                      : ` 1 个文件（不超过 ${formatBytes(maxSize)}）`}
+                      ? ` ${maxFiles === Infinity ? '多个' : maxFiles} 个文件（每个不超过 ${formatFileSize(maxSize)}）`
+                      : ` 1 个文件（不超过 ${formatFileSize(maxSize)}）`}
                   </p>
                 </div>
               </div>
@@ -265,7 +266,7 @@ function FileCard({ file, progress, onRemove }: FileCardProps) {
         <div className='flex w-full flex-col gap-2'>
           <div className='space-y-px'>
             <p className='text-foreground/80 line-clamp-1 text-sm font-medium'>{file.name}</p>
-            <p className='text-muted-foreground text-xs'>{formatBytes(file.size)}</p>
+            <p className='text-muted-foreground text-xs'>{formatFileSize(file.size)}</p>
           </div>
           {progress ? <Progress value={progress} /> : null}
         </div>

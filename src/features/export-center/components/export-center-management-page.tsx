@@ -25,8 +25,7 @@ import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { useDict } from '@/hooks/use-dict';
 import { useDslDataTable } from '@/hooks/use-data-table';
 import { EXPORT_RECORD_STATUS } from '@/constants/enums';
-import { downloadFileFromUrl } from '@/lib/download-file';
-import { getDictLabel, nullableText } from '@/lib/display-formatters';
+import { getDictLabel, nullableText } from '@/lib/formatters/display';
 import { getQueryClient } from '@/lib/query-client';
 import {
   batchDownloadExportRecordsMutationOptions,
@@ -38,6 +37,7 @@ import {
   type PageMyExportRecordsQueryRequest,
   type PageMyExportRecordsResponse
 } from '@/lib/api/clients/service';
+import { downloadFileFromUrl } from '../lib/download-file';
 
 import { ExportRecordDetailSheet } from './export-record-detail-sheet';
 

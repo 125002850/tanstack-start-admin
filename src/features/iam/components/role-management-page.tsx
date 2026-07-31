@@ -31,7 +31,7 @@ import {
   type RoleRspDTO,
   type RoleUpdateReqDTO
 } from '@/lib/api/clients/service';
-import { nullableText } from '@/lib/display-formatters';
+import { nullableText } from '@/lib/formatters/display';
 import { iamDeptTreeQueryOptions, iamMenuTreeQueryOptions } from '../api/query-options';
 import { ENABLE_STATUS_OPTIONS } from '../lib/constants';
 import { DataScopeBadge, nextStatus, StatusBadge } from '../lib/format';

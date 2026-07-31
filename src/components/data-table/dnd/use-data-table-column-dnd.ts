@@ -11,7 +11,7 @@ import * as React from 'react';
 
 import { getCanReorderColumn } from '@/components/data-table/core/data-table-header';
 import { createDataTableColumnDragMotionMap } from '@/components/data-table/dnd/data-table-column-drag-motion';
-import { moveDataTableColumnOrder } from '@/lib/data-table-state-persistence';
+import { moveDataTableColumnOrder } from '@/lib/data-table/state-persistence';
 
 /**
  * 表头列顺序拖拽 hook。

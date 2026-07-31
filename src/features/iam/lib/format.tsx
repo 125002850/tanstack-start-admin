@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { nullableDateTime, nullableText } from '@/lib/display-formatters';
+import { nullableDateTime, nullableText } from '@/lib/formatters/display';
 import { BOOLEAN_RESULT_OPTIONS, DATA_SCOPE_OPTIONS, ENABLE_STATUS_OPTIONS, LOGIN_RESULT_OPTIONS, MENU_TYPE_OPTIONS } from './constants';
 
 type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];

@@ -22,7 +22,7 @@ import {
   readDataTableSorting,
   saveDataTableColumnOrder,
   saveDataTableSorting
-} from '@/lib/data-table-state-persistence';
+} from '@/lib/data-table/state-persistence';
 import type {
   ColumnOrderStorageMode,
   ColumnResizeStorageMode,

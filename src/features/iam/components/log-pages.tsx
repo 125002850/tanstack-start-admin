@@ -22,7 +22,7 @@ import {
   type LoginLogRspDTO,
   type OperationLogRspDTO
 } from '@/lib/api/clients/service';
-import { nullableText } from '@/lib/display-formatters';
+import { nullableText } from '@/lib/formatters/display';
 import { BOOLEAN_RESULT_OPTIONS } from '../lib/constants';
 import { BooleanResultBadge, LoginResultBadge } from '../lib/format';
 import { dslConditionNumber, dslConditionValue, dslDateTimeRange, pageRequestFromDsl } from '../lib/table';
