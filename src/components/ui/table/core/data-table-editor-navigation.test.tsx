@@ -80,6 +80,27 @@ describe('finishEditingAndNavigate', () => {
     table.remove();
   });
 
+  it('fails closed instead of skipping virtualized columns', async () => {
+    const runtime = createRuntime({ status: 'committed' });
+    const { table, current } = createEditableRow();
+    const body = table.tBodies.item(0);
+    if (!body) throw new Error('editable row body missing');
+    body.dataset.columnVirtualEnabled = 'true';
+    current.focus();
+
+    const finishResult = finishEditingAndNavigate({
+      runtime,
+      sessionId: 9,
+      cell: current,
+      direction: 'next'
+    });
+
+    await Promise.resolve();
+    expect(finishResult).toEqual({ status: 'committed' });
+    expect(current).toHaveFocus();
+    table.remove();
+  });
+
   it.each<DataTableFinishEditingResult>([
     { status: 'blocked', errors: ['Invalid value.'] },
     { status: 'reverted', reason: 'invalid-edit' },

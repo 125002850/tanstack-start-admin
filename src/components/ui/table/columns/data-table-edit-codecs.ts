@@ -295,8 +295,13 @@ export function createNumericEditCodec<TData>(
         return { status: 'invalid', errors: [validationMessages.invalidNumericDraft] };
       }
 
-      const significand = normalized.split(/[eE]/, 1)[0] ?? normalized;
-      const fractionDigits = significand.split('.')[1]?.length ?? 0;
+      const parsed = Number(normalized);
+      if (!Number.isFinite(parsed)) {
+        return { status: 'invalid', errors: [validationMessages.invalidNumericDraft] };
+      }
+
+      const normalizedNumber = canonicalFiniteNumber(parsed);
+      const fractionDigits = normalizedNumber.split('.')[1]?.length ?? 0;
       if (options.maxFractionDigits !== undefined && fractionDigits > options.maxFractionDigits) {
         return {
           status: 'invalid',
@@ -304,10 +309,6 @@ export function createNumericEditCodec<TData>(
         };
       }
 
-      const parsed = Number(normalized);
-      if (!Number.isFinite(parsed)) {
-        return { status: 'invalid', errors: [validationMessages.invalidNumericDraft] };
-      }
       const value = options.type === 'percent' ? parsed / 100 : parsed;
       if (options.type === 'int' && !Number.isInteger(value)) {
         return { status: 'invalid', errors: [validationMessages.integerRequired] };

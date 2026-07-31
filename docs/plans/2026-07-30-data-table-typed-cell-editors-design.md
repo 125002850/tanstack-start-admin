@@ -1683,6 +1683,20 @@ typed matrix paste 的默认 policy 在 `atomic` 与 `valid-cells` 之间待定�
   与 DST 校验语义保持不变。
 - 依赖关系：本次格式收口未新增依赖、未重新打开 capability gate，也未改变
   Task 01–15 的完成状态与依赖拓扑。
+- 实现状态：2026-07-31 code review follow-up 已将 `explicit-confirm` 收紧为 blur、
+  切换 cell、popup close 与 virtualization detach 均回滚；Enter、Ctrl/Cmd+Enter 与
+  Tab 仍属于主动键盘确认，消除第 5.2、10.3 与 12 节之间的歧义。
+- 实现状态：列虚拟化启用时，Tab 完成编辑后不再通过已挂载 DOM 推断逻辑相邻列，
+  而是 fail closed 保持当前焦点；普通表格与连续行虚拟窗口仍保留 DOM 邻接导航。
+- 实现状态：numeric `maxFractionDigits` 改为对有限数值的规范化文本校验，忽略无语义的
+  尾随零；例如上限为 2 时 `12.340` 归一化为 `12.34` 后通过，但 `12.345` 仍失败，
+  且不会静默四舍五入。此 Update 覆盖第 20.1.7 条的 raw lexical trailing-zero 口径。
+- 实现状态：临时 React Profiler 在 500 行、关闭虚拟化的测试夹具中测得单字符 draft
+  更新触发一次完整 update commit，jsdom `actualDuration` 为 60.29ms；临时探针已删除，
+  当前未改变 draft 持久化与 session 架构。
+- 依赖关系：按键重渲染优化列为独立 `P1` 后续项，须先设计 editor 级订阅边界并保持
+  virtualization detach 不丢 draft；adapter 两阶段 side-channel 列为 `P1` 重构，
+  percent 配置单位显式命名与 edit-ready AT 审计列为 `P2`，均不重新打开 Task 01–15。
 - 实现状态：Task 08 数字步进器已改为上 `+`、下 `−` 的垂直 `ButtonGroup`；Task 09
   纯 Date 编辑已改为进入编辑即打开 Calendar，并移除日历顶部 Date 文本输入。
 - 实现状态：Task 09/10 的 Calendar 已统一为标题两侧导航与整宽七列布局；Date 仍选日

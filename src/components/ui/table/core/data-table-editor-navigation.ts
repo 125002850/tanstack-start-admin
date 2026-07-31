@@ -8,6 +8,7 @@ function focusAdjacentEditableCell(
 ) {
   const table = cell?.closest('table');
   if (!cell || !table) return;
+  if (cell.closest('tbody')?.dataset.columnVirtualEnabled === 'true') return;
   const cells = [...table.querySelectorAll<HTMLTableCellElement>('td[data-cell-editable="true"]')];
   const currentIndex = cells.indexOf(cell);
   if (currentIndex < 0) return;
