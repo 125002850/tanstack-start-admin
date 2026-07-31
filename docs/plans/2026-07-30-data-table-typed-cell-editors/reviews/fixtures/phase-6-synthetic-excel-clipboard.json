@@ -1,0 +1,112 @@
+{
+  "fixtureVersion": 1,
+  "coordinateBase": 0,
+  "provenance": {
+    "kind": "synthetic-excel-compatible",
+    "approvedBy": "首席架构师",
+    "approvedAt": "2026-07-31",
+    "approvalText": "这你可以模拟一个吗",
+    "limitations": [
+      "本 fixture 模拟 Excel text/plain clipboard 的 Tab、CRLF、双引号转义和 quoted multiline 语义。",
+      "本 fixture 不是从 Microsoft Excel 进程采集，不用于声明 Windows、macOS 或不同 Excel 版本的完整互操作性。"
+    ]
+  },
+  "samples": [
+    {
+      "id": "E01",
+      "description": "3×5 typed matrix，包含合法数值、合法日期、非法数值、非法日期和空值。",
+      "clipboardText": "1001\tAlice\t1234.50\t2026-07-31\t正常\r\n1002\tBob\tbad-number\t2027-01-01\t\r\n1003\tCarol\t0\t\t待处理",
+      "expectedMatrix": [
+        ["1001", "Alice", "1234.50", "2026-07-31", "正常"],
+        ["1002", "Bob", "bad-number", "2027-01-01", ""],
+        ["1003", "Carol", "0", "", "待处理"]
+      ],
+      "expectedPreparation": {
+        "status": "invalid",
+        "failureCoordinates": [
+          {
+            "source": { "row": 1, "column": 2 },
+            "code": "parse"
+          },
+          {
+            "source": { "row": 1, "column": 3 },
+            "code": "validate"
+          }
+        ],
+        "writes": 0
+      }
+    },
+    {
+      "id": "E02",
+      "description": "2×3 matrix，包含 quoted multiline cell、双引号转义和相邻 Tab 分列。",
+      "clipboardText": "2001\t\"第一行\r\n第二行，含 \"\"双引号\"\"\"\tREADY\r\n2002\t普通文本\tDRAFT",
+      "expectedMatrix": [
+        ["2001", "第一行\n第二行，含 \"双引号\"", "READY"],
+        ["2002", "普通文本", "DRAFT"]
+      ],
+      "expectedPreparation": {
+        "status": "ready",
+        "writes": 6
+      }
+    },
+    {
+      "id": "E03",
+      "description": "2×3 matrix，用同一 source 验证 readonly、越界和 pinned boundary。",
+      "clipboardText": "跨边界\t88.5\t2026-08-01\r\n第二行\t99\t2026-08-02",
+      "expectedMatrix": [
+        ["跨边界", "88.5", "2026-08-01"],
+        ["第二行", "99", "2026-08-02"]
+      ],
+      "targetCases": [
+        {
+          "id": "E03-readonly",
+          "target": {
+            "rowsAvailable": 2,
+            "columns": [
+              { "id": "name", "editable": true, "pinned": false },
+              { "id": "amount", "editable": false, "pinned": false },
+              { "id": "date", "editable": true, "pinned": false }
+            ]
+          },
+          "expectedPreparation": {
+            "status": "invalid",
+            "failureCodes": ["readonly"],
+            "writes": 0
+          }
+        },
+        {
+          "id": "E03-out-of-bounds",
+          "target": {
+            "rowsAvailable": 1,
+            "columns": [
+              { "id": "name", "editable": true, "pinned": false },
+              { "id": "amount", "editable": true, "pinned": false },
+              { "id": "date", "editable": true, "pinned": false }
+            ]
+          },
+          "expectedPreparation": {
+            "status": "invalid",
+            "failureCodes": ["out-of-bounds"],
+            "writes": 0
+          }
+        },
+        {
+          "id": "E03-pinned-boundary",
+          "target": {
+            "rowsAvailable": 2,
+            "columns": [
+              { "id": "name", "editable": true, "pinned": false },
+              { "id": "amount", "editable": true, "pinned": false },
+              { "id": "date", "editable": true, "pinned": "right" }
+            ]
+          },
+          "expectedPreparation": {
+            "status": "invalid",
+            "failureCodes": ["pinned-column-excluded"],
+            "writes": 0
+          }
+        }
+      ]
+    }
+  ]
+}

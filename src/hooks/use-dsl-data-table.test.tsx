@@ -546,11 +546,10 @@ describe('useDslDataTable', () => {
         row: firstRow.original,
         columnId: 'status',
         field: 'status',
-        initialValue: 'DRAFT',
-        value: 'DRAFT'
+        initialValue: 'DRAFT'
       });
       if (!runtime || sessionId == null) throw new Error('editing session was not started');
-      runtime.setActiveValue(sessionId, 'READY');
+      runtime.setActiveDraft(sessionId, 'READY');
       runtime.finishEditing(sessionId, 'selection');
       result.current.table.setPageIndex(1);
     });

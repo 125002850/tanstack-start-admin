@@ -11,13 +11,13 @@ import {
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DataTableEditorKeyboardShell } from '@/components/ui/table/cells/data-table-editor-keyboard-shell';
 import { renderDataTableTextCell } from '@/components/ui/table/columns/data-table-column-rendering';
 import { useRemoteComboboxState } from '@/hooks/use-remote-combobox-state';
 import type {
   DataTableChoiceOption,
   DataTableChoiceValue,
   DataTableEditableChoiceColumnMeta,
-  DataTableEditingRuntime,
   DataTableRemoteOptionPage
 } from '@/types/data-table';
 
@@ -256,83 +256,6 @@ function ChoiceEditorReadyTrigger<TData>({
   );
 }
 
-function focusAdjacentEditableCell(cell: HTMLTableCellElement | null, backwards: boolean) {
-  const table = cell?.closest('table');
-  if (!cell || !table) return;
-  const cells = [...table.querySelectorAll<HTMLTableCellElement>('td[data-cell-editable="true"]')];
-  const currentIndex = cells.indexOf(cell);
-  const nextIndex = backwards ? currentIndex - 1 : currentIndex + 1;
-  cells[nextIndex]?.focus({ preventScroll: true });
-}
-
-function EditorLifecycle<TData>({
-  children,
-  selectionMode,
-  runtime
-}: {
-  children: React.ReactNode;
-  selectionMode: 'single' | 'multiple';
-  runtime: DataTableEditingRuntime<TData> | undefined;
-}) {
-  const rootRef = React.useRef<HTMLDivElement>(null);
-  const runtimeRef = React.useRef(runtime);
-  runtimeRef.current = runtime;
-  const sessionId = runtime?.activeCell?.sessionId;
-
-  React.useEffect(
-    () => () => {
-      if (sessionId === undefined) return;
-      runtimeRef.current?.finishEditing(sessionId, 'blur');
-    },
-    [sessionId]
-  );
-
-  if (!runtime) return null;
-  if (sessionId === undefined) return null;
-
-  return (
-    <div
-      ref={rootRef}
-      data-row-expand-ignore
-      data-slot='data-table-choice-editor'
-      onKeyDownCapture={(event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          const cell = rootRef.current?.closest<HTMLTableCellElement>(
-            'td[data-cell-editable="true"]'
-          );
-          runtime.cancelEditing(sessionId);
-          queueMicrotask(() => cell?.focus({ preventScroll: true }));
-          return;
-        }
-        if (event.key === 'Tab') {
-          event.preventDefault();
-          event.stopPropagation();
-          const cell = rootRef.current?.closest<HTMLTableCellElement>(
-            'td[data-cell-editable="true"]'
-          );
-          runtime.finishEditing(sessionId, 'tab');
-          queueMicrotask(() => focusAdjacentEditableCell(cell ?? null, event.shiftKey));
-          return;
-        }
-        if (selectionMode === 'multiple' && event.key === 'Enter') {
-          event.preventDefault();
-          event.stopPropagation();
-          const cell = rootRef.current?.closest<HTMLTableCellElement>(
-            'td[data-cell-editable="true"]'
-          );
-          runtime.finishEditing(sessionId, 'enter');
-          queueMicrotask(() => cell?.focus({ preventScroll: true }));
-        }
-      }}
-      className='absolute inset-0 min-w-0 bg-background'
-    >
-      {children}
-    </div>
-  );
-}
-
 function getChoiceSearchMode(
   type: DataTableEditableChoiceColumnMeta<unknown>['type']
 ): ChoiceComboboxSearchMode {
@@ -343,6 +266,8 @@ function getChoiceSearchMode(
 function SingleChoiceEditor<TData>({
   config,
   options,
+  open,
+  setOpen,
   isLoading = false,
   isError = false,
   inputValue,
@@ -352,6 +277,8 @@ function SingleChoiceEditor<TData>({
 }: {
   config: DataTableEditableChoiceColumnMeta<TData>;
   options: DataTableChoiceOption[];
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isLoading?: boolean;
   isError?: boolean;
   inputValue?: string;
@@ -359,14 +286,13 @@ function SingleChoiceEditor<TData>({
   loadMore?: ChoiceComboboxLoadMoreProps;
   runtime: NonNullable<CellContext<TData, unknown>['table']['options']['meta']>['dataTableEditing'];
 }) {
-  const [open, setOpen] = React.useState(true);
   const [internalInputValue, setInternalInputValue] = React.useState('');
   if (!runtime) return null;
   const sessionId = runtime.activeCell?.sessionId;
   if (sessionId === undefined) return null;
   const resolvedInputValue = inputValue ?? internalInputValue;
   const handleInputValueChange = onInputValueChange ?? setInternalInputValue;
-  const currentValue = runtime.activeCell?.value;
+  const currentValue = runtime.activeCell?.draftValue;
   const value = isChoiceValue(currentValue) ? currentValue : null;
   const optionsWithSelectedValue = mergeChoiceOptions(
     options,
@@ -401,7 +327,7 @@ function SingleChoiceEditor<TData>({
       }}
       onInputValueChange={handleInputValueChange}
       onValueChange={(nextValue) => {
-        runtime.setActiveValue(sessionId, nextValue);
+        runtime.setActiveDraft(sessionId, nextValue);
         runtime.finishEditing(sessionId, 'selection');
       }}
       className={DATA_TABLE_CHOICE_EDITOR_TRIGGER_CLASS_NAME}
@@ -412,6 +338,8 @@ function SingleChoiceEditor<TData>({
 function MultipleChoiceEditor<TData>({
   config,
   options,
+  open,
+  setOpen,
   isLoading = false,
   isError = false,
   inputValue,
@@ -421,6 +349,8 @@ function MultipleChoiceEditor<TData>({
 }: {
   config: DataTableEditableChoiceColumnMeta<TData>;
   options: DataTableChoiceOption[];
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isLoading?: boolean;
   isError?: boolean;
   inputValue?: string;
@@ -428,11 +358,10 @@ function MultipleChoiceEditor<TData>({
   loadMore?: ChoiceComboboxLoadMoreProps;
   runtime: NonNullable<CellContext<TData, unknown>['table']['options']['meta']>['dataTableEditing'];
 }) {
-  const [open, setOpen] = React.useState(true);
   if (!runtime) return null;
   const sessionId = runtime.activeCell?.sessionId;
   if (sessionId === undefined) return null;
-  const values = getChoiceValues(runtime.activeCell?.value);
+  const values = getChoiceValues(runtime.activeCell?.draftValue);
   const optionsWithSelectedValues = mergeChoiceOptions(
     options,
     values.map((value) => ({ value, label: String(value) }))
@@ -465,7 +394,7 @@ function MultipleChoiceEditor<TData>({
         runtime.cancelEditing(sessionId);
       }}
       onInputValueChange={onInputValueChange}
-      onValueChange={(nextValues) => runtime.setActiveValue(sessionId, nextValues)}
+      onValueChange={(nextValues) => runtime.setActiveDraft(sessionId, nextValues)}
       className={DATA_TABLE_CHOICE_EDITOR_TRIGGER_CLASS_NAME}
     />
   );
@@ -476,12 +405,16 @@ function RemoteChoiceEditor<TData>({
   columnId,
   tableId,
   remoteLabelState,
+  open,
+  setOpen,
   runtime
 }: {
   config: DataTableEditableChoiceColumnMeta<TData>;
   columnId: string;
   tableId: string;
   remoteLabelState: RemoteLabelColumnState;
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   runtime: NonNullable<CellContext<TData, unknown>['table']['options']['meta']>['dataTableEditing'];
 }) {
   const remoteOptions = config.remoteOptions!;
@@ -509,7 +442,7 @@ function RemoteChoiceEditor<TData>({
     { keyword: string; pageNo: number; pageSize: number },
     DataTableRemoteOptionPage<DataTableChoiceValue>
   >({
-    open: true,
+    open,
     debounceMs: remoteOptions.debounceMs ?? 250,
     pageSize: remoteOptions.pageSize ?? 20,
     buildRequest,
@@ -518,7 +451,10 @@ function RemoteChoiceEditor<TData>({
     getTotal: (page, items) => page.total ?? items.length,
     getItemKey: (option) => option.value
   });
-  const resolvedOptions = [...remoteLabelState.optionByValue.values()];
+  const resolvedOptions = getChoiceValues(runtime?.activeCell?.draftValue).flatMap((value) => {
+    const option = remoteLabelState.optionByValue.get(value);
+    return option ? [option] : [];
+  });
   const options = mergeChoiceOptions(resolvedOptions, remoteState.items);
   const loadMore = {
     visible: remoteState.hasMore,
@@ -532,6 +468,8 @@ function RemoteChoiceEditor<TData>({
     <MultipleChoiceEditor
       config={config}
       options={options}
+      open={open}
+      setOpen={setOpen}
       isLoading={remoteState.isFetching}
       isError={remoteState.query.isError}
       inputValue={remoteState.inputValue}
@@ -543,6 +481,8 @@ function RemoteChoiceEditor<TData>({
     <SingleChoiceEditor
       config={config}
       options={options}
+      open={open}
+      setOpen={setOpen}
       isLoading={remoteState.isFetching}
       isError={remoteState.query.isError}
       inputValue={remoteState.inputValue}
@@ -550,6 +490,72 @@ function RemoteChoiceEditor<TData>({
       loadMore={loadMore}
       runtime={runtime}
     />
+  );
+}
+
+function ActiveChoiceEditor<TData>({
+  config,
+  columnId,
+  tableId,
+  remoteState,
+  runtime,
+  sessionId
+}: {
+  config: DataTableEditableChoiceColumnMeta<TData>;
+  columnId: string;
+  tableId: string;
+  remoteState: RemoteLabelColumnState;
+  runtime: NonNullable<CellContext<TData, unknown>['table']['options']['meta']>['dataTableEditing'];
+  sessionId: number;
+}) {
+  const [open, setOpen] = React.useState(true);
+  if (!runtime) return null;
+
+  let editor: React.ReactNode;
+  if (config.type === 'remoteSelect') {
+    editor = (
+      <RemoteChoiceEditor
+        config={config}
+        columnId={columnId}
+        tableId={tableId}
+        remoteLabelState={remoteState}
+        open={open}
+        setOpen={setOpen}
+        runtime={runtime}
+      />
+    );
+  } else if (config.selectionMode === 'multiple') {
+    editor = (
+      <MultipleChoiceEditor
+        config={config}
+        options={[...(config.valueOptions ?? [])]}
+        open={open}
+        setOpen={setOpen}
+        runtime={runtime}
+      />
+    );
+  } else {
+    editor = (
+      <SingleChoiceEditor
+        config={config}
+        options={[...(config.valueOptions ?? [])]}
+        open={open}
+        setOpen={setOpen}
+        runtime={runtime}
+      />
+    );
+  }
+
+  return (
+    <DataTableEditorKeyboardShell
+      runtime={runtime}
+      sessionId={sessionId}
+      profile='choice'
+      slot='data-table-choice-editor'
+      onAnchorDetach={() => setOpen(false)}
+    >
+      {editor}
+    </DataTableEditorKeyboardShell>
   );
 }
 
@@ -597,7 +603,7 @@ export function DataTableEditableChoiceCell<TData, TValue>({
                 columnId: context.column.id,
                 field: config.field,
                 initialValue: value,
-                value
+                editableCell: config
               });
             }}
           />
@@ -606,38 +612,14 @@ export function DataTableEditableChoiceCell<TData, TValue>({
     );
   }
 
-  let editor: React.ReactNode;
-  if (config.type === 'remoteSelect') {
-    editor = (
-      <RemoteChoiceEditor
-        config={config}
-        columnId={context.column.id}
-        tableId={context.table.options.meta?.dataTableId ?? 'data-table'}
-        remoteLabelState={remoteState}
-        runtime={runtime}
-      />
-    );
-  } else if (config.selectionMode === 'multiple') {
-    editor = (
-      <MultipleChoiceEditor
-        config={config}
-        options={[...(config.valueOptions ?? [])]}
-        runtime={runtime}
-      />
-    );
-  } else {
-    editor = (
-      <SingleChoiceEditor
-        config={config}
-        options={[...(config.valueOptions ?? [])]}
-        runtime={runtime}
-      />
-    );
-  }
-
   return (
-    <EditorLifecycle selectionMode={config.selectionMode} runtime={runtime}>
-      {editor}
-    </EditorLifecycle>
+    <ActiveChoiceEditor
+      config={config}
+      columnId={context.column.id}
+      tableId={context.table.options.meta?.dataTableId ?? 'data-table'}
+      remoteState={remoteState}
+      runtime={runtime}
+      sessionId={activeCell.sessionId}
+    />
   );
 }

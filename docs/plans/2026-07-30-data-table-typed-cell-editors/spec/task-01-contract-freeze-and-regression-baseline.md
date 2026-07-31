@@ -2,7 +2,7 @@
 
 **Parent Design:** [DataTable 类型化单元格编辑器设计](../../2026-07-30-data-table-typed-cell-editors-design.md)
 
-**Status:** DRAFT — 等待父设计批准
+**Status:** COMPLETE
 
 **Depends On:** 首席架构师明确批准父设计
 
@@ -49,11 +49,11 @@
 
 ## Acceptance Criteria
 
-- [ ] 父设计状态已由首席架构师明确批准。
-- [ ] 上述 characterization 全部由自动化测试覆盖。
-- [ ] 新增测试在未修改生产代码的情况下通过。
-- [ ] 回归基线没有依赖不稳定的计时或实现私有 state。
-- [ ] 测试能够在 Task 03 后继续用于证明 legacy 行为等价。
+- [x] 父设计状态已由首席架构师明确批准。
+- [x] 上述 characterization 全部由自动化测试覆盖。
+- [x] 新增测试在未修改生产代码的情况下通过。
+- [x] 回归基线没有依赖不稳定的计时或实现私有 state。
+- [x] 测试能够在 Task 03 后继续用于证明 legacy 行为等价。
 
 ## Verification Profile
 
@@ -76,3 +76,33 @@ pnpm test:e2e:smoke e2e/data-table-editing-example.smoke.spec.ts --grep @workspa
 3. 不修改生产代码，重新运行目标测试。
 4. 记录可能阻塞迁移的隐式契约，但不得在本 task 顺手重构。
 5. 完成统一 Review 与父设计状态回写。
+
+## Review (2026-07-30)
+
+### 实际完成项与任务定义的差异
+
+- 父设计已由首席架构师明确批准，并将状态更新为 `APPROVED`。
+- 目标测试基线从 38 个测试扩展为 39 个测试；补齐 text 的 Enter / F2 启动、Escape
+  取消、Tab / blur 完成，switch 不创建 active session，以及跨 cell 三态互斥断言。
+- 强化 stale session characterization，确认旧 session 的 cancel / finish / blur 不会影响
+  新 session，也不会产生额外 `onChange`。
+- 固定 `editing.onChange` 的完整 event / snapshot 外部结构，以及 text 默认 editor metadata。
+- 未修改生产代码；现有浏览器 smoke 已保留，本 task 未发现必须新增的浏览器覆盖。
+
+### 阻塞项或未预期的技术债务
+
+- 无阻塞项。
+- 当前 legacy `finishEditing()` 返回 `void`，Tab 导航只能假定完成成功；这是 Task 03–04
+  已计划迁移的隐式契约，本 task 仅通过行为测试冻结，不在 Phase 0 重构。
+- editor 卸载仍会触发携带旧 `sessionId` 的 blur cleanup；当前 runtime 依靠 stale-session
+  guard 保证无副作用，Task 03 与 Task 06 迁移时必须继续满足该回归基线。
+- 补充执行全仓 `pnpm format:check` 时发现 41 个与本 task 无关的既有格式问题；本 task
+  修改的 7 个文件已通过定向 `oxfmt --check`。
+
+### 后续行动项（Action Items）
+
+- TODO (P0)：Task 02 引入 adapter registry、codec 和 capability gate，并保持本 task
+  characterization 全部通过。
+- TODO (P0)：Task 03–04 将 `finishEditing()` 迁移为结构化结果和统一键盘 shell 后，继续以
+  本 task 证明 text、choice、switch 与三态交互向后兼容。
+- TODO (P2)：在独立 chore 中清理全仓既有格式基线，不与类型化 editor 功能代码混合。

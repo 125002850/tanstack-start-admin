@@ -20,7 +20,8 @@ import type {
   DataTableCellChange,
   DataTableChoiceOption,
   DataTableEditChangeEvent,
-  DataTableEditingController
+  DataTableEditingController,
+  DataTableServerCellError
 } from '@/types/data-table';
 import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
 import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
@@ -177,6 +178,28 @@ async function persistStaffCellEdit(request: StaffCellEditRequest) {
     return;
   }
   await iamStaffRolesAssign(request.request);
+}
+
+export function getStaffServerCellErrors(
+  changes: readonly DataTableCellChange<StaffTableRow>[],
+  results: readonly PromiseSettledResult<unknown>[]
+): DataTableServerCellError<StaffTableRow>[] {
+  const errors: DataTableServerCellError<StaffTableRow>[] = [];
+  results.forEach((result, index) => {
+    if (result.status !== 'rejected') return;
+    const change = changes[index];
+    if (!change) return;
+    const message =
+      result.reason instanceof Error && result.reason.message.trim()
+        ? result.reason.message
+        : '员工字段更新失败';
+    errors.push({
+      rowId: change.rowId,
+      field: change.field,
+      messages: [message]
+    });
+  });
+  return errors;
 }
 
 function invalidateStaffQueries(queryClient: ReturnType<typeof useQueryClient>) {
@@ -443,6 +466,7 @@ export default function StaffManagementPage() {
     ({ changes, snapshot }: DataTableEditChangeEvent<StaffTableRow>) => {
       const editingController = editingControllerRef.current;
       if (!editingController) return;
+      const requestRevision = editingController.getRevision();
 
       void (async () => {
         const rowsById = new Map(snapshot.rows.map((row) => [String(row.staffId), row] as const));
@@ -464,15 +488,10 @@ export default function StaffManagementPage() {
           else failedChanges.push(change);
         });
 
-        let refreshFailed = false;
         if (acceptedChanges.length > 0) {
-          editingController.acceptChanges(acceptedChanges);
-          try {
-            await invalidateStaffQueries(queryClient);
-          } catch {
-            refreshFailed = true;
-            toast.error('员工字段已保存，但列表刷新失败');
-          }
+          editingController.acceptChanges(acceptedChanges, undefined, {
+            revision: requestRevision
+          });
         }
         if (failedChanges.length > 0) {
           const rollbackRowsById = new Map<string, StaffTableRow>();
@@ -484,11 +503,23 @@ export default function StaffManagementPage() {
               [change.field]: change.previousValue
             });
           }
-          editingController.acceptChanges(failedChanges, [...rollbackRowsById.values()]);
+          editingController.acceptChanges(failedChanges, [...rollbackRowsById.values()], {
+            revision: requestRevision
+          });
+          editingController.setServerCellErrors({
+            revision: requestRevision,
+            errors: getStaffServerCellErrors(changes, results)
+          });
           toast.error('部分员工字段更新失败，已回滚');
           return;
         }
-        if (!refreshFailed) toast.success('员工字段已更新');
+        try {
+          await invalidateStaffQueries(queryClient);
+        } catch {
+          toast.error('员工字段已保存，但列表刷新失败');
+          return;
+        }
+        toast.success('员工字段已更新');
       })();
     },
     [queryClient]

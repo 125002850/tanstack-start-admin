@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { DataTableEditorKeyboardShell } from '@/components/ui/table/cells/data-table-editor-keyboard-shell';
 import { renderDataTableTextCell } from '@/components/ui/table/columns/data-table-column-rendering';
 import { cn } from '@/lib/utils';
 import type {
@@ -14,15 +15,6 @@ import type {
 
 const DATA_TABLE_INPUT_CLASS_NAME =
   'h-full min-h-10 rounded-[2px] border-2 border-primary bg-background px-[15px] shadow-none ring-[3px] ring-primary/25 focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/25';
-
-function focusAdjacentEditableCell(cell: HTMLTableCellElement | null, backwards: boolean) {
-  const table = cell?.closest('table');
-  if (!cell || !table) return;
-  const cells = [...table.querySelectorAll<HTMLTableCellElement>('td[data-cell-editable="true"]')];
-  const currentIndex = cells.indexOf(cell);
-  const nextIndex = backwards ? currentIndex - 1 : currentIndex + 1;
-  cells[nextIndex]?.focus({ preventScroll: true });
-}
 
 function activateInputEditor<TData, TValue>(
   context: CellContext<TData, TValue>,
@@ -36,7 +28,7 @@ function activateInputEditor<TData, TValue>(
     columnId: context.column.id,
     field: config.field,
     initialValue: value,
-    value
+    editableCell: config
   });
 }
 
@@ -47,20 +39,8 @@ function InputEditor<TData>({
   config: DataTableEditableInputColumnMeta<TData>;
   runtime: DataTableEditingRuntime<TData>;
 }) {
-  const rootRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const activeCell = runtime.activeCell;
-  const runtimeRef = React.useRef(runtime);
-  runtimeRef.current = runtime;
-  const sessionId = activeCell?.sessionId;
-
-  React.useEffect(
-    () => () => {
-      if (sessionId === undefined) return;
-      runtimeRef.current.finishEditing(sessionId, 'blur');
-    },
-    [sessionId]
-  );
 
   React.useEffect(() => {
     const input = inputRef.current;
@@ -73,52 +53,14 @@ function InputEditor<TData>({
   }, []);
 
   if (!activeCell) return null;
-  const { sessionId: activeSessionId, value } = activeCell;
+  const { sessionId: activeSessionId, draftValue } = activeCell;
 
   return (
-    <div
-      ref={rootRef}
-      data-row-expand-ignore
-      data-slot='data-table-input-editor'
-      className='absolute inset-0 min-w-0 bg-background'
-      onKeyDownCapture={(event) => {
-        if (event.nativeEvent.isComposing) return;
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          const cell = rootRef.current?.closest<HTMLTableCellElement>(
-            'td[data-cell-editable="true"]'
-          );
-          runtime.cancelEditing(activeSessionId);
-          queueMicrotask(() => cell?.focus({ preventScroll: true }));
-          return;
-        }
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          event.stopPropagation();
-          if (event.target instanceof HTMLInputElement) {
-            runtime.setActiveValue(activeSessionId, event.target.value);
-          }
-          const cell = rootRef.current?.closest<HTMLTableCellElement>(
-            'td[data-cell-editable="true"]'
-          );
-          runtime.finishEditing(activeSessionId, 'enter');
-          queueMicrotask(() => cell?.focus({ preventScroll: true }));
-          return;
-        }
-        if (event.key === 'Tab') {
-          event.preventDefault();
-          event.stopPropagation();
-          const cell = rootRef.current?.closest<HTMLTableCellElement>(
-            'td[data-cell-editable="true"]'
-          );
-          if (event.target instanceof HTMLInputElement) {
-            runtime.setActiveValue(activeSessionId, event.target.value);
-          }
-          runtime.finishEditing(activeSessionId, 'tab');
-          queueMicrotask(() => focusAdjacentEditableCell(cell ?? null, event.shiftKey));
-        }
-      }}
+    <DataTableEditorKeyboardShell
+      runtime={runtime}
+      sessionId={activeSessionId}
+      profile='singleLine'
+      slot='data-table-input-editor'
     >
       <Input
         ref={inputRef}
@@ -127,15 +69,18 @@ function InputEditor<TData>({
         inputMode={config.inputMode}
         placeholder={config.placeholder}
         maxLength={config.maxLength}
-        value={value == null ? '' : String(value)}
-        onChange={(event) => runtime.setActiveValue(activeSessionId, event.currentTarget.value)}
+        value={draftValue == null ? '' : String(draftValue)}
+        onChange={(event) => runtime.setActiveDraft(activeSessionId, event.currentTarget.value)}
         onBlur={(event) => {
-          runtime.setActiveValue(activeSessionId, event.currentTarget.value);
-          runtime.finishEditing(activeSessionId, 'blur');
+          runtime.setActiveDraft(activeSessionId, event.currentTarget.value);
+          const result = runtime.finishEditing(activeSessionId, 'blur');
+          if (result.status === 'blocked') {
+            queueMicrotask(() => inputRef.current?.focus({ preventScroll: true }));
+          }
         }}
         className={DATA_TABLE_INPUT_CLASS_NAME}
       />
-    </div>
+    </DataTableEditorKeyboardShell>
   );
 }
 
@@ -231,13 +176,14 @@ export function DataTableEditableSwitchCell<TData, TValue>({
         aria-label={`${switchConfig.title}：${label}`}
         onCheckedChange={(nextChecked) => {
           if (!runtime) return;
-          runtime.commitValue(
+          runtime.commitCandidate(
             {
               rowId: context.row.id,
               row: context.row.original,
               columnId: context.column.id,
               field: switchConfig.field,
-              value: nextChecked ? switchConfig.checkedValue : switchConfig.uncheckedValue
+              value: nextChecked ? switchConfig.checkedValue : switchConfig.uncheckedValue,
+              editableCell: switchConfig
             },
             'selection'
           );

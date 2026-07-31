@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getStaffCellEditRequest,
   getStaffColumns,
+  getStaffServerCellErrors,
   mapStaffTableData,
   staffTableQueryOptions,
   type StaffTableRow
@@ -193,5 +194,35 @@ describe('staff cell editor adapter', () => {
         }
       )
     ).toBeNull();
+  });
+
+  it('maps only rejected mutation results to typed server cell errors', () => {
+    const changes = [
+      {
+        rowId: '7',
+        field: 'phone' as const,
+        previousValue: '13800000000',
+        value: '13900000000'
+      },
+      {
+        rowId: '7',
+        field: 'status' as const,
+        previousValue: 'ENABLED' as const,
+        value: 'DISABLED' as const
+      }
+    ];
+
+    expect(
+      getStaffServerCellErrors(changes, [
+        { status: 'fulfilled', value: undefined },
+        { status: 'rejected', reason: new Error('状态版本冲突') }
+      ])
+    ).toEqual([
+      {
+        rowId: '7',
+        field: 'status',
+        messages: ['状态版本冲突']
+      }
+    ]);
   });
 });

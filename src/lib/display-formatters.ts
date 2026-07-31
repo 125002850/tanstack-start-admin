@@ -13,6 +13,7 @@ export function nullableTrimmedText(value: unknown) {
 
 export function nullableDate(value: string | null | undefined) {
   if (value == null || value === '') return '-';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   return formatDate(value);
 }
 

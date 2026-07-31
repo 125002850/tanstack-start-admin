@@ -2,9 +2,9 @@
 
 **Parent Design:** [DataTable 类型化单元格编辑器设计](../../2026-07-30-data-table-typed-cell-editors-design.md)
 
-**Status:** DRAFT
+**Status:** COMPLETE — Task 01–15 已完成
 
-**Execution Gate:** 父设计当前仍为 `PROPOSED`。在首席架构师明确确认架构并将设计状态更新为 `APPROVED` 前，以下 task 仅用于评审和排期，不授权修改产品代码。
+**Execution Gate:** 父设计已由首席架构师明确批准并更新为 `APPROVED`，task 按下述拓扑串行执行。
 
 ## 目标
 
@@ -29,6 +29,10 @@ graph TD
   T08 --> T09[Task 09 Date Editor]
   T09 --> T10[Task 10 DateTime Editor]
   T10 --> T11[Task 11 Phase 6 决策与二次拆分]
+  T11 --> T12[Task 12 Atomic Matrix Paste]
+  T12 --> T13[Task 13 Printable / Delete]
+  T12 --> T14[Task 14 Fill Handle]
+  T11 --> T15[Task 15 Server Validation Error]
 ```
 
 ## Task Table
@@ -46,6 +50,10 @@ graph TD
 | Task 09 | [Date Editor](task-09-date-editor.md)                                                  | Phase 4 | Task 08    | feature         |
 | Task 10 | [DateTime Editor](task-10-date-time-editor.md)                                         | Phase 5 | Task 09    | feature         |
 | Task 11 | [Phase 6 决策与二次拆分](task-11-phase-6-decision-and-follow-up-breakdown.md)          | Phase 6 | Task 10    | decision        |
+| Task 12 | [Atomic Matrix Paste](task-12-atomic-matrix-paste-prepare-apply.md)                    | Phase 6 | Task 11    | feature         |
+| Task 13 | [Printable Key 与 Delete / Backspace](task-13-printable-key-delete-backspace.md)       | Phase 6 | Task 12    | interaction     |
+| Task 14 | [Fill Handle](task-14-fill-handle.md)                                                  | Phase 6 | Task 12    | feature         |
+| Task 15 | [Server Validation Error 回写](task-15-server-validation-error-cell-state.md)          | Phase 6 | Task 11    | runtime         |
 
 同一工作区内按拓扑串行执行。Task 05 与 Task 06、Task 08 与 Task 09 虽存在部分逻辑并行空间，但都会修改 adapter、runtime 或 editor dispatcher，不安排并行写入。
 
@@ -76,6 +84,10 @@ Task 07–10 按顺序打开 public capability gate：
 ### Phase 6
 
 Task 11 只负责证据收集、决策和二次拆分，不直接把所有增强混入一个实现提交。它不阻塞 V1 发布。
+
+2026-07-31 首席架构师已确认 matrix paste 使用 `atomic`、virtualizer pinning
+`no-go`，并批准以带 provenance 的合成 Excel-compatible fixture 替代真实 clipboard
+采样。Task 11–15 已完成。
 
 ## 全局不变量
 
