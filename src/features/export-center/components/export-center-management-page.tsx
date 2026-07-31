@@ -7,20 +7,20 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { DataTable } from '@/components/ui/table/core/data-table';
+import { DataTable } from '@/components/data-table/core/data-table';
 import type {
   DataTableAction,
   DataTableActionContext
-} from '@/components/ui/table/actions/data-table-actions-bar';
-import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
+} from '@/components/data-table/actions/data-table-actions-bar';
+import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
 import {
   createDataTableColumnDsl,
   dataTableTextCell
-} from '@/components/ui/table/columns/data-table-column-factory';
-import { DataTableLinkButtonCell } from '@/components/ui/table/cells/data-table-link-button-cell';
-import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
-import { DataTableSkeleton } from '@/components/ui/table/feedback/data-table-skeleton';
-import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
+} from '@/components/data-table/columns/data-table-column-factory';
+import { DataTableLinkButtonCell } from '@/components/data-table/cells/data-table-link-button-cell';
+import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
+import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-skeleton';
+import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { useDict } from '@/hooks/use-dict';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';

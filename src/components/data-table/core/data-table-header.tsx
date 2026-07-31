@@ -1,0 +1,381 @@
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  flexRender,
+  type Column,
+  type Header,
+  type Table as TanstackTable
+} from '@tanstack/react-table';
+import * as React from 'react';
+
+import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DataTableColumnResizeHandle } from '@/components/data-table/columns/data-table-column-resize-handle';
+import { DataTableOverflowTooltipText } from '@/components/data-table/cells/data-table-overflow-tooltip-text';
+import {
+  DATA_TABLE_ACTIONS_COLUMN_ID,
+  DATA_TABLE_ROW_NUMBER_COLUMN_ID,
+  DATA_TABLE_SELECT_COLUMN_ID
+} from '@/hooks/use-data-table/constants';
+import { getCommonPinningStyles } from '@/lib/data-table';
+import { getDataTableColumnLabel } from '@/lib/data-table-column-label';
+import { cn } from '@/lib/utils';
+import type { DataTableColumnRenderItem, DataTableColumnVirtualWindow } from '@/types/data-table';
+import {
+  clearDataTableColumnDragMotion,
+  publishDataTableColumnDragMotion,
+  type DataTableColumnDragMotion,
+  type DataTableColumnDragMotionMap
+} from '@/components/data-table/dnd/data-table-column-drag-motion';
+
+/**
+ * 表头渲染层。
+ *
+ * 同时支持普通表头、固定列、列虚拟化、列宽拖拽和表头列顺序拖拽。表头负责输出
+ * aria-sort、sticky top 和拖拽 overlay 所需的数据属性；排序/显隐菜单由列 header
+ * 自身组件处理。
+ */
+export const DATA_TABLE_HEADER_ROW_HEIGHT_PX = 40;
+const HEADER_STICKY_TOP_OFFSET_PX = -1;
+// 这些工具列的顺序由 useDataTable 统一管理，不能被用户拖到业务列中间。
+const NON_REORDERABLE_COLUMN_IDS = new Set([
+  DATA_TABLE_ROW_NUMBER_COLUMN_ID,
+  DATA_TABLE_SELECT_COLUMN_ID,
+  DATA_TABLE_ACTIONS_COLUMN_ID
+]);
+
+interface DataTableHeaderProps<TData> {
+  table: TanstackTable<TData>;
+  columnVirtualWindow: DataTableColumnVirtualWindow<TData>;
+  shouldVirtualizeColumns: boolean;
+  separatorColumnIds: Set<string>;
+  draggableColumnIdSet: Set<string>;
+  columnDragMotionById: DataTableColumnDragMotionMap;
+  tableElementRef: React.RefObject<HTMLTableElement | null>;
+  headerRowRef: React.Ref<HTMLTableRowElement>;
+  onHeaderClickCapture: React.MouseEventHandler<HTMLTableCellElement>;
+}
+
+interface HeaderCellBaseProps<TData> {
+  header: Header<TData, unknown>;
+  className?: string;
+  style?: React.CSSProperties;
+  dataAttributes?: {
+    'aria-sort'?: React.AriaAttributes['aria-sort'];
+    [key: `data-${string}`]: string | number | undefined;
+  };
+  onClickCapture?: React.MouseEventHandler<HTMLTableCellElement>;
+  columnDragMotion?: DataTableColumnDragMotion;
+  tableElementRef?: React.RefObject<HTMLTableElement | null>;
+}
+
+function getColumnVirtualCellWidthStyle(size: number): React.CSSProperties {
+  return {
+    width: size,
+    minWidth: size,
+    maxWidth: size
+  };
+}
+
+/** 纯文本表头才包裹溢出 Tooltip；自定义 JSX 表头保持调用方原始结构。 */
+function isTextLikeHeaderNode(content: React.ReactNode): content is string | number | bigint {
+  const type = typeof content;
+  return type === 'string' || type === 'number' || type === 'bigint';
+}
+
+/** 渲染表头内容，并为普通文本补充统一的截断和 Tooltip 行为。 */
+function renderHeaderContent<TData>(header: Header<TData, unknown>) {
+  const content = flexRender(header.column.columnDef.header, header.getContext());
+
+  if (isTextLikeHeaderNode(content)) {
+    return (
+      <DataTableOverflowTooltipText value={String(content)}>{content}</DataTableOverflowTooltipText>
+    );
+  }
+
+  return content;
+}
+
+/** 只有非固定、非工具列允许调整顺序。 */
+export function getCanReorderColumn<TData>(column: Column<TData, unknown>) {
+  return !column.getIsPinned() && !NON_REORDERABLE_COLUMN_IDS.has(column.id);
+}
+
+/** 拖拽 overlay 和无障碍文本需要稳定列名，优先使用 meta.label。 */
+function getHeaderLabel<TData>(header: Header<TData, unknown>) {
+  return getDataTableColumnLabel(header.column, header.getContext().table);
+}
+
+/** 多级表头按行号累加 sticky top，固定列提升 z-index 避免被普通表头覆盖。 */
+function getStickyHeaderCellStyles<TData>(
+  header: Header<TData, unknown>,
+  rowIndex: number,
+  styles?: React.CSSProperties
+): React.CSSProperties {
+  const pinnedSide = header.column.getIsPinned();
+
+  return {
+    ...styles,
+    position: 'sticky',
+    top: rowIndex * DATA_TABLE_HEADER_ROW_HEIGHT_PX + HEADER_STICKY_TOP_OFFSET_PX,
+    zIndex: pinnedSide ? 12 : 10
+  };
+}
+
+/** 仅在相邻非固定列之间绘制短分隔线，减少固定列边界处的视觉噪声。 */
+function getHeaderClassName<TData>(
+  header: Header<TData, unknown>,
+  separatorColumnIds: Set<string>
+) {
+  return cn(
+    separatorColumnIds.has(header.column.id) &&
+      'after:content-[""] after:pointer-events-none after:absolute after:right-0 after:top-1/2 after:-translate-y-1/2 after:w-px after:h-4 after:rounded-full after:bg-muted-foreground/25'
+  );
+}
+
+/** 把 TanStack 的排序状态转换为原生 aria-sort，提升读屏器可理解性。 */
+function getHeaderAriaSort<TData>(header: Header<TData, unknown>) {
+  if (!header.column.getCanSort()) {
+    return undefined;
+  }
+
+  const sorted = header.column.getIsSorted();
+  if (sorted === 'asc') return 'ascending';
+  if (sorted === 'desc') return 'descending';
+  return 'none';
+}
+
+/** 列拖拽时显示的浮层，宽度沿用原表头宽度，避免拖动时内容重排。 */
+export function DataTableHeaderDragOverlay<TData>({
+  header,
+  width
+}: {
+  header: Header<TData, unknown>;
+  width: number | null;
+}) {
+  return (
+    <div
+      data-slot='data-table-column-drag-overlay'
+      className='bg-popover text-popover-foreground flex h-10 items-center rounded-md border px-2 text-sm font-medium shadow-md'
+      style={width ? { width } : undefined}
+    >
+      <span className='truncate'>{getHeaderLabel(header)}</span>
+    </div>
+  );
+}
+
+/** 静态表头单元格：适用于不可拖拽列或分组表头。 */
+function StaticDataTableHeaderCell<TData>({
+  header,
+  className,
+  style,
+  dataAttributes,
+  onClickCapture
+}: HeaderCellBaseProps<TData>) {
+  return (
+    <TableHead
+      key={header.id}
+      colSpan={header.colSpan}
+      className={className}
+      style={style}
+      onClickCapture={onClickCapture}
+      {...dataAttributes}
+    >
+      {header.isPlaceholder ? null : renderHeaderContent(header)}
+      <DataTableColumnResizeHandle header={header} />
+    </TableHead>
+  );
+}
+
+/** 可排序拖拽表头：只把内部 activator 绑定到 dnd-kit，保留 th 本身的表格语义。 */
+function SortableDataTableHeaderCell<TData>({
+  header,
+  className,
+  style,
+  dataAttributes,
+  onClickCapture,
+  columnDragMotion,
+  tableElementRef
+}: HeaderCellBaseProps<TData>) {
+  const {
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isSorting
+  } = useSortable({ id: header.column.id });
+
+  const sortableStyle = React.useMemo<React.CSSProperties>(
+    () => ({
+      ...style,
+      opacity: isDragging ? 0.45 : style?.opacity,
+      // 拖拽期间 header/body 共用 table CSS 变量，确保整列在同一 transition 时间线上移动。
+      ...(isSorting && columnDragMotion
+        ? columnDragMotion.elementStyle
+        : {
+            // 静止态只允许平移；忽略 dnd-kit 的 scale，避免不同列宽间拖动时 th 被压缩。
+            transform: CSS.Translate.toString(transform),
+            transition
+          })
+    }),
+    [columnDragMotion, isDragging, isSorting, style, transform, transition]
+  );
+
+  const translateX = transform?.x ?? 0;
+
+  React.useLayoutEffect(() => {
+    const tableElement = tableElementRef?.current;
+    if (!tableElement || !columnDragMotion) return;
+
+    publishDataTableColumnDragMotion(tableElement, columnDragMotion, translateX, transition);
+
+    return () => clearDataTableColumnDragMotion(tableElement, columnDragMotion);
+  }, [columnDragMotion, tableElementRef, transition, translateX]);
+
+  return (
+    <TableHead
+      ref={setNodeRef}
+      key={header.id}
+      colSpan={header.colSpan}
+      className={className}
+      style={sortableStyle}
+      onClickCapture={onClickCapture}
+      data-reordering={isDragging ? 'true' : undefined}
+      {...dataAttributes}
+    >
+      <div
+        ref={setActivatorNodeRef}
+        data-slot='data-table-column-order-activator'
+        className={cn(
+          'flex w-full min-w-0 items-center',
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        )}
+        {...listeners}
+      >
+        {header.isPlaceholder ? null : renderHeaderContent(header)}
+      </div>
+      <DataTableColumnResizeHandle header={header} />
+    </TableHead>
+  );
+}
+
+export function DataTableHeader<TData>({
+  table,
+  columnVirtualWindow,
+  shouldVirtualizeColumns,
+  separatorColumnIds,
+  draggableColumnIdSet,
+  columnDragMotionById,
+  tableElementRef,
+  headerRowRef,
+  onHeaderClickCapture
+}: DataTableHeaderProps<TData>) {
+  // 列虚拟化只支持单层叶子表头，因此这里建立 columnId -> header 的快速映射。
+  const flatHeaderGroup = table.getHeaderGroups()[0];
+  const headerByColumnId = new Map(
+    flatHeaderGroup?.headers.map((header) => [header.column.id, header]) ?? []
+  );
+
+  const renderHeaderCell = (
+    item: DataTableColumnRenderItem<TData>,
+    options?: { virtualizedCenter?: boolean }
+  ) => {
+    const header = headerByColumnId.get(item.columnId);
+    if (!header) return null;
+    const pinningStyles = getCommonPinningStyles({ column: header.column });
+    // 中间虚拟列脱离 colgroup，需要在 th 上显式声明宽度；固定列仍走 sticky 样式。
+    const widthStyles = options?.virtualizedCenter ? getColumnVirtualCellWidthStyle(item.size) : {};
+    const headerStyle = getStickyHeaderCellStyles(header, 0, {
+      ...pinningStyles,
+      ...widthStyles
+    });
+    const HeaderCell = draggableColumnIdSet.has(header.column.id)
+      ? SortableDataTableHeaderCell
+      : StaticDataTableHeaderCell;
+
+    return (
+      <HeaderCell
+        key={header.id}
+        header={header}
+        className={getHeaderClassName(header, separatorColumnIds)}
+        style={headerStyle}
+        columnDragMotion={columnDragMotionById.get(header.column.id)}
+        tableElementRef={tableElementRef}
+        dataAttributes={{
+          'aria-sort': getHeaderAriaSort(header),
+          'data-column-id': item.columnId,
+          'data-column-leaf-index': item.leafIndex,
+          'data-column-center-index': item.centerIndex >= 0 ? item.centerIndex : undefined
+        }}
+        onClickCapture={onHeaderClickCapture}
+      />
+    );
+  };
+
+  const renderHeaderSpacer = (side: 'left' | 'right', size: number) => {
+    if (size <= 0) return null;
+
+    return (
+      // spacer 用于补齐虚拟窗口前后的水平滚动距离，不承载真实列内容。
+      <TableHead
+        key={`column-virtual-spacer-${side}`}
+        aria-hidden='true'
+        data-column-virtual-spacer={side}
+        style={{
+          ...getColumnVirtualCellWidthStyle(size),
+          position: 'sticky',
+          top: HEADER_STICKY_TOP_OFFSET_PX,
+          zIndex: 10
+        }}
+      />
+    );
+  };
+
+  return (
+    <TableHeader data-component='data-table-header'>
+      {shouldVirtualizeColumns && flatHeaderGroup ? (
+        // 列虚拟化路径：固定列始终渲染，中间列只渲染 virtualizer 窗口。
+        <TableRow key={flatHeaderGroup.id} ref={headerRowRef}>
+          {columnVirtualWindow.leftItems.map((item) => renderHeaderCell(item))}
+          {renderHeaderSpacer('left', columnVirtualWindow.virtualPaddingLeft)}
+          {columnVirtualWindow.items.map((item) =>
+            renderHeaderCell(item, { virtualizedCenter: true })
+          )}
+          {renderHeaderSpacer('right', columnVirtualWindow.virtualPaddingRight)}
+          {columnVirtualWindow.rightItems.map((item) => renderHeaderCell(item))}
+        </TableRow>
+      ) : (
+        // 普通路径保留 TanStack 原始 headerGroups，支持多级/分组表头。
+        table.getHeaderGroups().map((headerGroup, headerGroupIndex) => (
+          <TableRow key={headerGroup.id} ref={headerRowRef}>
+            {headerGroup.headers.map((header) => {
+              const HeaderCell =
+                header.colSpan === 1 && draggableColumnIdSet.has(header.column.id)
+                  ? SortableDataTableHeaderCell
+                  : StaticDataTableHeaderCell;
+
+              return (
+                <HeaderCell
+                  key={header.id}
+                  header={header}
+                  className={getHeaderClassName(header, separatorColumnIds)}
+                  style={getStickyHeaderCellStyles(header, headerGroupIndex, {
+                    ...getCommonPinningStyles({ column: header.column })
+                  })}
+                  columnDragMotion={columnDragMotionById.get(header.column.id)}
+                  tableElementRef={tableElementRef}
+                  dataAttributes={{
+                    'aria-sort': getHeaderAriaSort(header),
+                    'data-column-id': header.column.id
+                  }}
+                  onClickCapture={onHeaderClickCapture}
+                />
+              );
+            })}
+          </TableRow>
+        ))
+      )}
+    </TableHeader>
+  );
+}

@@ -5,13 +5,13 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { DataTable } from '@/components/ui/table/core/data-table';
+import { DataTable } from '@/components/data-table/core/data-table';
 import type {
   DataTableAction,
   DataTableActionContext
-} from '@/components/ui/table/actions/data-table-actions-bar';
-import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
-import { DataTableToolbar } from '@/components/ui/table/toolbar/data-table-toolbar';
+} from '@/components/data-table/actions/data-table-actions-bar';
+import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
+import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { useDslDataTable } from '@/hooks/use-dsl-data-table';
 import type { DataTableDslCondition } from '@/hooks/use-dsl-data-table.dsl';

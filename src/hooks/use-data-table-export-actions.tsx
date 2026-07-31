@@ -7,11 +7,11 @@ import {
   DataTableExportDialog,
   type DataTableExportDialogLabels,
   type DataTableExportRange
-} from '@/components/ui/table/export/data-table-export-dialog';
+} from '@/components/data-table/export/data-table-export-dialog';
 import type {
   DataTableAction,
   DataTableActionContext
-} from '@/components/ui/table/actions/data-table-actions-bar';
+} from '@/components/data-table/actions/data-table-actions-bar';
 import { downloadFileFromUrl } from '@/lib/download-file';
 
 /**
@@ -22,7 +22,7 @@ import { downloadFileFromUrl } from '@/lib/download-file';
  * - 小数据量直接导出全部；
  * - 大数据量弹出区间/打包导出弹窗。
  */
-export type { DataTableExportRange } from '@/components/ui/table/export/data-table-export-dialog';
+export type { DataTableExportRange } from '@/components/data-table/export/data-table-export-dialog';
 
 /** 后端导出接口的最小返回结构：下载地址必需，文件名可选。 */
 export interface DataTableExportResponse {

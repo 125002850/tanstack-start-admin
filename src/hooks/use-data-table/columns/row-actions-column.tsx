@@ -6,7 +6,7 @@ import {
   DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE,
   getDataTableRowActionsColumnWidth,
   type DataTableRowAction
-} from '@/components/ui/table/actions/data-table-row-action';
+} from '@/components/data-table/actions/data-table-row-action';
 import { DATA_TABLE_PINNED_SHADOWS } from '@/lib/data-table';
 
 import { DATA_TABLE_ACTIONS_COLUMN_ID } from '../constants';

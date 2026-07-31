@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Command, CommandItem, CommandList } from '@/components/ui/command';
-import { DataTableFacetedFilter } from '@/components/ui/table/filters/data-table-faceted-filter';
+import { DataTableFacetedFilter } from '@/components/data-table/filters/data-table-faceted-filter';
 import {
   Dialog,
   DialogContent,

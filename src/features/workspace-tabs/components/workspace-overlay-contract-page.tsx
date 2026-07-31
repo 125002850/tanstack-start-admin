@@ -3,7 +3,7 @@ import type { Column } from '@tanstack/react-table';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTableFacetedFilter } from '@/components/ui/table/filters/data-table-faceted-filter';
+import { DataTableFacetedFilter } from '@/components/data-table/filters/data-table-faceted-filter';
 import {
   Dialog,
   DialogContent,

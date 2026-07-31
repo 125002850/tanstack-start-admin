@@ -1,8 +1,8 @@
 import { StatusToggleBadge } from '@/features/dictionaries/components/status-toggle-badge';
 import type { DictionaryItemRecord } from '../api/types';
 import type { ColumnDef } from '@tanstack/react-table';
-import { auditColumns } from '@/components/ui/table/columns/data-table-audit-columns';
-import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
+import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
+import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 
 const columnDsl = createDataTableColumnDsl<DictionaryItemRecord>();
 

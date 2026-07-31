@@ -9,7 +9,7 @@ import type {
   DataTableEditingOptions,
   SortingStorageMode
 } from '@/types/data-table';
-import type { DataTableRowAction } from '@/components/ui/table/actions/data-table-row-action';
+import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import type { RowNumberDisplayMode } from './columns/row-number-column';
 
 /** 服务端查询参数，与 `apiFiltersBuilder` 的返回值类型一致。 */

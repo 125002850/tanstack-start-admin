@@ -11,7 +11,7 @@ import type { ExtendedColumnSort, SortingStorageMode } from '@/types/data-table'
 import {
   getDataTableRowActionsColumnWidth,
   type DataTableRowAction
-} from '@/components/ui/table/actions/data-table-row-action';
+} from '@/components/data-table/actions/data-table-row-action';
 import type { RowNumberDisplayMode } from '@/hooks/use-data-table/columns/row-number-column';
 import { resolveDataTableRowId } from '@/hooks/use-data-table/row-id';
 

@@ -5,7 +5,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEBOUNCE_MS } from '@/hooks/use-data-table/constants';
-import { createDataTableColumnDsl } from '@/components/ui/table/columns/data-table-column-factory';
+import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 
 import { useDslDataTable } from './use-dsl-data-table';
 import type {
