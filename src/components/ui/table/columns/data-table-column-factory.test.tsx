@@ -96,6 +96,7 @@ describe('data-table-column-factory', () => {
 
     expect((column as { accessorKey?: unknown }).accessorKey).toBe('name');
     expect(column.meta?.label).toBe('名称');
+    expect(column.meta?.localFilter).toMatchObject({ variant: 'text' });
     expect(renderCellText(column, { name: '' })).toBe('-');
     expect(renderCellText(column, { name: '云禾' })).toBe('云禾');
   });
@@ -196,6 +197,47 @@ describe('data-table-column-factory', () => {
     expect(column.meta?.label).toBe('旧名称');
     expect(column.meta?.variant).toBeUndefined();
     expect(column.meta?.placeholder).toBeUndefined();
+    expect(column.meta?.localFilter).toMatchObject({ variant: 'text' });
+  });
+
+  it('infers current-page filters independently from server search filters', () => {
+    const columnDsl = createDataTableColumnDsl<Row>();
+    const moneyColumn = columnDsl.field('amount', '金额', { type: 'money' });
+    const serverFilteredColumn = columnDsl.field('name', '名称', { filter: 'text' });
+
+    expect(moneyColumn.meta?.localFilter).toMatchObject({
+      variant: 'number'
+    });
+    expect(moneyColumn.meta?.localFilter?.formatValue?.(1234.5, { amount: 1234.5 })).toBe(
+      '1,234.50'
+    );
+    expect(serverFilteredColumn.meta).not.toHaveProperty('formatValue');
+    expect(
+      columnDsl.field('createdAt', '创建时间', { type: 'dateTime' }).meta?.localFilter
+    ).toMatchObject({ variant: 'date' });
+    expect(columnDsl.field('active', '启用', { type: 'boolean' }).meta?.localFilter).toMatchObject({
+      variant: 'boolean'
+    });
+    expect(
+      columnDsl.field('kind', '类型', {
+        type: 'enum',
+        filterOptions: [{ label: '正式', value: 'A' }]
+      }).meta?.localFilter
+    ).toMatchObject({
+      variant: 'select',
+      options: [{ label: '正式', value: 'A' }]
+    });
+    expect(
+      columnDsl.field('name', '名称', { localFilter: false }).meta?.localFilter
+    ).toBeUndefined();
+    expect(
+      columnDsl.field('amount', '金额', {
+        localFilter: 'numberRange',
+        localFilterMin: 0,
+        localFilterMax: 100,
+        localFilterUnit: '元'
+      }).meta?.localFilter
+    ).toMatchObject({ variant: 'range', range: [0, 100], unit: '元' });
   });
 
   it('infers default filter placeholders', () => {
@@ -377,6 +419,13 @@ describe('data-table-column-factory', () => {
       { value: 'ENABLED', label: '启用' },
       { value: 'DISABLED', label: '停用' }
     ]);
+    expect(statusColumn.meta?.localFilter).toMatchObject({
+      variant: 'select',
+      options: [
+        { value: 'ENABLED', label: '启用' },
+        { value: 'DISABLED', label: '停用' }
+      ]
+    });
     expect(statusColumn.meta?.editableChoice).toMatchObject({
       field: 'status',
       type: 'enum',
@@ -392,6 +441,7 @@ describe('data-table-column-factory', () => {
       maxSelected: 3
     });
     expect(roleColumn.meta?.editableChoice?.remoteOptions?.loadOptions).toBe(loadOptions);
+    expect(roleColumn.meta?.localFilter).toMatchObject({ variant: 'text' });
   });
 
   it('creates input and switch editors as first-class editable cells', () => {

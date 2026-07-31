@@ -69,6 +69,7 @@ export function DataTableOverflowTooltipText({
   return (
     <span
       ref={spanRef}
+      data-slot='data-table-overflow-text'
       className={cn('block max-w-full truncate', className)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

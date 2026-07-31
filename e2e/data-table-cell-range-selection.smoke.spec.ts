@@ -120,6 +120,38 @@ test.beforeEach(async ({ context, page }) => {
   await mockDictionaryData(page);
 });
 
+test('@workspace-v2 filters the loaded page from a column header without requesting data', async ({
+  page
+}) => {
+  const card = await gotoDictionaryTable(page);
+  let itemRequestCount = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/mdm/dict/global/items/by-type')) {
+      itemRequestCount += 1;
+    }
+  });
+
+  const filterTrigger = card.getByRole('button', {
+    name: '筛选当前页：字典项编码'
+  });
+  await filterTrigger.click();
+  const filterSearch = page.getByRole('textbox', { name: '搜索字典项编码筛选值' });
+  await filterSearch.fill('code-150');
+  await filterSearch.press('Enter');
+
+  await expect(card.getByText('code-150', { exact: true })).toBeVisible();
+  await expect(card.getByText('code-001', { exact: true })).toHaveCount(0);
+  await expect(filterTrigger).toHaveAttribute('aria-pressed', 'true');
+  await page.waitForTimeout(350);
+  expect(itemRequestCount).toBe(0);
+
+  await card.getByRole('textbox', { name: '搜索字典项编码' }).fill('code');
+
+  await expect(filterTrigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(card.getByText('code-001', { exact: true })).toBeVisible();
+  await expect.poll(() => itemRequestCount).toBeGreaterThan(0);
+});
+
 test('@workspace-v2 selects a range, extends by keyboard, and copies TSV', async ({ page }) => {
   const card = await gotoDictionaryTable(page);
   const firstRow = card.locator('tbody tr').first();

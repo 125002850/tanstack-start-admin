@@ -59,6 +59,71 @@ test.beforeEach(async ({ page }) => {
   await expect(cell(page, 'name')).toContainText('记录 001');
 });
 
+test('@workspace-v2 shows current-page filters without compressing header labels', async ({
+  page
+}) => {
+  const example = page.getByTestId('data-table-editing-example');
+  const filterButtons = example.getByRole('button', { name: /^筛选当前页：/ });
+
+  await expect(filterButtons).not.toHaveCount(0);
+  await expect(example.getByRole('button', { name: '筛选当前页：名称' })).toBeVisible();
+  await expect(example.getByRole('button', { name: '筛选当前页：手机号' })).toBeVisible();
+
+  for (const title of ['名称', '手机号', '备注', '评分']) {
+    const titleElement = example
+      .locator(`th:has(button[aria-label="筛选当前页：${title}"])`)
+      .locator('[data-slot="data-table-overflow-text"]');
+    await expect(titleElement).toBeVisible();
+    expect(
+      await titleElement.evaluate((element) => element.scrollWidth <= element.clientWidth)
+    ).toBe(true);
+  }
+
+  const nameFilter = example.getByRole('button', { name: '筛选当前页：名称' });
+  await nameFilter.click();
+  const filterSearch = page.getByRole('textbox', { name: '搜索名称筛选值' });
+  const filterList = page.getByRole('list', { name: '筛选值' });
+  const filterPopover = page.locator(
+    '[data-slot="popover-content"][aria-label="筛选当前页：名称"]'
+  );
+  await expect(filterSearch).toBeVisible();
+  await expect(filterPopover).toBeVisible();
+
+  const popoverBox = await filterPopover.boundingBox();
+  expect(popoverBox).not.toBeNull();
+  expect(popoverBox!.width).toBeLessThanOrEqual(250);
+
+  const listMetrics = await filterList.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    rendered: element.querySelectorAll('[role="listitem"]').length
+  }));
+  expect(listMetrics.scrollHeight).toBeGreaterThan(listMetrics.clientHeight);
+  expect(listMetrics.rendered).toBeLessThan(500);
+
+  await filterSearch.fill('记录 001');
+  await expect(page.getByRole('checkbox', { name: '记录 001' })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: '记录 002' })).toHaveCount(0);
+  await expect(nameFilter).toHaveAttribute('aria-pressed', 'false');
+  await expect(cell(page, 'name')).toContainText('记录 001');
+
+  await filterSearch.fill('');
+  await page.getByRole('checkbox', { name: '全选名称筛选值' }).click();
+  await expect(example.locator('tbody tr[data-index]')).toHaveCount(0);
+
+  await filterSearch.fill('记录 001');
+  await page.getByRole('checkbox', { name: '记录 001' }).click();
+
+  await expect(nameFilter).toHaveAttribute('aria-pressed', 'true');
+  await expect(example.locator('tbody tr[data-index]')).toHaveCount(1);
+  await expect(cell(page, 'name')).toContainText('记录 001');
+
+  await filterSearch.fill('');
+  await page.getByRole('checkbox', { name: '全选名称筛选值' }).click();
+  await expect(nameFilter).toHaveAttribute('aria-pressed', 'false');
+  await expect(example.locator('tbody tr[data-index]')).not.toHaveCount(1);
+});
+
 test('@workspace-v2 exposes every editor in a visible examples menu', async ({ page }) => {
   await expect(page.getByText('示例', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: '表格编辑' }).first()).toBeVisible();
