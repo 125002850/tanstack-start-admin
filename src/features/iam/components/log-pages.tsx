@@ -223,7 +223,7 @@ export function LoginLogPage() {
     [eventTypeDict, resultDict, failureReasonDict]
   );
   const columns = React.useMemo(() => getLoginLogColumns(setDetailLog, loginDicts), [loginDicts]);
-  const { table, total, queryState, refreshProps } = useDslDataTable<
+  const { table, queryState, refreshProps } = useDslDataTable<
     LoginLogRspDTO,
     DataTableDslPageRequestBase,
     IamLoginLogPageResponse,
@@ -248,7 +248,6 @@ export function LoginLogPage() {
         <CardContent className='px-0'>
           <DataTable
             table={table}
-            statusTotalCount={total}
             isLoading={queryState.isFetching}
             loadingSkeleton={{ columnCount: 7, filterCount: 5 }}
             onRefresh={refreshProps?.onRefresh}
@@ -274,7 +273,7 @@ export function OperationLogPage() {
     () => getOperationLogColumns(setDetailLog, actionDict),
     [actionDict]
   );
-  const { table, total, queryState, refreshProps } = useDslDataTable<
+  const { table, queryState, refreshProps } = useDslDataTable<
     OperationLogRspDTO,
     DataTableDslPageRequestBase,
     IamOperationLogPageResponse,
@@ -299,7 +298,6 @@ export function OperationLogPage() {
         <CardContent className='px-0'>
           <DataTable
             table={table}
-            statusTotalCount={total}
             isLoading={queryState.isFetching}
             loadingSkeleton={{ columnCount: 8, filterCount: 6 }}
             onRefresh={refreshProps?.onRefresh}

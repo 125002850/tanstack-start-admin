@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { getExpandedRowModel, type ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -180,8 +180,8 @@ export default function DeptDataTable({
     data: rows,
     columns,
     pageCount: 1,
+    totalCount,
     getSubRows: (dept) => dept.children ?? [],
-    getExpandedRowModel: getExpandedRowModel(),
     initialState: { expanded: true },
     enableSorting: false,
     showRowNumberColumn: false,
@@ -202,7 +202,6 @@ export default function DeptDataTable({
     <DataTable
       table={table}
       tableActions={tableActions}
-      statusTotalCount={totalCount}
       isLoading={isFetching}
       onRefresh={onRefresh}
       isRefreshing={isFetching}

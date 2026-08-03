@@ -377,10 +377,11 @@ function dragCellRange(source: HTMLElement, target: HTMLElement) {
   dispatchCellPointerEvent(target, 'pointerup', { pointerId: 1, clientX: 40, clientY: 40 });
 }
 
-function useHarnessTable(data: TestRow[], pageSize = 10) {
+function useHarnessTable(data: TestRow[], pageSize = 10, rowCount?: number) {
   return useReactTable({
     data,
     columns: COLUMNS,
+    rowCount,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageSize, pageIndex: 0 } }
@@ -811,7 +812,7 @@ function ServerSelectableHarness({ rows, totalCount }: { rows: TestRow[]; totalC
     showSelectColumn: true
   });
 
-  return <DataTable table={table} statusTotalCount={totalCount} />;
+  return <DataTable table={table} />;
 }
 
 function SelectedRowModelCounterHarness({
@@ -825,7 +826,7 @@ function SelectedRowModelCounterHarness({
     tableId: 'data-table-selected-row-counter',
     data: rows,
     columns: COLUMNS,
-    getRowId: (row) => String(row.id),
+    rowId: (row) => row.id,
     pageCount: 1,
     showRowNumberColumn: false,
     showSelectColumn: true
@@ -2301,13 +2302,26 @@ describe('DataTable body', () => {
 
   it('passes the server total row count to the pagination summary', () => {
     function HarnessWithServerTotal() {
-      const table = useHarnessTable(makeRows(5), 5);
-      return <DataTable table={table} statusTotalCount={42} />;
+      const table = useHarnessTable(makeRows(5), 5, 42);
+      return <DataTable table={table} />;
     }
 
     render(<HarnessWithServerTotal />);
 
     expect(screen.getByText('共 42 条数据')).toBeInTheDocument();
+  });
+
+  it('passes the table row count to status configuration', () => {
+    const getStatusConfig = vi.fn(() => undefined);
+
+    function HarnessWithServerTotal() {
+      const table = useHarnessTable(makeRows(5), 5, 42);
+      return <DataTable table={table} getStatusConfig={getStatusConfig} />;
+    }
+
+    render(<HarnessWithServerTotal />);
+
+    expect(getStatusConfig).toHaveBeenCalledWith(expect.objectContaining({ totalCount: 42 }));
   });
 
   it('expands the select-column click target to the full table cell', async () => {

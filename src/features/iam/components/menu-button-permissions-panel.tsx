@@ -148,7 +148,6 @@ export function MenuButtonPermissionsPanel({
         <DataTable
           table={table}
           tableActions={tableActions}
-          statusTotalCount={filteredButtonPermissions.length}
           virtualization={false}
           getStatusConfig={({ rows }) => {
             if (record?.menuType !== 'MENU') {

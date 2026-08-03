@@ -1,11 +1,11 @@
-import type { Row, TableOptions } from '@tanstack/react-table';
+import type { Row } from '@tanstack/react-table';
 
 import type { DataTableRowId } from './types';
 
 /**
  * DataTable 行 ID 解析工具。
  *
- * 稳定 row id 是选择列、展开行和复制/高亮状态的基础；优先使用调用方提供的 getRowId/rowId，
+ * 稳定 row id 是选择列、展开行和复制/高亮状态的基础；优先使用调用方提供的 rowId，
  * 无法解析时回退到 tableId + index，保证表格至少可渲染但仅具备当前页稳定性。
  */
 export function stringifyDataTableRowId(value: unknown): string | null {
@@ -33,15 +33,14 @@ export function getDataTableFallbackRowId({
   return parentId ? `${parentId}-${index}` : `${tableId}-${index}`;
 }
 
-/** 按优先级解析行 ID：getRowId -> rowId 函数 -> rowId 字段 -> id 字段 -> fallback。 */
+/** 按优先级解析行 ID：rowId 函数 -> rowId 字段 -> id 字段 -> fallback。 */
 export function resolveDataTableRowId<TData>({
   tableId,
   row,
   index,
   parent,
   parentId,
-  rowId,
-  getRowId
+  rowId
 }: {
   tableId: string;
   row: TData;
@@ -49,7 +48,6 @@ export function resolveDataTableRowId<TData>({
   parent?: Row<TData>;
   parentId?: string | null;
   rowId?: DataTableRowId<TData>;
-  getRowId?: NonNullable<TableOptions<TData>['getRowId']>;
 }) {
   const resolvedParentId = parentId ?? parent?.id ?? null;
   const fallback = getDataTableFallbackRowId({
@@ -57,10 +55,6 @@ export function resolveDataTableRowId<TData>({
     index,
     parentId: resolvedParentId
   });
-
-  if (getRowId) {
-    return stringifyDataTableRowId(getRowId(row, index, parent)) ?? fallback;
-  }
 
   if (typeof rowId === 'function') {
     return stringifyDataTableRowId(rowId(row, index, parent)) ?? fallback;

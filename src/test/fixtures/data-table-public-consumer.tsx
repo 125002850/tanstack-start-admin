@@ -1,15 +1,22 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
-import { DataTable } from '@/components/data-table/core/data-table';
+import { DataTable, type DataTableProps } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import {
   useDataTable,
   useDslDataTable,
   type DataTableDslPageRequestBase,
   type PaginatedResponse,
-  type QueryOptionsFactory
+  type QueryOptionsFactory,
+  type UseDataTableProps,
+  type UseDslDataTableProps
 } from '@/hooks/use-data-table';
+import type {
+  DataTableRuntimeHiddenTableOption,
+  DataTableUnsupportedInitialStateKey,
+  DataTableUnsupportedTableOption
+} from '@/hooks/use-data-table/types';
 import type {
   DataTableAction,
   DataTableEditingOptions,
@@ -80,7 +87,7 @@ const queryOptionsFactory: QueryOptionsFactory<
   });
 
 export function DslDataTableConsumer() {
-  const { table, total, queryState, refreshProps } = useDslDataTable<
+  const { table, queryState, refreshProps } = useDslDataTable<
     PublicConsumerRow,
     DataTableDslPageRequestBase,
     PaginatedResponse<PublicConsumerRow>,
@@ -96,7 +103,6 @@ export function DslDataTableConsumer() {
   return (
     <DataTable
       table={table}
-      statusTotalCount={total}
       isLoading={queryState.isFetching}
       loadingSkeleton={{}}
       {...refreshProps}
@@ -107,6 +113,7 @@ export function DslDataTableConsumer() {
 }
 
 type Assert<T extends true> = T;
+type AssertNever<T extends never> = T;
 type PublicHooks = typeof import('@/hooks/use-data-table');
 type PublicCore = typeof import('@/components/data-table/core/data-table');
 type PublicColumns = typeof import('@/components/data-table/columns/data-table-column-factory');
@@ -125,4 +132,63 @@ export type PublicCoreHidesSkeleton = Assert<
 >;
 export type PublicColumnsHideLegacyAuditHelper = Assert<
   'auditColumns' extends keyof PublicColumns ? false : true
+>;
+
+export type PublicDataTableHidesRemovedTotalCountProp = AssertNever<
+  Extract<keyof DataTableProps<PublicConsumerRow>, 'statusTotalCount'>
+>;
+
+export type PublicUseDataTableHidesRuntimeOwnedProps = AssertNever<
+  Extract<keyof UseDataTableProps<PublicConsumerRow>, DataTableRuntimeHiddenTableOption>
+>;
+
+export type PublicUseDataTableHidesUnsupportedTanStackProps = AssertNever<
+  Extract<keyof UseDataTableProps<PublicConsumerRow>, DataTableUnsupportedTableOption>
+>;
+
+type PublicUseDataTableInitialState = NonNullable<
+  UseDataTableProps<PublicConsumerRow>['initialState']
+>;
+
+export type PublicUseDataTableHidesUnsupportedInitialState = AssertNever<
+  Extract<keyof PublicUseDataTableInitialState, DataTableUnsupportedInitialStateKey>
+>;
+
+type RemovedLegacyUseDataTableProp =
+  | 'history'
+  | 'clearOnDefault'
+  | 'debounceMs'
+  | 'scroll'
+  | 'startTransition'
+  | 'throttleMs';
+
+export type PublicUseDataTableHidesRemovedLegacyProps = AssertNever<
+  Extract<keyof UseDataTableProps<PublicConsumerRow>, RemovedLegacyUseDataTableProp>
+>;
+
+type RemovedInternalEditingProp =
+  | 'editingPageNo'
+  | 'editingScopeKey'
+  | 'requireExplicitEditingRowId';
+
+export type PublicUseDataTableHidesInternalEditingProps = AssertNever<
+  Extract<keyof UseDataTableProps<PublicConsumerRow>, RemovedInternalEditingProp>
+>;
+
+type DslOwnedDataTableProp = 'data' | 'onPageSizeChange' | 'pageCount' | 'pageSize' | 'totalCount';
+
+export type PublicUseDslDataTableHidesDslOwnedProps = AssertNever<
+  Extract<keyof UseDslDataTableProps<PublicConsumerRow>, DslOwnedDataTableProp>
+>;
+
+type PublicDslInitialPagination = NonNullable<
+  NonNullable<UseDslDataTableProps<PublicConsumerRow>['initialState']>['pagination']
+>;
+
+export type PublicUseDslDataTableHidesInitialPageSize = Assert<
+  'pageSize' extends keyof PublicDslInitialPagination ? false : true
+>;
+
+export type PublicUseDslDataTableKeepsInitialPageIndex = Assert<
+  'pageIndex' extends keyof PublicDslInitialPagination ? true : false
 >;

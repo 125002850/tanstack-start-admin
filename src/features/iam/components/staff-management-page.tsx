@@ -522,7 +522,7 @@ export default function StaffManagementPage() {
     [queryClient]
   );
 
-  const { table, editing, total, queryState, refreshProps } = useDslDataTable<
+  const { table, editing, queryState, refreshProps } = useDslDataTable<
     StaffTableRow,
     DataTableDslPageRequestBase,
     IamStaffPageResponse,
@@ -560,7 +560,6 @@ export default function StaffManagementPage() {
         <CardContent className='px-0'>
           <DataTable<StaffTableRow>
             table={table}
-            statusTotalCount={total}
             tableActions={tableActions}
             isLoading={queryState.isFetching}
             loadingSkeleton={{ columnCount: 8, filterCount: 5 }}

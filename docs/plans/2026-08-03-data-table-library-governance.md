@@ -643,3 +643,18 @@ pnpm test:e2e:smoke e2e/data-table-cell-range-selection.smoke.spec.ts --grep @wo
 
 - 实现状态：COMPLETE。最小公共消费者 fixture、传递依赖/API/样式审计、DataTable 浏览器回归均已落地；抽包结论为 `KEEP_INTERNAL`。
 - 依赖关系变化：未创建 package 或新增运行时依赖；当前应用图标、主题 CSS、中文消息及 UI 组合仍由内部 DataTable 组件层承接，React Query 仅由 DSL adapter 使用。
+
+### Update (2026-08-03) — 公开契约收口
+
+- 实现状态：COMPLETE。`UseDataTableProps` 与 `UseDslDataTableProps` 已移除无效 legacy 配置、内部编辑上下文及 runtime-owned TanStack option；`meta`、`defaultColumn` 等直接透传不再受支持，属于已确认的 TypeScript 破坏性变更。仓库内未发现受影响消费者，迁移映射记录在同日抽包演练 Review。
+- 依赖关系变化：未新增运行时依赖；内部 `useDataTableRuntime` 承接 DSL 编辑范围与表格 meta，且不从 hooks 公共 barrel 导出。
+
+### Update (2026-08-03) — 总数单一事实源
+
+- 实现状态：COMPLETE。服务端总数已收敛到 TanStack Table `rowCount`，`DataTable.statusTotalCount` 及页面重复传参已删除；分页文案、状态配置和受控选择统计统一读取 `table.getRowCount()`。
+- 依赖关系变化：未新增依赖；总数所有权由页面渲染层上移到 `useDataTable`/`useDslDataTable` 运行时。
+
+### Update (2026-08-03) — TanStack option 白名单
+
+- 实现状态：COMPLETE。`UseDataTableProps` 已改为显式透传白名单，runtime 统一装配展开 row model 与行 ID 解析，并收窄 `initialState` 到共享状态机支持的切片；类型契约覆盖 runtime-owned、unsupported option 和 unsupported initial state。
+- 依赖关系变化：未新增依赖；部门树移除页面层 `getExpandedRowModel` 装配，公开 `getRowId` 消费统一迁移到 `rowId`。

@@ -247,7 +247,7 @@ export default function RoleManagementPage() {
     []
   );
 
-  const { table, total, queryState, refreshProps } = useDslDataTable<
+  const { table, queryState, refreshProps } = useDslDataTable<
     RoleRspDTO,
     DataTableDslPageRequestBase,
     IamRolePageResponse,
@@ -273,7 +273,6 @@ export default function RoleManagementPage() {
         <CardContent className='px-0'>
           <DataTable
             table={table}
-            statusTotalCount={total}
             tableActions={tableActions}
             isLoading={queryState.isFetching}
             loadingSkeleton={{ columnCount: 7, filterCount: 3 }}

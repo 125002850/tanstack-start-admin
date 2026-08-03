@@ -341,7 +341,7 @@ export function DataTableEditableChoiceContractPage({
       }),
     [tableId]
   );
-  const { table, editing, queryState, refreshProps, total } = useDslDataTable({
+  const { table, editing, queryState, refreshProps } = useDslDataTable({
     tableId,
     columns,
     queryOptions: queryOptionsFactory,
@@ -471,7 +471,6 @@ export function DataTableEditableChoiceContractPage({
         </pre>
         <DataTable
           table={table}
-          statusTotalCount={total}
           virtualization={{ mode: 'on', estimateRowHeight: 44, overscan: 4 }}
           onRefresh={refreshProps?.onRefresh}
           isRefreshing={refreshProps?.isRefreshing}

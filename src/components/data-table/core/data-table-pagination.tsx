@@ -36,7 +36,6 @@ interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   selectedRowCount?: number;
   selectedTotalRowCount?: number;
   pageSizeOptions?: readonly number[];
-  totalRowCount?: number;
   labels?: DataTablePaginationLabels;
 }
 
@@ -46,7 +45,6 @@ export function DataTablePagination<TData>({
   selectedRowCount,
   selectedTotalRowCount,
   pageSizeOptions = DATA_TABLE_PAGE_SIZE_OPTIONS,
-  totalRowCount,
   labels,
   className,
   ...props
@@ -59,16 +57,15 @@ export function DataTablePagination<TData>({
     labels?.totalRowsText ?? ((totalCount: number) => `共 ${totalCount} 条数据`);
   const pageText =
     labels?.pageText ?? ((page: number, totalPages: number) => `第 ${page} / ${totalPages} 页`);
-  // selectedRowCount 一旦受控，selectedTotalRowCount 优先配合外部 totalRowCount 使用。
+  // selectedRowCount 一旦受控，选择分母使用 table 持有的全量 rowCount。
   const isSelectedRowCountControlled = selectedRowCount !== undefined;
   const resolvedSelectedRowCount =
     selectedRowCount ??
     (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
   const resolvedSelectedTotalRowCount =
     selectedTotalRowCount ??
-    (isSelectedRowCountControlled ? totalRowCount : table.getRowModel().rows.length) ??
-    table.getFilteredRowModel().rows.length;
-  const resolvedTotalRowCount = totalRowCount ?? table.getFilteredRowModel().rows.length;
+    (isSelectedRowCountControlled ? table.getRowCount() : table.getRowModel().rows.length);
+  const resolvedTotalRowCount = table.getRowCount();
 
   return (
     <div

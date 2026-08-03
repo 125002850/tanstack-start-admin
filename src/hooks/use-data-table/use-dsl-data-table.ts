@@ -18,9 +18,8 @@ import {
   type PaginatedResponse,
   type QueryOptionsFactory
 } from './dsl';
-import { DEBOUNCE_MS } from './constants';
 import type { UseDataTableProps } from './types';
-import { useDataTable } from './use-data-table';
+import { useDataTable, useDataTableRuntime } from './use-data-table';
 import { useDataTablePageSize } from './use-data-table-page-size';
 
 /**
@@ -44,6 +43,16 @@ export type RefreshProps = {
   isRefreshing: boolean;
 };
 
+type UseDslDataTableInitialState<TData> = Omit<
+  NonNullable<UseDataTableProps<TData>['initialState']>,
+  'pagination'
+> & {
+  pagination?: Omit<
+    NonNullable<NonNullable<UseDataTableProps<TData>['initialState']>['pagination']>,
+    'pageSize'
+  >;
+};
+
 export type UseDslDataTableProps<
   TData,
   TRequest = DataTableDslPageRequestBase,
@@ -52,10 +61,18 @@ export type UseDslDataTableProps<
   TQueryKey extends QueryKey = QueryKey
 > = Omit<
   UseDataTableProps<TData>,
-  'data' | 'columns' | 'totalCount' | 'tableId' | 'pageSize' | 'onPageSizeChange'
+  | 'data'
+  | 'columns'
+  | 'initialState'
+  | 'pageCount'
+  | 'totalCount'
+  | 'tableId'
+  | 'pageSize'
+  | 'onPageSizeChange'
 > & {
   tableId: string;
   columns: Array<ColumnDef<TData>>;
+  initialState?: UseDslDataTableInitialState<TData>;
   queryOptions: QueryOptionsFactory<TData, TRequest, TQueryData, TError, TQueryKey>;
   baseCondition?: DataTableDslCondition;
   defaultRequestSort?: Array<DataTableDslSortItem>;
@@ -189,7 +206,6 @@ export function useDslDataTable<
   enableZebraStriping = true,
   showSelectColumn,
   showRowNumberColumn,
-  debounceMs,
   initialState,
   ...tableProps
 }: UseDslDataTableProps<TData, TRequest, TQueryData, TError, TQueryKey>): UseDslDataTableResult<
@@ -212,33 +228,35 @@ export function useDslDataTable<
 
   const total = resolvedData.total ?? 0;
 
-  const { table, ...tableState } = useDataTable({
-    ...tableProps,
-    tableId,
-    columns,
-    data: resolvedData.list ?? [],
-    totalCount: total,
-    pageSize,
-    onPageSizeChange: setPageSize,
-    editingPageNo: resolvedData.pageNo,
-    editingScopeKey: resolvedData.scopeKey,
-    requireExplicitEditingRowId: true,
-    debounceMs: debounceMs ?? DEBOUNCE_MS,
-    showSelectColumn: showSelectColumn ?? true,
-    showRowNumberColumn: showRowNumberColumn ?? true,
-    meta: {
-      ...tableProps.meta,
-      enableZebraStriping
+  const { table, ...tableState } = useDataTableRuntime(
+    {
+      ...tableProps,
+      tableId,
+      columns,
+      data: resolvedData.list ?? [],
+      totalCount: total,
+      pageSize,
+      onPageSizeChange: setPageSize,
+      showSelectColumn: showSelectColumn ?? true,
+      showRowNumberColumn: showRowNumberColumn ?? true,
+      initialState:
+        defaultSort.length > 0
+          ? {
+              // defaultSort 只在 initialState 没有 sorting 时生效，避免覆盖调用方显式排序。
+              ...initialState,
+              sorting: initialState?.sorting ?? defaultSort
+            }
+          : initialState
     },
-    initialState:
-      defaultSort.length > 0
-        ? {
-            // defaultSort 只在 initialState 没有 sorting 时生效，避免覆盖调用方显式排序。
-            ...initialState,
-            sorting: initialState?.sorting ?? defaultSort
-          }
-        : initialState
-  });
+    {
+      editingScope: {
+        pageNo: resolvedData.pageNo,
+        scopeKey: resolvedData.scopeKey,
+        requireExplicitRowId: true
+      },
+      enableZebraStriping
+    }
+  );
 
   const pagination = table.getState().pagination;
   const sorting = table.getState().sorting;

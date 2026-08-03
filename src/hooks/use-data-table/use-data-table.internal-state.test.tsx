@@ -66,6 +66,7 @@ const data: TestRow[] = [
 function InternalStateTester({
   tableId = 'internal-state-tester',
   pageSize,
+  initialPageSize,
   onPageSizeChange,
   initialSorting = [],
   sortingStorage,
@@ -73,6 +74,7 @@ function InternalStateTester({
 }: {
   tableId?: string;
   pageSize?: number;
+  initialPageSize?: number;
   onPageSizeChange?: (size: number) => void;
   initialSorting?: Array<{ id: string; desc: boolean }>;
   sortingStorage?: SortingStorageMode;
@@ -89,8 +91,15 @@ function InternalStateTester({
     onPageSizeChange,
     sortingStorage,
     initialState:
-      initialSorting.length > 0
-        ? { sorting: initialSorting as ExtendedColumnSort<TestRow>[] }
+      initialSorting.length > 0 || initialPageSize !== undefined
+        ? {
+            ...(initialSorting.length > 0
+              ? { sorting: initialSorting as ExtendedColumnSort<TestRow>[] }
+              : {}),
+            ...(initialPageSize !== undefined
+              ? { pagination: { pageIndex: 0, pageSize: initialPageSize } }
+              : {})
+          }
         : undefined
   });
 
@@ -106,6 +115,11 @@ function InternalStateTester({
       'span',
       { key: 'size', 'data-testid': 'pageSize' },
       String(state.pagination.pageSize)
+    ),
+    React.createElement(
+      'span',
+      { key: 'row-count', 'data-testid': 'rowCount' },
+      String(table.getRowCount())
     ),
     React.createElement(
       'span',
@@ -247,7 +261,7 @@ function RowNumberCellsInspector({
     tableId: 'row-number-cells-inspector',
     columns,
     data: rows,
-    getRowId: (row) => String(row.id),
+    rowId: (row) => row.id,
     totalCount,
     pageSize: 10,
     rowNumberDisplayMode
@@ -602,6 +616,41 @@ describe('useDataTable — internal-state mode (default)', () => {
     );
   });
 
+  it('installs the expanded row model for tree data', () => {
+    type TreeRow = TestRow & { children?: TreeRow[] };
+    const treeColumns: ColumnDef<TreeRow>[] = [{ id: 'name', header: 'Name', accessorKey: 'name' }];
+    const treeData: TreeRow[] = [
+      {
+        id: 1,
+        name: 'Parent',
+        children: [{ id: 2, name: 'Child' }]
+      }
+    ];
+
+    function TreeRowsInspector() {
+      const { table } = useDataTable({
+        tableId: 'tree-rows-inspector',
+        columns: treeColumns,
+        data: treeData,
+        pageCount: 1,
+        rowId: 'id',
+        getSubRows: (row) => row.children ?? [],
+        initialState: { expanded: true },
+        showRowNumberColumn: false
+      });
+
+      return React.createElement(
+        'span',
+        { 'data-testid': 'tree-row-ids' },
+        JSON.stringify(table.getRowModel().rows.map((row) => row.id))
+      );
+    }
+
+    render(React.createElement(TreeRowsInspector));
+
+    expect(screen.getByTestId('tree-row-ids').textContent).toBe('["1","2"]');
+  });
+
   it('initializes pagination at page 1', () => {
     render(React.createElement(InternalStateTester));
     expect(screen.getByTestId('page').textContent).toBe('1');
@@ -616,6 +665,31 @@ describe('useDataTable — internal-state mode (default)', () => {
   it('uses controlled pageSize prop', () => {
     render(React.createElement(InternalStateTester, { pageSize: 50 }));
     expect(screen.getByTestId('pageSize').textContent).toBe('50');
+  });
+
+  it('uses initialState pageSize when pageSize is uncontrolled', () => {
+    render(React.createElement(InternalStateTester, { initialPageSize: 20 }));
+    expect(screen.getByTestId('pageSize').textContent).toBe('20');
+  });
+
+  it('prefers controlled pageSize over initialState pageSize', () => {
+    render(
+      React.createElement(InternalStateTester, {
+        pageSize: 25,
+        initialPageSize: 20
+      })
+    );
+    expect(screen.getByTestId('pageSize').textContent).toBe('25');
+  });
+
+  it('treats initialState pageSize as mount-only initialization', () => {
+    const { rerender } = render(React.createElement(InternalStateTester, { initialPageSize: 20 }));
+
+    expect(screen.getByTestId('pageSize').textContent).toBe('20');
+
+    rerender(React.createElement(InternalStateTester, { initialPageSize: 30 }));
+
+    expect(screen.getByTestId('pageSize').textContent).toBe('20');
   });
 
   it('updates page size when controlled prop changes', () => {
@@ -636,6 +710,7 @@ describe('useDataTable — internal-state mode (default)', () => {
 
   it('derives page count from totalCount and current page size', () => {
     render(React.createElement(InternalStateTester, { pageSize: 2, totalCount: 5 }));
+    expect(screen.getByTestId('rowCount').textContent).toBe('5');
     act(() => {
       screen.getByTestId('next-page').click();
       screen.getByTestId('next-page').click();
