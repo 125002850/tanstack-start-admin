@@ -6,8 +6,6 @@
 
 **Goal:** 不立即迁移到 `packages/` 或发布 npm 包。先用四个串行 PR 建立机器边界、修正依赖方向、收紧业务公开 API，并完成一次抽包演练。
 
-**Report:** [DataTable 库化治理汇报](../data-table-library-governance-report.html)
-
 **Rules:** [DataTable 开发规范](../../.agents/skills/oig-tanstack-admin/references/data-table.md) · [项目结构与组件归属](../../.agents/skills/oig-tanstack-admin/references/project-structure.md)
 
 ---
@@ -20,13 +18,13 @@ DataTable 继续作为仓库内部共享子系统维护。本计划治理的是�
 
 普通 `src/features/` 生产代码只允许直接导入以下模块：
 
-| 模块路径 | 业务用途 |
-| --- | --- |
-| `@/components/data-table/core/data-table` | 渲染共享 `DataTable` |
-| `@/components/data-table/columns/data-table-column-factory` | 创建列 DSL；审计列通过 DSL 内置宏声明 |
-| `@/components/data-table/toolbar/data-table-toolbar` | 组合标准筛选工具栏 |
-| `@/hooks/use-data-table` | 使用 `useDataTable` 或 `useDslDataTable` 及必要的公开类型 |
-| `@/types/data-table` | 使用 Action、Editing 等跨层公共类型 |
+| 模块路径                                                    | 业务用途                                                  |
+| ----------------------------------------------------------- | --------------------------------------------------------- |
+| `@/components/data-table/core/data-table`                   | 渲染共享 `DataTable`                                      |
+| `@/components/data-table/columns/data-table-column-factory` | 创建列 DSL；审计列通过 DSL 内置宏声明                     |
+| `@/components/data-table/toolbar/data-table-toolbar`        | 组合标准筛选工具栏                                        |
+| `@/hooks/use-data-table`                                    | 使用 `useDataTable` 或 `useDslDataTable` 及必要的公开类型 |
+| `@/types/data-table`                                        | 使用 Action、Editing 等跨层公共类型                       |
 
 除精确例外外，其他 `src/components/data-table/` 深层模块对业务默认关闭。
 
@@ -57,7 +55,7 @@ DataTable 继续作为仓库内部共享子系统维护。本计划治理的是�
 - `columnDsl.audit()` 是“一次展开多列”的列宏，不属于一字段一列的普通 `type` registry。不得通过运行时扫描首行数据自动判断审计字段。
 - `DataTableActionsBar`、`DataTableRowActions` 只负责渲染，保持 DataTable 内部实现；业务只声明 Action 语义、权限和回调。
 - Action 纯类型契约统一从 `@/types/data-table` 提供，组件文件不保留类型兼容转发。
-- `DataTableSkeleton` 保持 DataTable 内部实现。业务统一通过 `DataTable.isLoading` 与 `loadingSkeleton` 配置触发，不直接导入 Skeleton。
+- `DataTableSkeleton` 保持 DataTable 内部实现。业务统一通过 `DataTable` 的 `isLoading` 与 `loadingSkeleton` props 触发，不直接导入 Skeleton。
 - `DataTable` 与 `DataTableToolbar` 继续作为公开组件，不由 hook 返回。
 - hook 只返回状态、控制器和稳定 prop bundle，禁止返回 JSX、React 组件类型或页面布局。
 
@@ -85,17 +83,17 @@ DataTable 继续作为仓库内部共享子系统维护。本计划治理的是�
 - `src/lib/data-table/`
 - DataTable 相关配置与共享类型
 
-| 项目 | 当前值 |
-| --- | --- |
-| TS / TSX 文件 | 123 |
-| 生产代码 | 19,749 行 |
-| 测试代码 | 15,718 行 |
-| 实现与测试合计 | 35,467 行 |
-| 相关测试 | 43 个测试文件、501 个测试通过 |
-| 真实业务消费者 | IAM、字典管理、导出中心 |
-| 契约 / 演示消费者 | elements、workspace overlay contract page |
-| 最近一次集中目录调整时间 | 2026-07-31 |
-| 当前分支 | `main` |
+| 项目                     | 当前值                                    |
+| ------------------------ | ----------------------------------------- |
+| TS / TSX 文件            | 123                                       |
+| 生产代码                 | 19,749 行                                 |
+| 测试代码                 | 15,718 行                                 |
+| 实现与测试合计           | 35,467 行                                 |
+| 相关测试                 | 43 个测试文件、501 个测试通过             |
+| 真实业务消费者           | IAM、字典管理、导出中心                   |
+| 契约 / 演示消费者        | elements、workspace overlay contract page |
+| 最近一次集中目录调整时间 | 2026-07-31                                |
+| 当前分支                 | `main`                                    |
 
 当前消费者审计结果：
 
@@ -191,7 +189,7 @@ PR 1 实施时必须重新扫描 `src/features/` 和 `src/routes/` 的静态 imp
 PR 1 不迁移业务代码，因此以下现有导入按“完整消费者文件 + 完整模块路径”登记临时例外：
 
 - `auditColumns` 的现有生产消费者，等待 PR 3 迁移到 `columnDsl.audit()`。
-- `DataTableSkeleton` 的现有生产消费者，等待 PR 3 迁移到 `DataTable.loadingSkeleton`。
+- `DataTableSkeleton` 的现有生产消费者，等待 PR 3 迁移到 `DataTable` 的 `loadingSkeleton` prop。
 - Action 类型的现有组件路径导入，等待 PR 2 迁移到 `@/types/data-table`。
 - 导出中心对 `DataTableLinkButtonCell` 的单业务导入，等待 PR 3 下沉。
 - workspace overlay 契约页及其集成测试对独立筛选组件的导入。
@@ -572,28 +570,28 @@ pnpm test:e2e:smoke e2e/data-table-cell-range-selection.smoke.spec.ts --grep @wo
 
 ## 9. 破坏性变更确认表
 
-| PR | 变更 | 当前状态 |
-| --- | --- | --- |
-| PR 2 | Action 类型导入迁移到 `@/types/data-table` | 待实施前确认 |
-| PR 3 | hooks 运行时出口只保留两个 hook | 治理方向已确认；合并前复核消费者 |
-| PR 3 | `auditColumns` 迁移为 `columnDsl.audit()` | 治理方向已确认；合并前复核消费者 |
-| PR 3 | `DataTableSkeleton` 退出业务公开面 | 治理方向已确认；合并前做视觉回归 |
-| PR 3 | 删除 `statusDeps` | 待实施前确认 |
-| PR 3 | 删除 `enableAdvancedFilter` | 待实施前确认 |
-| PR 3 | 删除 `isProductTableVirtualizationEnabled` | 待实施前确认 |
-| PR 3 | 移动 `DataTableLinkButtonCell` | 待实施前确认 |
-| PR 3 | 删除无消费者的 `DataTableRouterLinkCell` | 待实施前确认 |
+| PR   | 变更                                       | 当前状态                         |
+| ---- | ------------------------------------------ | -------------------------------- |
+| PR 2 | Action 类型导入迁移到 `@/types/data-table` | 待实施前确认                     |
+| PR 3 | hooks 运行时出口只保留两个 hook            | 治理方向已确认；合并前复核消费者 |
+| PR 3 | `auditColumns` 迁移为 `columnDsl.audit()`  | 治理方向已确认；合并前复核消费者 |
+| PR 3 | `DataTableSkeleton` 退出业务公开面         | 治理方向已确认；合并前做视觉回归 |
+| PR 3 | 删除 `statusDeps`                          | 待实施前确认                     |
+| PR 3 | 删除 `enableAdvancedFilter`                | 待实施前确认                     |
+| PR 3 | 删除 `isProductTableVirtualizationEnabled` | 待实施前确认                     |
+| PR 3 | 移动 `DataTableLinkButtonCell`             | 待实施前确认                     |
+| PR 3 | 删除无消费者的 `DataTableRouterLinkCell`   | 待实施前确认                     |
 
 确认前可以完成只读审计、契约测试和迁移草案；不得合并仍标记“待实施前确认”的破坏性变更。
 
 ## 10. 实现状态
 
-| PR | 状态 | 依赖 | 说明 |
-| --- | --- | --- | --- |
-| PR 1 | NOT STARTED | 无 | 先冻结五个公开模块和两个 hook 运行时符号 |
-| PR 2 | NOT STARTED | PR 1 | Action 类型导入变化需确认 |
-| PR 3 | NOT STARTED | PR 2 | 完成业务迁移并删除公开源码入口 |
-| PR 4 | NOT STARTED | PR 3 | 只做演练，不创建正式 package |
+| PR   | 状态        | 依赖 | 说明                                     |
+| ---- | ----------- | ---- | ---------------------------------------- |
+| PR 1 | NOT STARTED | 无   | 先冻结五个公开模块和两个 hook 运行时符号 |
+| PR 2 | NOT STARTED | PR 1 | Action 类型导入变化需确认                |
+| PR 3 | NOT STARTED | PR 2 | 完成业务迁移并删除公开源码入口           |
+| PR 4 | NOT STARTED | PR 3 | 只做演练，不创建正式 package             |
 
 ## 11. Review 与计划更新
 
