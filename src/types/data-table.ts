@@ -839,9 +839,9 @@ export interface DataTableRowAction<TData> {
 
 /** columnDsl.audit() 接受的通用审计字段契约。 */
 export interface DataTableAuditFields {
-  createBy?: number | null;
+  createBy?: string | number | null;
   createTime?: string | null;
-  updateBy?: number | null;
+  updateBy?: string | number | null;
   updateTime?: string | null;
 }
 

@@ -156,9 +156,7 @@ describe('project architecture contracts', () => {
       // Contract page intentionally exercises the standalone filter overlay.
       'src/features/workspace-tabs/components/workspace-overlay-contract-page.tsx::@/components/data-table/filters/data-table-faceted-filter',
       // Integration test verifies the same overlay survives workspace transitions.
-      'src/features/workspace-tabs/components/workspace-routing.integration.test.tsx::@/components/data-table/filters/data-table-faceted-filter',
-      // The department integration test replaces this internal panel to isolate table behavior.
-      'src/features/iam/components/dept-data-table.test.tsx::@/components/data-table/toolbar/data-table-view-options'
+      'src/features/workspace-tabs/components/workspace-routing.integration.test.tsx::@/components/data-table/filters/data-table-faceted-filter'
     ]);
     const violations = collectSourceFiles()
       .filter((path) => {

@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { mockIamSession } from './support/mock-iam-session';
+import { mockLoginInfo } from './support/mock-login-info';
 
 const DICTIONARY_ROUTE = '/dashboard/system-management/dictionaries';
 
@@ -82,7 +82,7 @@ async function expectHeaderAndBodyAligned(card: Locator, columnId: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await mockIamSession(page);
+  await mockLoginInfo(page);
 });
 
 test('@workspace-v2 renders loading, toolbar, top actions, and row actions', async ({ page }) => {
