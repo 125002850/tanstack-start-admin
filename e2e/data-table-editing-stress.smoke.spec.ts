@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { mockIamSession } from './support/mock-iam-session';
+import { mockLoginInfo } from './support/mock-login-info';
 
 const EDITING_ROUTE = '/dashboard/examples/data-table-editing';
 
@@ -44,7 +44,7 @@ async function scrollViewportTo(page: Page, top: number) {
 
 test.beforeEach(async ({ context, page }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await mockIamSession(page);
+  await mockLoginInfo(page);
   await page.addInitScript(() => {
     localStorage.setItem('app-data-table-per-page:data-table-editing-example', '500');
   });
@@ -159,7 +159,6 @@ test('@workspace-v2-stress large matrix paste applies atomically across rows', a
 
 test('@workspace-v2-stress continuous edits accumulate in the draft snapshot', async ({ page }) => {
   const issues = installIssueCollector(page);
-  const example = page.getByTestId('data-table-editing-example');
 
   for (let row = 1; row <= 4; row++) {
     const phone = cell(page, 'phone', row);
@@ -191,7 +190,6 @@ test('@workspace-v2-stress continuous edits accumulate in the draft snapshot', a
 
 test('@workspace-v2-stress edit+scroll loop keeps DOM and heap bounded', async ({ page }) => {
   const issues = installIssueCollector(page);
-  const example = page.getByTestId('data-table-editing-example');
 
   const measure = () =>
     page.evaluate(() => ({

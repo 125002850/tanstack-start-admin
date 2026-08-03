@@ -6,6 +6,7 @@ import { createMenuPermissionBeforeLoad } from './route-access';
 export const NAV_GROUP_META = {
   overview: { label: '概览', order: 10 },
   components: { label: '组件', order: 20 },
+  examples: { label: '示例', order: 25 },
   systemManagement: { label: '系统管理', order: 30 },
   account: { label: '账户', order: 40 }
 } as const;

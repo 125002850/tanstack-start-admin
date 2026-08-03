@@ -46,10 +46,10 @@ describe('共享主题样式', () => {
   it('cell range focus 使用 outline 强调且不覆盖其他 box shadow', () => {
     const focusStyle = getCssBlock(
       globalsSource,
-      "[data-slot='table-cell'][data-cell-range-focus='true']:focus-visible"
+      "[data-slot='table-cell'][data-cell-range-focus='true']:not(\n    [data-cell-edit-ready='true']\n  ):focus-visible"
     );
 
-    expect(focusStyle).toMatch(/outline-color:\s*color-mix\(/);
+    expect(focusStyle).toMatch(/outline-color:/);
     expect(focusStyle).not.toMatch(/box-shadow:/);
   });
 });

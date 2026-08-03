@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { mockIamSession } from './support/mock-iam-session';
+import { mockLoginInfo } from './support/mock-login-info';
 
 const EDITING_ROUTE = '/dashboard/examples/data-table-editing';
 
@@ -27,7 +27,7 @@ async function readClipboard(page: Page) {
 
 test.beforeEach(async ({ context, page }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await mockIamSession(page);
+  await mockLoginInfo(page);
   await page.addInitScript(() => {
     localStorage.setItem('app-data-table-per-page:data-table-editing-example', '500');
   });

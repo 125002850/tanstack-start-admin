@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { mockIamSession } from './support/mock-iam-session';
+import { mockLoginInfo } from './support/mock-login-info';
 
 const EXAMPLE_ROUTE = '/dashboard/examples/data-table-editing';
 const EDITOR_LABELS = [
@@ -49,7 +49,7 @@ async function loadNextRemoteOptionPage(page: Page, nextOptionLabel: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await mockIamSession(page);
+  await mockLoginInfo(page);
   await page.addInitScript(() => {
     localStorage.setItem('app-data-table-per-page:data-table-editing-example', '500');
   });
