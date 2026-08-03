@@ -285,7 +285,7 @@ test('@workspace-v2 starts printable drafts and applies keyboard deletion atomic
   await page.keyboard.press('Escape');
 });
 
-test('@workspace-v2 fills from the accessible handle and rejects readonly targets atomically', async ({
+test('@workspace-v2 only fills editable ranges and rejects readonly targets atomically', async ({
   page
 }) => {
   await page.addInitScript(() => {
@@ -300,6 +300,11 @@ test('@workspace-v2 fills from the accessible handle and rejects readonly target
   const firstName = example.locator('td[data-cell-row-id="1"][data-cell-column-id="name"]');
   const firstPhone = example.locator('td[data-cell-row-id="1"][data-cell-column-id="phone"]');
   const secondPhone = example.locator('td[data-cell-row-id="2"][data-cell-column-id="phone"]');
+  await firstName.click();
+  await expect(example.getByRole('button', { name: '填充所选单元格' })).toHaveCount(0);
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
+  await expect(firstName).toHaveAttribute('data-cell-copy-flash', 'true');
+
   await firstPhone.click();
   const handle = example.getByRole('button', { name: '填充所选单元格' });
   await expect(handle).toBeVisible();

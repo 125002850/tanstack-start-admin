@@ -682,6 +682,28 @@ export function useDataTableCellSelection<TData>({
     [editing]
   );
 
+  const selectedRangeIsFillable = useMemo(() => {
+    if (!rangeBounds) return false;
+
+    for (let rowIndex = rangeBounds.rowStart; rowIndex <= rangeBounds.rowEnd; rowIndex += 1) {
+      const rowId = rangeIndex.rowIds[rowIndex];
+      if (rowId === undefined) return false;
+
+      for (
+        let columnIndex = rangeBounds.columnStart;
+        columnIndex <= rangeBounds.columnEnd;
+        columnIndex += 1
+      ) {
+        const columnId = rangeIndex.columnIds[columnIndex];
+        if (columnId === undefined) return false;
+        const cell = cellsByCoordinate.get(getCoordinateKey({ rowId, columnId }));
+        if (!cell || !isCellEditable(cell)) return false;
+      }
+    }
+
+    return true;
+  }, [cellsByCoordinate, isCellEditable, rangeBounds, rangeIndex]);
+
   const startCellEditing = useCallback(
     (cell: Cell<TData, unknown>, initialDraft?: string) => {
       const config = getEditableCellMeta(cell);
@@ -926,6 +948,7 @@ export function useDataTableCellSelection<TData>({
     (event: ReactPointerEvent<HTMLButtonElement>) => {
       if (
         event.button !== 0 ||
+        !selectedRangeIsFillable ||
         !range ||
         !rangeBounds ||
         editing?.activeCell ||
@@ -968,6 +991,7 @@ export function useDataTableCellSelection<TData>({
       handleDocumentFillPointerMove,
       range,
       rangeBounds,
+      selectedRangeIsFillable,
       scrollViewportRef,
       toPlanBounds
     ]
@@ -976,6 +1000,7 @@ export function useDataTableCellSelection<TData>({
   const fillWithKeyboard = useCallback(
     (event: ReactKeyboardEvent<HTMLButtonElement>) => {
       if (
+        !selectedRangeIsFillable ||
         !range ||
         !rangeBounds ||
         !['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(event.key)
@@ -1048,7 +1073,15 @@ export function useDataTableCellSelection<TData>({
         planTargetBounds
       });
     },
-    [range, rangeBounds, rangeIndex, runAtomicFill, scrollViewportRef, toPlanBounds]
+    [
+      range,
+      rangeBounds,
+      rangeIndex,
+      runAtomicFill,
+      scrollViewportRef,
+      selectedRangeIsFillable,
+      toPlanBounds
+    ]
   );
 
   const handleCellKeyDown = useCallback(
@@ -1289,6 +1322,7 @@ export function useDataTableCellSelection<TData>({
       if (
         !editing ||
         editing.activeCell ||
+        !selectedRangeIsFillable ||
         !range ||
         !rangeBounds ||
         activeCellSelectionOwner !== ownerRef.current
@@ -1314,7 +1348,15 @@ export function useDataTableCellSelection<TData>({
         }
       };
     },
-    [beginFillPointer, editing, fillWithKeyboard, range, rangeBounds, rangeIndex]
+    [
+      beginFillPointer,
+      editing,
+      fillWithKeyboard,
+      range,
+      rangeBounds,
+      rangeIndex,
+      selectedRangeIsFillable
+    ]
   );
 
   useEffect(() => {
