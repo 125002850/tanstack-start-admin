@@ -1,6 +1,9 @@
+import * as React from 'react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 import type { DictionaryTypeRecord } from '../api/types';
 import { getStatusLabel } from '@/constants/enums';
@@ -51,14 +54,10 @@ export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTy
           </div>
         </div>
       </CardHeader>
-      <CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-        <DetailField label='名称' value={record.dictTypeName} />
+      <CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
         <DetailField label='状态' value={getStatusLabel(record.status)} />
-        <DetailField label='编码' value={record.dictTypeCode} />
-        <DetailField label='创建人' value={record.createBy} />
-        <DetailField label='创建时间' value={record.createTime} />
-        <DetailField label='更新人' value={record.updateBy} />
-        <DetailField label='更新时间' value={record.updateTime} />
+        <AuditInfo label='创建信息' operator={record.createBy} time={record.createTime} />
+        <AuditInfo label='更新信息' operator={record.updateBy} time={record.updateTime} />
       </CardContent>
     </Card>
   );
@@ -70,5 +69,65 @@ function DetailField({ label, value }: { label: string; value?: string | number 
       <div className='text-muted-foreground text-xs tracking-[0.18em]'>{label}</div>
       <div className='text-sm font-medium'>{value || '-'}</div>
     </div>
+  );
+}
+
+function AuditInfo({
+  label,
+  operator,
+  time
+}: {
+  label: string;
+  operator?: string | number | null;
+  time?: string | null;
+}) {
+  return (
+    <div className='min-w-0 space-y-1 rounded-lg border bg-muted/20 px-4 py-3'>
+      <div className='text-muted-foreground text-xs tracking-[0.18em]'>{label}</div>
+      <OverflowText
+        text={operator != null ? String(operator) : '-'}
+        className='text-xs font-medium text-muted-foreground'
+      />
+      <OverflowText text={time || '-'} className='text-xs tabular-nums' />
+    </div>
+  );
+}
+
+function OverflowText({ text, className }: { text: string; className?: string }) {
+  const textRef = React.useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = React.useState(false);
+
+  const isOverflowing = React.useCallback(() => {
+    const el = textRef.current;
+    if (!el) return false;
+    return el.scrollWidth > el.clientWidth + 1;
+  }, []);
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen && text !== '-' && isOverflowing());
+    },
+    [isOverflowing, text]
+  );
+
+  const textNode = (
+    <span
+      ref={textRef}
+      className={cn('block min-w-0 truncate', className)}
+      tabIndex={text === '-' ? undefined : 0}
+    >
+      {text}
+    </span>
+  );
+
+  if (text === '-') return textNode;
+
+  return (
+    <Tooltip open={open} onOpenChange={handleOpenChange}>
+      <TooltipTrigger asChild>{textNode}</TooltipTrigger>
+      <TooltipContent side='top' className='max-w-80 whitespace-normal break-words'>
+        {text}
+      </TooltipContent>
+    </Tooltip>
   );
 }
