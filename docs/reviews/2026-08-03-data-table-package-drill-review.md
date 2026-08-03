@@ -90,13 +90,13 @@
 
 ## 5. 公开 API 形状审计
 
-| API | 显式布尔项 | 结论 | 说明 |
-| --- | ---: | --- | --- |
-| `UseDataTableProps` | 4 个公开项，另有 1 个内部项 | 分组重构 | 状态、持久化、工具列、选择、展开、编辑职责较多；后续按 `persistence`、`utilityColumns`、`selection` 分组评估 |
-| `UseDslDataTableProps` | 在基础 Props 上新增 1 个 | 保持扁平 | DSL 查询适配职责集中，当前没有 mode 膨胀 |
-| `DataTableProps` | 2 个 | 分组重构 | loading 已分组；refresh 和受控 expand props 可在后续专项形成稳定对象契约 |
-| `ColumnMeta` | 4 个 | 转内部契约 | 普通业务应只经列 DSL 生成；保留 TanStack augmentation 仅供共享运行时传递 |
-| `TableMeta` | 1 个 | 转内部契约 | 全部字段由 hook 与渲染层装配，业务不应直接拼装 |
+| API                    |               显式布尔项 | 结论       | 说明                                                                                                         |
+| ---------------------- | -----------------------: | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `UseDataTableProps`    |               4 个公开项 | 分组重构   | 状态、持久化、工具列、选择、展开、编辑职责较多；后续按 `persistence`、`utilityColumns`、`selection` 分组评估 |
+| `UseDslDataTableProps` | 在基础 Props 上新增 1 个 | 保持扁平   | DSL 查询适配职责集中，当前没有 mode 膨胀                                                                     |
+| `DataTableProps`       |                     2 个 | 分组重构   | loading 已分组；refresh 和受控 expand props 可在后续专项形成稳定对象契约                                     |
+| `ColumnMeta`           |                     4 个 | 转内部契约 | 普通业务应只经列 DSL 生成；保留 TanStack augmentation 仅供共享运行时传递                                     |
+| `TableMeta`            |                     1 个 | 转内部契约 | 全部字段由 hook 与渲染层装配，业务不应直接拼装                                                               |
 
 `TODO P1`：另建 DataTable API 形状专项计划，验证分组后的类型推断、引用稳定性和迁移成本；不得在当前治理计划中直接重构形状。
 
@@ -112,3 +112,14 @@
 - 明确 React Query subpath 或 peer dependency 策略。
 - 提供独立基础 stylesheet，并把项目主题覆盖留在应用侧。
 - 至少出现第二个真实仓库消费者，验证公开 API 不依赖当前应用偶然结构。
+
+## 8. 公开契约收口迁移说明
+
+本次收口是 TypeScript 破坏性变更；仓库扫描未发现受影响的仓库内或已知仓库外消费者。接入方按以下规则迁移：
+
+- 删除 `history`、`debounceMs`、`throttleMs`、`clearOnDefault`、`scroll`、`startTransition`。这些配置此前未参与运行时行为，不需要替代项。
+- 删除 `editingPageNo`、`editingScopeKey`、`requireExplicitEditingRowId`。它们是 `useDslDataTable` 的内部编辑上下文，改由内部 runtime channel 传递，业务调用方不得设置。
+- 不再向 `UseDataTableProps` 透传 `meta`、`defaultColumn`、`state`、状态回调、row model factory、`manual*` 等 runtime-owned TanStack option。斑马纹使用 `enableZebraStriping`（DSL），列默认行为改为 DSL 或具体列定义；其他需求应新增显式的稳定公共配置，不绕过 runtime 所有权。
+- TanStack option 透传改为白名单，目前仅支持 `getSubRows` 与 `enableSorting`；树表无需再传 `getExpandedRowModel`，由 runtime 统一装配。删除公开 `getRowId`，字段或函数形式统一迁移到 `rowId`。`initialState` 仅保留共享状态机支持的切片，不再接受 `columnSizingInfo`、`globalFilter`、`grouping`、`rowPinning`。
+- `useDslDataTable` 不再接受 `pageCount`、`totalCount`、`pageSize`、`onPageSizeChange`，也不接受 `initialState.pagination.pageSize`。总量来自查询响应，分页大小由 `tableId` 对应的页大小持久化状态管理；`initialState.pagination.pageIndex` 仍保留，用于指定首次服务端请求页码。
+- 删除 `DataTable.statusTotalCount`。`useDataTable`/`useDslDataTable` 会把服务端 `totalCount` 写入 TanStack Table 的 `rowCount`；分页总数、状态配置和跨页选择分母统一读取 `table.getRowCount()`，页面不再重复传递接口总数。

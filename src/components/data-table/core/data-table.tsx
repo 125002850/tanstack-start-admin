@@ -76,7 +76,6 @@ export interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   selectedRowCount?: number;
   scrollTargetId?: string;
   emptyMessage?: React.ReactNode;
-  statusTotalCount?: number;
   getStatusConfig?: DataTableStatusFactory;
   isLoading?: boolean;
   loadingSkeleton?: DataTableLoadingSkeletonConfig;
@@ -141,7 +140,6 @@ export function DataTable<TData>({
   selectedRowCount,
   scrollTargetId,
   emptyMessage = '暂无数据',
-  statusTotalCount,
   getStatusConfig,
   isLoading = false,
   loadingSkeleton,
@@ -163,6 +161,7 @@ export function DataTable<TData>({
   const tableElementRef = React.useRef<HTMLTableElement>(null);
 
   const rows = table.getRowModel().rows;
+  const totalRowCount = table.getRowCount();
   const enableZebraStriping = table.options.meta?.enableZebraStriping ?? false;
   const columnFilters = table.getState().columnFilters;
   const localColumnFilters = table.options.meta?.dataTableLocalFiltering?.filters;
@@ -177,7 +176,7 @@ export function DataTable<TData>({
     });
   const resolvedStatus: DataTableStatusConfig | undefined = getStatusConfig?.({
     rows,
-    totalCount: statusTotalCount ?? 0,
+    totalCount: totalRowCount,
     hasFilters,
     isLoading
   });
@@ -262,7 +261,7 @@ export function DataTable<TData>({
     selectedRowCount ??
     (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
   const resolvedSelectedTotalRowCount =
-    selectedRowCount !== undefined ? statusTotalCount : pageRows.length;
+    selectedRowCount !== undefined ? totalRowCount : pageRows.length;
   const isExpanded = !!(expandConfig && expandedRow && expandPanelId);
   const {
     activeExpandTab,
@@ -479,7 +478,6 @@ export function DataTable<TData>({
                 getSelectedRows={getSelectedRows}
                 selectedRowCount={resolvedSelectedRowCount}
                 selectedTotalRowCount={resolvedSelectedTotalRowCount}
-                totalRowCount={statusTotalCount}
               />
               {actionBar && resolvedSelectedRowCount > 0 && actionBar}
             </div>

@@ -4,6 +4,7 @@ import {
   getFacetedMinMaxValues,
   getFacetedRowModel,
   getFacetedUniqueValues,
+  getExpandedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -25,11 +26,10 @@ import { getFixedWidthColumnSizing, omitFixedWidthColumnSizing } from './column-
 import {
   DATA_TABLE_ACTIONS_COLUMN_ID,
   DATA_TABLE_ROW_NUMBER_COLUMN_ID,
-  DATA_TABLE_SELECT_COLUMN_ID,
-  DEBOUNCE_MS
+  DATA_TABLE_SELECT_COLUMN_ID
 } from './constants';
 import { findExpandedRow, getStableExpandPanelId } from './expand';
-import type { UseDataTableProps } from './types';
+import type { DataTableRuntimeConfiguredTableOption, UseDataTableProps } from './types';
 import {
   hasActionsColumn,
   normalizeActionColumn,
@@ -94,12 +94,28 @@ function collectEditableFields<TData>(columns: readonly ColumnDef<TData>[]) {
  * 管理 data table 的内部状态，并拼装工具列、展开态、列宽持久化等通用能力。
  */
 export function useDataTable<TData>(props: UseDataTableProps<TData>) {
+  return useDataTableRuntime(props);
+}
+
+interface DataTableRuntimeContext {
+  editingScope?: {
+    pageNo: number;
+    scopeKey: string;
+    requireExplicitRowId: boolean;
+  };
+  enableZebraStriping?: boolean;
+}
+
+/** 仅供共享 hook 组合使用；业务代码必须通过公开的 useDataTable/useDslDataTable 接入。 */
+export function useDataTableRuntime<TData>(
+  props: UseDataTableProps<TData>,
+  runtimeContext: DataTableRuntimeContext = {}
+) {
   const {
     columns,
     pageCount: explicitPageCount,
     totalCount,
     initialState,
-    debounceMs = DEBOUNCE_MS,
     pageSize: controlledPageSize,
     onPageSizeChange,
     showRowNumberColumn = true,
@@ -107,17 +123,16 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     showSelectColumn = false,
     tableId,
     rowId,
-    getRowId,
     actionColumnPin = 'right',
     rowActions,
     expandConfig,
     editing: editingOptions,
-    editingPageNo,
-    editingScopeKey = 'default',
-    requireExplicitEditingRowId = false,
     onColumnOrderChange: externalOnColumnOrderChange,
     ...tableProps
   } = props;
+  const editingPageNo = runtimeContext.editingScope?.pageNo;
+  const editingScopeKey = runtimeContext.editingScope?.scopeKey ?? 'default';
+  const requireExplicitEditingRowId = runtimeContext.editingScope?.requireExplicitRowId ?? false;
 
   const instanceId = React.useId();
   // 展开面板 id 优先来自 tableId；无 tableId 时用 React id 兜底并移除冒号。
@@ -279,7 +294,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 
   React.useEffect(() => {
     // 选择列启用但没有稳定 row id 时，只能做当前页范围选择，开发环境给出提示。
-    if (!import.meta.env.DEV || !showSelectColumn || getRowId || rowId !== undefined) {
+    if (!import.meta.env.DEV || !showSelectColumn || rowId !== undefined) {
       return;
     }
 
@@ -301,7 +316,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
         selectionScope: 'page'
       }
     );
-  }, [getRowId, rowId, showSelectColumn, tableId, tableProps.data]);
+  }, [rowId, showSelectColumn, tableId, tableProps.data]);
 
   const resolvedPageCount = React.useMemo(() => {
     if (typeof explicitPageCount === 'number') {
@@ -323,13 +338,12 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
         row,
         index,
         parent,
-        rowId,
-        getRowId
+        rowId
       }),
-    [getRowId, rowId, tableId]
+    [rowId, tableId]
   );
   const editableFields = React.useMemo(() => collectEditableFields(baseColumns), [baseColumns]);
-  const hasExplicitEditingRowId = Boolean(getRowId || rowId !== undefined);
+  const hasExplicitEditingRowId = rowId !== undefined;
   const editingEnabled =
     editableFields.size > 0 && (!requireExplicitEditingRowId || hasExplicitEditingRowId);
   const resolvedEditableFields = React.useMemo(
@@ -370,14 +384,11 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       return;
     }
     warnedEditingFallbackTableIds.add(tableId);
-    console.warn(
-      '[useDataTable] Cross-page editing requires an explicit stable rowId or getRowId.',
-      {
-        tableId,
-        editing: 'disabled',
-        rowIdSource: 'index-fallback'
-      }
-    );
+    console.warn('[useDataTable] Cross-page editing requires an explicit stable rowId.', {
+      tableId,
+      editing: 'disabled',
+      rowIdSource: 'index-fallback'
+    });
   }, [editableFields.size, hasExplicitEditingRowId, requireExplicitEditingRowId, tableId]);
 
   const editingRows =
@@ -403,14 +414,13 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     resetScope: localFilteringResetScope
   });
 
-  const table = useReactTable({
-    ...tableProps,
+  const runtimeTableOptions = {
     data: localFiltering.data,
     columns: resolvedColumns,
     initialState: resolvedInitialState,
     pageCount: resolvedPageCount,
+    rowCount: totalCount,
     meta: {
-      ...tableProps.meta,
       rowNumberDisplayMode,
       rowNumberPagination,
       dataTableColumnOrder: {
@@ -421,7 +431,8 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       dataTableId: tableId,
       dataTableEditing: editingEnabled ? editingState.runtime : undefined,
       dataTableLocalFiltering: localFiltering.runtime,
-      dataTableRowActions: rowActions
+      dataTableRowActions: rowActions,
+      enableZebraStriping: runtimeContext.enableZebraStriping
     },
     state: {
       pagination,
@@ -437,7 +448,6 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       // 默认关闭列筛选，只有 DSL/业务显式 filter 的列才出现在工具栏。
       minSize: 80,
       size: dataTableColumnSizes.md,
-      ...tableProps.defaultColumn,
       enableColumnFilter: false
     },
     enableRowSelection: true,
@@ -453,6 +463,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     enableColumnResizing: true,
     columnResizeMode: 'onEnd' as const,
     getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -462,6 +473,11 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true
+  } satisfies Pick<TableOptions<TData>, DataTableRuntimeConfiguredTableOption>;
+
+  const table = useReactTable({
+    ...tableProps,
+    ...runtimeTableOptions
   });
 
   const expandedRow =
@@ -506,8 +522,6 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
     selectedRowIds,
     getSelectedRows,
     clearSelectedRows,
-    debounceMs,
-    throttleMs: tableProps.throttleMs,
     resetColumnSizing,
     editing: editingState.controller,
     expandConfig,

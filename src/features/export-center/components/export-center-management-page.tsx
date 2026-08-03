@@ -424,7 +424,7 @@ export default function ExportCenterManagementPage() {
     [deleteMutation, handleDownload]
   );
 
-  const { table, total, clearSelectedRows, queryState, refreshProps } = useDslDataTable<
+  const { table, clearSelectedRows, queryState, refreshProps } = useDslDataTable<
     ExportRecordRecord,
     PageMyExportRecordsQueryRequest,
     PageMyExportRecordsResponse,
@@ -529,7 +529,6 @@ export default function ExportCenterManagementPage() {
         <CardContent className='min-h-0 flex-1 px-0'>
           <DataTable
             table={table}
-            statusTotalCount={total}
             isLoading={isInitialLoading}
             loadingSkeleton={{ columnCount: 8, filterCount: 2 }}
             tableActions={tableActions}

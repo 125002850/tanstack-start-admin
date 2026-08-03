@@ -84,7 +84,7 @@
 
 ## 跨页草稿与持久化
 
-- `useDslDataTable()` 使用可编辑列时必须显式提供稳定 `rowId` 或 `getRowId`；index fallback 会在开发环境 warning 并关闭编辑。
+- `useDslDataTable()` 使用可编辑列时必须显式提供稳定 `rowId`；index fallback 会在开发环境 warning 并关闭编辑。
 - 同一 filter、sorting、baseCondition、pageSize 组成一个编辑 scope；仅 pageNo 改变时累积已加载页。scope 改变前，业务页面负责通过 `editing.hasChanges()` 提示保存或放弃。
 - hook 返回的 `editing.getSnapshot()` 包含按页排序的 `rows`、`changedRows`、字段级 `changes` 和 `loadedPages`。refetch 只更新未修改字段，草稿字段优先。
 - DataTable 不执行持久化。自动保存由 `editing.onChange` 发起 mutation，成功后调用 `editing.acceptChanges(changes, serverRows?)`；手动保存先读取 snapshot，成功后确认 changes。
@@ -112,8 +112,8 @@
 
 - 标准后台表格页面使用 `Card` + `DataTable` + `DataTableToolbar`。
 - 数据层统一由 `useDslDataTable` 驱动。
-- 页面侧至少优先消费 `table`、`queryState`、`total` 和 `refreshProps`。
-- 服务端分页表格必须传入 `statusTotalCount={total}`。
+- 页面侧至少优先消费 `table`、`queryState` 和 `refreshProps`；只有其他业务展示确实需要总数时才额外消费 `total`。
+- 服务端总数由 `useDslDataTable` 写入 TanStack Table 的 `rowCount`，`DataTable` 统一通过 `table.getRowCount()` 消费；页面禁止重复传递总数。
 - 刷新能力优先通过 `{...refreshProps}` 透传给 `DataTable`，不要重复包装刷新按钮或 `refetch`。
 - Loading 状态可将 `queryState.isFetching` 传给 `DataTable` 的 `isLoading`。
 - `DataTable` 的 loading / empty / error(status) 必须有稳定 DOM 兜底：普通空数据使用 `emptyMessage`，业务空态或错误态通过 `getStatusConfig` 返回 `DataTableStatus`，不得让表体空白。
@@ -129,10 +129,10 @@
 - 分页响应、总数字段映射等差异必须收敛在 `mapQueryData`。
 - 非 DSL 场景直接使用 `useDataTable` 接入服务端分页时，优先传 `totalCount`，不要手算 `pageCount`。
 - 页面层一般不要显式传 `selectedRowCount`。
-- 仅在跨页批量操作等全量计数场景传 `selectedRowCount`；此时分母自动切换为 `statusTotalCount`。
+- 仅在跨页批量操作等全量计数场景传 `selectedRowCount`；此时分母自动切换为 `table.getRowCount()`。
 - 默认选择语义是当前已加载页：`selectedRows`、`selectedRowIds` 和 `getSelectedRows()` 都不得表达跨页全量选择。
-- 启用 `showSelectColumn` 时必须优先提供稳定 `rowId` / `getRowId`；开发环境检测到 index fallback row id 时必须 warning，提示当前选择是 page-scoped 且不适合跨页批量。
-- `rowId` key、`rowId` function、`getRowId` 的优先级和解析必须复用 `resolveDataTableRowId()`，禁止页面层复制 row id 解析逻辑。
+- 启用 `showSelectColumn` 时必须优先提供稳定 `rowId`；开发环境检测到 index fallback row id 时必须 warning，提示当前选择是 page-scoped 且不适合跨页批量。
+- `rowId` key 与 `rowId` function 的解析必须复用 `resolveDataTableRowId()`；TanStack `getRowId` 由共享 runtime 统一装配，禁止页面层复制或覆盖行 ID 解析逻辑。
 - 展开分屏生命周期和尺寸逻辑统一收敛在 `useDataTableExpandPanel`；列拖拽状态和 handler 统一收敛在 `useDataTableColumnDnd`，新 hook 只供 `DataTable` 内部装配。
 
 ## 表格操作

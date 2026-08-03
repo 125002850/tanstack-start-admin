@@ -244,7 +244,6 @@ export function DictionaryItemsPanel({
         <DataTable
           table={table}
           tableActions={actions}
-          statusTotalCount={total}
           isLoading={isInitialLoading}
           loadingSkeleton={{}}
           getSelectedRows={getSelectedRows}

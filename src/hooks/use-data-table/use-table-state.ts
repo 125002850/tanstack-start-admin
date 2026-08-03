@@ -159,7 +159,10 @@ export function useTableState<TData>({
     setColumnSizing((prev) => omitFixedWidthColumnSizing(prev) ?? prev);
   }, [fixedWidthColumnSizing]);
 
-  const perPage = controlledPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE;
+  const initialPageSizeRef = React.useRef(
+    resolvedInitialState?.pagination?.pageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE
+  );
+  const perPage = controlledPageSize ?? initialPageSizeRef.current;
 
   const [pagination, setPagination] = React.useState<PaginationState>(() => ({
     pageIndex: resolvedInitialState?.pagination?.pageIndex ?? 0,

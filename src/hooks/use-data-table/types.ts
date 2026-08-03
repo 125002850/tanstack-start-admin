@@ -1,5 +1,4 @@
-import type { Row, TableOptions, TableState } from '@tanstack/react-table';
-import type * as React from 'react';
+import type { InitialTableState, Row, TableOptions } from '@tanstack/react-table';
 
 import type {
   ColumnOrderStorageMode,
@@ -18,42 +17,114 @@ export type DataTableRowId<TData> =
   | keyof TData
   | ((row: TData, index: number, parent?: Row<TData>) => string | number);
 
-export interface UseDataTableProps<TData> extends Omit<
-  TableOptions<TData>,
-  | 'state'
-  | 'pageCount'
+/** useDataTable 在传给 TanStack Table 前统一生成或覆盖的 option。 */
+export type DataTableRuntimeConfiguredTableOption =
+  | 'columns'
+  | 'columnResizeMode'
+  | 'data'
+  | 'defaultColumn'
+  | 'enableColumnResizing'
+  | 'enableRowSelection'
   | 'getCoreRowModel'
+  | 'getFacetedMinMaxValues'
+  | 'getFacetedRowModel'
+  | 'getFacetedUniqueValues'
+  | 'getFilteredRowModel'
+  | 'getExpandedRowModel'
+  | 'getPaginationRowModel'
+  | 'getRowId'
+  | 'getSortedRowModel'
+  | 'initialState'
   | 'manualFiltering'
   | 'manualPagination'
   | 'manualSorting'
+  | 'meta'
+  | 'onColumnFiltersChange'
+  | 'onColumnOrderChange'
+  | 'onColumnPinningChange'
+  | 'onColumnSizingChange'
+  | 'onColumnVisibilityChange'
+  | 'onPaginationChange'
+  | 'onRowSelectionChange'
+  | 'onSortingChange'
+  | 'pageCount'
+  | 'rowCount'
+  | 'state';
+
+/** 被 runtime 覆盖但仍以稳定语义重新开放给 useDataTable 调用方的 option。 */
+export type DataTableRuntimeRemappedPublicTableOption =
+  | 'columns'
+  | 'data'
+  | 'initialState'
+  | 'onColumnOrderChange'
+  | 'pageCount';
+
+/** TanStack Table 的底层扩展入口；共享 hook 不允许业务调用方介入。 */
+export type DataTableReservedTableOption = '_features' | 'mergeOptions' | 'onStateChange';
+
+/** 当前必须从 useDataTable 公共类型隐藏的 TanStack option。 */
+export type DataTableRuntimeHiddenTableOption =
+  | Exclude<DataTableRuntimeConfiguredTableOption, DataTableRuntimeRemappedPublicTableOption>
+  | DataTableReservedTableOption;
+
+/** 允许业务调用方直接透传给 TanStack Table 的受支持 option。 */
+export type DataTablePublicPassthroughTableOption = 'enableSorting' | 'getSubRows';
+
+/** TanStack Table 已提供、但共享 hook 尚未形成稳定公共语义的 option。 */
+export type DataTableUnsupportedTableOption = Exclude<
+  keyof TableOptions<unknown>,
+  | DataTableRuntimeConfiguredTableOption
+  | DataTableReservedTableOption
+  | DataTablePublicPassthroughTableOption
+>;
+
+export type DataTableSupportedInitialStateKey =
+  | 'columnFilters'
+  | 'columnOrder'
+  | 'columnPinning'
+  | 'columnSizing'
+  | 'columnVisibility'
+  | 'expanded'
+  | 'pagination'
+  | 'rowSelection'
+  | 'sorting';
+
+/** TanStack initialState 中共享 hook 尚未支持的状态切片。 */
+export type DataTableUnsupportedInitialStateKey = Exclude<
+  keyof InitialTableState,
+  DataTableSupportedInitialStateKey
+>;
+
+type DataTableInitialState<TData> = Pick<
+  InitialTableState,
+  Exclude<DataTableSupportedInitialStateKey, 'sorting'>
+> & {
+  sorting?: ExtendedColumnSort<TData>[];
+};
+
+export interface UseDataTableProps<TData> extends Pick<
+  TableOptions<TData>,
+  DataTablePublicPassthroughTableOption
 > {
+  /** 当前页已经加载到浏览器的数据。 */
+  data: TableOptions<TData>['data'];
+  /** 表格列定义；业务页面应优先通过列 DSL 生成。 */
+  columns: TableOptions<TData>['columns'];
   /** 手动指定总页数；未传时可改为传 `totalCount` 由内部按当前 pageSize 计算。 */
   pageCount?: number;
-  /** 服务端总条数；适用于服务端分页表格，内部会基于当前 pageSize 自动推导 pageCount。 */
+  /** 服务端总条数；内部写入 TanStack rowCount，并基于当前 pageSize 推导 pageCount。 */
   totalCount?: number;
   /**
    * 表格初始状态。
    * `sorting` 支持 `ExtendedColumnSort<TData>[]` 以提供更精确的排序列类型推断。
    */
-  initialState?: Omit<Partial<TableState>, 'sorting'> & {
-    sorting?: ExtendedColumnSort<TData>[];
-  };
-  /** 路由历史模式：`push` 添加历史记录，`replace` 替换当前记录。 */
-  history?: 'push' | 'replace';
-  /** 列过滤搜索的去抖延迟（毫秒）。 */
-  debounceMs?: number;
-  /** 列过滤搜索的节流延迟（毫秒）。 */
-  throttleMs?: number;
-  /** 是否在查询参数为空时清除默认值。 */
-  clearOnDefault?: boolean;
+  initialState?: DataTableInitialState<TData>;
+  /** 列顺序变化通知；内部持久化和状态更新完成后调用。 */
+  onColumnOrderChange?: TableOptions<TData>['onColumnOrderChange'];
   /** 受控的每页条数，覆盖默认值。 */
   pageSize?: number;
   /** 每页条数变化时的回调。 */
   onPageSizeChange?: (pageSize: number) => void;
-  /** 是否启用滚动区域。 */
-  scroll?: boolean;
-  /** React 18+ 的 `startTransition` 函数，用于将状态更新标记为非紧急。 */
-  startTransition?: React.TransitionStartFunction;
   /**
    * 表格唯一标识，用于列宽持久化存储的 key。
    * 传入后自动启用 localStorage / sessionStorage 列宽缓存。
@@ -63,7 +134,7 @@ export interface UseDataTableProps<TData> extends Omit<
    * 行 ID 来源。未传时默认读取 `row.id`，字段值为空、非有限数字或不存在时回退为
    * `${tableId}-${index}`；子行回退为 `${parent.id}-${index}`。
    *
-   * 启用选择列时，建议传入稳定的 `rowId` 或 `getRowId`。默认选择语义只覆盖当前已加载页，
+   * 启用选择列时，建议传入稳定的 `rowId`。默认选择语义只覆盖当前已加载页，
    * `selectedRows`、`selectedRowIds` 和 `getSelectedRows()` 都不会表达跨页全量选择。
    */
   rowId?: DataTableRowId<TData>;
@@ -110,10 +181,4 @@ export interface UseDataTableProps<TData> extends Omit<
   expandConfig?: ExpandConfigEdge<TData>;
   /** editableField 的行级权限与编辑完成通知。 */
   editing?: DataTableEditingOptions<TData>;
-  /** @internal 当前 data 对应的服务端页码；useDslDataTable 用于识别 placeholderData。 */
-  editingPageNo?: number;
-  /** @internal 当前 data 所属的查询范围。 */
-  editingScopeKey?: string;
-  /** @internal 跨页编辑是否要求显式稳定 row ID。 */
-  requireExplicitEditingRowId?: boolean;
 }

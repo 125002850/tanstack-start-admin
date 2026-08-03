@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 
-import { DEBOUNCE_MS } from './constants';
 import type { DataTableDslPageRequestBase, PaginatedResponse, QueryOptionsFactory } from './dsl';
 import { useDslDataTable } from './use-dsl-data-table';
 
@@ -116,7 +115,7 @@ describe('useDslDataTable', () => {
       pageSize: 10
     });
     expect(result.current.total).toBe(33);
-    expect(result.current.debounceMs).toBe(DEBOUNCE_MS);
+    expect(result.current.table.getRowCount()).toBe(33);
     expect(result.current.table.options.meta?.enableZebraStriping).toBe(true);
     expect(result.current.table.getRowModel().rows[0]?.id).toBe('1');
     expect(result.current.queryState.isFetching).toBe(false);
@@ -176,6 +175,34 @@ describe('useDslDataTable', () => {
     );
 
     expect(result.current.table.options.meta?.enableZebraStriping).toBe(false);
+  });
+
+  it('uses initialState pageIndex for the initial server request', async () => {
+    localStorage.setItem('app-data-table-per-page:dsl-initial-page-index', '10');
+    const requests: Array<Record<string, unknown>> = [];
+    const queryFactory = vi.fn((request) => {
+      requests.push(request as Record<string, unknown>);
+
+      return queryOptions({
+        queryKey: ['dsl-initial-page-index', request],
+        queryFn: async () => ({ list: [], total: 30 })
+      });
+    }) as unknown as QueryOptionsFactory<DictionaryTypeRow>;
+
+    renderHook(
+      () =>
+        useDslDataTable({
+          tableId: 'dsl-initial-page-index',
+          columns,
+          queryOptions: queryFactory,
+          initialState: { pagination: { pageIndex: 2 } }
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(requests.at(-1)).toMatchObject({ pageNo: 3, pageSize: 10 });
+    });
   });
 
   it('keeps public prop bundle references stable across semantic no-op rerenders', async () => {
@@ -337,7 +364,7 @@ describe('useDslDataTable', () => {
     expect(result.current.table.getRowModel().rows[0]?.id).toBe('legacy-dictionary-types-0');
   });
 
-  it('prefers explicit getRowId over the default id resolver', async () => {
+  it('prefers a rowId resolver over the default id field', async () => {
     const queryFactory = vi.fn((request) =>
       queryOptions({
         queryKey: ['dictionary-types', request],
@@ -360,7 +387,7 @@ describe('useDslDataTable', () => {
           tableId: 'dictionary-types',
           columns,
           queryOptions: queryFactory,
-          getRowId: (row) => row.dictTypeCode
+          rowId: (row) => row.dictTypeCode
         }),
       { wrapper: createWrapper() }
     );
@@ -675,7 +702,7 @@ describe('useDslDataTable', () => {
     });
     expect(result.current.table.options.meta?.dataTableEditing).toBeUndefined();
     expect(warn).toHaveBeenCalledWith(
-      '[useDataTable] Cross-page editing requires an explicit stable rowId or getRowId.',
+      '[useDataTable] Cross-page editing requires an explicit stable rowId.',
       expect.objectContaining({
         tableId: 'editable-without-row-id',
         editing: 'disabled'
