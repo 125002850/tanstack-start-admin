@@ -7,18 +7,10 @@ import type {
   ExpandConfigEdge,
   ExtendedColumnSort,
   DataTableEditingOptions,
+  DataTableRowAction,
   SortingStorageMode
 } from '@/types/data-table';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import type { RowNumberDisplayMode } from './columns/row-number-column';
-
-/** 服务端查询参数，与 `apiFiltersBuilder` 的返回值类型一致。 */
-export interface ApiFilters {
-  page: number;
-  limit: number;
-  sort?: string;
-  [k: string]: string | number | undefined;
-}
 
 export type DataTablePinnedSide = 'left' | 'right';
 
@@ -54,12 +46,6 @@ export interface UseDataTableProps<TData> extends Omit<
   throttleMs?: number;
   /** 是否在查询参数为空时清除默认值。 */
   clearOnDefault?: boolean;
-  /**
-   * 是否启用高级筛选模式。
-   *
-   * @deprecated 高级筛选闭环已暂停使用；普通 `columnFilters` 会继续生效。
-   */
-  enableAdvancedFilter?: boolean;
   /** 受控的每页条数，覆盖默认值。 */
   pageSize?: number;
   /** 每页条数变化时的回调。 */

@@ -8,18 +8,10 @@ import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
-import type {
-  DataTableAction,
-  DataTableActionContext
-} from '@/components/data-table/actions/data-table-actions-bar';
-import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
 import {
   createDataTableColumnDsl,
   dataTableTextCell
 } from '@/components/data-table/columns/data-table-column-factory';
-import { DataTableLinkButtonCell } from '@/components/data-table/cells/data-table-link-button-cell';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
-import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { useDict } from '@/hooks/use-dict';
@@ -27,6 +19,12 @@ import { useDslDataTable } from '@/hooks/use-data-table';
 import { EXPORT_RECORD_STATUS } from '@/constants/enums';
 import { getDictLabel, nullableText } from '@/lib/formatters/display';
 import { getQueryClient } from '@/lib/query-client';
+import type {
+  DataTableAction,
+  DataTableActionContext,
+  DataTableRowAction
+} from '@/types/data-table';
+import { ExportRecordLinkButtonCell } from './export-record-link-button-cell';
 import {
   batchDownloadExportRecordsMutationOptions,
   deleteExportRecordMutationOptions,
@@ -171,7 +169,7 @@ function getColumns(
         }
         const fileName = nullableText(row.original.fileName);
         return (
-          <DataTableLinkButtonCell
+          <ExportRecordLinkButtonCell
             value={dataTableTextCell(fileName, 'max-w-[260px]')}
             className='max-w-[260px]'
             onClick={() => onOpenDetail(row.original)}
@@ -209,7 +207,7 @@ function getColumns(
       enableSorting: true,
       renderCell: ({ row }) => row.original.downloadCount ?? 0
     }),
-    ...auditColumns<ExportRecordRecord>()
+    ...columnDsl.audit()
   ];
 }
 
@@ -523,18 +521,7 @@ export default function ExportCenterManagementPage() {
     ]
   );
 
-  const rowCount = table.getRowModel().rows.length;
   const isInitialLoading = queryState.isFetching && !queryState.data;
-
-  if (isInitialLoading && rowCount === 0) {
-    return (
-      <Card>
-        <CardContent className='min-h-0 flex-1 px-0'>
-          <DataTableSkeleton columnCount={8} filterCount={2} />
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <>
@@ -544,6 +531,7 @@ export default function ExportCenterManagementPage() {
             table={table}
             statusTotalCount={total}
             isLoading={isInitialLoading}
+            loadingSkeleton={{ columnCount: 8, filterCount: 2 }}
             tableActions={tableActions}
             {...refreshProps}
             getStatusConfig={({ rows, hasFilters, isLoading: isTableLoading }) => {

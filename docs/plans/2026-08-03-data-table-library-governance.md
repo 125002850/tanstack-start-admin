@@ -438,6 +438,8 @@ pnpm build
 
 修改对应 feature 后，补跑其页面级测试；Skeleton 迁移和审计列迁移至少覆盖一个真实业务页面回归。
 
+补充 `useDslDataTable` 公开 prop bundle 的引用稳定性单测：查询稳定后强制父组件 rerender，验证语义依赖未变化时 `refreshProps`、`refreshProps.onRefresh` 和 `queryState` 引用保持稳定；查询公开状态变化时允许 `queryState` 更新引用。
+
 ### 7.6 验收条件
 
 - 普通业务只导入第 1.1 节的五个模块路径。
@@ -447,6 +449,7 @@ pnpm build
 - 三个废弃入口从生产代码和有效文档中删除。
 - 零消费者共享文件不再保留，单业务 Cell 回到对应 feature。
 - PR 1 的临时生产例外全部删除；只保留已批准的契约/测试精确例外。
+- `useDslDataTable` 暴露的 prop bundle 引用稳定：语义依赖未变化的父组件 rerender 中，`refreshProps` 及其 `onRefresh` 引用保持稳定；`queryState` 在公开字段未变化时保持稳定，查询状态变化时允许更新引用。
 - 页面功能和视觉没有回归。
 
 ---
@@ -533,6 +536,18 @@ PR 4 Review 必须给出一个明确结果：
 
 PR 4 不允许直接把代码移动到 `packages/`。
 
+#### F. 公开 API 形状审计
+
+审计 `UseDataTableProps`、`UseDslDataTableProps`、`DataTableProps`、`ColumnMeta`、`TableMeta` 的职责分组与布尔项数量。`ColumnMeta` / `TableMeta` 即使主要经列 DSL 消费，仍属于公开模块的传递契约，必须纳入审计。
+
+每类 API 必须输出“保持扁平”“分组重构”或“转内部契约”的明确结论。PR 4 只记录审计结论，并登记 `TODO P1` 后续专项计划；形状重构不得混入本计划的四个治理 PR。
+
+#### G. DSL 命名与协议定位
+
+评估 DSL 是否属于准备长期公开的协议概念：若是，保留 `useDslDataTable`；若目标转为通用服务端适配器，则必须在仓库外消费者出现前，通过后续专项一次性完成改名和契约扩展。
+
+本决策不预设 `useServerDataTable` 优于现名，且无论最终采用何种名称，都不得保留双名称 alias。
+
 ### 8.3 不做
 
 - 不发布 npm 包。
@@ -608,3 +623,23 @@ pnpm test:e2e:smoke e2e/data-table-cell-range-selection.smoke.spec.ts --grep @wo
 ```
 
 只追加实现状态和依赖关系，不改写本计划中的原始设计描述。
+
+### Update (2026-08-03) — PR 1
+
+- 实现状态：COMPLETE。五个业务公开模块、hook 符号级出口、精确契约/测试例外及 DataTable 分层规则已写入架构契约测试。
+- 依赖关系变化：建立默认拒绝的 `features -> DataTable` 导入边界，并对 `components`、`hooks`、`lib`、`types` 的跨层依赖实施机器检查。
+
+### Update (2026-08-03) — PR 2
+
+- 实现状态：COMPLETE。Action、筛选及审计字段纯类型已统一到共享类型层，仓库内消费者和渲染器已同步迁移。
+- 依赖关系变化：已消除 `types -> config` 与 `hooks -> components` 反向依赖；操作列宽度算法下沉到纯 `lib`，Action 渲染继续留在组件层。
+
+### Update (2026-08-03) — PR 3
+
+- 实现状态：COMPLETE。hook 运行时出口已收缩为两个，审计列迁移为 `columnDsl.audit()`，业务 Skeleton 与 Action 渲染入口已内化，废弃 API、零消费者 Cell 和旧入口已清理，单业务 Cell 已下沉导出中心。
+- 依赖关系变化：普通 feature 生产代码已收敛到五个公开模块；仅保留已批准的契约/测试精确例外，不保留旧路径 alias 或兼容转发。
+
+### Update (2026-08-03) — PR 4
+
+- 实现状态：COMPLETE。最小公共消费者 fixture、传递依赖/API/样式审计、DataTable 浏览器回归均已落地；抽包结论为 `KEEP_INTERNAL`。
+- 依赖关系变化：未创建 package 或新增运行时依赖；当前应用图标、主题 CSS、中文消息及 UI 组合仍由内部 DataTable 组件层承接，React Query 仅由 DSL adapter 使用。

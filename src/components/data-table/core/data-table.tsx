@@ -25,11 +25,12 @@ import {
   DataTableHeader,
   DataTableHeaderDragOverlay
 } from '@/components/data-table/core/data-table-header';
-import type { DataTableVirtualizationProp, ExpandConfigEdge } from '@/types/data-table';
-import {
-  DataTableActionsBar,
-  type DataTableAction
-} from '@/components/data-table/actions/data-table-actions-bar';
+import type {
+  DataTableAction,
+  DataTableVirtualizationProp,
+  ExpandConfigEdge
+} from '@/types/data-table';
+import { DataTableActionsBar } from '@/components/data-table/actions/data-table-actions-bar';
 import { DataTableExpandPanel } from '@/components/data-table/expand/data-table-expand-panel';
 import { DataTableExpandResizeHandle } from '@/components/data-table/expand/data-table-expand-trigger';
 import {
@@ -67,7 +68,7 @@ export type DataTableLoadingSkeletonConfig = Omit<
   withViewOptions?: boolean;
 };
 
-interface DataTableProps<TData> extends React.ComponentProps<'div'> {
+export interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   tableActions?: DataTableAction<TData>[];
   actionBar?: React.ReactNode;
@@ -77,8 +78,6 @@ interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   emptyMessage?: React.ReactNode;
   statusTotalCount?: number;
   getStatusConfig?: DataTableStatusFactory;
-  /** @deprecated DataTable 现在会在每次 render 时基于 table state 自动重新计算状态。 */
-  statusDeps?: unknown[];
   isLoading?: boolean;
   loadingSkeleton?: DataTableLoadingSkeletonConfig;
   onRefresh?: () => void | Promise<void>;

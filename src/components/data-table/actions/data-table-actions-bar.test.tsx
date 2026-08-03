@@ -3,10 +3,8 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import userEvent from '@testing-library/user-event';
 
-import {
-  DataTableActionsBar,
-  type DataTableAction
-} from '@/components/data-table/actions/data-table-actions-bar';
+import { DataTableActionsBar } from '@/components/data-table/actions/data-table-actions-bar';
+import type { DataTableAction } from '@/types/data-table';
 
 type TestRow = { id: number; name: string };
 

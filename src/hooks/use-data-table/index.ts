@@ -1,9 +1,3 @@
-export {
-  DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS,
-  buildDataTableDslRequest,
-  isDataTableDslFilterVariantSupported,
-  isDataTableDslOperatorCompatibleWithVariant
-} from './dsl';
 export type {
   DataTableDslComposeCondition,
   DataTableDslCondition,
@@ -14,6 +8,13 @@ export type {
   PaginatedResponse,
   QueryOptionsFactory
 } from './dsl';
-export type { ApiFilters, UseDataTableProps } from './types';
-export { makeApiFilters, useDataTable } from './use-data-table';
+export type { UseDataTableProps } from './types';
+export type {
+  QueryStateSubset,
+  RefreshBehavior,
+  RefreshProps,
+  UseDslDataTableProps,
+  UseDslDataTableResult
+} from './use-dsl-data-table';
+export { useDataTable } from './use-data-table';
 export { useDslDataTable } from './use-dsl-data-table';

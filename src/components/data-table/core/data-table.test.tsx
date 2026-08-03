@@ -13,11 +13,11 @@ import { DataTable } from '@/components/data-table/core/data-table';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { DataTableColumnHeader } from '@/components/data-table/columns/data-table-column-header';
 import { DataTableHeaderDragOverlay } from '@/components/data-table/core/data-table-header';
-import type { DataTableAction } from '@/components/data-table/actions/data-table-actions-bar';
 import { useDataTable } from '@/hooks/use-data-table';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import type {
+  DataTableAction,
   DataTableEditingController,
+  DataTableRowAction,
   DataTableVirtualizationOptions
 } from '@/types/data-table';
 import * as React from 'react';
@@ -2075,7 +2075,7 @@ describe('DataTable body', () => {
     expect(document.querySelector('tbody[data-component="data-table-body"] tr td')).not.toBeNull();
   });
 
-  it('updates status when table filters change without statusDeps', async () => {
+  it('updates status when table filters change without explicit dependency props', async () => {
     const user = userEvent.setup();
 
     function FilterStatusHarness() {

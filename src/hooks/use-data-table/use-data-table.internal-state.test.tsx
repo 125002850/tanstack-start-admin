@@ -7,11 +7,12 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, act, cleanup, waitFor } from '@testing-library/react';
 import * as React from 'react';
 import { flexRender, type ColumnDef } from '@tanstack/react-table';
-import type { ExtendedColumnSort, SortingStorageMode } from '@/types/data-table';
-import {
-  getDataTableRowActionsColumnWidth,
-  type DataTableRowAction
-} from '@/components/data-table/actions/data-table-row-action';
+import type {
+  DataTableRowAction,
+  ExtendedColumnSort,
+  SortingStorageMode
+} from '@/types/data-table';
+import { getDataTableRowActionsColumnWidth } from '@/lib/data-table/row-actions';
 import type { RowNumberDisplayMode } from './columns/row-number-column';
 import { resolveDataTableRowId } from './row-id';
 import { useDataTable } from './use-data-table';
@@ -68,8 +69,7 @@ function InternalStateTester({
   onPageSizeChange,
   initialSorting = [],
   sortingStorage,
-  totalCount,
-  enableAdvancedFilter
+  totalCount
 }: {
   tableId?: string;
   pageSize?: number;
@@ -77,7 +77,6 @@ function InternalStateTester({
   initialSorting?: Array<{ id: string; desc: boolean }>;
   sortingStorage?: SortingStorageMode;
   totalCount?: number;
-  enableAdvancedFilter?: boolean;
 }) {
   const { table } = useDataTable({
     tableId,
@@ -89,7 +88,6 @@ function InternalStateTester({
     pageSize,
     onPageSizeChange,
     sortingStorage,
-    enableAdvancedFilter,
     initialState:
       initialSorting.length > 0
         ? { sorting: initialSorting as ExtendedColumnSort<TestRow>[] }
@@ -709,56 +707,6 @@ describe('useDataTable — internal-state mode (default)', () => {
     });
     const filters = JSON.parse(screen.getByTestId('filters').textContent!);
     expect(filters).toEqual([{ id: 'name', value: 'Alice' }]);
-  });
-
-  it('keeps column filter updates active when enableAdvancedFilter is true', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    render(
-      React.createElement(InternalStateTester, {
-        tableId: 'advanced-filter-update',
-        enableAdvancedFilter: true
-      })
-    );
-    act(() => {
-      screen.getByTestId('filter-name').click();
-    });
-
-    const filters = JSON.parse(screen.getByTestId('filters').textContent!);
-    expect(filters).toEqual([{ id: 'name', value: 'Alice' }]);
-
-    warn.mockRestore();
-  });
-
-  it('warns once when enableAdvancedFilter is passed', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    const { rerender } = render(
-      React.createElement(InternalStateTester, {
-        tableId: 'advanced-filter-warning',
-        enableAdvancedFilter: true
-      })
-    );
-
-    await waitFor(() => {
-      expect(warn).toHaveBeenCalledTimes(1);
-    });
-
-    rerender(
-      React.createElement(InternalStateTester, {
-        tableId: 'advanced-filter-warning',
-        enableAdvancedFilter: true
-      })
-    );
-
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0]?.[0]).toContain('enableAdvancedFilter');
-    expect(warn.mock.calls[0]?.[1]).toMatchObject({
-      tableId: 'advanced-filter-warning',
-      status: 'deprecated'
-    });
-
-    warn.mockRestore();
   });
 
   it('initializes sorting from initialState', () => {

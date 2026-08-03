@@ -7,7 +7,7 @@ import { DataTableSliderFilter } from '@/components/data-table/filters/data-tabl
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { getDataTableColumnLabel } from '@/lib/data-table/column-label';
+import { getDataTableColumnLabel } from '@/components/data-table/columns/data-table-column-label';
 import { cn } from '@/lib/utils';
 import { useDebouncedInput } from '@/hooks/use-debounced-input';
 import { Icons } from '@/components/icons';

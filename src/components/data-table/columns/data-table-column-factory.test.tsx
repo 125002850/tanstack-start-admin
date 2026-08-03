@@ -36,6 +36,14 @@ interface ChoiceRow {
   localStartsAt: string;
 }
 
+interface AuditRow {
+  id: number;
+  createBy?: number | null;
+  createTime?: string | null;
+  updateBy?: number | null;
+  updateTime?: string | null;
+}
+
 function renderCell(column: { cell?: unknown }, row: Row) {
   if (typeof column.cell !== 'function') return undefined;
   const accessorKey = (column as { accessorKey?: keyof Row }).accessorKey;
@@ -620,13 +628,38 @@ describe('data-table-column-factory', () => {
     expect(column.meta?.editableCell).toBeUndefined();
     expect(column.meta?.editableChoice).toBeUndefined();
   });
+
+  it('expands the audit macro into stable create and update information columns', () => {
+    const columns = createDataTableColumnDsl<AuditRow>().audit();
+    const record: AuditRow = {
+      id: 1,
+      createBy: 10,
+      createTime: '2026-08-01 10:00:00',
+      updateBy: null,
+      updateTime: null
+    };
+    const renderAuditCell = (column: (typeof columns)[number]) => {
+      if (typeof column.cell !== 'function') return undefined;
+      const cell = column.cell as unknown as (context: { row: { original: AuditRow } }) => unknown;
+      return cell({ row: { original: record } });
+    };
+
+    expect(columns.map((column) => column.id)).toEqual(['createInfo', 'updateInfo']);
+    expect(getNodeText(renderAuditCell(columns[0]!))).toBe('102026-08-01 10:00:00');
+    expect(getNodeText(renderAuditCell(columns[1]!))).toBe('--');
+  });
 });
 
 function expectColumnDslTypeErrors() {
   const columnDsl = createDataTableColumnDsl<Row>();
   const choiceColumnDsl = createDataTableColumnDsl<ChoiceRow>();
+  const auditColumnDsl = createDataTableColumnDsl<AuditRow>();
   const filterObjectApi = { variant: 'text' };
   const disabledSerializeFilter = false;
+
+  auditColumnDsl.audit();
+  // @ts-expect-error audit macro requires compatible create/update audit fields
+  columnDsl.audit();
 
   // @ts-expect-error filter object API is forbidden
   columnDsl.field('name', '名称', { filter: filterObjectApi });

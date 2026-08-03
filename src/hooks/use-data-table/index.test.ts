@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildDataTableDslRequest, makeApiFilters, useDataTable, useDslDataTable } from './index';
+import * as publicEntry from './index';
 
 describe('DataTable hooks public entry', () => {
-  it('exports local and DSL table APIs from one directory entry', () => {
-    expect(useDataTable).toBeTypeOf('function');
-    expect(useDslDataTable).toBeTypeOf('function');
-    expect(makeApiFilters).toBeTypeOf('function');
-    expect(buildDataTableDslRequest).toBeTypeOf('function');
+  it('only exports the local and DSL hooks at runtime', () => {
+    expect(Object.keys(publicEntry).toSorted()).toEqual(['useDataTable', 'useDslDataTable']);
+    expect(publicEntry.useDataTable).toBeTypeOf('function');
+    expect(publicEntry.useDslDataTable).toBeTypeOf('function');
   });
 });

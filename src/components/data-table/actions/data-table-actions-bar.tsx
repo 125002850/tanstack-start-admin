@@ -13,6 +13,11 @@ import {
 import { Icons } from '@/components/icons';
 import { getSelectedPageRows } from '@/lib/data-table/selection';
 import { cn } from '@/lib/utils';
+import type {
+  DataTableAction,
+  DataTableActionContext,
+  DataTableActionResolver
+} from '@/types/data-table';
 
 /**
  * 表格顶部/底部批量操作栏。
@@ -20,41 +25,6 @@ import { cn } from '@/lib/utils';
  * action 支持静态配置，也支持基于当前 table 与选中行的动态 disabled/hidden/className；
  * 有 children 的 action 渲染为下拉菜单，没有 children 的 action 渲染为普通按钮。
  */
-
-/** 每个操作回调收到的上下文，selectedRows 默认只代表当前已加载页。 */
-export interface DataTableActionContext<TData> {
-  table: Table<TData>;
-  selectedRows: TData[];
-}
-
-type DataTableActionResolver<TData, TValue> =
-  | TValue
-  | ((ctx: DataTableActionContext<TData>) => TValue);
-
-interface DataTableActionBase<TData> {
-  label: string;
-  icon?: React.ReactNode;
-  type?: 'default' | 'danger';
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  disabled?: DataTableActionResolver<TData, boolean>;
-  className?: DataTableActionResolver<TData, string>;
-  callback?: (ctx: DataTableActionContext<TData>) => void | Promise<void>;
-  children?: DataTableAction<TData>[];
-}
-
-export interface DataTableRegularAction<TData> extends DataTableActionBase<TData> {
-  kind?: 'regular';
-  hidden?: DataTableActionResolver<TData, boolean>;
-}
-
-export interface DataTableSelectionAction<TData> extends DataTableActionBase<TData> {
-  kind: 'selection';
-  hidden?: never;
-}
-
-export type DataTableAction<TData> =
-  | DataTableRegularAction<TData>
-  | DataTableSelectionAction<TData>;
 
 export interface DataTableActionsBarProps<TData> {
   table: Table<TData>;
@@ -66,7 +36,7 @@ export interface DataTableActionsBarProps<TData> {
 /** 统一解析静态值和基于上下文的函数值。 */
 function resolveValue<T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value: T | ((ctx: DataTableActionContext<any>) => T),
+  value: DataTableActionResolver<any, T>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ctx: DataTableActionContext<any>
 ): T {

@@ -3,7 +3,9 @@ import type {
   DataTableResolvedVirtualizationOptions,
   DataTableVirtualizationFallbackReason,
   DataTableVirtualizationOptions,
-  DataTableVirtualizationProp
+  DataTableVirtualizationProp,
+  FilterOperator,
+  FilterVariant
 } from '@/types/data-table';
 
 /**
@@ -59,11 +61,6 @@ export function isBrowserSupportedForVirtualization(): boolean {
 export function isDataTableVirtualizationEnabled(): boolean {
   if (!env.dataTableVirtualization) return false;
   return isBrowserSupportedForVirtualization();
-}
-
-/** @deprecated Use `isDataTableVirtualizationEnabled()` instead. */
-export function isProductTableVirtualizationEnabled(): boolean {
-  return isDataTableVirtualizationEnabled();
 }
 
 type DataTableGateFallbackReason = Exclude<DataTableVirtualizationFallbackReason, 'runtime-error'>;
@@ -232,7 +229,7 @@ export const dataTableConfig = {
     'boolean',
     'select',
     'multiSelect'
-  ] as const,
+  ] as const satisfies readonly FilterVariant[],
   operators: [
     'iLike',
     'notILike',
@@ -248,7 +245,7 @@ export const dataTableConfig = {
     'gte',
     'isBetween',
     'isRelativeToToday'
-  ] as const,
+  ] as const satisfies readonly FilterOperator[],
   joinOperators: ['and', 'or'] as const,
   columnResizeStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false,
   // 列顺序和排序默认也持久化到 localStorage；单张表可通过 useDataTable props 覆盖。

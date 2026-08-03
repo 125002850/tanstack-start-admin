@@ -1,11 +1,11 @@
-import type { DataTableConfig } from '@/config/data-table';
 import type {
   CellContext,
   Column,
   ColumnSort,
   PaginationState,
   Row,
-  RowData
+  RowData,
+  Table
 } from '@tanstack/react-table';
 
 /**
@@ -73,6 +73,8 @@ declare module '@tanstack/react-table' {
     dataTableEditing?: DataTableEditingRuntime<TData>;
     /** 表头“当前页筛选”的独立运行时；不会写入 TanStack columnFilters。 */
     dataTableLocalFiltering?: DataTableLocalFilteringRuntime;
+    /** useDataTable 声明的行操作语义；实际 UI 由 DataTable 渲染层消费。 */
+    dataTableRowActions?: DataTableRowAction<TData>[];
   }
 }
 
@@ -613,8 +615,31 @@ export interface DataTableEditingRuntime<TData> {
   ): DataTableFinishEditingResult;
 }
 
-export type FilterOperator = DataTableConfig['operators'][number];
-export type FilterVariant = DataTableConfig['filterVariants'][number];
+export type FilterOperator =
+  | 'iLike'
+  | 'notILike'
+  | 'eq'
+  | 'ne'
+  | 'inArray'
+  | 'notInArray'
+  | 'isEmpty'
+  | 'isNotEmpty'
+  | 'lt'
+  | 'lte'
+  | 'gt'
+  | 'gte'
+  | 'isBetween'
+  | 'isRelativeToToday';
+
+export type FilterVariant =
+  | 'text'
+  | 'number'
+  | 'range'
+  | 'date'
+  | 'dateRange'
+  | 'boolean'
+  | 'select'
+  | 'multiSelect';
 export type DataTableDslOperator =
   | 'EQ'
   | 'CONTAINS'
@@ -755,6 +780,69 @@ export interface DataTableRowActionOption<TData> {
   disabled?: boolean | ((row: TData) => boolean);
   hidden?: boolean | ((row: TData) => boolean);
   onSelect?: (context: DataTableRowActionSelectContext<TData>) => void | Promise<void>;
+}
+
+/** 每个表格操作回调收到的上下文；selectedRows 默认只代表当前已加载页。 */
+export interface DataTableActionContext<TData> {
+  table: Table<TData>;
+  selectedRows: TData[];
+}
+
+export type DataTableActionResolver<TData, TValue> =
+  | TValue
+  | ((ctx: DataTableActionContext<TData>) => TValue);
+
+interface DataTableActionBase<TData> {
+  label: string;
+  icon?: React.ReactNode;
+  type?: 'default' | 'danger';
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  disabled?: DataTableActionResolver<TData, boolean>;
+  className?: DataTableActionResolver<TData, string>;
+  callback?: (ctx: DataTableActionContext<TData>) => void | Promise<void>;
+  children?: DataTableAction<TData>[];
+}
+
+export interface DataTableRegularAction<TData> extends DataTableActionBase<TData> {
+  kind?: 'regular';
+  hidden?: DataTableActionResolver<TData, boolean>;
+}
+
+export interface DataTableSelectionAction<TData> extends DataTableActionBase<TData> {
+  kind: 'selection';
+  hidden?: never;
+}
+
+export type DataTableAction<TData> =
+  | DataTableRegularAction<TData>
+  | DataTableSelectionAction<TData>;
+
+/** 行操作的纯语义契约；Sheet 由内部行操作渲染器负责挂载。 */
+export interface DataTableRowAction<TData> {
+  label: string;
+  icon: React.ReactNode;
+  disabled?: boolean | ((row: TData) => boolean);
+  hidden?: boolean | ((row: TData) => boolean);
+  onClick?: (row: TData) => void | Promise<void>;
+  confirmDelete?: {
+    title?: string;
+    description?: (row: TData) => string;
+    confirmText?: string;
+    cancelText?: string;
+  };
+  Sheet?: React.ComponentType<{
+    data: TData;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }>;
+}
+
+/** columnDsl.audit() 接受的通用审计字段契约。 */
+export interface DataTableAuditFields {
+  createBy?: number | null;
+  createTime?: string | null;
+  updateBy?: number | null;
+  updateTime?: string | null;
 }
 
 export interface ExtendedColumnSort<TData> extends Omit<ColumnSort, 'id'> {

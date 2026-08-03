@@ -1,11 +1,8 @@
 import type { Row } from '@tanstack/react-table';
 import * as React from 'react';
 
-import {
-  DataTableRowActions,
-  type DataTableRowAction
-} from '@/components/data-table/actions/data-table-row-action';
-import type { DataTableRowActionOption } from '@/types/data-table';
+import { DataTableRowActions } from '@/components/data-table/actions/data-table-row-action';
+import type { DataTableRowAction, DataTableRowActionOption } from '@/types/data-table';
 
 /**
  * 把 DSL 的行操作声明转换为真正的 DataTableRowActions 渲染配置。

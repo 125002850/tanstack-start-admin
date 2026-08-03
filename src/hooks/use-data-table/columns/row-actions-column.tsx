@@ -1,13 +1,10 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import * as React from 'react';
 
 import {
-  DataTableRowActions,
   DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE,
-  getDataTableRowActionsColumnWidth,
-  type DataTableRowAction
-} from '@/components/data-table/actions/data-table-row-action';
-import { DATA_TABLE_PINNED_SHADOWS } from '@/components/data-table/core/data-table-pinning';
+  getDataTableRowActionsColumnWidth
+} from '@/lib/data-table/row-actions';
+import type { DataTableRowAction } from '@/types/data-table';
 
 import { DATA_TABLE_ACTIONS_COLUMN_ID } from '../constants';
 
@@ -27,20 +24,12 @@ export function createRowActionsColumn<TData>(
   return {
     id: DATA_TABLE_ACTIONS_COLUMN_ID,
     header: '操作',
-    cell: ({ row }) =>
-      React.createElement(DataTableRowActions<TData>, {
-        row: row.original,
-        actions: rowActions,
-        maxVisible: DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE
-      }),
+    // 行操作 UI 由 DataTableBody 根据 table meta 渲染，hook 层只负责列状态装配。
+    cell: () => null,
     size: actionColumnWidth,
     minSize: actionColumnWidth,
     maxSize: actionColumnWidth,
     enableSorting: false,
-    enableResizing: false,
-    meta: {
-      // 操作列通常固定在右侧，显式给出 pinned shadow，保证滚动边界清晰。
-      pinningShadow: DATA_TABLE_PINNED_SHADOWS
-    }
+    enableResizing: false
   };
 }

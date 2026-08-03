@@ -31,6 +31,7 @@ import {
   resolveDataTableColumnDragCellMotion,
   type DataTableColumnDragMotionMap
 } from '@/components/data-table/dnd/data-table-column-drag-motion';
+import { DataTableRowActions } from '@/components/data-table/actions/data-table-row-action';
 
 /**
  * DataTable 的 tbody 渲染层。
@@ -72,6 +73,17 @@ const ROW_EXPAND_IGNORE_SELECTOR = [
 ].join(',');
 const DATA_TABLE_BODY_CELL_CLASS_NAME =
   'relative px-[15px] py-2 outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out';
+
+/** 自动注入的操作列只在渲染层解析组件，避免 useDataTable 反向依赖 React UI。 */
+function renderDataTableCellValue<TData>(cell: Cell<TData, unknown>) {
+  const rowActions = cell.getContext().table.options.meta?.dataTableRowActions;
+
+  if (cell.column.id === 'actions' && rowActions?.length) {
+    return <DataTableRowActions row={cell.row.original} actions={rowActions} />;
+  }
+
+  return flexRender(cell.column.columnDef.cell, cell.getContext());
+}
 
 /** 行展开点击需要避开按钮、链接、表单控件等交互元素。 */
 function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: HTMLElement) {
@@ -477,7 +489,7 @@ export function DataTableBody<TData>({
           {renderDataTableCellSurface(
             cell,
             <DataTableCellContent cell={cell}>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              {renderDataTableCellValue(cell)}
             </DataTableCellContent>
           )}
           {renderCellServerError(cell)}
@@ -648,7 +660,7 @@ export function DataTableBody<TData>({
                           {renderDataTableCellSurface(
                             cell,
                             <DataTableCellContent cell={cell}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              {renderDataTableCellValue(cell)}
                             </DataTableCellContent>
                           )}
                           {renderCellServerError(cell)}
@@ -719,7 +731,7 @@ export function DataTableBody<TData>({
                     {renderDataTableCellSurface(
                       cell,
                       <DataTableCellContent cell={cell}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {renderDataTableCellValue(cell)}
                       </DataTableCellContent>
                     )}
                     {renderCellServerError(cell)}
