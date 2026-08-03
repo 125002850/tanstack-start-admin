@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import syntheticExcelFixture from '../../../../docs/plans/2026-07-30-data-table-typed-cell-editors/reviews/fixtures/phase-6-synthetic-excel-clipboard.json';
 import {
   resolveDataTableEditableCell,
   type ResolveDataTableEditableCellContext
@@ -8,6 +7,7 @@ import {
 import type { DataTableEditableColumnMeta } from '@/types/data-table';
 
 import { escapeDataTableCellClipboardText } from './data-table-cell-range';
+import syntheticExcelFixture from './fixtures/phase-6-synthetic-excel-clipboard.json';
 import {
   parseDataTableClipboardMatrix,
   prepareDataTableMatrixPaste,

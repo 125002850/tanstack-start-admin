@@ -44,5 +44,6 @@ description: oig tanstack admin 团队开发规范与任务路由。分析、设
 
 - 不要为了“完整了解项目”一次性读取全部 references。
 - 不要把 `docs/plans/` 中的历史设计当作当前约束；实现与本 Skill 冲突时先核对现有代码。
+- 处理业务表格时不得绕过 `references/data-table.md` 的共享 DataTable 强制复用边界。
 - 不要在 README、AGENTS.md 和 reference 中复制同一规范；规范正文只维护在 reference。
 - 可由 lint、hook、测试或 CI 强制的规则，必须继续保留机器校验，不能只依赖 Skill。

@@ -97,6 +97,37 @@ describe('project architecture contracts', () => {
     expect(violations).toEqual([]);
   });
 
+  it('requires feature and route tables to use the shared DataTable runtime', () => {
+    const businessSourcePrefixes = ['src/features/', 'src/routes/'];
+    const forbiddenTablePatterns = [
+      {
+        reason: 'imports the Shadcn Table primitives',
+        pattern: /from ['"]@\/components\/ui\/table['"]/
+      },
+      {
+        reason: 'calls useReactTable directly',
+        pattern: /\buseReactTable\s*\(/
+      },
+      {
+        reason: 'renders a raw or locally defined Table',
+        pattern: /<(?:table|Table)(?=[\s>])/
+      }
+    ];
+    const violations = collectSourceFiles()
+      .filter((path) => {
+        const projectPath = toProjectPath(path);
+        return businessSourcePrefixes.some((prefix) => projectPath.startsWith(prefix));
+      })
+      .flatMap((path) => {
+        const source = readFileSync(path, 'utf8');
+        return forbiddenTablePatterns
+          .filter(({ pattern }) => pattern.test(source))
+          .map(({ reason }) => ({ path: toProjectPath(path), reason }));
+      });
+
+    expect(violations).toEqual([]);
+  });
+
   it('centralizes icon library imports through the Icons module', () => {
     const iconImportPattern =
       /from ['"](?:@radix-ui\/react-icons|@tabler\/icons-react|lucide-react|lucide)['"]/;
