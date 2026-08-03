@@ -74,6 +74,32 @@
         "prefer-rest-params": "error",
         "prefer-spread": "error"
       }
+    },
+    {
+      "files": [
+        "src/features/**/*.ts",
+        "src/features/**/*.tsx",
+        "src/routes/**/*.ts",
+        "src/routes/**/*.tsx"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/components/ui/table",
+                "message": "业务表格必须使用 @/components/data-table 下的共享 DataTable。"
+              },
+              {
+                "name": "@tanstack/react-table",
+                "importNames": ["useReactTable"],
+                "message": "业务层禁止直接调用 useReactTable，请使用 useDataTable 或 useDslDataTable。"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

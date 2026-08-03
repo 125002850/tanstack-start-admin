@@ -26,6 +26,9 @@
 - 跨目录引用使用 `@/components/data-table/<layer>/<file>`；同目录实现与测试可以使用相对路径。禁止新增 flat barrel、旧路径 alias、兼容转发或新旧路径双写。
 - 共享状态编排和服务端 DSL 查询组合统一放在 `src/hooks/use-data-table/`，并从 `@/hooks/use-data-table` 公开；跨层类型放在 `src/types/data-table.ts`，特性配置放在 `src/config/data-table*.ts`，无 UI 算法和持久化放在 `src/lib/data-table/`。
 - 禁止 `src/components/data-table/` 反向导入 `src/features/`。只服务单一业务域的 cell、操作或详情组件必须留在对应 feature。
+- `src/features/` 和 `src/routes/` 中的业务表格必须统一组合共享 `DataTable`，禁止直接导入 `@/components/ui/table`、调用 `useReactTable()` 或渲染原生 `<table>` / 自建 `<Table>`。
+- 允许创建 `XxxDataTable` 这类 feature 业务包装组件，但内部必须通过列 DSL、`useDataTable()` / `useDslDataTable()` 和共享 `DataTable` 完成装配；禁止复制表头、表体、分页、选择、状态或虚拟化运行时形成平行实现。
+- 共享 `DataTable` 暂不支持的业务表格能力必须先扩展共享契约和测试，禁止通过 lint disable、局部白名单或新建 `SimpleDataTable` / `BasicDataTable` 等替代实现绕过边界。
 
 ## 团队代码风格
 
