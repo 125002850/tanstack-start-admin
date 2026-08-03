@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
-const DEFAULT_SPEC_PATH = 'openapi/specs/java-demo.json';
+const DEFAULT_SPEC_PATH = 'openapi/specs/openapi.json';
 
 export const REQUIRED_OPERATIONS = [
   {

@@ -65,6 +65,11 @@ describe('OpenAPI package adoption contract', () => {
     expect(manifestSource).toContain(
       "import { defineClientManifests } from '@oig/react-query-generator/codegen';"
     );
+    expect(manifestSource).toContain("target: 'openapi/specs/openapi.json'");
+    expect(manifestSource).not.toContain('java-demo.json');
+    expect(existsSync(resolve(process.cwd(), 'openapi/specs/openapi.json'))).toBe(true);
+    expect(existsSync(resolve(process.cwd(), 'openapi/specs/java-demo.json'))).toBe(false);
+    expect(readProjectFile('.gitignore')).toContain('openapi/snapshots/');
   });
 
   it('maps APP_GATEWAY into manifest transportProfile.basePath', async () => {

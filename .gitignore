@@ -61,8 +61,7 @@ temp
 # OpenAPI local scratch files
 openapi/specs/*.local.json
 openapi/specs/*.tmp.json
-openapi/snapshots/*.local.json
-openapi/snapshots/*.tmp.json
+openapi/snapshots/
 
 # Superpowers
 .superpowers/

@@ -12,7 +12,7 @@ export default defineClientManifests([
   {
     slug: 'service',
     source: {
-      target: 'openapi/specs/java-demo.json',
+      target: 'openapi/specs/openapi.json',
       fetchTarget
     },
     outputDir: 'src/lib/api/clients/service/generated',
