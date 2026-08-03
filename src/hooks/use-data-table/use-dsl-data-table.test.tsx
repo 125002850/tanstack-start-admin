@@ -178,6 +178,39 @@ describe('useDslDataTable', () => {
     expect(result.current.table.options.meta?.enableZebraStriping).toBe(false);
   });
 
+  it('keeps public prop bundle references stable across semantic no-op rerenders', async () => {
+    const queryFactory = vi.fn((request) =>
+      queryOptions({
+        queryKey: ['stable-public-props', request],
+        queryFn: async () => ({ list: [], total: 0 })
+      })
+    ) as unknown as QueryOptionsFactory<DictionaryTypeRow>;
+
+    const { result, rerender } = renderHook(
+      () =>
+        useDslDataTable({
+          tableId: 'stable-public-props',
+          columns,
+          queryOptions: queryFactory
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(result.current.queryState.isFetching).toBe(false);
+    });
+
+    const refreshProps = result.current.refreshProps;
+    const onRefresh = refreshProps?.onRefresh;
+    const queryState = result.current.queryState;
+
+    rerender();
+
+    expect(result.current.refreshProps).toBe(refreshProps);
+    expect(result.current.refreshProps?.onRefresh).toBe(onRefresh);
+    expect(result.current.queryState).toBe(queryState);
+  });
+
   it('keeps previous query data while the next page is loading', async () => {
     const pageTwo = createDeferred<PaginatedResponse<DictionaryTypeRow>>();
 

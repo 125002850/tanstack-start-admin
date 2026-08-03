@@ -6,10 +6,8 @@ import * as React from 'react';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { useDataTable } from '@/hooks/use-data-table';
 import { DATA_TABLE_PINNED_SHADOWS } from '@/components/data-table/core/data-table-pinning';
-import {
-  getDataTableRowActionsColumnWidth,
-  type DataTableRowAction
-} from '@/components/data-table/actions/data-table-row-action';
+import { getDataTableRowActionsColumnWidth } from '@/lib/data-table/row-actions';
+import type { DataTableRowAction } from '@/types/data-table';
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({

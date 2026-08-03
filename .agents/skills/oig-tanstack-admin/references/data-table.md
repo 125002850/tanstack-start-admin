@@ -14,7 +14,6 @@
 - [分页、选择与虚拟化](#分页选择与虚拟化)
 - [表格操作](#表格操作)
 - [可访问性语义](#可访问性语义)
-- [高级筛选开关](#高级筛选开关)
 - [回归测试](#回归测试)
 - [审计字段列](#审计字段列)
 
@@ -118,7 +117,7 @@
 - Loading 状态可将 `queryState.isFetching` 传给 `DataTable` 的 `isLoading`。
 - `DataTable` 的 loading / empty / error(status) 必须有稳定 DOM 兜底：普通空数据使用 `emptyMessage`，业务空态或错误态通过 `getStatusConfig` 返回 `DataTableStatus`，不得让表体空白。
 - `getStatusConfig` 会收到 `{ rows, totalCount, hasFilters, isLoading }`；页面需要避免 loading 闪烁时，应基于 `isLoading` 延迟返回 empty/onboarding status，而不是在页面层替换表格主体。
-- `DataTable` 会基于当前 table state 自动重新计算 `getStatusConfig`；`statusDeps` 已废弃，页面层禁止继续传入或依赖该 prop。
+- `DataTable` 会基于当前 table state 自动重新计算 `getStatusConfig`，页面层不需要额外维护状态依赖数组。
 
 ## 分页、选择与虚拟化
 
@@ -150,12 +149,6 @@
 - 可展开行的点击边界必须排除 checkbox、button、link、input、select、textarea、menuitem 等行内交互控件；键盘等价路径不得触发行内控件双重动作。
 - 不得为了虚拟化把所有行强行加入 tab order；键盘 tab stop 只覆盖可交互 / 可展开行或明确的行内控件。
 
-## 高级筛选开关
-
-- `enableAdvancedFilter` 当前已暂停使用并标记 `@deprecated`；传入该 prop 时开发环境必须去重 warning。
-- `enableAdvancedFilter={true}` 不得阻止普通 `columnFilters` 更新。
-- 在完整高级筛选 UI、operator 体系和后端 DSL 契约落地前，禁止扩大 `dataTableConfig.operators` 的使用面，也禁止重新引入未被运行时消费的筛选 parser/schema。
-
 ## 回归测试
 
 新增或修改 DataTable 能力时按职责选择验证层：
@@ -174,18 +167,20 @@
 
 ## 审计字段列
 
-所有包含 `createTime`、`createBy`、`updateTime`、`updateBy` 的表格列定义，必须使用 `auditColumns`，禁止手写内联列：
+所有包含 `createTime`、`createBy`、`updateTime`、`updateBy` 的表格列定义，必须使用列 DSL 的 `audit()` 宏，禁止手写内联列：
 
 ```tsx
-import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
+import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
+
+const columnDsl = createDataTableColumnDsl<XxxRecord>();
 
 export const xxxColumns: ColumnDef<XxxRecord>[] = [
   // ...其他列
-  ...auditColumns<XxxRecord>(),
+  ...columnDsl.audit(),
 ];
 ```
 
-`auditColumns` 返回 `创建信息`、`更新信息` 两列：
+`columnDsl.audit()` 返回 `创建信息`、`更新信息` 两列：
 
 - 人员在上，使用 `text-muted-foreground`。
 - 时间在下。

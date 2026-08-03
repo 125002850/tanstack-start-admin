@@ -5,13 +5,12 @@ import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import type { DataTableAction } from '@/components/data-table/actions/data-table-actions-bar';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import type { MenuRspDTO } from '@/lib/api/clients/service';
+import type { DataTableAction, DataTableRowAction } from '@/types/data-table';
 
 import { StatusBadge } from '../lib/format';
 import { getMenuNodeStableId, type MenuTreeNode } from '../lib/tree';

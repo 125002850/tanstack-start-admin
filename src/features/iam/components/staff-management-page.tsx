@@ -8,18 +8,16 @@ import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
-import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
-import type { DataTableAction } from '@/components/data-table/actions/data-table-actions-bar';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
-import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
 import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
 import type {
+  DataTableAction,
   DataTableCellChange,
   DataTableChoiceOption,
   DataTableEditChangeEvent,
   DataTableEditingController,
+  DataTableRowAction,
   DataTableServerCellError
 } from '@/types/data-table';
 import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
@@ -299,7 +297,7 @@ export function getStaffColumns(
       enableSorting: true,
       renderCell: ({ row }) => (row.original.mustChangePassword ? '是' : '否')
     }),
-    ...auditColumns<StaffTableRow>()
+    ...columnDsl.audit()
   ];
 }
 
@@ -560,20 +558,17 @@ export default function StaffManagementPage() {
     <>
       <Card>
         <CardContent className='px-0'>
-          {queryState.isFetching && !queryState.data ? (
-            <DataTableSkeleton columnCount={8} filterCount={5} />
-          ) : (
-            <DataTable<StaffTableRow>
-              table={table}
-              statusTotalCount={total}
-              tableActions={tableActions}
-              isLoading={queryState.isFetching}
-              onRefresh={refreshProps?.onRefresh}
-              isRefreshing={refreshProps?.isRefreshing}
-            >
-              <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
-            </DataTable>
-          )}
+          <DataTable<StaffTableRow>
+            table={table}
+            statusTotalCount={total}
+            tableActions={tableActions}
+            isLoading={queryState.isFetching}
+            loadingSkeleton={{ columnCount: 8, filterCount: 5 }}
+            onRefresh={refreshProps?.onRefresh}
+            isRefreshing={refreshProps?.isRefreshing}
+          >
+            <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
+          </DataTable>
         </CardContent>
       </Card>
 

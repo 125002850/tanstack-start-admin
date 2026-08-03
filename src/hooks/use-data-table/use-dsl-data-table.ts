@@ -29,22 +29,22 @@ import { useDataTablePageSize } from './use-data-table-page-size';
  * 在 useDataTable 之上接入 React Query：根据分页、排序和 columnFilters 构建后端请求，
  * 查询结果再映射回 DataTable 所需的 data/total，同时提供刷新按钮所需状态。
  */
-type QueryStateSubset<TQueryData, TError> = Pick<
+export type QueryStateSubset<TQueryData, TError> = Pick<
   UseQueryResult<TQueryData, TError>,
   'data' | 'isFetching' | 'error' | 'isError' | 'refetch'
 >;
 
-type RefreshBehavior<TError> = {
+export type RefreshBehavior<TError> = {
   onSuccess?: () => void | Promise<void>;
   onError?: (error: TError) => void | Promise<void>;
 };
 
-type RefreshProps = {
+export type RefreshProps = {
   onRefresh: () => Promise<void>;
   isRefreshing: boolean;
 };
 
-type UseDslDataTableProps<
+export type UseDslDataTableProps<
   TData,
   TRequest = DataTableDslPageRequestBase,
   TQueryData = PaginatedResponse<TData>,
@@ -66,7 +66,9 @@ type UseDslDataTableProps<
   enableZebraStriping?: boolean;
 };
 
-type UseDslDataTableResult<TData, TQueryData, TError> = ReturnType<typeof useDataTable<TData>> & {
+export type UseDslDataTableResult<TData, TQueryData, TError> = ReturnType<
+  typeof useDataTable<TData>
+> & {
   total: number;
   queryState: QueryStateSubset<TQueryData, TError>;
   refreshProps?: RefreshProps;
@@ -315,6 +317,20 @@ export function useDslDataTable<
     [isReady, query.data, query.error, query.isError, query.isFetching, query.refetch]
   );
 
+  const refetchQuery = query.refetch;
+  const onRefreshSuccess = refreshBehavior?.onSuccess;
+  const onRefreshError = refreshBehavior?.onError;
+  const handleRefresh = React.useCallback(async () => {
+    const result = await refetchQuery();
+
+    if (result.error) {
+      await onRefreshError?.(result.error as TError);
+      return;
+    }
+
+    await onRefreshSuccess?.();
+  }, [onRefreshError, onRefreshSuccess, refetchQuery]);
+
   const refreshProps = React.useMemo<RefreshProps | undefined>(() => {
     if (!canRefresh) {
       return undefined;
@@ -322,19 +338,9 @@ export function useDslDataTable<
 
     return {
       isRefreshing: !isReady || query.isFetching,
-      onRefresh: async () => {
-        // 手动刷新走 query.refetch，并把成功/失败交给 refreshBehavior 处理。
-        const result = await query.refetch();
-
-        if (result.error) {
-          await refreshBehavior?.onError?.(result.error as TError);
-          return;
-        }
-
-        await refreshBehavior?.onSuccess?.();
-      }
+      onRefresh: handleRefresh
     };
-  }, [canRefresh, isReady, query, refreshBehavior]);
+  }, [canRefresh, handleRefresh, isReady, query.isFetching]);
 
   return {
     table,

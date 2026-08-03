@@ -4,14 +4,12 @@ import { getExpandedRowModel, type ColumnDef } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { DataTableAction } from '@/components/data-table/actions/data-table-actions-bar';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
-import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useDataTable } from '@/hooks/use-data-table';
 import type { DeptRspDTO } from '@/lib/api/clients/service';
+import type { DataTableAction, DataTableRowAction } from '@/types/data-table';
 import { StatusBadge } from '../lib/format';
 
 interface DeptDataTableProps {
@@ -103,7 +101,7 @@ export default function DeptDataTable({
         size: 'sm',
         renderCell: ({ row }) => <StatusBadge status={row.original.status} />
       }),
-      ...auditColumns<DeptRspDTO>()
+      ...columnDsl.audit()
     ],
     [onViewDetail]
   );

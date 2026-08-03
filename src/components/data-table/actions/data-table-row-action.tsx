@@ -10,6 +10,8 @@ import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
+import { DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE } from '@/lib/data-table/row-actions';
+import type { DataTableRowAction } from '@/types/data-table';
 
 /**
  * 行级操作渲染组件。
@@ -17,32 +19,6 @@ import { useConfirmAction } from '@/hooks/use-confirm-action';
  * 前 N 个 action 直接展示为图标按钮，超出的 action 收进“更多”菜单；每个 action 可以
  * 根据当前行动态 disabled/hidden，也可以走删除确认或打开 Sheet 表单。
  */
-const DATA_TABLE_ROW_ACTION_BUTTON_SIZE = 32;
-const DATA_TABLE_ROW_ACTION_GAP = 2;
-const DATA_TABLE_ROW_ACTION_CELL_PADDING_X = 32;
-
-export const DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE = 3;
-
-/** 行操作的 UI 配置；Sheet 用于把当前行数据交给抽屉/弹层表单。 */
-export interface DataTableRowAction<TData> {
-  label: string;
-  icon: React.ReactNode;
-  disabled?: boolean | ((row: TData) => boolean);
-  hidden?: boolean | ((row: TData) => boolean);
-  onClick?: (row: TData) => void | Promise<void>;
-  confirmDelete?: {
-    title?: string;
-    description?: (row: TData) => string;
-    confirmText?: string;
-    cancelText?: string;
-  };
-  Sheet?: React.ComponentType<{
-    data: TData;
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-  }>;
-}
-
 interface DataTableRowActionsProps<TData> {
   row: TData;
   actions: DataTableRowAction<TData>[];
@@ -54,27 +30,6 @@ function resolveRowActionValue<TData, TValue>(
   row: TData
 ): TValue {
   return typeof value === 'function' ? (value as (row: TData) => TValue)(row) : value;
-}
-
-/** 根据可见操作数量预估操作列宽度，保证固定操作列不因按钮数量变化抖动。 */
-export function getDataTableRowActionsColumnWidth(
-  actionCount: number,
-  maxVisible = DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE
-): number {
-  if (actionCount <= 0) {
-    return DATA_TABLE_ROW_ACTION_CELL_PADDING_X;
-  }
-
-  const displayedActionCount =
-    actionCount > maxVisible ? maxVisible + 1 : Math.min(actionCount, maxVisible);
-
-  const gapWidth = Math.max(0, displayedActionCount - 1) * DATA_TABLE_ROW_ACTION_GAP;
-
-  return (
-    DATA_TABLE_ROW_ACTION_CELL_PADDING_X +
-    displayedActionCount * DATA_TABLE_ROW_ACTION_BUTTON_SIZE +
-    gapWidth
-  );
 }
 
 export function DataTableRowActions<TData>({

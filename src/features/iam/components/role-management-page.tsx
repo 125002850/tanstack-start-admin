@@ -7,15 +7,12 @@ import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { auditColumns } from '@/components/data-table/columns/data-table-audit-columns';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { DataTable } from '@/components/data-table/core/data-table';
-import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
-import type { DataTableAction } from '@/components/data-table/actions/data-table-actions-bar';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
 import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
+import type { DataTableAction, DataTableRowAction } from '@/types/data-table';
 import {
   iamRoleCreate,
   iamRoleDataScopeAssign,
@@ -109,7 +106,7 @@ function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<R
       type: 'int',
       size: 'xs'
     }),
-    ...auditColumns<RoleRspDTO>()
+    ...columnDsl.audit()
   ];
 }
 
@@ -274,20 +271,17 @@ export default function RoleManagementPage() {
     <>
       <Card>
         <CardContent className='px-0'>
-          {queryState.isFetching && !queryState.data ? (
-            <DataTableSkeleton columnCount={7} filterCount={3} />
-          ) : (
-            <DataTable
-              table={table}
-              statusTotalCount={total}
-              tableActions={tableActions}
-              isLoading={queryState.isFetching}
-              onRefresh={refreshProps?.onRefresh}
-              isRefreshing={refreshProps?.isRefreshing}
-            >
-              <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
-            </DataTable>
-          )}
+          <DataTable
+            table={table}
+            statusTotalCount={total}
+            tableActions={tableActions}
+            isLoading={queryState.isFetching}
+            loadingSkeleton={{ columnCount: 7, filterCount: 3 }}
+            onRefresh={refreshProps?.onRefresh}
+            isRefreshing={refreshProps?.isRefreshing}
+          >
+            <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
+          </DataTable>
         </CardContent>
       </Card>
       <RoleFormSheet

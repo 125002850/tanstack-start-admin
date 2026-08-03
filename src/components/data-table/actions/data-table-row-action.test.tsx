@@ -1,10 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-import {
-  DataTableRowActions,
-  type DataTableRowAction
-} from '@/components/data-table/actions/data-table-row-action';
+import { DataTableRowActions } from '@/components/data-table/actions/data-table-row-action';
+import type { DataTableRowAction } from '@/types/data-table';
 
 type TestRow = {
   id: number;

@@ -44,6 +44,7 @@ import { cn } from '@/lib/utils';
 import type { DataTableColumnSize } from '@/config/data-table';
 import type {
   DataTableColumnPanelOptions,
+  DataTableAuditFields,
   DataTableChoiceOption,
   DataTableChoiceValue,
   DataTableColumnValueType,
@@ -820,12 +821,54 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     } satisfies ColumnDef<TData, TValue>);
   }
 
+  function createAuditColumns(): DataTableColumn<TData>[] {
+    return [
+      custom({
+        id: 'createInfo',
+        title: '创建信息',
+        cell: ({ row }) => {
+          const record = row.original as TData & DataTableAuditFields;
+
+          return (
+            <div className='flex flex-col text-xs'>
+              <span className='text-muted-foreground'>
+                {record.createBy != null ? record.createBy : '-'}
+              </span>
+              <span>{record.createTime || '-'}</span>
+            </div>
+          );
+        }
+      }),
+      custom({
+        id: 'updateInfo',
+        title: '更新信息',
+        cell: ({ row }) => {
+          const record = row.original as TData & DataTableAuditFields;
+
+          return (
+            <div className='flex flex-col text-xs'>
+              <span className='text-muted-foreground'>
+                {record.updateBy != null ? record.updateBy : '-'}
+              </span>
+              <span>{record.updateTime || '-'}</span>
+            </div>
+          );
+        }
+      })
+    ];
+  }
+
+  const audit = createAuditColumns as TData extends DataTableAuditFields
+    ? () => DataTableColumn<TData>[]
+    : never;
+
   return {
     formatField,
     field,
     editableField,
     badge,
     actions,
-    custom
+    custom,
+    audit
   };
 }

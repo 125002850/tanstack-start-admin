@@ -17,7 +17,7 @@ import {
   DATA_TABLE_SELECT_COLUMN_ID
 } from '@/hooks/use-data-table/constants';
 import { getCommonPinningStyles } from '@/components/data-table/core/data-table-pinning';
-import { getDataTableColumnLabel } from '@/lib/data-table/column-label';
+import { getDataTableColumnLabel } from '@/components/data-table/columns/data-table-column-label';
 import { cn } from '@/lib/utils';
 import type { DataTableColumnRenderItem, DataTableColumnVirtualWindow } from '@/types/data-table';
 import {

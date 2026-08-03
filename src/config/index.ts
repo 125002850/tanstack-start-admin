@@ -8,8 +8,7 @@ export {
   isBrowserSupportedForVirtualization,
   isDataTableVirtualizationEnabled,
   resolveDataTableColumnSize,
-  resolveDataTableVirtualizationOptions,
-  isProductTableVirtualizationEnabled
+  resolveDataTableVirtualizationOptions
 } from './data-table';
 export type { DataTableColumnSize, DataTableColumnSizePreset, DataTableConfig } from './data-table';
 export {

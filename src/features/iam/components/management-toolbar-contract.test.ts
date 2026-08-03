@@ -40,14 +40,6 @@ function expectDataTableUsesTableActions(path: string) {
   );
 }
 
-function expectActionsBarUsesTableActions(path: string) {
-  const source = readProjectFile(path);
-
-  expect(source, `${path} must render DataTableActionsBar with tableActions`).toContain(
-    '<DataTableActionsBar table={actionTable} actions={tableActions} />'
-  );
-}
-
 function expectCreateActionOutsideDataTableToolbar(path: string, actionText: string) {
   const source = readProjectFile(path);
 
@@ -81,13 +73,13 @@ describe('IAM management tableActions', () => {
     );
   });
 
-  it('keeps department create actions in the shared table actions bar', () => {
+  it('keeps department create actions in DataTable tableActions', () => {
     expectCreateActionInTableActions({
-      path: 'src/features/iam/components/dept-management-page.tsx',
+      path: 'src/features/iam/components/dept-data-table.tsx',
       rowType: 'DeptRspDTO',
       actionText: '新增部门'
     });
-    expectActionsBarUsesTableActions('src/features/iam/components/dept-management-page.tsx');
+    expectDataTableUsesTableActions('src/features/iam/components/dept-data-table.tsx');
   });
 
   it('keeps button permission create actions in the selected-menu DataTable', () => {

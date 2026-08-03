@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
-import { DataTableSkeleton } from '@/components/data-table/feedback/data-table-skeleton';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { useDict } from '@/hooks/use-dict';
@@ -25,7 +24,12 @@ import {
 import { nullableText } from '@/lib/formatters/display';
 import { BOOLEAN_RESULT_OPTIONS } from '../lib/constants';
 import { BooleanResultBadge, LoginResultBadge } from '../lib/format';
-import { dslConditionNumber, dslConditionValue, dslDateTimeRange, pageRequestFromDsl } from '../lib/table';
+import {
+  dslConditionNumber,
+  dslConditionValue,
+  dslDateTimeRange,
+  pageRequestFromDsl
+} from '../lib/table';
 
 import LoginLogDetailSheet from './login-log-detail-sheet';
 import OperationLogDetailSheet from './operation-log-detail-sheet';
@@ -67,9 +71,18 @@ function operationLogQueryOptions(request: DataTableDslPageRequestBase) {
 function getLoginLogColumns(
   onOpenDetail: (log: LoginLogRspDTO) => void,
   loginDicts: {
-    eventTypeDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> };
-    resultDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> };
-    failureReasonDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> };
+    eventTypeDict: {
+      getLabel: (code: string) => string;
+      options: Array<{ value: string; label: string }>;
+    };
+    resultDict: {
+      getLabel: (code: string) => string;
+      options: Array<{ value: string; label: string }>;
+    };
+    failureReasonDict: {
+      getLabel: (code: string) => string;
+      options: Array<{ value: string; label: string }>;
+    };
   }
 ): Array<ColumnDef<LoginLogRspDTO>> {
   return [
@@ -135,7 +148,10 @@ function getLoginLogColumns(
 
 function getOperationLogColumns(
   onOpenDetail: (log: OperationLogRspDTO) => void,
-  actionDict: { getLabel: (code: string) => string; options: Array<{ value: string; label: string }> }
+  actionDict: {
+    getLabel: (code: string) => string;
+    options: Array<{ value: string; label: string }>;
+  }
 ): Array<ColumnDef<OperationLogRspDTO>> {
   return [
     operationLogDsl.field('operatorUsername', '操作人', {
@@ -230,20 +246,16 @@ export function LoginLogPage() {
     <>
       <Card>
         <CardContent className='px-0'>
-          <div className='px-6 pb-3'>
+          <DataTable
+            table={table}
+            statusTotalCount={total}
+            isLoading={queryState.isFetching}
+            loadingSkeleton={{ columnCount: 7, filterCount: 5 }}
+            onRefresh={refreshProps?.onRefresh}
+            isRefreshing={refreshProps?.isRefreshing}
+          >
             <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
-          </div>
-          {queryState.isFetching && !queryState.data ? (
-            <DataTableSkeleton columnCount={7} filterCount={5} />
-          ) : (
-            <DataTable
-              table={table}
-              statusTotalCount={total}
-              isLoading={queryState.isFetching}
-              onRefresh={refreshProps?.onRefresh}
-              isRefreshing={refreshProps?.isRefreshing}
-            />
-          )}
+          </DataTable>
         </CardContent>
       </Card>
       <LoginLogDetailSheet
@@ -258,7 +270,10 @@ export function LoginLogPage() {
 export function OperationLogPage() {
   const [detailLog, setDetailLog] = React.useState<OperationLogRspDTO | null>(null);
   const actionDict = useDict('IAM_OPERATION_LOG_ACTION');
-  const columns = React.useMemo(() => getOperationLogColumns(setDetailLog, actionDict), [actionDict]);
+  const columns = React.useMemo(
+    () => getOperationLogColumns(setDetailLog, actionDict),
+    [actionDict]
+  );
   const { table, total, queryState, refreshProps } = useDslDataTable<
     OperationLogRspDTO,
     DataTableDslPageRequestBase,
@@ -282,20 +297,16 @@ export function OperationLogPage() {
     <>
       <Card>
         <CardContent className='px-0'>
-          <div className='px-6 pb-3'>
+          <DataTable
+            table={table}
+            statusTotalCount={total}
+            isLoading={queryState.isFetching}
+            loadingSkeleton={{ columnCount: 8, filterCount: 6 }}
+            onRefresh={refreshProps?.onRefresh}
+            isRefreshing={refreshProps?.isRefreshing}
+          >
             <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
-          </div>
-          {queryState.isFetching && !queryState.data ? (
-            <DataTableSkeleton columnCount={8} filterCount={6} />
-          ) : (
-            <DataTable
-              table={table}
-              statusTotalCount={total}
-              isLoading={queryState.isFetching}
-              onRefresh={refreshProps?.onRefresh}
-              isRefreshing={refreshProps?.isRefreshing}
-            />
-          )}
+          </DataTable>
         </CardContent>
       </Card>
       <OperationLogDetailSheet

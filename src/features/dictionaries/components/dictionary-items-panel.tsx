@@ -6,15 +6,15 @@ import { Icons } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { DataTable } from '@/components/data-table/core/data-table';
-import type {
-  DataTableAction,
-  DataTableActionContext
-} from '@/components/data-table/actions/data-table-actions-bar';
-import type { DataTableRowAction } from '@/components/data-table/actions/data-table-row-action';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { type DataTableDslCondition, useDslDataTable } from '@/hooks/use-data-table';
 import type { MdmDictGlobalItemsByTypeResponse } from '@/lib/api/clients/service';
+import type {
+  DataTableAction,
+  DataTableActionContext,
+  DataTableRowAction
+} from '@/types/data-table';
 
 import type {
   DictionaryItemMutationPayload,
@@ -246,6 +246,7 @@ export function DictionaryItemsPanel({
           tableActions={actions}
           statusTotalCount={total}
           isLoading={isInitialLoading}
+          loadingSkeleton={{}}
           getSelectedRows={getSelectedRows}
           {...refreshProps}
           getStatusConfig={({ rows, hasFilters, isLoading }) => {
