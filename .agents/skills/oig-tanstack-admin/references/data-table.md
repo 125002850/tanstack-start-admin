@@ -73,6 +73,7 @@
 - `remoteOptions.loadOptions` 和 `resolveOptions` 都必须消费 `AbortSignal`。远程查询统一经 React Query 与 `useRemoteComboboxState` 管理；query key 必须包含 `tableId + columnId + keyword + pageNo + pageSize`。
 - `resolveOptions` 按当前页和列聚合 value 后批量加载，禁止每个 cell 单独请求。首次解析显示 Skeleton；已有缓存时后台刷新保留 label；失败回退原始 value。
 - 普通单击仍用于范围选择；input/choice 通过双击、Enter、F2 进入编辑，单选 choice editor 进入编辑态时自动展开选项。Escape 取消，Enter 完成，Tab 完成后再尝试移动到相邻可编辑 cell。
+- 只读单元格继续支持选择和复制，但纯只读或混合选区不得显示填充控制点；只有选区内全部单元格均可编辑时才允许发起填充。
 - `commitMode: 'blur'` 在失焦或选择其他 cell 时提交合法值；`commitMode: 'selection'` 只由有效选择动作提交；`commitMode: 'explicit-confirm'` 只能由 Enter、Ctrl/Cmd+Enter 或 Tab 主动提交，blur、点击其他 cell、浮层关闭和虚拟卸载都必须回滚且不得触发业务 `onChange`。
 - 普通单击只进入 `selected`；无论 cell 原本是否选中，双击都直接进入 `editing`。Escape 取消或 blur 完成/回滚后进入该 cell 唯一的 `edit-ready`；选择其他 cell 必须结束旧 session 并清除旧 `edit-ready`。同一表格在任一时刻只能有一个 range focus、一个 `edit-ready` 或一个 `editing` 目标，三种交互态对当前目标互斥。
 - 每次 `editing` 必须拥有独立 session。editor 的完成、取消、blur 和浮层关闭只能作用于创建它的 session，旧 editor 的延迟事件不得结束或取消新 editor。

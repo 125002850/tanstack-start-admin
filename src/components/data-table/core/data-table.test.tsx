@@ -1172,6 +1172,29 @@ describe('DataTable cell selection', () => {
     expect(secondStatusCell).not.toHaveTextContent('就绪');
   });
 
+  it('only offers the fill handle for fully editable ranges', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<EditableSelectionHarness onChange={vi.fn()} />);
+    const firstIdCell = container.querySelector<HTMLTableCellElement>(
+      'td[data-cell-row-id="1"][data-cell-column-id="id"]'
+    );
+    const firstNameCell = container.querySelector<HTMLTableCellElement>(
+      'td[data-cell-row-id="1"][data-cell-column-id="name"]'
+    );
+    if (!firstIdCell || !firstNameCell) throw new Error('fill visibility cells missing');
+
+    await user.click(firstIdCell);
+    expect(firstIdCell).toHaveAttribute('data-cell-selected', 'true');
+    expect(screen.queryByRole('button', { name: '填充所选单元格' })).not.toBeInTheDocument();
+
+    dragCellRange(firstIdCell, firstNameCell);
+    expect(container.querySelectorAll('td[data-cell-selected="true"]')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: '填充所选单元格' })).not.toBeInTheDocument();
+
+    await user.click(firstNameCell);
+    expect(screen.getByRole('button', { name: '填充所选单元格' })).toBeInTheDocument();
+  });
+
   it('fills a range from the accessible handle through one atomic change event', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
