@@ -69,12 +69,23 @@ const iamMe = {
   mustChangePassword: false
 };
 
+interface MockIamSessionOptions {
+  menus?: unknown[];
+  permissions?: string[];
+}
+
 function envelope<T>(data: T) {
   return { code: 200, msg: 'ok', data };
 }
 
 /** 为 main 分支的 Playwright 新浏览器上下文建立最小本地 IAM 会话。 */
-export async function mockIamSession(page: Page) {
+export async function mockIamSession(page: Page, options: MockIamSessionOptions = {}) {
+  const resolvedIamMe = {
+    ...iamMe,
+    menus: options.menus ?? iamMe.menus,
+    permissions: options.permissions ?? iamMe.permissions
+  };
+
   await page.addInitScript(
     ({ refreshTokenKey, expiresAtKey, refreshToken }) => {
       localStorage.setItem(refreshTokenKey, refreshToken);
@@ -99,7 +110,7 @@ export async function mockIamSession(page: Page) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(envelope(iamMe))
+      body: JSON.stringify(envelope(resolvedIamMe))
     });
   });
 }

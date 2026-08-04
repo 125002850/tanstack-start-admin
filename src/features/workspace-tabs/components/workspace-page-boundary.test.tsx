@@ -161,6 +161,50 @@ describe('WorkspacePageBoundary', () => {
     expect(renderDisabled).not.toHaveBeenCalled();
   });
 
+  it('keeps the cached descriptor when the same route boundary mounts again', () => {
+    vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
+    const firstRender = vi.fn(() => <div>Cached users</div>);
+    const replacementRender = vi.fn(() => <div>Replacement users</div>);
+
+    const routeView = render(<WorkspacePageBoundary render={firstRender} />);
+    const cachedDescriptor = getDescriptors()['/dashboard/users'];
+    expect(cachedDescriptor).toBeDefined();
+
+    routeView.unmount();
+    render(<WorkspacePageBoundary render={replacementRender} />);
+
+    expect(getDescriptors()['/dashboard/users']).toBe(cachedDescriptor);
+    const descriptorView = render(<>{cachedDescriptor!.render()}</>);
+    expect(descriptorView.getByText('Cached users')).toBeTruthy();
+    expect(replacementRender).not.toHaveBeenCalled();
+  });
+
+  it('does not let an outgoing route register its render under the next pathname', () => {
+    vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
+    mockUseRouter.mockReturnValue({
+      routesByPath: {
+        '/dashboard/users': { options: { staticData: { label: '用户' } } },
+        '/dashboard/departments': { options: { staticData: { label: '部门' } } }
+      }
+    });
+
+    const outgoingRoute = render(<WorkspacePageBoundary render={() => <div>Users content</div>} />);
+    expect(getDescriptors()['/dashboard/users']).toBeDefined();
+
+    pathname = '/dashboard/departments';
+    outgoingRoute.rerender(<WorkspacePageBoundary render={() => <div>Users content</div>} />);
+
+    expect(getDescriptors()['/dashboard/departments']).toBeUndefined();
+
+    outgoingRoute.unmount();
+    render(<WorkspacePageBoundary render={() => <div>Departments content</div>} />);
+
+    const departmentsDescriptor = getDescriptors()['/dashboard/departments'];
+    expect(departmentsDescriptor).toBeDefined();
+    const descriptorView = render(<>{departmentsDescriptor!.render()}</>);
+    expect(descriptorView.getByText('Departments content')).toBeTruthy();
+  });
+
   it('does not re-register a closed explicit tab after pathname changes away', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
     mockUseRouter.mockReturnValue({

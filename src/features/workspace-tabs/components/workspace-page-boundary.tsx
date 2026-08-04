@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useRouter, useRouterState } from '@tanstack/react-router';
 import { findDeepestRouteMatch, normalizeRoutePath } from '../hooks/use-dashboard-route-tag-sync';
+import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { useWorkspaceTabStore } from '../utils/store';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { resolveRouteTagTitle, resolveRouteWorkspaceConfig } from '../lib/route-workspace';
@@ -21,7 +22,8 @@ export function WorkspacePageBoundary({
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const normalizedPathname = normalizeRoutePath(pathname);
-  const resolvedTabId = normalizeRoutePath(tabId ?? normalizedPathname);
+  const initialPathnameRef = React.useRef(normalizedPathname);
+  const resolvedTabId = normalizeRoutePath(tabId ?? initialPathnameRef.current);
   const routeMatch = React.useMemo(
     () =>
       findDeepestRouteMatch(
@@ -35,7 +37,8 @@ export function WorkspacePageBoundary({
     () => resolveRouteWorkspaceConfig(routeMatch?.pattern ?? resolvedTabId, staticData, treeLookup),
     [resolvedTabId, routeMatch?.pattern, staticData, treeLookup]
   );
-  const resolvedInitialTitle = initialTitle ?? resolveRouteTagTitle(staticData, resolvedTabId, treeLookup);
+  const resolvedInitialTitle =
+    initialTitle ?? resolveRouteTagTitle(staticData, resolvedTabId, treeLookup);
   const resolvedKeepAlive =
     staticData?.workspace?.keepAlive ?? legacyKeepAlive ?? routeWorkspaceConfig.keepAlive;
   const resolvedClosable =
@@ -98,6 +101,7 @@ function WorkspacePageBoundaryRegistration({
     typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
 
   useIsomorphicLayoutEffect(() => {
+    if (useWorkspacePageRegistryStore.getState().descriptors[tabId]) return;
     useWorkspaceTabStore.getState().registerPageDescriptor(tabId, descriptor);
   }, [descriptor, tabId]);
 

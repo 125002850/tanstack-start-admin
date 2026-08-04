@@ -1,6 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { resolveRouteWorkspaceConfig, resolveRouteTagTitle } from './route-workspace';
 import type { AppRouteStaticData } from '@/lib/router/app-route-meta';
+import { buildMenuTreeLookup } from '@/lib/router/menu-tree-resolver';
+import type { IamMenuNode } from '@/lib/api/iam/types';
+
+function createMenuTreeLookup(cached: boolean) {
+  const menu: IamMenuNode = {
+    menuId: 'managed',
+    menuCode: 'managed',
+    menuKey: 'managed',
+    menuName: 'Managed',
+    menuType: 'MENU',
+    sortOrder: 10,
+    hidden: false,
+    cached,
+    status: 'ENABLED'
+  };
+
+  return buildMenuTreeLookup([menu]);
+}
 
 describe('resolveRouteWorkspaceConfig', () => {
   it('defaults tagEnabled to true', () => {
@@ -54,6 +72,47 @@ describe('resolveRouteWorkspaceConfig', () => {
     };
     const cfg = resolveRouteWorkspaceConfig('/dashboard/test', staticData);
     expect(cfg.keepAlive).toBe(false);
+  });
+
+  it('uses menu cached when route keepAlive is not declared', () => {
+    const staticData: AppRouteStaticData = {
+      label: 'Test',
+      nav: { menuKey: 'managed' }
+    };
+    const cfg = resolveRouteWorkspaceConfig(
+      '/dashboard/test',
+      staticData,
+      createMenuTreeLookup(false)
+    );
+    expect(cfg.keepAlive).toBe(false);
+  });
+
+  it('uses menu cached false over explicit route keepAlive true', () => {
+    const staticData: AppRouteStaticData = {
+      label: 'Test',
+      nav: { menuKey: 'managed' },
+      workspace: { keepAlive: true }
+    };
+    const cfg = resolveRouteWorkspaceConfig(
+      '/dashboard/test',
+      staticData,
+      createMenuTreeLookup(false)
+    );
+    expect(cfg.keepAlive).toBe(false);
+  });
+
+  it('uses menu cached true over explicit route keepAlive false', () => {
+    const staticData: AppRouteStaticData = {
+      label: 'Test',
+      nav: { menuKey: 'managed' },
+      workspace: { keepAlive: false }
+    };
+    const cfg = resolveRouteWorkspaceConfig(
+      '/dashboard/test',
+      staticData,
+      createMenuTreeLookup(true)
+    );
+    expect(cfg.keepAlive).toBe(true);
   });
 
   it('uses explicit closable over default', () => {
