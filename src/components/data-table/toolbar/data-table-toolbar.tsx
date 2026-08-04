@@ -198,6 +198,14 @@ function DebouncedFilterInput({
     <Input
       {...inputProps}
       {...inputBindings}
+      onBlur={(event) => {
+        inputBindings.onBlur();
+        inputProps.onBlur?.(event);
+      }}
+      onKeyDown={(event) => {
+        inputBindings.onKeyDown(event);
+        inputProps.onKeyDown?.(event);
+      }}
       data-active={inputBindings.value.length > 0 ? 'true' : undefined}
       className={cn('data-table-filter-control', inputProps.className)}
     />

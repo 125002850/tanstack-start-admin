@@ -105,6 +105,26 @@ test('@workspace-v2 renders loading, toolbar, top actions, and row actions', asy
   await expect(card.getByRole('button', { name: '删除' }).first()).toBeVisible();
 });
 
+test('@workspace-v2 commits a pending toolbar filter when it loses focus', async ({ page }) => {
+  const releaseItems = await mockDictionaryData(page);
+  releaseItems();
+
+  await page.goto(DICTIONARY_ROUTE);
+  const card = dictionaryItemsCard(page);
+  await expect(card.getByText('reg-001', { exact: true })).toBeVisible();
+
+  const filterInput = card.getByRole('textbox', { name: '搜索字典项编码' });
+  await filterInput.fill('reg-150');
+
+  const committedOnBlur = await filterInput.evaluate(async (element) => {
+    element.blur();
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    return document.querySelector('[aria-label="重置筛选条件"]') !== null;
+  });
+  expect(committedOnBlur).toBe(true);
+  await expect(filterInput).toHaveValue('reg-150');
+});
+
 test('@workspace-v2 keeps virtual scrolling, pinned columns, and cell alignment stable', async ({
   page
 }) => {
