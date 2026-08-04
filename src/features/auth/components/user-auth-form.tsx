@@ -36,7 +36,9 @@ export default function UserAuthForm() {
             children={(field) => (
               <field.FieldSet>
                 <field.Field>
-                  <field.FieldLabel htmlFor={field.name} required>Email</field.FieldLabel>
+                  <field.FieldLabel htmlFor={field.name} required>
+                    Email
+                  </field.FieldLabel>
                   <Input
                     id={field.name}
                     name={field.name}

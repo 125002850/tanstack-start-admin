@@ -48,13 +48,7 @@ vi.mock('@/components/ui/sidebar', () => ({
     React.createElement('div', null, children),
   SidebarMenuItem: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
-  SidebarMenuButton: ({
-    children,
-    className
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) =>
+  SidebarMenuButton: ({ children, className }: { children: React.ReactNode; className?: string }) =>
     React.createElement('button', { 'data-testid': 'sidebar-menu-button', className }, children),
   SidebarMenuSub: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children),
@@ -123,7 +117,9 @@ async function renderSidebar(queryClient: QueryClient) {
   const { default: AppSidebar } = await import('./app-sidebar');
 
   return render(
-    React.createElement(QueryClientProvider, { client: queryClient },
+    React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
       React.createElement(AppSidebar)
     )
   );
@@ -198,9 +194,9 @@ describe('app-sidebar auth footer', () => {
     await user.click(trigger);
 
     // Click logout button
-    const logoutButton = screen.getAllByTestId('dropdown-item').find(
-      (el) => el.textContent?.includes('退出登录')
-    );
+    const logoutButton = screen
+      .getAllByTestId('dropdown-item')
+      .find((el) => el.textContent?.includes('退出登录'));
     expect(logoutButton).toBeDefined();
     await user.click(logoutButton!);
 

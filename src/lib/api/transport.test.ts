@@ -153,14 +153,16 @@ describe('transport auth pipeline', () => {
   it('calls handleUnauthorized on 401 and re-throws', async () => {
     mockSession.getAuthHeader.mockReturnValue('Bearer expired-token');
 
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('Unauthorized', { status: 401, statusText: 'Unauthorized' })
-    );
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response('Unauthorized', { status: 401, statusText: 'Unauthorized' }));
 
     const transport = createAuthTransport();
 
-    const error = await transport.customInstance('http://test/api', { method: 'GET' })
-      .then(() => null, (e) => e);
+    const error = await transport.customInstance('http://test/api', { method: 'GET' }).then(
+      () => null,
+      (e) => e
+    );
 
     expect(error).toBeInstanceOf(HttpError);
     expect((error as HttpError).status).toBe(401);
@@ -170,14 +172,18 @@ describe('transport auth pipeline', () => {
   it('re-throws non-401 errors without calling handleUnauthorized', async () => {
     mockSession.getAuthHeader.mockReturnValue('Bearer valid-token');
 
-    globalThis.fetch = vi.fn().mockResolvedValue(
-      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
-    );
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response('Server Error', { status: 500, statusText: 'Internal Server Error' })
+      );
 
     const transport = createAuthTransport();
 
-    const error = await transport.customInstance('http://test/api', { method: 'GET' })
-      .then(() => null, (e) => e);
+    const error = await transport.customInstance('http://test/api', { method: 'GET' }).then(
+      () => null,
+      (e) => e
+    );
 
     expect(error).toBeInstanceOf(HttpError);
     expect((error as HttpError).status).toBe(500);
@@ -207,15 +213,15 @@ describe('production transport module integration', () => {
   });
 });
 
-  function extractAuthHeader(response: unknown): string | null {
-    const headers = (response as Record<string, unknown>)?.headers;
-    if (!headers) return null;
-    if (typeof (headers as Headers).get === 'function') {
-      return (headers as Headers).get('authorization');
-    }
-    const obj = headers as Record<string, string>;
-    for (const key of Object.keys(obj)) {
-      if (key.toLowerCase() === 'authorization') return obj[key];
-    }
-    return null;
+function extractAuthHeader(response: unknown): string | null {
+  const headers = (response as Record<string, unknown>)?.headers;
+  if (!headers) return null;
+  if (typeof (headers as Headers).get === 'function') {
+    return (headers as Headers).get('authorization');
   }
+  const obj = headers as Record<string, string>;
+  for (const key of Object.keys(obj)) {
+    if (key.toLowerCase() === 'authorization') return obj[key];
+  }
+  return null;
+}

@@ -13,42 +13,21 @@ function SsoSkeleton({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-function SsoAvatarSkeleton({
-  size = 32,
-  className
-}: {
-  size?: number;
-  className?: string;
-}) {
+function SsoAvatarSkeleton({ size = 32, className }: { size?: number; className?: string }) {
   return (
-    <SsoSkeleton
-      className={cn('rounded-full', className)}
-      style={{ width: size, height: size }}
-    />
+    <SsoSkeleton className={cn('rounded-full', className)} style={{ width: size, height: size }} />
   );
 }
 
-function SsoTextSkeleton({
-  width = '100%',
-  className
-}: {
-  width?: string;
-  className?: string;
-}) {
-  return (
-    <SsoSkeleton className={cn('h-4', className)} style={{ width }} />
-  );
+function SsoTextSkeleton({ width = '100%', className }: { width?: string; className?: string }) {
+  return <SsoSkeleton className={cn('h-4', className)} style={{ width }} />;
 }
 
 function SsoMenuSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className='space-y-2 px-2'>
       {Array.from({ length: count }).map((_, i) => (
-        <SsoTextSkeleton
-          key={i}
-          width={`${60 + (i * 7) % 35}%`}
-          className='h-8'
-        />
+        <SsoTextSkeleton key={i} width={`${60 + ((i * 7) % 35)}%`} className='h-8' />
       ))}
     </div>
   );

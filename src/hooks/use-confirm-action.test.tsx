@@ -4,11 +4,7 @@ import * as React from 'react';
 
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 
-function ConfirmActionHarness({
-  onRun
-}: {
-  onRun: (count: number) => void | Promise<void>;
-}) {
+function ConfirmActionHarness({ onRun }: { onRun: (count: number) => void | Promise<void> }) {
   const { withConfirm, confirmDialog } = useConfirmAction<[number]>();
 
   const handleDelete = React.useMemo(

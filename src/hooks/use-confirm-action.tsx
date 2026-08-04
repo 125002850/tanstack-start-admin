@@ -30,7 +30,9 @@ function resolveConfirmText<TArgs extends unknown[]>(
 }
 
 export function useConfirmAction<TArgs extends unknown[] = []>() {
-  const [pendingAction, setPendingAction] = React.useState<PendingConfirmAction<TArgs> | null>(null);
+  const [pendingAction, setPendingAction] = React.useState<PendingConfirmAction<TArgs> | null>(
+    null
+  );
   const [isLoading, setIsLoading] = React.useState(false);
 
   const withConfirm = React.useCallback(
@@ -64,13 +66,21 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
       onClose={handleClose}
       onConfirm={handleConfirm}
       loading={isLoading}
-      title={resolveConfirmText(pendingAction.options.title, pendingAction.args, '确认执行该操作？')}
+      title={resolveConfirmText(
+        pendingAction.options.title,
+        pendingAction.args,
+        '确认执行该操作？'
+      )}
       description={resolveConfirmText(
         pendingAction.options.description,
         pendingAction.args,
         '此操作不可撤销。'
       )}
-      confirmText={resolveConfirmText(pendingAction.options.confirmText, pendingAction.args, '继续')}
+      confirmText={resolveConfirmText(
+        pendingAction.options.confirmText,
+        pendingAction.args,
+        '继续'
+      )}
       cancelText={resolveConfirmText(pendingAction.options.cancelText, pendingAction.args, '取消')}
     />
   ) : null;

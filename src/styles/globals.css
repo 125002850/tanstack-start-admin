@@ -219,6 +219,14 @@
   background-color: var(--background);
 }
 
+[data-slot='table-cell'][data-cell-edit-ready='true'] {
+  box-shadow: inset 0 0 0 1px var(--data-table-cell-selection-border, var(--primary));
+}
+
+[data-slot='table-cell'][data-cell-editing='true'] {
+  box-shadow: inset 0 0 0 2px var(--data-table-cell-selection-border, var(--primary));
+}
+
 [data-slot='data-table-choice-editor-ready'] {
   display: none;
 }

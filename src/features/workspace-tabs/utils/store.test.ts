@@ -29,9 +29,7 @@ function makeDescriptor(overrides: Partial<WorkspacePageDescriptor> = {}): Works
   };
 }
 
-function openTab(
-  overrides: Partial<WorkspaceTabOpenInput> & Pick<WorkspaceTabOpenInput, 'id'>
-) {
+function openTab(overrides: Partial<WorkspaceTabOpenInput> & Pick<WorkspaceTabOpenInput, 'id'>) {
   const tab = makeTab({
     id: overrides.id,
     href: overrides.href ?? `/${overrides.id}`,
@@ -128,9 +126,7 @@ describe('workspace-tags store', () => {
       useWorkspaceTabStore.getState().openOrActivate(tab);
       useWorkspaceTabStore
         .getState()
-        .openOrActivate(
-          makeTab({ id: tab.id, href: '/dashboard/items?page=2', title: 'Updated' })
-        );
+        .openOrActivate(makeTab({ id: tab.id, href: '/dashboard/items?page=2', title: 'Updated' }));
       const updated = useWorkspaceTabStore.getState().tabs[tab.id];
       expect(updated.href).toBe('/dashboard/items?page=2');
       expect(updated.title).toBe('Updated');
@@ -151,9 +147,7 @@ describe('workspace-tags store', () => {
 
     it('pins home tab to the first position when it is opened after other tabs', () => {
       const store = useWorkspaceTabStore.getState();
-      store.openOrActivate(
-        makeTab({ id: 'items', href: '/dashboard/items', title: 'Exports' })
-      );
+      store.openOrActivate(makeTab({ id: 'items', href: '/dashboard/items', title: 'Exports' }));
       store.openOrActivate(
         makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false })
       );
@@ -244,11 +238,15 @@ describe('workspace-tags store', () => {
 
     it('cleans up descriptors and lifecycles of closed tabs', () => {
       const store = useWorkspaceTabStore.getState();
-      openRegisteredPage(HOME_ID, { initialTitle: '仪表盘', closable: false }, {
-        href: HOME_ID,
-        title: '仪表盘',
-        closable: false
-      });
+      openRegisteredPage(
+        HOME_ID,
+        { initialTitle: '仪表盘', closable: false },
+        {
+          href: HOME_ID,
+          title: '仪表盘',
+          closable: false
+        }
+      );
       openRegisteredPage('a');
       openRegisteredPage('b');
       store.updateLifecycle('a', { dirty: true });
@@ -298,11 +296,15 @@ describe('workspace-tags store', () => {
 
     it('cleans up all descriptors and lifecycles except home', () => {
       const store = useWorkspaceTabStore.getState();
-      openRegisteredPage(HOME_ID, { initialTitle: 'Home', closable: false }, {
-        href: HOME_ID,
-        title: 'Home',
-        closable: false
-      });
+      openRegisteredPage(
+        HOME_ID,
+        { initialTitle: 'Home', closable: false },
+        {
+          href: HOME_ID,
+          title: 'Home',
+          closable: false
+        }
+      );
       openRegisteredPage('a');
 
       store.closeAll();
@@ -452,11 +454,15 @@ describe('workspace-tags store', () => {
 
     it('does not change openedOrder when registering descriptors', () => {
       openRegisteredPage('tab-1');
-      openRegisteredPage(HOME_ID, { initialTitle: '仪表盘', closable: false }, {
-        href: HOME_ID,
-        title: '仪表盘',
-        closable: false
-      });
+      openRegisteredPage(
+        HOME_ID,
+        { initialTitle: '仪表盘', closable: false },
+        {
+          href: HOME_ID,
+          title: '仪表盘',
+          closable: false
+        }
+      );
 
       expect(getState().openedOrder).toEqual([HOME_ID, 'tab-1']);
     });
@@ -483,11 +489,7 @@ describe('workspace-tags store', () => {
 
   describe('updateLifecycle', () => {
     it('updates title without mutating the tab structure state', () => {
-      openRegisteredPage(
-        'tab-1',
-        { initialTitle: 'Initial' },
-        { title: 'Initial', href: 'tab-1' }
-      );
+      openRegisteredPage('tab-1', { initialTitle: 'Initial' }, { title: 'Initial', href: 'tab-1' });
       getState().updateLifecycle('tab-1', { title: 'New Title' });
       expect(getState().lifecycleSnapshots['tab-1']?.title).toBe('New Title');
       expect(getState().tabs['tab-1']?.title).toBe('Initial');

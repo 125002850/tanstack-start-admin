@@ -114,6 +114,9 @@ test('@workspace-v2 edits static and remote choices with keyboard-safe lifecycle
   await expect(statusCell).not.toHaveAttribute('data-cell-edit-ready');
   await expect(statusCell).toHaveAttribute('data-cell-editing', 'true');
   await expect(statusCell.locator('[data-slot="choice-combobox-trigger"]')).toBeVisible();
+  await expect
+    .poll(() => statusCell.evaluate((element) => window.getComputedStyle(element).boxShadow))
+    .not.toBe('none');
   const editorMetrics = await statusCell.evaluate((element) => {
     const trigger = element.querySelector<HTMLElement>('[data-slot="choice-combobox-trigger"]');
     if (!trigger) throw new Error('status choice combobox trigger is missing');
@@ -161,6 +164,9 @@ test('@workspace-v2 edits static and remote choices with keyboard-safe lifecycle
   await expect(page.getByRole('combobox', { name: '编辑状态' })).toHaveCount(0);
   await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('-');
   await expect(readyTrigger).toBeVisible();
+  await expect
+    .poll(() => statusCell.evaluate((element) => window.getComputedStyle(element).boxShadow))
+    .not.toBe(editorMetrics.cellBoxShadow);
   const readyMetrics = await statusCell.evaluate((element) => {
     const trigger = element.querySelector<HTMLElement>(
       '[data-slot="data-table-choice-editor-ready-trigger"]'

@@ -17,9 +17,11 @@ function createDictionaryItems() {
     status: 'enable',
     sortOrder: index + 1,
     remark: `DataTable regression row ${index + 1}`,
-    createBy: 1,
+    createById: 1,
+    createByName: 'creator',
     createTime: '2026-08-03T00:00:00Z',
-    updateBy: 2,
+    updateById: 2,
+    updateByName: 'updater',
     updateTime: '2026-08-03T01:00:00Z'
   }));
 }
@@ -28,7 +30,7 @@ async function mockDictionaryData(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem('app-data-table-per-page:dictionary-items', '200');
   });
-  await page.route('**/api/mdm/dict/global/types/list-all', async (route) => {
+  await page.route('**/api/system/dict/global/types/list-all', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -52,7 +54,7 @@ async function mockDictionaryData(page: Page) {
   });
   const items = createDictionaryItems();
 
-  await page.route('**/api/mdm/dict/global/items/by-type', async (route) => {
+  await page.route('**/api/system/dict/global/items/by-type', async (route) => {
     await itemsGate;
     await route.fulfill({
       status: 200,

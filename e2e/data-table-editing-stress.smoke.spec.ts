@@ -138,21 +138,21 @@ test('@workspace-v2-stress large matrix paste applies atomically across rows', a
   ).toBe(true);
 
   await expect(firstPhone).toContainText('13900000001');
-  await expect(example.locator('td[data-cell-row-id="1"][data-cell-column-id="remark"]')).toContainText(
-    '压测备注 1'
-  );
-  await expect(example.locator('td[data-cell-row-id="1"][data-cell-column-id="score"]')).toContainText(
-    '11.5'
-  );
-  await expect(example.locator('td[data-cell-row-id="10"][data-cell-column-id="phone"]')).toContainText(
-    '13900000010'
-  );
-  await expect(example.locator('td[data-cell-row-id="10"][data-cell-column-id="remark"]')).toContainText(
-    '压测备注 10'
-  );
-  await expect(example.locator('td[data-cell-row-id="10"][data-cell-column-id="score"]')).toContainText(
-    '20.5'
-  );
+  await expect(
+    example.locator('td[data-cell-row-id="1"][data-cell-column-id="remark"]')
+  ).toContainText('压测备注 1');
+  await expect(
+    example.locator('td[data-cell-row-id="1"][data-cell-column-id="score"]')
+  ).toContainText('11.5');
+  await expect(
+    example.locator('td[data-cell-row-id="10"][data-cell-column-id="phone"]')
+  ).toContainText('13900000010');
+  await expect(
+    example.locator('td[data-cell-row-id="10"][data-cell-column-id="remark"]')
+  ).toContainText('压测备注 10');
+  await expect(
+    example.locator('td[data-cell-row-id="10"][data-cell-column-id="score"]')
+  ).toContainText('20.5');
   await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('paste');
   await expectNoRuntimeIssues(issues);
 });
@@ -166,7 +166,9 @@ test('@workspace-v2-stress continuous edits accumulate in the draft snapshot', a
     const budget = cell(page, 'budget', row);
 
     await phone.dblclick();
-    await page.getByRole('textbox', { name: '编辑手机号' }).fill(`136${String(row).padStart(8, '0')}`);
+    await page
+      .getByRole('textbox', { name: '编辑手机号' })
+      .fill(`136${String(row).padStart(8, '0')}`);
     await page.keyboard.press('Enter');
 
     await score.dblclick();
@@ -195,8 +197,9 @@ test('@workspace-v2-stress edit+scroll loop keeps DOM and heap bounded', async (
     page.evaluate(() => ({
       domNodes: document.querySelectorAll('*').length,
       tds: document.querySelectorAll('tbody td').length,
-      heap: (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory
-        ?.usedJSHeapSize ?? null
+      heap:
+        (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory
+          ?.usedJSHeapSize ?? null
     }));
 
   const baseline = await measure();
