@@ -100,6 +100,9 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - `menuData` 的导航过滤和路由访问控制遵循 `references/routing-and-navigation.md`，不得仅隐藏菜单而绕过 route guard。
 - AI Playwright 的本地 SSO 登录态准备遵循 `oig-sso-skill`，不要把测试凭据或环境地址复制到本 reference。
 - `pnpm codegen` 只调用 `openapi-client generate`，禁止在业务仓库增加生成后 patch 脚本。
+- `pnpm openapi:fetch` 从已运行的后端拉取 OpenAPI；默认地址为 `http://localhost:8080/v3/api-docs`，需要其他地址时设置 `OPENAPI_FETCH_URL`。该命令不负责启动或重启后端。
+- `pnpm api` 按顺序执行 `openapi:fetch` 与 `codegen`；接口契约变化时使用它同步 spec 与 generated client。
+- 字典和枚举页面展示必须通过 generated client 批量调用 `/api/system/dict/global/items/options`；页面级缓存一次，表格 cell 禁止发请求。停用项保留在显示映射中，但不得进入可选 options。
 - 生成后的 `openapi/.generated/*-orval-mutator.ts` 按约定导入 `src/lib/api/transport.ts`，只创建带 `basePath` 的实例。
 - 生成后的 `src/lib/api/clients/*/generated/**/*.ts` 由 `openapi-client` 自动带上 `// @ts-nocheck`。
 - 禁止在 generated 文件中重复注册 middleware。

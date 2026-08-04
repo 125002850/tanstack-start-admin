@@ -15,9 +15,11 @@ export function getStatusLabel(code: string | undefined): string {
 }
 
 export const EXPORT_RECORD_STATUS = {
-  PROCESSING: 1,
-  SUCCESS: 2,
-  FAILED: 3
+  PROCESSING: '1',
+  SUCCESS: '2',
+  FAILED: '3',
+  EXPIRED: '4',
+  DELETED: '5'
 } as const;
 
 export type ExportRecordStatus = (typeof EXPORT_RECORD_STATUS)[keyof typeof EXPORT_RECORD_STATUS];

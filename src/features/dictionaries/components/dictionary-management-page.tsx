@@ -8,20 +8,20 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { DictStatus } from '@/constants/enums';
 
 import {
-  mdmDictGlobalItemCreateMutationOptions,
-  mdmDictGlobalItemDeleteMutationOptions,
-  mdmDictGlobalItemUpdateMutationOptions,
-  mdmDictGlobalTypesListAllQueryOptions,
-  mdmDictGlobalTypeCreateMutationOptions,
-  mdmDictGlobalTypeDeleteMutationOptions,
-  mdmDictGlobalTypeUpdateMutationOptions,
-  type MdmDictGlobalItemCreateRequest,
-  type MdmDictGlobalItemDeleteRequest,
-  type MdmDictGlobalItemUpdateRequest,
-  type MdmDictGlobalTypesListAllRequest,
-  type MdmDictGlobalTypeCreateRequest,
-  type MdmDictGlobalTypeDeleteRequest,
-  type MdmDictGlobalTypeUpdateRequest
+  systemDictGlobalItemCreateMutationOptions,
+  systemDictGlobalItemDeleteMutationOptions,
+  systemDictGlobalItemUpdateMutationOptions,
+  systemDictGlobalTypesListAllQueryOptions,
+  systemDictGlobalTypeCreateMutationOptions,
+  systemDictGlobalTypeDeleteMutationOptions,
+  systemDictGlobalTypeUpdateMutationOptions,
+  type SystemDictGlobalItemCreateRequest,
+  type SystemDictGlobalItemDeleteRequest,
+  type SystemDictGlobalItemUpdateRequest,
+  type SystemDictGlobalTypesListAllRequest,
+  type SystemDictGlobalTypeCreateRequest,
+  type SystemDictGlobalTypeDeleteRequest,
+  type SystemDictGlobalTypeUpdateRequest
 } from '@/lib/api/clients/service';
 import type {
   DictionaryItemMutationPayload,
@@ -62,11 +62,11 @@ function DictionaryManagementContent() {
         | undefined
     )?.trim() || undefined;
   const dictionaryTypeRequest = React.useMemo(
-    () => ({ keyword: dictionaryTypeKeyword }) satisfies MdmDictGlobalTypesListAllRequest,
+    () => ({ keyword: dictionaryTypeKeyword }) satisfies SystemDictGlobalTypesListAllRequest,
     [dictionaryTypeKeyword]
   );
   const dictionaryTypeQuery = useQuery({
-    ...mdmDictGlobalTypesListAllQueryOptions(dictionaryTypeRequest),
+    ...systemDictGlobalTypesListAllQueryOptions(dictionaryTypeRequest),
     placeholderData: keepPreviousData
   });
 
@@ -82,12 +82,12 @@ function DictionaryManagementContent() {
     dictionaryTypes[0] ??
     null;
 
-  const createTypeMutation = useMutation(mdmDictGlobalTypeCreateMutationOptions());
-  const updateTypeMutation = useMutation(mdmDictGlobalTypeUpdateMutationOptions());
-  const createItemMutation = useMutation(mdmDictGlobalItemCreateMutationOptions());
-  const updateItemMutation = useMutation(mdmDictGlobalItemUpdateMutationOptions());
-  const deleteItemMutation = useMutation(mdmDictGlobalItemDeleteMutationOptions());
-  const deleteTypeMutation = useMutation(mdmDictGlobalTypeDeleteMutationOptions());
+  const createTypeMutation = useMutation(systemDictGlobalTypeCreateMutationOptions());
+  const updateTypeMutation = useMutation(systemDictGlobalTypeUpdateMutationOptions());
+  const createItemMutation = useMutation(systemDictGlobalItemCreateMutationOptions());
+  const updateItemMutation = useMutation(systemDictGlobalItemUpdateMutationOptions());
+  const deleteItemMutation = useMutation(systemDictGlobalItemDeleteMutationOptions());
+  const deleteTypeMutation = useMutation(systemDictGlobalTypeDeleteMutationOptions());
   const invalidateDictionaryItems = React.useCallback(
     () =>
       queryClient.invalidateQueries({
@@ -101,10 +101,10 @@ function DictionaryManagementContent() {
     async (payload: DictionaryTypeMutationPayload) => {
       try {
         if (payload.id === 0) {
-          await createTypeMutation.mutateAsync(payload as MdmDictGlobalTypeCreateRequest);
+          await createTypeMutation.mutateAsync(payload as SystemDictGlobalTypeCreateRequest);
           toast.success('字典类型已创建');
         } else {
-          await updateTypeMutation.mutateAsync(payload as MdmDictGlobalTypeUpdateRequest);
+          await updateTypeMutation.mutateAsync(payload as SystemDictGlobalTypeUpdateRequest);
           toast.success('字典类型已更新');
         }
         setSheetState(null);
@@ -119,13 +119,13 @@ function DictionaryManagementContent() {
     async (payload: DictionaryItemMutationPayload) => {
       try {
         if (payload.id) {
-          await updateItemMutation.mutateAsync(payload as MdmDictGlobalItemUpdateRequest);
+          await updateItemMutation.mutateAsync(payload as SystemDictGlobalItemUpdateRequest);
           await invalidateDictionaryItems();
           toast.success('字典项已更新');
           return;
         }
 
-        await createItemMutation.mutateAsync(payload as MdmDictGlobalItemCreateRequest);
+        await createItemMutation.mutateAsync(payload as SystemDictGlobalItemCreateRequest);
         await invalidateDictionaryItems();
         toast.success('字典项已新增');
       } catch {
@@ -138,7 +138,9 @@ function DictionaryManagementContent() {
   const handleDelete = React.useCallback(
     async (item: DictionaryItemRecord) => {
       try {
-        await deleteItemMutation.mutateAsync({ ids: [item.id] } as MdmDictGlobalItemDeleteRequest);
+        await deleteItemMutation.mutateAsync({
+          ids: [item.id]
+        } as SystemDictGlobalItemDeleteRequest);
         await invalidateDictionaryItems();
         toast.success('字典项已删除');
       } catch {
@@ -151,7 +153,7 @@ function DictionaryManagementContent() {
   const handleBulkDelete = React.useCallback(
     async (payload: { ids: number[] }) => {
       try {
-        await deleteItemMutation.mutateAsync(payload as MdmDictGlobalItemDeleteRequest);
+        await deleteItemMutation.mutateAsync(payload as SystemDictGlobalItemDeleteRequest);
         await invalidateDictionaryItems();
         toast.success('已批量删除字典项');
       } catch (error) {
@@ -186,7 +188,7 @@ function DictionaryManagementContent() {
         status: newStatus,
         sortOrder: record.sort,
         remark: record.remark
-      } as MdmDictGlobalItemUpdateRequest);
+      } as SystemDictGlobalItemUpdateRequest);
       await invalidateDictionaryItems();
       toast.success('字典项状态已切换');
     }
@@ -210,7 +212,7 @@ function DictionaryManagementContent() {
         try {
           await deleteTypeMutation.mutateAsync({
             id: selectedType.id
-          } as MdmDictGlobalTypeDeleteRequest);
+          } as SystemDictGlobalTypeDeleteRequest);
           toast.success('字典类型已删除');
         } catch (error) {
           toast.error('字典类型删除失败');

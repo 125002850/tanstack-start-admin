@@ -7,35 +7,36 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DataTableDslCondition } from '@/hooks/use-data-table';
 
 const serviceMocks = vi.hoisted(() => ({
-  mdmDictGlobalTypesListAll: vi.fn(),
-  mdmDictGlobalTypesListAllQueryOptions: vi.fn(),
-  mdmDictGlobalItemsByType: vi.fn(),
-  mdmDictGlobalTypeCreateMutationOptions: vi.fn(),
-  mdmDictGlobalTypeUpdateMutationOptions: vi.fn(),
-  mdmDictGlobalItemCreateMutationOptions: vi.fn(),
-  mdmDictGlobalItemUpdateMutationOptions: vi.fn(),
-  mdmDictGlobalItemDeleteMutationOptions: vi.fn(),
-  mdmDictGlobalTypeDeleteMutationOptions: vi.fn()
+  systemDictGlobalTypesListAll: vi.fn(),
+  systemDictGlobalTypesListAllQueryOptions: vi.fn(),
+  systemDictGlobalItemsByType: vi.fn(),
+  systemDictGlobalTypeCreateMutationOptions: vi.fn(),
+  systemDictGlobalTypeUpdateMutationOptions: vi.fn(),
+  systemDictGlobalItemCreateMutationOptions: vi.fn(),
+  systemDictGlobalItemUpdateMutationOptions: vi.fn(),
+  systemDictGlobalItemDeleteMutationOptions: vi.fn(),
+  systemDictGlobalTypeDeleteMutationOptions: vi.fn()
 }));
 
 vi.mock('@/lib/api/clients/service', () => ({
-  mdmDictGlobalTypesListAll: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalTypesListAll(...args),
-  mdmDictGlobalTypesListAllQueryOptions: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalTypesListAllQueryOptions(...args),
-  mdmDictGlobalItemsByType: (...args: unknown[]) => serviceMocks.mdmDictGlobalItemsByType(...args),
-  mdmDictGlobalTypeCreateMutationOptions: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalTypeCreateMutationOptions(...args),
-  mdmDictGlobalTypeUpdateMutationOptions: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalTypeUpdateMutationOptions(...args),
-  mdmDictGlobalItemCreateMutationOptions: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalItemCreateMutationOptions(...args),
-  mdmDictGlobalItemUpdateMutationOptions: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalItemUpdateMutationOptions(...args),
-  mdmDictGlobalItemDeleteMutationOptions: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalItemDeleteMutationOptions(...args),
-  mdmDictGlobalTypeDeleteMutationOptions: (...args: unknown[]) =>
-    serviceMocks.mdmDictGlobalTypeDeleteMutationOptions(...args)
+  systemDictGlobalTypesListAll: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalTypesListAll(...args),
+  systemDictGlobalTypesListAllQueryOptions: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalTypesListAllQueryOptions(...args),
+  systemDictGlobalItemsByType: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalItemsByType(...args),
+  systemDictGlobalTypeCreateMutationOptions: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalTypeCreateMutationOptions(...args),
+  systemDictGlobalTypeUpdateMutationOptions: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalTypeUpdateMutationOptions(...args),
+  systemDictGlobalItemCreateMutationOptions: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalItemCreateMutationOptions(...args),
+  systemDictGlobalItemUpdateMutationOptions: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalItemUpdateMutationOptions(...args),
+  systemDictGlobalItemDeleteMutationOptions: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalItemDeleteMutationOptions(...args),
+  systemDictGlobalTypeDeleteMutationOptions: (...args: unknown[]) =>
+    serviceMocks.systemDictGlobalTypeDeleteMutationOptions(...args)
 }));
 
 import DictionaryManagementPage from './dictionary-management-page';
@@ -45,9 +46,11 @@ type DictionaryTypeResponse = {
   dictTypeCode: string;
   dictTypeName: string;
   status: string;
-  createBy: number;
+  createById: number;
+  createByName: string;
   createTime: string;
-  updateBy: number;
+  updateById: number;
+  updateByName: string;
   updateTime: string;
 };
 
@@ -59,9 +62,11 @@ type DictionaryItemResponse = {
   status: string;
   sortOrder: number;
   remark: string;
-  createBy: number;
+  createById: number;
+  createByName: string;
   createTime: string;
-  updateBy: number;
+  updateById: number;
+  updateByName: string;
   updateTime: string;
 };
 
@@ -81,9 +86,11 @@ const PAGE_ONE_TYPES: DictionaryTypeResponse[] = [
     dictTypeCode: 'payment',
     dictTypeName: '付款状态',
     status: 'enable',
-    createBy: 1,
+    createById: 1,
+    createByName: 'admin',
     createTime: '2026-06-09 09:00:00',
-    updateBy: 1,
+    updateById: 1,
+    updateByName: 'admin',
     updateTime: '2026-06-09 09:00:00'
   },
   {
@@ -91,9 +98,11 @@ const PAGE_ONE_TYPES: DictionaryTypeResponse[] = [
     dictTypeCode: 'color',
     dictTypeName: '颜色',
     status: 'enable',
-    createBy: 1,
+    createById: 1,
+    createByName: 'admin',
     createTime: '2026-06-09 09:01:00',
-    updateBy: 1,
+    updateById: 1,
+    updateByName: 'admin',
     updateTime: '2026-06-09 09:01:00'
   }
 ];
@@ -104,9 +113,11 @@ const PAGE_TWO_TYPES: DictionaryTypeResponse[] = [
     dictTypeCode: 'invoice',
     dictTypeName: '发票状态',
     status: 'enable',
-    createBy: 1,
+    createById: 1,
+    createByName: 'admin',
     createTime: '2026-06-09 09:02:00',
-    updateBy: 1,
+    updateById: 1,
+    updateByName: 'admin',
     updateTime: '2026-06-09 09:02:00'
   }
 ];
@@ -121,9 +132,11 @@ const ITEMS_BY_TYPE: Record<string, DictionaryItemResponse[]> = {
       status: 'enable',
       sortOrder: 10,
       remark: '真实接口返回',
-      createBy: 1,
+      createById: 1,
+      createByName: 'admin',
       createTime: '2026-06-09 09:05:00',
-      updateBy: 1,
+      updateById: 1,
+      updateByName: 'admin',
       updateTime: '2026-06-09 09:05:00'
     }
   ],
@@ -136,9 +149,11 @@ const ITEMS_BY_TYPE: Record<string, DictionaryItemResponse[]> = {
       status: 'enable',
       sortOrder: 20,
       remark: '颜色字典项',
-      createBy: 1,
+      createById: 1,
+      createByName: 'admin',
       createTime: '2026-06-09 09:06:00',
-      updateBy: 1,
+      updateById: 1,
+      updateByName: 'admin',
       updateTime: '2026-06-09 09:06:00'
     }
   ],
@@ -151,9 +166,11 @@ const ITEMS_BY_TYPE: Record<string, DictionaryItemResponse[]> = {
       status: 'enable',
       sortOrder: 30,
       remark: '分页回退后的字典项',
-      createBy: 1,
+      createById: 1,
+      createByName: 'admin',
       createTime: '2026-06-09 09:07:00',
-      updateBy: 1,
+      updateById: 1,
+      updateByName: 'admin',
       updateTime: '2026-06-09 09:07:00'
     }
   ]
@@ -244,15 +261,15 @@ describe('DictionaryManagementPage', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
 
   beforeEach(() => {
-    serviceMocks.mdmDictGlobalTypesListAll.mockReset();
-    serviceMocks.mdmDictGlobalTypesListAllQueryOptions.mockReset();
-    serviceMocks.mdmDictGlobalItemsByType.mockReset();
-    serviceMocks.mdmDictGlobalTypeCreateMutationOptions.mockReset();
-    serviceMocks.mdmDictGlobalTypeUpdateMutationOptions.mockReset();
-    serviceMocks.mdmDictGlobalItemCreateMutationOptions.mockReset();
-    serviceMocks.mdmDictGlobalItemUpdateMutationOptions.mockReset();
-    serviceMocks.mdmDictGlobalItemDeleteMutationOptions.mockReset();
-    serviceMocks.mdmDictGlobalTypeDeleteMutationOptions.mockReset();
+    serviceMocks.systemDictGlobalTypesListAll.mockReset();
+    serviceMocks.systemDictGlobalTypesListAllQueryOptions.mockReset();
+    serviceMocks.systemDictGlobalItemsByType.mockReset();
+    serviceMocks.systemDictGlobalTypeCreateMutationOptions.mockReset();
+    serviceMocks.systemDictGlobalTypeUpdateMutationOptions.mockReset();
+    serviceMocks.systemDictGlobalItemCreateMutationOptions.mockReset();
+    serviceMocks.systemDictGlobalItemUpdateMutationOptions.mockReset();
+    serviceMocks.systemDictGlobalItemDeleteMutationOptions.mockReset();
+    serviceMocks.systemDictGlobalTypeDeleteMutationOptions.mockReset();
 
     localStorage.clear();
     window.localStorage.setItem('app-data-table-per-page:dictionary-types', '10');
@@ -264,19 +281,19 @@ describe('DictionaryManagementPage', () => {
       unobserve() {}
     } as typeof ResizeObserver;
 
-    serviceMocks.mdmDictGlobalTypesListAllQueryOptions.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAllQueryOptions.mockImplementation(
       (request: DictionaryTypeRequest) =>
         queryOptions({
           queryKey: ['service', 'global-types', 'list-all', request] as const,
-          queryFn: ({ signal }) => serviceMocks.mdmDictGlobalTypesListAll(request, { signal })
+          queryFn: ({ signal }) => serviceMocks.systemDictGlobalTypesListAll(request, { signal })
         })
     );
-    serviceMocks.mdmDictGlobalTypeCreateMutationOptions.mockReturnValue(createMutationStub());
-    serviceMocks.mdmDictGlobalTypeUpdateMutationOptions.mockReturnValue(createMutationStub());
-    serviceMocks.mdmDictGlobalItemCreateMutationOptions.mockReturnValue(createMutationStub());
-    serviceMocks.mdmDictGlobalItemUpdateMutationOptions.mockReturnValue(createMutationStub());
-    serviceMocks.mdmDictGlobalItemDeleteMutationOptions.mockReturnValue(createMutationStub());
-    serviceMocks.mdmDictGlobalTypeDeleteMutationOptions.mockReturnValue(createMutationStub());
+    serviceMocks.systemDictGlobalTypeCreateMutationOptions.mockReturnValue(createMutationStub());
+    serviceMocks.systemDictGlobalTypeUpdateMutationOptions.mockReturnValue(createMutationStub());
+    serviceMocks.systemDictGlobalItemCreateMutationOptions.mockReturnValue(createMutationStub());
+    serviceMocks.systemDictGlobalItemUpdateMutationOptions.mockReturnValue(createMutationStub());
+    serviceMocks.systemDictGlobalItemDeleteMutationOptions.mockReturnValue(createMutationStub());
+    serviceMocks.systemDictGlobalTypeDeleteMutationOptions.mockReturnValue(createMutationStub());
   });
 
   afterEach(() => {
@@ -289,7 +306,7 @@ describe('DictionaryManagementPage', () => {
     const itemRequests: DictionaryItemRequest[] = [];
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
       async (request: DictionaryTypeRequest) => {
         typeRequests.push(request);
 
@@ -307,7 +324,7 @@ describe('DictionaryManagementPage', () => {
       }
     );
 
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (request: DictionaryItemRequest) => {
         itemRequests.push(request);
         const dictTypeCode = getTextConditionValue(request.condition);
@@ -391,7 +408,7 @@ describe('DictionaryManagementPage', () => {
   it('serializes keyword search into list-all requests', async () => {
     const typeRequests: DictionaryTypeRequest[] = [];
 
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
       async (request: DictionaryTypeRequest) => {
         typeRequests.push(request);
         const keyword = request.keyword?.toLowerCase();
@@ -407,7 +424,7 @@ describe('DictionaryManagementPage', () => {
       }
     );
 
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (_request: DictionaryItemRequest) => ({
         total: 1,
         list: ITEMS_BY_TYPE.payment
@@ -435,10 +452,10 @@ describe('DictionaryManagementPage', () => {
   it('serializes dictionary item filters with the selected type scope', async () => {
     const itemRequests: DictionaryItemRequest[] = [];
 
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
       async (_request: DictionaryTypeRequest) => PAGE_ONE_TYPES.slice(0, 1)
     );
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (request: DictionaryItemRequest) => {
         itemRequests.push(request);
 
@@ -474,10 +491,10 @@ describe('DictionaryManagementPage', () => {
   });
 
   it('shows the batch delete action only after selecting a dictionary item', async () => {
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
       async (_request: DictionaryTypeRequest) => PAGE_ONE_TYPES.slice(0, 1)
     );
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (_request: DictionaryItemRequest) => ({
         total: 1,
         list: ITEMS_BY_TYPE.payment
@@ -499,19 +516,21 @@ describe('DictionaryManagementPage', () => {
     const typeRequests: DictionaryTypeRequest[] = [];
     let resolveKeywordQuery: ((value: DictionaryTypeResponse[]) => void) | undefined;
 
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation((request: DictionaryTypeRequest) => {
-      typeRequests.push(request);
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
+      (request: DictionaryTypeRequest) => {
+        typeRequests.push(request);
 
-      if (request.keyword === 'invoice') {
-        return new Promise<DictionaryTypeResponse[]>((resolve) => {
-          resolveKeywordQuery = resolve;
-        });
+        if (request.keyword === 'invoice') {
+          return new Promise<DictionaryTypeResponse[]>((resolve) => {
+            resolveKeywordQuery = resolve;
+          });
+        }
+
+        return Promise.resolve(PAGE_ONE_TYPES);
       }
+    );
 
-      return Promise.resolve(PAGE_ONE_TYPES);
-    });
-
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (_request: DictionaryItemRequest) => ({
         total: 1,
         list: ITEMS_BY_TYPE.payment
@@ -547,13 +566,13 @@ describe('DictionaryManagementPage', () => {
   it('refreshes dictionary items after status toggle succeeds', async () => {
     const itemRequests: DictionaryItemRequest[] = [];
     const updateItemMutationFn = vi.fn().mockResolvedValue(undefined);
-    serviceMocks.mdmDictGlobalItemUpdateMutationOptions.mockReturnValue({
+    serviceMocks.systemDictGlobalItemUpdateMutationOptions.mockReturnValue({
       mutationFn: updateItemMutationFn
     });
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
       async (_request: DictionaryTypeRequest) => PAGE_ONE_TYPES.slice(0, 1)
     );
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (request: DictionaryItemRequest) => {
         itemRequests.push(request);
 
@@ -595,13 +614,13 @@ describe('DictionaryManagementPage', () => {
 
   it('invalidates dictionary item queries after item edit succeeds', async () => {
     const updateItemMutationFn = vi.fn().mockResolvedValue(undefined);
-    serviceMocks.mdmDictGlobalItemUpdateMutationOptions.mockReturnValue({
+    serviceMocks.systemDictGlobalItemUpdateMutationOptions.mockReturnValue({
       mutationFn: updateItemMutationFn
     });
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
       async (_request: DictionaryTypeRequest) => PAGE_ONE_TYPES.slice(0, 1)
     );
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (_request: DictionaryItemRequest) => ({
         total: 1,
         list: ITEMS_BY_TYPE.payment
@@ -636,11 +655,11 @@ describe('DictionaryManagementPage', () => {
   });
 
   it('binds the page write actions to the current mutation option factories', async () => {
-    serviceMocks.mdmDictGlobalTypesListAll.mockImplementation(
+    serviceMocks.systemDictGlobalTypesListAll.mockImplementation(
       async (_request: DictionaryTypeRequest) => PAGE_ONE_TYPES.slice(0, 1)
     );
 
-    serviceMocks.mdmDictGlobalItemsByType.mockImplementation(
+    serviceMocks.systemDictGlobalItemsByType.mockImplementation(
       async (_request: DictionaryItemRequest) => ({
         total: 1,
         list: ITEMS_BY_TYPE.payment
@@ -650,14 +669,14 @@ describe('DictionaryManagementPage', () => {
     render(<DictionaryManagementPage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(serviceMocks.mdmDictGlobalTypesListAllQueryOptions).toHaveBeenCalled();
-      expect(serviceMocks.mdmDictGlobalTypeCreateMutationOptions).toHaveBeenCalled();
+      expect(serviceMocks.systemDictGlobalTypesListAllQueryOptions).toHaveBeenCalled();
+      expect(serviceMocks.systemDictGlobalTypeCreateMutationOptions).toHaveBeenCalled();
     });
 
-    expect(serviceMocks.mdmDictGlobalTypeUpdateMutationOptions).toHaveBeenCalled();
-    expect(serviceMocks.mdmDictGlobalItemCreateMutationOptions).toHaveBeenCalled();
-    expect(serviceMocks.mdmDictGlobalItemUpdateMutationOptions).toHaveBeenCalled();
-    expect(serviceMocks.mdmDictGlobalItemDeleteMutationOptions).toHaveBeenCalled();
-    expect(serviceMocks.mdmDictGlobalTypeDeleteMutationOptions).toHaveBeenCalled();
+    expect(serviceMocks.systemDictGlobalTypeUpdateMutationOptions).toHaveBeenCalled();
+    expect(serviceMocks.systemDictGlobalItemCreateMutationOptions).toHaveBeenCalled();
+    expect(serviceMocks.systemDictGlobalItemUpdateMutationOptions).toHaveBeenCalled();
+    expect(serviceMocks.systemDictGlobalItemDeleteMutationOptions).toHaveBeenCalled();
+    expect(serviceMocks.systemDictGlobalTypeDeleteMutationOptions).toHaveBeenCalled();
   });
 });

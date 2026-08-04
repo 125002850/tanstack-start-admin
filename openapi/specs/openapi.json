@@ -33,11 +33,309 @@
     }
   ],
   "paths": {
+    "/api/system/dict/global/types/list": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "查询全局字典列表",
+        "description": "查询平台级全局字典类型列表",
+        "operationId": "systemDictGlobalTypesList",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeDynamicListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPageResultGlobalDictTypeRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/types/list-all": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "查询全部全局字典类型",
+        "description": "查询平台级全局字典类型全部列表（不分页）",
+        "operationId": "systemDictGlobalTypesListAll",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListGlobalDictTypeRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/type/update": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "修改全局字典类型",
+        "description": "修改平台级全局字典类型并同步字典项类型编码",
+        "operationId": "systemDictGlobalTypeUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeUpdateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/type/delete": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "删除全局字典类型",
+        "description": "删除平台级全局空字典类型",
+        "operationId": "systemDictGlobalTypeDelete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeDeleteReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/type/create": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "新增全局字典类型",
+        "description": "新增平台级全局字典类型",
+        "operationId": "systemDictGlobalTypeCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictTypeCreateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/items/options": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "批量查询字典选项",
+        "description": "前端翻译专用精简接口；单次批量查询，返回启用和禁用的未删除字典项",
+        "operationId": "systemDictGlobalItemsOptions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictOptionsReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListDictOptionGroupRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/items/by-type": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "按字典类型查询全局字典项",
+        "description": "根据全局字典类型编码分页查询平台级字典项列表",
+        "operationId": "systemDictGlobalItemsByType",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemDynamicPageReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPageResultDictItemRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/item/update": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "修改全局字典项",
+        "description": "修改平台级全局字典项，可切换所属字典类型",
+        "operationId": "systemDictGlobalItemUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemUpdateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/item/delete": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "删除全局字典项",
+        "description": "批量删除平台级全局字典项，传入ID列表",
+        "operationId": "systemDictGlobalItemDelete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemDeleteReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/item/create": {
+      "post": {
+        "tags": ["全局字典"],
+        "summary": "新增全局字典项",
+        "description": "新增平台级全局字典项",
+        "operationId": "systemDictGlobalItemCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemCreateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/staff/list-all": {
       "post": {
-        "tags": [
-          "员工信息"
-        ],
+        "tags": ["员工信息"],
         "summary": "查询全部员工列表",
         "description": "通过 SSO 服务查询员工全部列表（不分页），支持关键字模糊匹配和多字段精确筛选",
         "operationId": "staffListAll",
@@ -67,11 +365,9 @@
     },
     "/api/mdm/export/submit": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "提交导出任务",
-        "description": "按导出场景编码提交一次同步导出",
+        "description": "创建导出记录并异步执行导出",
         "operationId": "submitExport",
         "requestBody": {
           "content": {
@@ -99,9 +395,7 @@
     },
     "/api/mdm/export/my/page": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "分页查询我的导出记录",
         "description": "按当前登录人返回其导出记录列表",
         "operationId": "pageMyExportRecords",
@@ -131,9 +425,7 @@
     },
     "/api/mdm/export/download": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "获取导出下载地址",
         "description": "校验导出记录后返回临时下载地址",
         "operationId": "downloadExportRecord",
@@ -163,11 +455,9 @@
     },
     "/api/mdm/export/download/batch": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "批量下载导出记录",
-        "description": "将多条可下载导出记录打包为 zip 并返回临时下载地址",
+        "description": "创建异步任务，将多条可下载导出记录流式打包为 zip",
         "operationId": "batchDownloadExportRecords",
         "requestBody": {
           "content": {
@@ -195,9 +485,7 @@
     },
     "/api/mdm/export/detail": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "查询导出记录详情",
         "description": "按导出记录ID查询详情",
         "operationId": "detailExportRecord",
@@ -227,9 +515,7 @@
     },
     "/api/mdm/export/delete": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "删除导出记录",
         "description": "批量逻辑删除指定导出记录",
         "operationId": "deleteExportRecord",
@@ -257,299 +543,9 @@
         }
       }
     },
-    "/api/mdm/dict/global/types/list": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "查询全局字典列表",
-        "description": "查询平台级全局字典类型列表",
-        "operationId": "mdmDictGlobalTypesList",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictTypeDynamicListReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RPageResultGlobalDictTypeRspDTO"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/types/list-all": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "查询全部全局字典类型",
-        "description": "查询平台级全局字典类型全部列表（不分页）",
-        "operationId": "mdmDictGlobalTypesListAll",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictTypeListReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RListGlobalDictTypeRspDTO"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/type/update": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "修改全局字典类型",
-        "description": "修改平台级全局字典类型并同步字典项类型编码",
-        "operationId": "mdmDictGlobalTypeUpdate",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictTypeUpdateReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/type/delete": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "删除全局字典类型",
-        "description": "删除平台级全局空字典类型",
-        "operationId": "mdmDictGlobalTypeDelete",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictTypeDeleteReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/type/create": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "新增全局字典类型",
-        "description": "新增平台级全局字典类型",
-        "operationId": "mdmDictGlobalTypeCreate",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictTypeCreateReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/items/by-type": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "按字典类型查询全局字典项",
-        "description": "根据全局字典类型编码分页查询平台级字典项列表",
-        "operationId": "mdmDictGlobalItemsByType",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictItemDynamicPageReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RPageResultDictItemRspDTO"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/item/update": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "修改全局字典项",
-        "description": "修改平台级全局字典项，可切换所属字典类型",
-        "operationId": "mdmDictGlobalItemUpdate",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictItemUpdateReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/item/delete": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "删除全局字典项",
-        "description": "批量删除平台级全局字典项，传入ID列表",
-        "operationId": "mdmDictGlobalItemDelete",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictItemDeleteReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/mdm/dict/global/item/create": {
-      "post": {
-        "tags": [
-          "全局字典"
-        ],
-        "summary": "新增全局字典项",
-        "description": "新增平台级全局字典项",
-        "operationId": "mdmDictGlobalItemCreate",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GlobalDictItemCreateReqDTO"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RVoid"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/file/storage/object/upload": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "上传文件对象",
         "description": "上传文件到当前启用的文件存储 provider",
         "operationId": "uploadFileObject",
@@ -579,9 +575,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object",
                 "properties": {
                   "file": {
@@ -609,9 +603,7 @@
     },
     "/api/file/storage/object/temp-url/fetch": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "获取文件临时访问地址",
         "description": "根据对象键获取临时访问地址",
         "operationId": "fileStorageObjectTempUrlFetch",
@@ -641,9 +633,7 @@
     },
     "/api/file/storage/object/temp-url/batch-fetch": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "批量获取文件临时访问地址",
         "description": "根据对象键列表批量获取临时访问地址，重复对象键会按首次出现顺序去重",
         "operationId": "batchFetchFileObjectTempUrls",
@@ -673,9 +663,7 @@
     },
     "/api/file/storage/object/delete": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "删除文件对象",
         "description": "根据对象键删除文件",
         "operationId": "deleteFileObject",
@@ -705,9 +693,7 @@
     },
     "/api/file/storage/direct-upload/credential/fetch": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "获取直传凭证",
         "description": "获取客户端直传所需的凭证与对象信息",
         "operationId": "fileStorageDirectUploadCredentialFetch",
@@ -738,6 +724,1048 @@
   },
   "components": {
     "schemas": {
+      "GlobalDictTypeConditionNode": {
+        "required": ["nodeType"],
+        "type": "object",
+        "properties": {
+          "nodeType": {
+            "type": "string",
+            "description": "节点类型",
+            "enum": ["compose", "text", "dateTime"]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": ["AND", "OR"]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+            }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段",
+            "enum": ["dictTypeCode", "dictTypeName", "createTime"]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          }
+        },
+        "description": "全局字典类型动态查询节点",
+        "discriminator": {
+          "propertyName": "nodeType",
+          "mapping": {
+            "compose": "#/components/schemas/GlobalDictTypeGroupCondition",
+            "text": "#/components/schemas/GlobalDictTypeTextCondition",
+            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeGroupCondition"
+          },
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeTextCondition"
+          },
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeDateTimeCondition"
+          }
+        ]
+      },
+      "GlobalDictTypeDateTimeCondition": {
+        "required": ["field", "op"],
+        "type": "object",
+        "description": "全局字典类型时间条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          {
+            "required": ["nodeType"],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "时间字段",
+                "enum": ["createTime"]
+              },
+              "op": {
+                "type": "string",
+                "description": "时间操作符",
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "start": {
+                "type": "string",
+                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "end": {
+                "type": "string",
+                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": ["dateTime"]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictTypeDynamicListReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "condition": {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          "sort": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "排序项",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeSortItem"
+            }
+          },
+          "keyword": {
+            "type": "string",
+            "description": "关键字，模糊匹配字典类型编码和名称"
+          }
+        },
+        "description": "全局字典类型动态分页查询请求"
+      },
+      "GlobalDictTypeGroupCondition": {
+        "required": ["children", "logic"],
+        "type": "object",
+        "description": "全局字典类型逻辑分组",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          {
+            "required": ["nodeType"],
+            "type": "object",
+            "properties": {
+              "logic": {
+                "type": "string",
+                "description": "分组逻辑",
+                "enum": ["AND", "OR"]
+              },
+              "children": {
+                "type": "array",
+                "description": "子节点列表",
+                "items": {
+                  "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+                }
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": ["compose"]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictTypeSortItem": {
+        "required": ["direction", "field"],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "排序字段",
+            "enum": ["id", "createTime"]
+          },
+          "direction": {
+            "type": "string",
+            "description": "排序方向",
+            "enum": ["ASC", "DESC"]
+          }
+        },
+        "description": "全局字典类型排序项"
+      },
+      "GlobalDictTypeTextCondition": {
+        "required": ["field", "op"],
+        "type": "object",
+        "description": "全局字典类型文本条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
+          },
+          {
+            "required": ["nodeType"],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "文本字段",
+                "enum": ["dictTypeCode", "dictTypeName"]
+              },
+              "op": {
+                "type": "string",
+                "description": "文本操作符",
+                "enum": [
+                  "EQ",
+                  "CONTAINS",
+                  "STARTS_WITH",
+                  "ENDS_WITH",
+                  "IN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": ["text"]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createById": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "createByName": {
+            "type": "string",
+            "description": "创建人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "updateById": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "updateByName": {
+            "type": "string",
+            "description": "更新人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": ["enable", "disable"]
+          }
+        },
+        "description": "全局字典类型响应"
+      },
+      "PageResultGlobalDictTypeRspDTO": {
+        "required": ["list", "total"],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "总条数",
+            "format": "int64",
+            "example": 0
+          },
+          "list": {
+            "type": "array",
+            "description": "当前页数据列表",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
+            }
+          }
+        },
+        "description": "分页结果"
+      },
+      "RPageResultGlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultGlobalDictTypeRspDTO"
+          }
+        }
+      },
+      "GlobalDictTypeListReqDTO": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string",
+            "description": "关键字，按字典类型编码或名称模糊查询",
+            "example": "status"
+          }
+        },
+        "description": "全局字典类型全量查询请求（不分页）"
+      },
+      "RListGlobalDictTypeRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
+            }
+          }
+        }
+      },
+      "GlobalDictTypeUpdateReqDTO": {
+        "required": ["dictTypeCode", "dictTypeName", "id"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          }
+        },
+        "description": "全局字典类型修改请求"
+      },
+      "RVoid": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "GlobalDictTypeDeleteReqDTO": {
+        "required": ["id"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典类型ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "全局字典类型删除请求"
+      },
+      "GlobalDictTypeCreateReqDTO": {
+        "required": ["dictTypeCode", "dictTypeName"],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictTypeName": {
+            "type": "string",
+            "description": "字典类型名称",
+            "example": "性别"
+          }
+        },
+        "description": "全局字典类型创建请求"
+      },
+      "GlobalDictOptionsReqDTO": {
+        "required": ["dictTypeCodes"],
+        "type": "object",
+        "properties": {
+          "dictTypeCodes": {
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array",
+            "description": "字典类型编码；一次请求最多50种",
+            "example": ["ENABLE_STATUS", "YES_NO"],
+            "items": {
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+              "type": "string",
+              "description": "字典类型编码；一次请求最多50种",
+              "example": "[\"ENABLE_STATUS\",\"YES_NO\"]"
+            }
+          }
+        },
+        "description": "批量字典选项请求"
+      },
+      "DictOptionGroupRspDTO": {
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "ENABLE_STATUS"
+          },
+          "items": {
+            "type": "array",
+            "description": "字典项；包含启用和禁用项，不包含逻辑删除项",
+            "items": {
+              "$ref": "#/components/schemas/DictOptionRspDTO"
+            }
+          }
+        },
+        "description": "按类型分组的字典选项"
+      },
+      "DictOptionRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "enable"
+          },
+          "name": {
+            "type": "string",
+            "description": "字典项显示名",
+            "example": "启用"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态编码；禁用项仍返回以便历史数据显示",
+            "example": "enable"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号",
+            "format": "int32",
+            "example": 1
+          }
+        },
+        "description": "精简字典选项"
+      },
+      "RListDictOptionGroupRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictOptionGroupRspDTO"
+            }
+          }
+        }
+      },
+      "GlobalDictItemConditionNode": {
+        "required": ["nodeType"],
+        "type": "object",
+        "properties": {
+          "nodeType": {
+            "type": "string",
+            "description": "节点类型",
+            "enum": ["compose", "text", "dateTime"]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": ["AND", "OR"]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictItemConditionNode"
+            }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段",
+            "enum": ["dictTypeCode", "dictItemCode", "dictItemName", "createTime"]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          }
+        },
+        "description": "全局字典项动态查询节点",
+        "discriminator": {
+          "propertyName": "nodeType",
+          "mapping": {
+            "compose": "#/components/schemas/GlobalDictItemGroupCondition",
+            "text": "#/components/schemas/GlobalDictItemTextCondition",
+            "dateTime": "#/components/schemas/GlobalDictItemDateTimeCondition"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictItemGroupCondition"
+          },
+          {
+            "$ref": "#/components/schemas/GlobalDictItemTextCondition"
+          },
+          {
+            "$ref": "#/components/schemas/GlobalDictItemDateTimeCondition"
+          }
+        ]
+      },
+      "GlobalDictItemDateTimeCondition": {
+        "required": ["field", "op"],
+        "type": "object",
+        "description": "全局字典项时间条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
+          },
+          {
+            "required": ["nodeType"],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "时间字段",
+                "enum": ["createTime"]
+              },
+              "op": {
+                "type": "string",
+                "description": "时间操作符",
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "start": {
+                "type": "string",
+                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "end": {
+                "type": "string",
+                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": ["dateTime"]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictItemDynamicPageReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "condition": {
+            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
+          },
+          "sort": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "排序项",
+            "items": {
+              "$ref": "#/components/schemas/GlobalDictItemSortItem"
+            }
+          }
+        },
+        "description": "全局字典项动态分页查询请求"
+      },
+      "GlobalDictItemGroupCondition": {
+        "required": ["children", "logic"],
+        "type": "object",
+        "description": "全局字典项逻辑分组",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
+          },
+          {
+            "required": ["nodeType"],
+            "type": "object",
+            "properties": {
+              "logic": {
+                "type": "string",
+                "description": "分组逻辑",
+                "enum": ["AND", "OR"]
+              },
+              "children": {
+                "type": "array",
+                "description": "子节点列表",
+                "items": {
+                  "$ref": "#/components/schemas/GlobalDictItemConditionNode"
+                }
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": ["compose"]
+              }
+            }
+          }
+        ]
+      },
+      "GlobalDictItemSortItem": {
+        "required": ["direction", "field"],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "排序字段",
+            "enum": ["id", "sortOrder", "createTime"]
+          },
+          "direction": {
+            "type": "string",
+            "description": "排序方向",
+            "enum": ["ASC", "DESC"]
+          }
+        },
+        "description": "全局字典项排序项"
+      },
+      "GlobalDictItemTextCondition": {
+        "required": ["field", "op"],
+        "type": "object",
+        "description": "全局字典项文本条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
+          },
+          {
+            "required": ["nodeType"],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "文本字段",
+                "enum": ["dictTypeCode", "dictItemCode", "dictItemName"]
+              },
+              "op": {
+                "type": "string",
+                "description": "文本操作符",
+                "enum": [
+                  "EQ",
+                  "CONTAINS",
+                  "STARTS_WITH",
+                  "ENDS_WITH",
+                  "IN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": ["text"]
+              }
+            }
+          }
+        ]
+      },
+      "DictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createById": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "createByName": {
+            "type": "string",
+            "description": "创建人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "updateById": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "updateByName": {
+            "type": "string",
+            "description": "更新人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 101
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号",
+            "format": "int32",
+            "example": 1
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": ["enable", "disable"]
+          }
+        },
+        "description": "字典项响应"
+      },
+      "PageResultDictItemRspDTO": {
+        "required": ["list", "total"],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "总条数",
+            "format": "int64",
+            "example": 0
+          },
+          "list": {
+            "type": "array",
+            "description": "当前页数据列表",
+            "items": {
+              "$ref": "#/components/schemas/DictItemRspDTO"
+            }
+          }
+        },
+        "description": "分页结果"
+      },
+      "RPageResultDictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultDictItemRspDTO"
+          }
+        }
+      },
+      "GlobalDictItemUpdateReqDTO": {
+        "required": ["dictItemCode", "dictItemName", "dictTypeCode", "id"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 1
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "gender"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号，升序排列",
+            "format": "int32",
+            "example": 1
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "性别标识"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": ["enable", "disable"],
+            "x-dict-type": "ENABLE_STATUS"
+          }
+        },
+        "description": "全局字典项修改请求"
+      },
+      "GlobalDictItemDeleteReqDTO": {
+        "required": ["ids"],
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "description": "字典项ID列表",
+            "example": [1, 2, 3],
+            "items": {
+              "type": "integer",
+              "description": "字典项ID列表",
+              "format": "int64"
+            }
+          }
+        },
+        "description": "全局字典项删除请求（支持多选）"
+      },
+      "GlobalDictItemCreateReqDTO": {
+        "required": ["dictItemCode", "dictItemName", "dictTypeCode"],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号，升序排列",
+            "format": "int32",
+            "example": 1
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "性别标识"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": ["enable", "disable"],
+            "x-dict-type": "ENABLE_STATUS"
+          }
+        },
+        "description": "全局字典项创建请求"
+      },
       "StaffListAllReqDTO": {
         "type": "object",
         "properties": {
@@ -829,9 +1857,7 @@
         "description": "员工信息响应"
       },
       "ExportSubmitReqDTO": {
-        "required": [
-          "sceneCode"
-        ],
+        "required": ["sceneCode"],
         "type": "object",
         "properties": {
           "sceneCode": {
@@ -852,6 +1878,40 @@
       "ExportSubmitRspDTO": {
         "type": "object",
         "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createById": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "createByName": {
+            "type": "string",
+            "description": "创建人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "updateById": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "updateByName": {
+            "type": "string",
+            "description": "更新人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
           "recordId": {
             "type": "integer",
             "description": "记录ID",
@@ -879,15 +1939,11 @@
             "example": "csv"
           },
           "status": {
-            "type": "integer",
-            "description": "状态码",
-            "format": "int32",
-            "example": 2
-          },
-          "statusName": {
             "type": "string",
-            "description": "状态名",
-            "example": "SUCCESS"
+            "description": "状态编码；显示名由前端字典 EXPORT_RECORD_STATUS 翻译",
+            "example": "2",
+            "enum": ["1", "2", "3", "4", "5"],
+            "x-dict-type": "EXPORT_RECORD_STATUS"
           },
           "contentType": {
             "type": "string",
@@ -921,19 +1977,9 @@
             "description": "过期时间",
             "format": "date-time"
           },
-          "createTime": {
-            "type": "string",
-            "description": "创建时间",
-            "format": "date-time"
-          },
-          "createBy": {
-            "type": "string",
-            "description": "创建人用户名",
-            "example": "admin"
-          },
           "downloadUrl": {
             "type": "string",
-            "description": "临时下载地址，过期后可通过导出中心下载接口重新获取",
+            "description": "临时下载地址；异步任务提交时为空，任务成功后通过下载接口获取",
             "example": "https://example.com/download/export.csv"
           }
         },
@@ -955,37 +2001,42 @@
         }
       },
       "ExportRecordConditionNode": {
-        "required": [
-          "nodeType"
-        ],
+        "required": ["nodeType"],
         "type": "object",
         "properties": {
           "nodeType": {
             "type": "string",
             "description": "节点类型",
-            "enum": [
-              "text",
-              "compose",
-              "enum",
-              "dateTime"
-            ]
+            "enum": ["compose", "text", "dateTime", "enum"]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": ["AND", "OR"]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/ExportRecordConditionNode"
+            }
           },
           "field": {
             "type": "string",
-            "description": "文本字段；枚举字段；时间字段",
+            "description": "文本字段；时间字段；枚举字段",
             "enum": [
               "exportBizCode",
               "exportBizName",
               "fileName",
-              "status",
               "createTime",
               "finishedTime",
-              "expireTime"
+              "expireTime",
+              "status"
             ]
           },
           "op": {
             "type": "string",
-            "description": "文本操作符；枚举操作符；时间操作符",
+            "description": "文本操作符；时间操作符；枚举操作符",
             "enum": [
               "EQ",
               "CONTAINS",
@@ -1002,7 +2053,7 @@
             ]
           },
           "value": {
-            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
           },
           "values": {
             "type": "array",
@@ -1013,21 +2064,6 @@
           },
           "payloadValid": {
             "type": "boolean"
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/ExportRecordConditionNode"
-            }
           },
           "start": {
             "type": "string",
@@ -1042,10 +2078,10 @@
         "discriminator": {
           "propertyName": "nodeType",
           "mapping": {
-            "text": "#/components/schemas/ExportRecordTextCondition",
             "compose": "#/components/schemas/ExportRecordGroupCondition",
-            "enum": "#/components/schemas/ExportRecordEnumCondition",
-            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition"
+            "text": "#/components/schemas/ExportRecordTextCondition",
+            "dateTime": "#/components/schemas/ExportRecordDateTimeCondition",
+            "enum": "#/components/schemas/ExportRecordEnumCondition"
           }
         },
         "oneOf": [
@@ -1064,10 +2100,7 @@
         ]
       },
       "ExportRecordDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "导出记录时间条件",
         "allOf": [
@@ -1075,32 +2108,18 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "时间字段",
-                "enum": [
-                  "createTime",
-                  "finishedTime",
-                  "expireTime"
-                ]
+                "enum": ["createTime", "finishedTime", "expireTime"]
               },
               "op": {
                 "type": "string",
                 "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -1120,9 +2139,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
+                "enum": ["dateTime"]
               }
             }
           }
@@ -1161,10 +2178,7 @@
         "description": "导出记录动态分页查询请求"
       },
       "ExportRecordEnumCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "导出记录枚举条件",
         "allOf": [
@@ -1172,27 +2186,18 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "枚举字段",
-                "enum": [
-                  "status"
-                ]
+                "enum": ["status"]
               },
               "op": {
                 "type": "string",
                 "description": "枚举操作符",
-                "enum": [
-                  "EQ",
-                  "IN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["EQ", "IN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "integer",
@@ -1214,19 +2219,14 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "enum"
-                ]
+                "enum": ["enum"]
               }
             }
           }
         ]
       },
       "ExportRecordGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
+        "required": ["children", "logic"],
         "type": "object",
         "description": "导出记录逻辑分组",
         "allOf": [
@@ -1234,18 +2234,13 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "logic": {
                 "type": "string",
                 "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
+                "enum": ["AND", "OR"]
               },
               "children": {
                 "type": "array",
@@ -1257,47 +2252,31 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
+                "enum": ["compose"]
               }
             }
           }
         ]
       },
       "ExportRecordSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
+        "required": ["direction", "field"],
         "type": "object",
         "properties": {
           "field": {
             "type": "string",
             "description": "排序字段",
-            "enum": [
-              "createTime",
-              "finishedTime",
-              "expireTime",
-              "downloadCount"
-            ]
+            "enum": ["createTime", "finishedTime", "expireTime", "downloadCount"]
           },
           "direction": {
             "type": "string",
             "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
+            "enum": ["ASC", "DESC"]
           }
         },
         "description": "导出记录排序项"
       },
       "ExportRecordTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "导出记录文本条件",
         "allOf": [
@@ -1305,19 +2284,13 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "文本字段",
-                "enum": [
-                  "exportBizCode",
-                  "exportBizName",
-                  "fileName"
-                ]
+                "enum": ["exportBizCode", "exportBizName", "fileName"]
               },
               "op": {
                 "type": "string",
@@ -1350,9 +2323,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
+                "enum": ["text"]
               }
             }
           }
@@ -1361,6 +2332,40 @@
       "ExportRecordRspDTO": {
         "type": "object",
         "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createById": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "createByName": {
+            "type": "string",
+            "description": "创建人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "updateById": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "updateByName": {
+            "type": "string",
+            "description": "更新人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
           "recordId": {
             "type": "integer",
             "description": "记录ID",
@@ -1388,15 +2393,11 @@
             "example": "csv"
           },
           "status": {
-            "type": "integer",
-            "description": "状态码",
-            "format": "int32",
-            "example": 2
-          },
-          "statusName": {
             "type": "string",
-            "description": "状态名",
-            "example": "SUCCESS"
+            "description": "状态编码；显示名由前端字典 EXPORT_RECORD_STATUS 翻译",
+            "example": "2",
+            "enum": ["1", "2", "3", "4", "5"],
+            "x-dict-type": "EXPORT_RECORD_STATUS"
           },
           "contentType": {
             "type": "string",
@@ -1429,25 +2430,12 @@
             "type": "string",
             "description": "过期时间",
             "format": "date-time"
-          },
-          "createTime": {
-            "type": "string",
-            "description": "创建时间",
-            "format": "date-time"
-          },
-          "createBy": {
-            "type": "string",
-            "description": "创建人用户名",
-            "example": "admin"
           }
         },
         "description": "导出记录响应"
       },
       "PageResultExportRecordRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -1482,9 +2470,7 @@
         }
       },
       "ExportRecordIdReqDTO": {
-        "required": [
-          "recordId"
-        ],
+        "required": ["recordId"],
         "type": "object",
         "properties": {
           "recordId": {
@@ -1534,9 +2520,7 @@
         }
       },
       "ExportBatchDownloadReqDTO": {
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "type": "object",
         "properties": {
           "ids": {
@@ -1544,11 +2528,7 @@
             "minItems": 0,
             "type": "array",
             "description": "导出记录ID列表，最多 50 条",
-            "example": [
-              1,
-              2,
-              3
-            ],
+            "example": [1, 2, 3],
             "items": {
               "type": "integer",
               "description": "导出记录ID列表，最多 50 条",
@@ -1561,6 +2541,19 @@
       "ExportBatchDownloadRspDTO": {
         "type": "object",
         "properties": {
+          "recordId": {
+            "type": "integer",
+            "description": "批量下载任务记录ID",
+            "format": "int64",
+            "example": 1001
+          },
+          "status": {
+            "type": "string",
+            "description": "任务状态编码；显示名由前端字典 EXPORT_RECORD_STATUS 翻译",
+            "example": "1",
+            "enum": ["1", "2", "3", "4", "5"],
+            "x-dict-type": "EXPORT_RECORD_STATUS"
+          },
           "fileName": {
             "type": "string",
             "description": "打包文件名",
@@ -1568,17 +2561,17 @@
           },
           "downloadUrl": {
             "type": "string",
-            "description": "临时下载地址",
+            "description": "临时下载地址；异步任务提交时为空，任务成功后通过下载接口获取",
             "example": "https://example.com/download/export-batch.zip"
           },
           "contentType": {
             "type": "string",
-            "description": "内容类型",
+            "description": "内容类型，任务完成前为空",
             "example": "application/zip"
           },
           "fileSize": {
             "type": "integer",
-            "description": "文件大小，单位字节",
+            "description": "文件大小，单位字节，任务完成前为空",
             "format": "int64",
             "example": 2048
           }
@@ -1616,19 +2609,13 @@
         }
       },
       "ExportRecordDeleteReqDTO": {
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "type": "object",
         "properties": {
           "ids": {
             "type": "array",
             "description": "导出记录ID列表",
-            "example": [
-              1,
-              2,
-              3
-            ],
+            "example": [1, 2, 3],
             "items": {
               "type": "integer",
               "description": "导出记录ID列表",
@@ -1637,1098 +2624,6 @@
           }
         },
         "description": "导出记录删除请求（支持多选）"
-      },
-      "RVoid": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object"
-          }
-        }
-      },
-      "GlobalDictTypeConditionNode": {
-        "required": [
-          "nodeType"
-        ],
-        "type": "object",
-        "properties": {
-          "nodeType": {
-            "type": "string",
-            "description": "节点类型",
-            "enum": [
-              "text",
-              "compose",
-              "dateTime"
-            ]
-          },
-          "field": {
-            "type": "string",
-            "description": "文本字段；时间字段",
-            "enum": [
-              "dictTypeCode",
-              "dictTypeName",
-              "createTime"
-            ]
-          },
-          "op": {
-            "type": "string",
-            "description": "文本操作符；时间操作符",
-            "enum": [
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN",
-              "IS_NULL",
-              "IS_NOT_NULL",
-              "GT",
-              "GTE",
-              "LT",
-              "LTE",
-              "BETWEEN"
-            ]
-          },
-          "value": {
-            "type": "string",
-            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
-          },
-          "payloadValid": {
-            "type": "boolean"
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
-            }
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          }
-        },
-        "description": "全局字典类型动态查询节点",
-        "discriminator": {
-          "propertyName": "nodeType",
-          "mapping": {
-            "text": "#/components/schemas/GlobalDictTypeTextCondition",
-            "compose": "#/components/schemas/GlobalDictTypeGroupCondition",
-            "dateTime": "#/components/schemas/GlobalDictTypeDateTimeCondition"
-          }
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictTypeGroupCondition"
-          },
-          {
-            "$ref": "#/components/schemas/GlobalDictTypeTextCondition"
-          },
-          {
-            "$ref": "#/components/schemas/GlobalDictTypeDateTimeCondition"
-          }
-        ]
-      },
-      "GlobalDictTypeDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
-        "type": "object",
-        "description": "全局字典类型时间条件",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
-          },
-          {
-            "required": [
-              "nodeType"
-            ],
-            "type": "object",
-            "properties": {
-              "field": {
-                "type": "string",
-                "description": "时间字段",
-                "enum": [
-                  "createTime"
-                ]
-              },
-              "op": {
-                "type": "string",
-                "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
-              },
-              "value": {
-                "type": "string",
-                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
-              },
-              "start": {
-                "type": "string",
-                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-              },
-              "end": {
-                "type": "string",
-                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-              },
-              "payloadValid": {
-                "type": "boolean"
-              },
-              "nodeType": {
-                "type": "string",
-                "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "GlobalDictTypeDynamicListReqDTO": {
-        "type": "object",
-        "properties": {
-          "pageNo": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "页码，从1开始",
-            "format": "int64",
-            "example": 1
-          },
-          "pageSize": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "每页条数",
-            "format": "int64",
-            "example": 20
-          },
-          "condition": {
-            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
-          },
-          "sort": {
-            "maxItems": 3,
-            "minItems": 0,
-            "type": "array",
-            "description": "排序项",
-            "items": {
-              "$ref": "#/components/schemas/GlobalDictTypeSortItem"
-            }
-          },
-          "keyword": {
-            "type": "string",
-            "description": "关键字，模糊匹配字典类型编码和名称"
-          }
-        },
-        "description": "全局字典类型动态分页查询请求"
-      },
-      "GlobalDictTypeGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
-        "type": "object",
-        "description": "全局字典类型逻辑分组",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
-          },
-          {
-            "required": [
-              "nodeType"
-            ],
-            "type": "object",
-            "properties": {
-              "logic": {
-                "type": "string",
-                "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
-              },
-              "children": {
-                "type": "array",
-                "description": "子节点列表",
-                "items": {
-                  "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
-                }
-              },
-              "nodeType": {
-                "type": "string",
-                "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "GlobalDictTypeSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
-        "type": "object",
-        "properties": {
-          "field": {
-            "type": "string",
-            "description": "排序字段",
-            "enum": [
-              "id",
-              "createTime"
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
-          }
-        },
-        "description": "全局字典类型排序项"
-      },
-      "GlobalDictTypeTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
-        "type": "object",
-        "description": "全局字典类型文本条件",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
-          },
-          {
-            "required": [
-              "nodeType"
-            ],
-            "type": "object",
-            "properties": {
-              "field": {
-                "type": "string",
-                "description": "文本字段",
-                "enum": [
-                  "dictTypeCode",
-                  "dictTypeName"
-                ]
-              },
-              "op": {
-                "type": "string",
-                "description": "文本操作符",
-                "enum": [
-                  "EQ",
-                  "CONTAINS",
-                  "STARTS_WITH",
-                  "ENDS_WITH",
-                  "IN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
-              },
-              "value": {
-                "type": "string",
-                "description": "单值操作符使用"
-              },
-              "values": {
-                "type": "array",
-                "description": "IN 操作符使用",
-                "items": {
-                  "type": "string",
-                  "description": "IN 操作符使用"
-                }
-              },
-              "payloadValid": {
-                "type": "boolean"
-              },
-              "nodeType": {
-                "type": "string",
-                "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "GlobalDictTypeRspDTO": {
-        "type": "object",
-        "properties": {
-          "createTime": {
-            "type": "string",
-            "description": "创建时间",
-            "format": "date-time"
-          },
-          "updateTime": {
-            "type": "string",
-            "description": "更新时间",
-            "format": "date-time"
-          },
-          "createBy": {
-            "type": "string",
-            "description": "创建人用户名",
-            "example": "admin"
-          },
-          "updateBy": {
-            "type": "string",
-            "description": "更新人用户名",
-            "example": "admin"
-          },
-          "id": {
-            "type": "integer",
-            "description": "字典类型ID",
-            "format": "int64",
-            "example": 1
-          },
-          "dictTypeCode": {
-            "type": "string",
-            "description": "字典类型编码",
-            "example": "gender"
-          },
-          "dictTypeName": {
-            "type": "string",
-            "description": "字典类型名称",
-            "example": "性别"
-          },
-          "remark": {
-            "type": "string",
-            "description": "备注"
-          },
-          "status": {
-            "type": "string",
-            "description": "状态：enable-启用，disable-禁用",
-            "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
-          }
-        },
-        "description": "全局字典类型响应"
-      },
-      "PageResultGlobalDictTypeRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
-          },
-          "list": {
-            "type": "array",
-            "description": "当前页数据列表",
-            "items": {
-              "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
-            }
-          }
-        },
-        "description": "分页结果"
-      },
-      "RPageResultGlobalDictTypeRspDTO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PageResultGlobalDictTypeRspDTO"
-          }
-        }
-      },
-      "GlobalDictTypeListReqDTO": {
-        "type": "object",
-        "properties": {
-          "keyword": {
-            "type": "string",
-            "description": "关键字，按字典类型编码或名称模糊查询",
-            "example": "status"
-          }
-        },
-        "description": "全局字典类型全量查询请求（不分页）"
-      },
-      "RListGlobalDictTypeRspDTO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GlobalDictTypeRspDTO"
-            }
-          }
-        }
-      },
-      "GlobalDictTypeUpdateReqDTO": {
-        "required": [
-          "dictTypeCode",
-          "dictTypeName",
-          "id"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "字典类型ID",
-            "format": "int64",
-            "example": 1
-          },
-          "dictTypeCode": {
-            "type": "string",
-            "description": "字典类型编码",
-            "example": "gender"
-          },
-          "dictTypeName": {
-            "type": "string",
-            "description": "字典类型名称",
-            "example": "性别"
-          }
-        },
-        "description": "全局字典类型修改请求"
-      },
-      "GlobalDictTypeDeleteReqDTO": {
-        "required": [
-          "id"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "字典类型ID",
-            "format": "int64",
-            "example": 1
-          }
-        },
-        "description": "全局字典类型删除请求"
-      },
-      "GlobalDictTypeCreateReqDTO": {
-        "required": [
-          "dictTypeCode",
-          "dictTypeName"
-        ],
-        "type": "object",
-        "properties": {
-          "dictTypeCode": {
-            "type": "string",
-            "description": "字典类型编码",
-            "example": "GENDER"
-          },
-          "dictTypeName": {
-            "type": "string",
-            "description": "字典类型名称",
-            "example": "性别"
-          }
-        },
-        "description": "全局字典类型创建请求"
-      },
-      "GlobalDictItemConditionNode": {
-        "required": [
-          "nodeType"
-        ],
-        "type": "object",
-        "properties": {
-          "nodeType": {
-            "type": "string",
-            "description": "节点类型",
-            "enum": [
-              "dateTime",
-              "text",
-              "compose"
-            ]
-          },
-          "field": {
-            "type": "string",
-            "description": "时间字段；文本字段",
-            "enum": [
-              "createTime",
-              "dictTypeCode",
-              "dictItemCode",
-              "dictItemName"
-            ]
-          },
-          "op": {
-            "type": "string",
-            "description": "时间操作符；文本操作符",
-            "enum": [
-              "GT",
-              "GTE",
-              "LT",
-              "LTE",
-              "BETWEEN",
-              "IS_NULL",
-              "IS_NOT_NULL",
-              "EQ",
-              "CONTAINS",
-              "STARTS_WITH",
-              "ENDS_WITH",
-              "IN"
-            ]
-          },
-          "value": {
-            "type": "string",
-            "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
-          },
-          "start": {
-            "type": "string",
-            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "end": {
-            "type": "string",
-            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-          },
-          "payloadValid": {
-            "type": "boolean"
-          },
-          "values": {
-            "type": "array",
-            "description": "IN 操作符使用",
-            "items": {
-              "type": "string",
-              "description": "IN 操作符使用"
-            }
-          },
-          "logic": {
-            "type": "string",
-            "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
-          },
-          "children": {
-            "type": "array",
-            "description": "子节点列表",
-            "items": {
-              "$ref": "#/components/schemas/GlobalDictItemConditionNode"
-            }
-          }
-        },
-        "description": "全局字典项动态查询节点",
-        "discriminator": {
-          "propertyName": "nodeType",
-          "mapping": {
-            "dateTime": "#/components/schemas/GlobalDictItemDateTimeCondition",
-            "text": "#/components/schemas/GlobalDictItemTextCondition",
-            "compose": "#/components/schemas/GlobalDictItemGroupCondition"
-          }
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictItemGroupCondition"
-          },
-          {
-            "$ref": "#/components/schemas/GlobalDictItemTextCondition"
-          },
-          {
-            "$ref": "#/components/schemas/GlobalDictItemDateTimeCondition"
-          }
-        ]
-      },
-      "GlobalDictItemDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
-        "type": "object",
-        "description": "全局字典项时间条件",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
-          },
-          {
-            "required": [
-              "nodeType"
-            ],
-            "type": "object",
-            "properties": {
-              "field": {
-                "type": "string",
-                "description": "时间字段",
-                "enum": [
-                  "createTime"
-                ]
-              },
-              "op": {
-                "type": "string",
-                "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
-              },
-              "value": {
-                "type": "string",
-                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
-              },
-              "start": {
-                "type": "string",
-                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
-              },
-              "end": {
-                "type": "string",
-                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
-              },
-              "payloadValid": {
-                "type": "boolean"
-              },
-              "nodeType": {
-                "type": "string",
-                "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "GlobalDictItemDynamicPageReqDTO": {
-        "type": "object",
-        "properties": {
-          "pageNo": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "页码，从1开始",
-            "format": "int64",
-            "example": 1
-          },
-          "pageSize": {
-            "minimum": 1,
-            "type": "integer",
-            "description": "每页条数",
-            "format": "int64",
-            "example": 20
-          },
-          "condition": {
-            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
-          },
-          "sort": {
-            "maxItems": 3,
-            "minItems": 0,
-            "type": "array",
-            "description": "排序项",
-            "items": {
-              "$ref": "#/components/schemas/GlobalDictItemSortItem"
-            }
-          }
-        },
-        "description": "全局字典项动态分页查询请求"
-      },
-      "GlobalDictItemGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
-        "type": "object",
-        "description": "全局字典项逻辑分组",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
-          },
-          {
-            "required": [
-              "nodeType"
-            ],
-            "type": "object",
-            "properties": {
-              "logic": {
-                "type": "string",
-                "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
-              },
-              "children": {
-                "type": "array",
-                "description": "子节点列表",
-                "items": {
-                  "$ref": "#/components/schemas/GlobalDictItemConditionNode"
-                }
-              },
-              "nodeType": {
-                "type": "string",
-                "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "GlobalDictItemSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
-        "type": "object",
-        "properties": {
-          "field": {
-            "type": "string",
-            "description": "排序字段",
-            "enum": [
-              "id",
-              "sortOrder",
-              "createTime"
-            ]
-          },
-          "direction": {
-            "type": "string",
-            "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
-          }
-        },
-        "description": "全局字典项排序项"
-      },
-      "GlobalDictItemTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
-        "type": "object",
-        "description": "全局字典项文本条件",
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/GlobalDictItemConditionNode"
-          },
-          {
-            "required": [
-              "nodeType"
-            ],
-            "type": "object",
-            "properties": {
-              "field": {
-                "type": "string",
-                "description": "文本字段",
-                "enum": [
-                  "dictTypeCode",
-                  "dictItemCode",
-                  "dictItemName"
-                ]
-              },
-              "op": {
-                "type": "string",
-                "description": "文本操作符",
-                "enum": [
-                  "EQ",
-                  "CONTAINS",
-                  "STARTS_WITH",
-                  "ENDS_WITH",
-                  "IN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
-              },
-              "value": {
-                "type": "string",
-                "description": "单值操作符使用"
-              },
-              "values": {
-                "type": "array",
-                "description": "IN 操作符使用",
-                "items": {
-                  "type": "string",
-                  "description": "IN 操作符使用"
-                }
-              },
-              "payloadValid": {
-                "type": "boolean"
-              },
-              "nodeType": {
-                "type": "string",
-                "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
-              }
-            }
-          }
-        ]
-      },
-      "DictItemRspDTO": {
-        "type": "object",
-        "properties": {
-          "createTime": {
-            "type": "string",
-            "description": "创建时间",
-            "format": "date-time"
-          },
-          "updateTime": {
-            "type": "string",
-            "description": "更新时间",
-            "format": "date-time"
-          },
-          "createBy": {
-            "type": "string",
-            "description": "创建人用户名",
-            "example": "admin"
-          },
-          "updateBy": {
-            "type": "string",
-            "description": "更新人用户名",
-            "example": "admin"
-          },
-          "id": {
-            "type": "integer",
-            "description": "字典项ID",
-            "format": "int64",
-            "example": 101
-          },
-          "dictTypeCode": {
-            "type": "string",
-            "description": "字典类型编码",
-            "example": "GENDER"
-          },
-          "dictItemCode": {
-            "type": "string",
-            "description": "字典项编码",
-            "example": "MALE"
-          },
-          "dictItemName": {
-            "type": "string",
-            "description": "字典项名称",
-            "example": "男"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "description": "排序号",
-            "format": "int32",
-            "example": 1
-          },
-          "remark": {
-            "type": "string",
-            "description": "备注"
-          },
-          "status": {
-            "type": "string",
-            "description": "状态：enable-启用，disable-禁用",
-            "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
-          }
-        },
-        "description": "字典项响应"
-      },
-      "PageResultDictItemRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "integer",
-            "description": "总条数",
-            "format": "int64",
-            "example": 0
-          },
-          "list": {
-            "type": "array",
-            "description": "当前页数据列表",
-            "items": {
-              "$ref": "#/components/schemas/DictItemRspDTO"
-            }
-          }
-        },
-        "description": "分页结果"
-      },
-      "RPageResultDictItemRspDTO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/PageResultDictItemRspDTO"
-          }
-        }
-      },
-      "GlobalDictItemUpdateReqDTO": {
-        "required": [
-          "dictItemCode",
-          "dictItemName",
-          "dictTypeCode",
-          "id"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "字典项ID",
-            "format": "int64",
-            "example": 1
-          },
-          "dictTypeCode": {
-            "type": "string",
-            "description": "字典类型编码",
-            "example": "gender"
-          },
-          "dictItemCode": {
-            "type": "string",
-            "description": "字典项编码",
-            "example": "MALE"
-          },
-          "dictItemName": {
-            "type": "string",
-            "description": "字典项名称",
-            "example": "男"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "description": "排序号，升序排列",
-            "format": "int32",
-            "example": 1
-          },
-          "remark": {
-            "type": "string",
-            "description": "备注",
-            "example": "性别标识"
-          },
-          "status": {
-            "type": "string",
-            "description": "状态：enable-启用，disable-禁用",
-            "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
-          }
-        },
-        "description": "全局字典项修改请求"
-      },
-      "GlobalDictItemDeleteReqDTO": {
-        "required": [
-          "ids"
-        ],
-        "type": "object",
-        "properties": {
-          "ids": {
-            "type": "array",
-            "description": "字典项ID列表",
-            "example": [
-              1,
-              2,
-              3
-            ],
-            "items": {
-              "type": "integer",
-              "description": "字典项ID列表",
-              "format": "int64"
-            }
-          }
-        },
-        "description": "全局字典项删除请求（支持多选）"
-      },
-      "GlobalDictItemCreateReqDTO": {
-        "required": [
-          "dictItemCode",
-          "dictItemName",
-          "dictTypeCode"
-        ],
-        "type": "object",
-        "properties": {
-          "dictTypeCode": {
-            "type": "string",
-            "description": "字典类型编码",
-            "example": "GENDER"
-          },
-          "dictItemCode": {
-            "type": "string",
-            "description": "字典项编码",
-            "example": "MALE"
-          },
-          "dictItemName": {
-            "type": "string",
-            "description": "字典项名称",
-            "example": "男"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "description": "排序号，升序排列",
-            "format": "int32",
-            "example": 1
-          },
-          "remark": {
-            "type": "string",
-            "description": "备注",
-            "example": "性别标识"
-          },
-          "status": {
-            "type": "string",
-            "description": "状态：enable-启用，disable-禁用",
-            "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
-          }
-        },
-        "description": "全局字典项创建请求"
       },
       "RStoredFileRspDTO": {
         "type": "object",
@@ -2778,9 +2673,7 @@
         "description": "已存储文件响应"
       },
       "FetchTempUrlReqDTO": {
-        "required": [
-          "objectKey"
-        ],
+        "required": ["objectKey"],
         "type": "object",
         "properties": {
           "objectKey": {
@@ -2823,9 +2716,7 @@
         }
       },
       "FetchTempUrlBatchReqDTO": {
-        "required": [
-          "objectKeys"
-        ],
+        "required": ["objectKeys"],
         "type": "object",
         "properties": {
           "objectKeys": {
@@ -2833,10 +2724,7 @@
             "minItems": 0,
             "type": "array",
             "description": "对象键列表，最多200个，重复对象键会按首次出现顺序去重",
-            "example": [
-              "exports/global-dict/a.csv",
-              "exports/global-dict/b.csv"
-            ],
+            "example": ["exports/global-dict/a.csv", "exports/global-dict/b.csv"],
             "items": {
               "type": "string",
               "description": "对象键列表，最多200个，重复对象键会按首次出现顺序去重",
@@ -2891,9 +2779,7 @@
         }
       },
       "DeleteFileReqDTO": {
-        "required": [
-          "objectKey"
-        ],
+        "required": ["objectKey"],
         "type": "object",
         "properties": {
           "objectKey": {
@@ -2905,9 +2791,7 @@
         "description": "删除文件请求"
       },
       "FetchDirectUploadCredentialReqDTO": {
-        "required": [
-          "bizPath"
-        ],
+        "required": ["bizPath"],
         "type": "object",
         "properties": {
           "bizPath": {
@@ -2967,19 +2851,6 @@
           },
           "data": {
             "$ref": "#/components/schemas/FetchDirectUploadCredentialRspDTO"
-          }
-        }
-      },
-      "EnumVO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "description": "编码"
-          },
-          "desc": {
-            "type": "string",
-            "description": "描述"
           }
         }
       }

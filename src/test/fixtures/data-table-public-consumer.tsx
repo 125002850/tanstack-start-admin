@@ -26,9 +26,11 @@ import type {
 interface PublicConsumerRow {
   id: number;
   name: string;
-  createBy?: number | null;
+  createById?: number | null;
+  createByName?: string | null;
   createTime?: string | null;
-  updateBy?: number | null;
+  updateById?: number | null;
+  updateByName?: string | null;
   updateTime?: string | null;
   children?: PublicConsumerRow[];
 }

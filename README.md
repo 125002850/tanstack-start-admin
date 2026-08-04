@@ -130,6 +130,32 @@ src/
 
 SSO 账号、密码、ticket、token 和环境专属地址不得写入 tracked 文件。AI Playwright 登录态准备与本地回跳流程由 [`oig-sso-skill`](.agents/skills/oig-sso-skill/SKILL.md) 维护。
 
+## 字典与枚举展示
+
+后端普通字典和枚举字段只返回稳定 code，页面展示名称由前端字典组件负责。一个页面先用 `useDicts` 或 `DictionaryScope` 声明全部字典类型，通过 generated client 一次请求 `/api/system/dict/global/items/options`；表格 cell 只能读取内存映射，不得逐格请求。
+
+- code/name 映射保留停用项，用于正确显示历史数据；
+- 表单 `options` 只含启用项；
+- 枚举对前端也视为字典，不在前端复制后端枚举描述；
+- 后端导出使用服务端翻译器，不依赖浏览器字典缓存。
+
+## OpenAPI 客户端生成
+
+前端只使用 Swagger 生成客户端调用业务 API。拉取动作只读取已经运行的 Java 服务，不会启动或重启后端：
+
+```bash
+# 从默认 http://localhost:8080/v3/api-docs 拉取 spec 并生成客户端
+pnpm api
+
+# 后端运行在其他地址时显式指定
+OPENAPI_FETCH_URL=http://127.0.0.1:18080/v3/api-docs pnpm api
+
+# 仅根据已提交的本地 spec 重新生成，不访问后端
+pnpm codegen
+```
+
+页面禁止绕过 generated client 直接 `fetch('/...')`。
+
 ## 开发规范
 
 README 只维护项目定位、运行方式和架构入口；可执行的工程约束集中维护在 [`oig-tanstack-admin`](.agents/skills/oig-tanstack-admin/SKILL.md)，避免 README、代理规则和技能 reference 多处重复。
@@ -160,6 +186,7 @@ pnpm dev
 开发服务器默认监听 <http://localhost:3000>，不设置额外变量也可以启动；进入需要登录信息的 dashboard 仍依赖可访问的 SSO 后端。接入实际后端与 SSO 时，在 `.env` 中按 `env.example.txt` 配置：
 
 - `APP_GATEWAY`、`PROXY_URL`：Vite 代理前缀与后端地址
+- `OPENAPI_FETCH_URL`：可选的 OpenAPI 文档地址，仅供拉取命令使用
 - `APP_BASE_PATH`：非根路径部署时的公共路径
 - `VITE_APP_SSO_CLIENT_ID`、`VITE_APP_SSO_SERVICE_ID`、`VITE_APP_SSO_SERVICE_CODE`：共享 transport 注入的 SSO 服务头
 

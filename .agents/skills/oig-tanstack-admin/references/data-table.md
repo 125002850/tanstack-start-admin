@@ -192,11 +192,13 @@ export const xxxColumns: ColumnDef<XxxRecord>[] = [
 
 ```ts
 interface AuditFields {
-  createBy?: string | number | null;
+  createById?: number | null;
+  createByName?: string | null;
   createTime?: string | null;
-  updateBy?: string | number | null;
+  updateById?: number | null;
+  updateByName?: string | null;
   updateTime?: string | null;
 }
 ```
 
-SSO OpenAPI DTO 中审计人字段通常生成为用户名 `string`，其他接口可能仍返回数字 ID；共享审计列同时接受两种稳定标识，调用点禁止用类型断言掩盖其他字段差异。
+后端统一返回审计人 ID 和翻译后的姓名；共享审计列优先展示姓名，姓名缺失时回退展示 ID。调用点禁止用类型断言掩盖契约差异。
