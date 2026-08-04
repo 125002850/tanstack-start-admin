@@ -5,28 +5,7 @@ import { FieldItem } from '@/components/ui/detail-field';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import type { StaffRspDTO } from '@/lib/api/clients/service';
 
-import { formatOptionalDateTime } from '../lib/format';
-
-function statusBadge(status?: string) {
-  if (status === 'ENABLED') {
-    return (
-      <Badge className='bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600/15 dark:bg-emerald-400/10 dark:text-emerald-400 dark:hover:bg-emerald-400/15'>
-        启用
-      </Badge>
-    );
-  }
-  if (status === 'DISABLED') {
-    return (
-      <Badge
-        variant='destructive'
-        className='bg-red-600/10 text-red-600 hover:bg-red-600/15 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/15'
-      >
-        禁用
-      </Badge>
-    );
-  }
-  return <Badge variant='outline'>{status ?? '-'}</Badge>;
-}
+import { formatOptionalDateTime, StatusBadge } from '../lib/format';
 
 function StaffDetailSheet({
   open,
@@ -47,7 +26,7 @@ function StaffDetailSheet({
           <DetailProfileCard
             name={staff?.staffName ?? '-'}
             subtitle={staff?.deptName}
-            status={statusBadge(staff?.status)}
+            status={<StatusBadge status={staff?.status} />}
           />
 
           <div className='flex flex-col gap-6 px-6 pb-6'>

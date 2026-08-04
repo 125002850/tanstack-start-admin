@@ -28,7 +28,8 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import type { DeptRspDTO, RoleRspDTO } from '@/lib/api/clients/service';
-import { DATA_SCOPE_OPTIONS } from '../lib/constants';
+import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
+import { IAM_DATA_SCOPE_TYPE_CODES } from '../lib/constants';
 
 import { DeptTreeMultiSelect } from './dept-tree-multi-select';
 import { FieldShell } from './role-form-sheet';
@@ -56,6 +57,11 @@ export default function RoleDataScopeSheet({
   departments: readonly DeptRspDTO[];
   onSubmit: (payload: { dataScopeType: DataScopeType; deptIds: number[] }) => Promise<void>;
 }) {
+  const dataScopeDict = useDict('IAM_DATA_SCOPE_TYPE');
+  const dataScopeOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(dataScopeDict.options, IAM_DATA_SCOPE_TYPE_CODES),
+    [dataScopeDict.options]
+  );
   const [dataScopeType, setDataScopeType] = React.useState<DataScopeType>('SELF');
   const [deptIds, setDeptIds] = React.useState<string[]>([]);
   const [confirmEmptyOpen, setConfirmEmptyOpen] = React.useState(false);
@@ -100,7 +106,7 @@ export default function RoleDataScopeSheet({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {DATA_SCOPE_OPTIONS.map((option) => (
+                    {dataScopeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>

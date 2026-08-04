@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { DeptRspDTO, RoleRspDTO } from '@/lib/api/clients/service';
+import { createDictionaryTestWrapper } from '@/test/dictionary-test-provider.fixture';
 
 import RoleDataScopeSheet, { dataScopeDeptIds } from './role-data-scope-sheet';
 
@@ -32,7 +33,8 @@ function renderSheet(onSubmit = vi.fn().mockResolvedValue(undefined), role = CUS
       role={role}
       departments={DEPARTMENTS}
       onSubmit={onSubmit}
-    />
+    />,
+    { wrapper: createDictionaryTestWrapper() }
   );
   return onSubmit;
 }

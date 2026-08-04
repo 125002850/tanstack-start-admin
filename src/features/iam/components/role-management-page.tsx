@@ -11,6 +11,7 @@ import { createDataTableColumnDsl } from '@/components/data-table/columns/data-t
 import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
+import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
 import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
 import type { DataTableAction, DataTableRowAction } from '@/types/data-table';
 import {
@@ -30,7 +31,7 @@ import {
 } from '@/lib/api/clients/service';
 import { nullableText } from '@/lib/formatters/display';
 import { iamDeptTreeQueryOptions, iamMenuTreeQueryOptions } from '../api/query-options';
-import { ENABLE_STATUS_OPTIONS } from '../lib/constants';
+import { IAM_STATUS_CODES } from '../lib/constants';
 import { DataScopeBadge, nextStatus, StatusBadge } from '../lib/format';
 import { menuMultiSelectOptions } from '../lib/tree';
 import { dslConditionValue, pageRequestFromDsl } from '../lib/table';
@@ -60,7 +61,10 @@ function roleTableQueryOptions(request: DataTableDslPageRequestBase) {
   });
 }
 
-function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<RoleRspDTO>> {
+function getColumns(
+  onOpenDetail: (role: RoleRspDTO) => void,
+  statusOptions: readonly { value: 'ENABLED' | 'DISABLED'; label: string }[]
+): Array<ColumnDef<RoleRspDTO>> {
   return [
     columnDsl.field('roleName', '角色名称', {
       size: 'lg',
@@ -86,7 +90,7 @@ function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<R
     columnDsl.field('status', '状态', {
       size: 'sm',
       filter: 'select',
-      filterOptions: [...ENABLE_STATUS_OPTIONS],
+      filterOptions: statusOptions,
       enableSorting: false,
       renderCell: ({ row }) => <StatusBadge status={row.original.status} />
     }),
@@ -112,6 +116,11 @@ function getColumns(onOpenDetail: (role: RoleRspDTO) => void): Array<ColumnDef<R
 
 export default function RoleManagementPage() {
   const queryClient = useQueryClient();
+  const statusDict = useDict('IAM_STATUS');
+  const statusOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(statusDict.options, IAM_STATUS_CODES),
+    [statusDict.options]
+  );
   const menuQuery = useQuery(iamMenuTreeQueryOptions());
   const deptQuery = useQuery(iamDeptTreeQueryOptions());
   const menuOptions = React.useMemo(
@@ -124,7 +133,7 @@ export default function RoleManagementPage() {
   const [detailRole, setDetailRole] = React.useState<RoleRspDTO | null>(null);
   const [menuRole, setMenuRole] = React.useState<RoleRspDTO | null>(null);
   const [scopeRole, setScopeRole] = React.useState<RoleRspDTO | null>(null);
-  const columns = React.useMemo(() => getColumns(setDetailRole), []);
+  const columns = React.useMemo(() => getColumns(setDetailRole, statusOptions), [statusOptions]);
 
   const createMutation = useMutation({
     mutationFn: (request: RoleCreateReqDTO) => iamRoleCreate(request),

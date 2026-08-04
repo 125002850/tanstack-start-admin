@@ -26,7 +26,7 @@ function AuditInfo({
   time
 }: {
   label: string;
-  operator?: number | null;
+  operator?: string | number | null;
   time?: string | null;
 }) {
   return (
@@ -151,8 +151,16 @@ export function MenuDetails({
             <FieldItem label='排序' value={record.sortOrder} />
             <FieldItem label='隐藏' value={record.hidden ? '是' : '否'} />
             <FieldItem label='页面缓存' value={record.cached ? '是' : '否'} />
-            <AuditInfo label='创建信息' operator={record.createBy} time={record.createTime} />
-            <AuditInfo label='更新信息' operator={record.updateBy} time={record.updateTime} />
+            <AuditInfo
+              label='创建信息'
+              operator={record.createByName ?? record.createById}
+              time={record.createTime}
+            />
+            <AuditInfo
+              label='更新信息'
+              operator={record.updateByName ?? record.updateById}
+              time={record.updateTime}
+            />
             <FieldItem label='备注' value={record.remark} valueMaxLines={2} />
           </div>
         ) : (

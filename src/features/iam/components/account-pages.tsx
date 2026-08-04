@@ -8,10 +8,10 @@ import { FieldItem, FieldLabel as DetailFieldLabel } from '@/components/ui/detai
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useDict } from '@/hooks/use-dict';
 import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
 import { changeCurrentPassword } from '@/lib/api/iam/session';
 import { cn } from '@/lib/utils';
-import { dataScopeLabel } from '../lib/format';
 
 function isStrongPassword(value: string) {
   return (
@@ -26,6 +26,8 @@ function isStrongPassword(value: string) {
 
 export function AccountProfileDetails({ className }: { className?: string }) {
   const { data: me } = useQuery(getIamMeQueryOptions());
+  const statusDict = useDict('IAM_STATUS');
+  const dataScopeDict = useDict('IAM_DATA_SCOPE_TYPE');
   const staff = me?.staff;
   const dataScope = me?.dataScopeSummary ?? me?.dataScope;
 
@@ -39,7 +41,7 @@ export function AccountProfileDetails({ className }: { className?: string }) {
         <FieldItem label='部门' value={staff?.deptName ?? me?.dept?.deptName} />
         <FieldItem label='手机号' value={staff?.phone} />
         <FieldItem label='邮箱' value={staff?.email} />
-        <FieldItem label='状态' value={staff?.status} />
+        <FieldItem label='状态' value={staff?.status ? statusDict.getLabel(staff.status) : '-'} />
       </div>
       <div className='flex flex-col gap-6'>
         <div className='flex flex-col gap-2'>
@@ -57,7 +59,10 @@ export function AccountProfileDetails({ className }: { className?: string }) {
           </div>
         </div>
         <div className='grid gap-3'>
-          <FieldItem label='数据范围' value={dataScopeLabel(dataScope?.effectiveType)} />
+          <FieldItem
+            label='数据范围'
+            value={dataScope?.effectiveType ? dataScopeDict.getLabel(dataScope.effectiveType) : '-'}
+          />
           <FieldItem label='数据权限说明' value={dataScope?.description} valueMaxLines={2} />
           <FieldItem
             label='可访问部门'

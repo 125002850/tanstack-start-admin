@@ -9,7 +9,7 @@ import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { type DataTableDslCondition, useDslDataTable } from '@/hooks/use-data-table';
-import type { MdmDictGlobalItemsByTypeResponse } from '@/lib/api/clients/service';
+import type { SystemDictGlobalItemsByTypeResponse } from '@/lib/api/clients/service';
 import type {
   DataTableAction,
   DataTableActionContext,
@@ -131,7 +131,7 @@ export function DictionaryItemsPanel({
   }, [record?.dictTypeCode]);
 
   const mapQueryData = React.useCallback(
-    (data: MdmDictGlobalItemsByTypeResponse | undefined) => ({
+    (data: SystemDictGlobalItemsByTypeResponse | undefined) => ({
       total: data?.total ?? 0,
       list:
         data?.list?.map((item) => ({
@@ -154,7 +154,7 @@ export function DictionaryItemsPanel({
     useDslDataTable<
       DictionaryItemRecord,
       DictionaryItemsQueryRequest,
-      MdmDictGlobalItemsByTypeResponse,
+      SystemDictGlobalItemsByTypeResponse,
       ApiClientError,
       readonly ['service', 'mdm-dict-global-items-by-type', DictionaryItemsQueryRequest]
     >({

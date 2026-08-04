@@ -2,6 +2,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginResultBadge } from '../lib/format';
+import { createDictionaryTestWrapper } from '@/test/dictionary-test-provider.fixture';
 
 describe('LoginResultBadge with dict getLabel', () => {
   afterEach(cleanup);
@@ -22,8 +23,10 @@ describe('LoginResultBadge with dict getLabel', () => {
     expect(container.textContent).toBe('UNKNOWN');
   });
 
-  it('falls back to hardcoded labels when getLabel is not provided', () => {
-    const { container } = render(<LoginResultBadge result='SUCCESS' />);
+  it('reads the label from dictionary context when getLabel is not provided', () => {
+    const { container } = render(<LoginResultBadge result='SUCCESS' />, {
+      wrapper: createDictionaryTestWrapper()
+    });
     expect(container.textContent).toBe('成功');
   });
 

@@ -11,6 +11,7 @@ import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
+import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
 import type {
   DataTableAction,
   DataTableCellChange,
@@ -42,7 +43,7 @@ import {
 } from '@/lib/api/clients/service';
 import { nullableText } from '@/lib/formatters/display';
 import { iamDeptTreeQueryOptions, iamRoleOptionsQueryOptions } from '../api/query-options';
-import { ENABLE_STATUS_OPTIONS, IAM_PERMISSIONS } from '../lib/constants';
+import { IAM_PERMISSIONS, IAM_STATUS_CODES } from '../lib/constants';
 import { deptMultiSelectOptions, deptSelectOptions, flattenDeptTree } from '../lib/tree';
 import { resolveStaffOperationAccess } from '../lib/staff-operation-access';
 import {
@@ -59,7 +60,7 @@ import StaffDetailSheet from './staff-detail-sheet';
 const TABLE_ID = 'iam-staff-list';
 const STAFF_LIST_QUERY_KEY = ['service', 'iam-staff'] as const;
 
-type StaffStatus = (typeof ENABLE_STATUS_OPTIONS)[number]['value'];
+type StaffStatus = (typeof IAM_STATUS_CODES)[number];
 
 export type StaffTableRow = Omit<StaffRspDTO, 'deptId' | 'status'> & {
   deptId: number | null;
@@ -75,7 +76,7 @@ export type StaffCellEditRequest =
 const columnDsl = createDataTableColumnDsl<StaffTableRow>();
 
 function isStaffStatus(value: unknown): value is StaffStatus {
-  return ENABLE_STATUS_OPTIONS.some((option) => option.value === value);
+  return IAM_STATUS_CODES.some((code) => code === value);
 }
 
 function toStaffTableRow(staff: StaffRspDTO): StaffTableRow {
@@ -225,7 +226,8 @@ export function getStaffColumns(
   onOpenDetail: (staff: StaffTableRow) => void,
   departmentFilterOptions: ReturnType<typeof deptMultiSelectOptions>,
   departmentEditorOptions: readonly DataTableChoiceOption<number>[],
-  roleEditorOptions: readonly DataTableChoiceOption<number>[]
+  roleEditorOptions: readonly DataTableChoiceOption<number>[],
+  statusOptions: readonly DataTableChoiceOption<StaffStatus>[]
 ): Array<ColumnDef<StaffTableRow>> {
   return [
     columnDsl.field('staffCode', '工号', {
@@ -272,7 +274,7 @@ export function getStaffColumns(
     }),
     columnDsl.editableField('status', '状态', {
       type: 'enum',
-      valueOptions: ENABLE_STATUS_OPTIONS,
+      valueOptions: statusOptions,
       edit: {
         control: 'switch',
         checkedValue: 'ENABLED',
@@ -280,7 +282,7 @@ export function getStaffColumns(
       },
       size: 'sm',
       filter: 'multiSelect',
-      filterOptions: [...ENABLE_STATUS_OPTIONS],
+      filterOptions: statusOptions,
       enableSorting: false
     }),
     columnDsl.editableField('roleIds', '角色', {
@@ -303,6 +305,11 @@ export function getStaffColumns(
 
 export default function StaffManagementPage() {
   const queryClient = useQueryClient();
+  const statusDict = useDict('IAM_STATUS');
+  const statusOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(statusDict.options, IAM_STATUS_CODES),
+    [statusDict.options]
+  );
   const { data: me } = useQuery(getIamMeQueryOptions());
   const deptQuery = useQuery(iamDeptTreeQueryOptions());
   const roleQuery = useQuery(iamRoleOptionsQueryOptions());
@@ -351,9 +358,10 @@ export default function StaffManagementPage() {
         (staff) => setDetailStaff(toStaffRspDTO(staff)),
         departmentFilterOptions,
         departmentEditorOptions,
-        roleEditorOptions
+        roleEditorOptions,
+        statusOptions
       ),
-    [departmentEditorOptions, departmentFilterOptions, roleEditorOptions]
+    [departmentEditorOptions, departmentFilterOptions, roleEditorOptions, statusOptions]
   );
 
   const createMutation = useMutation({

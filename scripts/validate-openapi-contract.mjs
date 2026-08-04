@@ -16,8 +16,13 @@ export const REQUIRED_OPERATIONS = [
   },
   {
     method: 'post',
-    operationId: 'mdmDictGlobalItemsByType',
-    path: '/api/mdm/dict/global/items/by-type'
+    operationId: 'systemDictGlobalItemsByType',
+    path: '/api/system/dict/global/items/by-type'
+  },
+  {
+    method: 'post',
+    operationId: 'systemDictGlobalItemsOptions',
+    path: '/api/system/dict/global/items/options'
   }
 ];
 

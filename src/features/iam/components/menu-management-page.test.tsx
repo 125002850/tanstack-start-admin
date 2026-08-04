@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MenuRspDTO } from '@/lib/api/clients/service';
+import { createDictionaryTestWrapper } from '@/test/dictionary-test-provider.fixture';
 
 const serviceMocks = vi.hoisted(() => ({
   iamMenuTree: vi.fn(),
@@ -58,9 +59,11 @@ const MENU_TREE: MenuNode[] = [
         menuType: 'MENU',
         routePath: '/dashboard/basic-settings/staff',
         status: 'ENABLED',
-        createBy: 100,
+        createById: 100,
+        createByName: '创建人',
         createTime: '2026-07-10T08:00:00Z',
-        updateBy: 101,
+        updateById: 101,
+        updateByName: '更新人',
         updateTime: '2026-07-10T09:00:00Z',
         children: [
           {
@@ -91,19 +94,6 @@ const MENU_TREE: MenuNode[] = [
   }
 ];
 
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false, gcTime: 0 },
-      mutations: { retry: false }
-    }
-  });
-
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
-}
-
 describe('MenuManagementPage', () => {
   beforeEach(() => {
     serviceMocks.iamMenuTree.mockResolvedValue(MENU_TREE);
@@ -125,7 +115,7 @@ describe('MenuManagementPage', () => {
 
   it('在左侧只展示目录和菜单，并在选中菜单后联动详情与按钮权限表', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     expect(await within(tree).findByText('权限管理')).toBeInTheDocument();
@@ -158,7 +148,7 @@ describe('MenuManagementPage', () => {
   });
 
   it('选中菜单使用 Sidebar active 背景及配套前景色', async () => {
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     const selectedMenu = await within(tree).findByRole('button', { name: '选择 权限管理' });
@@ -174,7 +164,7 @@ describe('MenuManagementPage', () => {
 
   it('在前端本地筛选完整菜单树，按钮权限命中时保留所属菜单祖先链', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await within(tree).findByText('员工管理');
@@ -192,7 +182,7 @@ describe('MenuManagementPage', () => {
 
   it('搜索时忽略旧的折叠状态并自动展示命中节点', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await within(tree).findByText('员工管理');
@@ -212,7 +202,7 @@ describe('MenuManagementPage', () => {
 
   it('使用一个按钮切换菜单树的全部展开和折叠状态', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await within(tree).findByText('员工管理');
@@ -233,7 +223,7 @@ describe('MenuManagementPage', () => {
 
   it('详情展示上级菜单名称、单一菜单编码及合并后的审计信息', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await within(tree).findByText('员工管理');
@@ -250,12 +240,12 @@ describe('MenuManagementPage', () => {
     expect(within(details).queryByText('图标')).not.toBeInTheDocument();
     expect(within(details).getByText('创建信息')).toBeInTheDocument();
     expect(within(details).getByText('更新信息')).toBeInTheDocument();
-    expect(within(details).getByText('100')).toBeInTheDocument();
-    expect(within(details).getByText('101')).toBeInTheDocument();
+    expect(within(details).getByText('创建人')).toBeInTheDocument();
+    expect(within(details).getByText('更新人')).toBeInTheDocument();
   });
 
   it('左侧菜单树不展示页面缓存操作', async () => {
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await within(tree).findByText('员工管理');
@@ -265,7 +255,7 @@ describe('MenuManagementPage', () => {
 
   it('从菜单详情仅为当前页面开启缓存', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await user.click(await within(tree).findByRole('button', { name: '选择 员工管理' }));
@@ -285,7 +275,7 @@ describe('MenuManagementPage', () => {
 
   it('菜单详情操作只展示图标，并在 hover 时展示操作名称', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await user.click(await within(tree).findByRole('button', { name: '选择 员工管理' }));
@@ -303,7 +293,7 @@ describe('MenuManagementPage', () => {
 
   it('从所选菜单的按钮权限表新增时预设 BUTTON 类型和上级菜单', async () => {
     const user = userEvent.setup();
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     await within(tree).findByText('员工管理');
@@ -348,7 +338,7 @@ describe('MenuManagementPage', () => {
         queryFn: async () => ({ permissions: [] })
       })
     );
-    render(<MenuManagementPage />, { wrapper: createWrapper() });
+    render(<MenuManagementPage />, { wrapper: createDictionaryTestWrapper() });
 
     const tree = await screen.findByRole('list', { name: '菜单树' });
     expect(

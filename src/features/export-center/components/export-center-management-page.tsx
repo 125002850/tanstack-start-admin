@@ -45,19 +45,6 @@ const DOWNLOAD_URL_CACHE_SKEW_MS = 30_000;
 const AMZ_DATE_REGEX = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/;
 const EXPORT_RECORD_LIST_QUERY_KEY = ['service', 'export-my'] as const;
 
-const EXPORT_RECORD_STATUS_NAME_VARIANTS = {
-  FAILED: 'destructive',
-  FAILURE: 'destructive',
-  ERROR: 'destructive',
-  SUCCESS: 'default',
-  COMPLETED: 'default',
-  COMPLETE: 'default',
-  DONE: 'default',
-  PROCESSING: 'secondary',
-  RUNNING: 'secondary',
-  PENDING: 'secondary'
-} satisfies Record<string, React.ComponentProps<typeof Badge>['variant']>;
-
 type ExportRecordRecord = ExportRecordRspDTO;
 
 const columnDsl = createDataTableColumnDsl<ExportRecordRecord>();
@@ -79,15 +66,6 @@ function getStatusBadgeVariant(
       return 'secondary';
   }
 
-  const statusName = record.statusName?.trim().toUpperCase();
-  const statusNameVariant =
-    statusName == null
-      ? undefined
-      : EXPORT_RECORD_STATUS_NAME_VARIANTS[
-          statusName as keyof typeof EXPORT_RECORD_STATUS_NAME_VARIANTS
-        ];
-  if (statusNameVariant) return statusNameVariant;
-
   return 'outline';
 }
 
@@ -95,12 +73,7 @@ function resolveExportStatusLabel(
   record: ExportRecordRecord,
   getStatusLabel: (code: string) => string
 ) {
-  return (
-    getDictLabel(getStatusLabel, record.status) ??
-    getDictLabel(getStatusLabel, record.statusName) ??
-    record.statusName ??
-    nullableText(record.status)
-  );
+  return getDictLabel(getStatusLabel, record.status) ?? nullableText(record.status);
 }
 
 function parseAmzDate(value: string) {

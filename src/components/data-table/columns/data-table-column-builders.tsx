@@ -832,7 +832,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
           return (
             <div className='flex flex-col text-xs'>
               <span className='text-muted-foreground'>
-                {record.createBy != null ? record.createBy : '-'}
+                {record.createByName ?? record.createById ?? '-'}
               </span>
               <span>{record.createTime || '-'}</span>
             </div>
@@ -848,7 +848,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
           return (
             <div className='flex flex-col text-xs'>
               <span className='text-muted-foreground'>
-                {record.updateBy != null ? record.updateBy : '-'}
+                {record.updateByName ?? record.updateById ?? '-'}
               </span>
               <span>{record.updateTime || '-'}</span>
             </div>

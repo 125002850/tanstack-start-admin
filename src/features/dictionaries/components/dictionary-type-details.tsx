@@ -56,8 +56,16 @@ export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTy
       </CardHeader>
       <CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
         <DetailField label='状态' value={getStatusLabel(record.status)} />
-        <AuditInfo label='创建信息' operator={record.createBy} time={record.createTime} />
-        <AuditInfo label='更新信息' operator={record.updateBy} time={record.updateTime} />
+        <AuditInfo
+          label='创建信息'
+          operator={record.createByName ?? record.createById}
+          time={record.createTime}
+        />
+        <AuditInfo
+          label='更新信息'
+          operator={record.updateByName ?? record.updateById}
+          time={record.updateTime}
+        />
       </CardContent>
     </Card>
   );

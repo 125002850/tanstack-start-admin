@@ -28,7 +28,8 @@ import type {
   StaffUpdateReqDTO
 } from '@/lib/api/clients/service';
 import { SUPER_ADMIN_ROLE_CODE } from '@/lib/api/iam/permissions';
-import { ENABLE_STATUS_OPTIONS } from '../lib/constants';
+import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
+import { IAM_STATUS_CODES } from '../lib/constants';
 import { deptSelectOptions } from '../lib/tree';
 
 type StaffFormValues = {
@@ -100,6 +101,11 @@ function StaffFormSheet({
   onSubmit: (payload: StaffCreateReqDTO | StaffUpdateReqDTO) => Promise<void>;
 }) {
   const isEdit = !!staff?.staffId;
+  const statusDict = useDict('IAM_STATUS');
+  const statusOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(statusDict.options, IAM_STATUS_CODES),
+    [statusDict.options]
+  );
   const [values, setValues] = React.useState<StaffFormValues>(emptyStaffFormValues);
 
   React.useEffect(() => {
@@ -176,18 +182,31 @@ function StaffFormSheet({
             {isEdit ? '修改员工基础资料和启用状态。' : '创建本地 IAM 员工账号。'}
           </SheetDescription>
         </SheetHeader>
-        <form id='staff-form' className='min-h-0 flex-1 space-y-4 overflow-auto' onSubmit={handleSubmit}>
+        <form
+          id='staff-form'
+          className='min-h-0 flex-1 space-y-4 overflow-auto'
+          onSubmit={handleSubmit}
+        >
           {!isEdit && (
             <FieldShell label='用户名'>
-              <Input value={values.username} onChange={(event) => update({ username: event.target.value })} />
+              <Input
+                value={values.username}
+                onChange={(event) => update({ username: event.target.value })}
+              />
             </FieldShell>
           )}
           <div className='grid gap-4 sm:grid-cols-2'>
             <FieldShell label='员工工号'>
-              <Input value={values.staffCode} onChange={(event) => update({ staffCode: event.target.value })} />
+              <Input
+                value={values.staffCode}
+                onChange={(event) => update({ staffCode: event.target.value })}
+              />
             </FieldShell>
             <FieldShell label='员工姓名'>
-              <Input value={values.staffName} onChange={(event) => update({ staffName: event.target.value })} />
+              <Input
+                value={values.staffName}
+                onChange={(event) => update({ staffName: event.target.value })}
+              />
             </FieldShell>
           </div>
           <FieldShell label='部门'>
@@ -197,7 +216,11 @@ function StaffFormSheet({
               </SelectTrigger>
               <SelectContent>
                 {departments.map((department) => (
-                  <SelectItem key={department.value} value={department.value} disabled={department.disabled}>
+                  <SelectItem
+                    key={department.value}
+                    value={department.value}
+                    disabled={department.disabled}
+                  >
                     {department.label}
                   </SelectItem>
                 ))}
@@ -206,10 +229,16 @@ function StaffFormSheet({
           </FieldShell>
           <div className='grid gap-4 sm:grid-cols-2'>
             <FieldShell label='手机号'>
-              <Input value={values.phone} onChange={(event) => update({ phone: event.target.value })} />
+              <Input
+                value={values.phone}
+                onChange={(event) => update({ phone: event.target.value })}
+              />
             </FieldShell>
             <FieldShell label='邮箱'>
-              <Input value={values.email} onChange={(event) => update({ email: event.target.value })} />
+              <Input
+                value={values.email}
+                onChange={(event) => update({ email: event.target.value })}
+              />
             </FieldShell>
           </div>
           {!isEdit && (
@@ -233,12 +262,15 @@ function StaffFormSheet({
             </>
           )}
           <FieldShell label='状态'>
-            <Select value={values.status} onValueChange={(status) => update({ status: status as StaffFormValues['status'] })}>
+            <Select
+              value={values.status}
+              onValueChange={(status) => update({ status: status as StaffFormValues['status'] })}
+            >
               <SelectTrigger className='w-full'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ENABLE_STATUS_OPTIONS.map((option) => (
+                {statusOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -247,7 +279,10 @@ function StaffFormSheet({
             </Select>
           </FieldShell>
           <FieldShell label='备注'>
-            <Textarea value={values.remark} onChange={(event) => update({ remark: event.target.value })} />
+            <Textarea
+              value={values.remark}
+              onChange={(event) => update({ remark: event.target.value })}
+            />
           </FieldShell>
         </form>
         <SheetFooter className='flex-row justify-end'>

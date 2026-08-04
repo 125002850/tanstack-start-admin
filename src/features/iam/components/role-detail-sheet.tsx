@@ -1,3 +1,4 @@
+import { useDict } from '@/hooks/use-dict';
 import { FieldItem } from '@/components/ui/detail-field';
 import {
   Sheet,
@@ -7,7 +8,7 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import type { RoleRspDTO } from '@/lib/api/clients/service';
-import { dataScopeLabel, formatOptionalDateTime } from '../lib/format';
+import { formatOptionalDateTime } from '../lib/format';
 
 export default function RoleDetailSheet({
   role,
@@ -18,6 +19,8 @@ export default function RoleDetailSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const statusDict = useDict('IAM_STATUS');
+  const dataScopeDict = useDict('IAM_DATA_SCOPE_TYPE');
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className='flex max-w-xl flex-col'>
@@ -29,8 +32,11 @@ export default function RoleDetailSheet({
           <FieldItem label='角色ID' value={role?.roleId} />
           <FieldItem label='角色编码' value={role?.roleCode} />
           <FieldItem label='角色名称' value={role?.roleName} />
-          <FieldItem label='状态' value={role?.status} />
-          <FieldItem label='数据范围' value={dataScopeLabel(role?.dataScopeType)} />
+          <FieldItem label='状态' value={role?.status ? statusDict.getLabel(role.status) : '-'} />
+          <FieldItem
+            label='数据范围'
+            value={role?.dataScopeType ? dataScopeDict.getLabel(role.dataScopeType) : '-'}
+          />
           <FieldItem label='排序' value={role?.sortOrder} />
           <FieldItem label='系统内置' value={role?.systemBuiltIn ? '是' : '否'} />
           <FieldItem label='菜单数量' value={role?.menuIds?.length ?? 0} />

@@ -154,6 +154,32 @@ src/
 └── types/                         # 跨层 TypeScript 类型定义（含 data-table.ts）
 ```
 
+## 字典与枚举展示
+
+后端普通字典和枚举字段只返回稳定 code，页面展示名称由前端字典组件负责。一个页面先用 `useDicts` 或 `DictionaryScope` 声明全部字典类型，通过 generated client 一次请求 `/api/system/dict/global/items/options`；表格 cell 只能读取内存映射，不得逐格请求。
+
+- code/name 映射保留停用项，用于正确显示历史数据；
+- 表单 `options` 只含启用项；
+- 枚举对前端也视为字典，不在前端复制后端枚举描述；
+- 后端导出使用服务端翻译器，不依赖浏览器字典缓存。
+
+## OpenAPI 客户端生成
+
+前端只使用 Swagger 生成客户端调用业务 API。拉取动作只读取已经运行的 Java 服务，不会启动或重启后端：
+
+```bash
+# 从默认 http://localhost:8080/v3/api-docs 拉取 spec 并生成客户端
+pnpm api
+
+# 后端运行在其他地址时显式指定
+OPENAPI_FETCH_TARGET=http://127.0.0.1:18080/v3/api-docs pnpm api
+
+# 仅根据已提交的本地 spec 重新生成，不访问后端
+pnpm codegen
+```
+
+页面禁止绕过 generated client 直接 `fetch('/...')`。
+
 ## UI 组件开发规范
 
 ### Card 组件设计规范
@@ -492,6 +518,10 @@ pnpm dev
 ```
 
 完成后可以通过 <http://localhost:3000> 访问应用。
+
+- `APP_GATEWAY`、`PROXY_URL`：Vite 代理前缀与后端地址
+- `OPENAPI_FETCH_TARGET`：可选的 OpenAPI 文档地址，仅供拉取命令使用
+- `APP_BASE_PATH`：非根路径部署时的公共路径
 
 > [!IMPORTANT]
 > 当前仓库统一使用 `pnpm`，锁文件以 `pnpm-lock.yaml` 为准，不再维护 `bun.lock`。Vite 8 要求 Node.js `^20.19.0 || >=22.12.0`。

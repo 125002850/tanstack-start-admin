@@ -127,8 +127,7 @@ type ExportRecordRow = {
   exportBizName?: string;
   fileName?: string;
   fileType?: string;
-  status?: number;
-  statusName?: string;
+  status?: string;
   contentType?: string;
   fileSize?: number;
   downloadCount?: number;
@@ -136,7 +135,8 @@ type ExportRecordRow = {
   finishedTime?: string;
   expireTime?: string;
   createTime?: string;
-  createBy?: number;
+  createById?: number;
+  createByName?: string;
 };
 
 type ExportRecordRequest = {
@@ -164,7 +164,6 @@ const EXPORT_CENTER_ROWS: ExportRecordRow[] = [
     fileName: '导出记录-20260629.csv',
     fileType: 'csv',
     status: EXPORT_RECORD_STATUS.SUCCESS,
-    statusName: 'SUCCESS',
     contentType: 'text/csv;charset=UTF-8',
     fileSize: 2048,
     downloadCount: 1,
@@ -172,7 +171,8 @@ const EXPORT_CENTER_ROWS: ExportRecordRow[] = [
     finishedTime: '2026-06-29 10:10:00',
     expireTime: '2026-07-06 10:10:00',
     createTime: '2026-06-29 10:00:00',
-    createBy: 10001
+    createById: 10001,
+    createByName: 'export-admin'
   },
   {
     recordId: 102,
@@ -181,13 +181,13 @@ const EXPORT_CENTER_ROWS: ExportRecordRow[] = [
     fileName: '客户汇总-20260629.csv',
     fileType: 'csv',
     status: EXPORT_RECORD_STATUS.PROCESSING,
-    statusName: 'PROCESSING',
     contentType: 'text/csv;charset=UTF-8',
     fileSize: 0,
     downloadCount: 0,
     querySnapshotSummary: '状态=处理中',
     createTime: '2026-06-29 11:00:00',
-    createBy: 10002
+    createById: 10002,
+    createByName: 'export-user'
   }
 ];
 

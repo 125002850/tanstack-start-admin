@@ -21,28 +21,15 @@ export const IAM_PERMISSIONS = {
   }
 } as const;
 
-export const ENABLE_STATUS_OPTIONS = [
-  { value: 'ENABLED', label: '启用' },
-  { value: 'DISABLED', label: '停用' }
-] as const;
-
-export const MENU_TYPE_OPTIONS = [
-  { value: 'DIR', label: '目录' },
-  { value: 'MENU', label: '菜单' },
-  { value: 'BUTTON', label: '按钮' }
-] as const;
-
-export const DATA_SCOPE_OPTIONS = [
-  { value: 'ALL', label: '全部数据' },
-  { value: 'DEPT_AND_CHILD', label: '本部门及下级' },
-  { value: 'DEPT_ONLY', label: '仅本部门' },
-  { value: 'SELF', label: '仅本人' },
-  { value: 'CUSTOM_DEPT', label: '自定义部门' }
-] as const;
-
-export const LOGIN_RESULT_OPTIONS = [
-  { value: 'SUCCESS', label: '成功' },
-  { value: 'FAIL', label: '失败' }
+// 枚举的展示文案来自后端字典；前端只保留参与业务判断所需的稳定 code。
+export const IAM_STATUS_CODES = ['ENABLED', 'DISABLED'] as const;
+export const IAM_MENU_TYPE_CODES = ['DIR', 'MENU', 'BUTTON'] as const;
+export const IAM_DATA_SCOPE_TYPE_CODES = [
+  'ALL',
+  'DEPT_AND_CHILD',
+  'DEPT_ONLY',
+  'SELF',
+  'CUSTOM_DEPT'
 ] as const;
 
 export const BOOLEAN_RESULT_OPTIONS = [

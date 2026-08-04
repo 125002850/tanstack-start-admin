@@ -1,16 +1,13 @@
 import type * as React from 'react';
+import { DictText } from '@/components/dictionary/dictionary-scope';
 import { Badge } from '@/components/ui/badge';
 import { nullableDateTime, nullableText } from '@/lib/formatters/display';
-import { BOOLEAN_RESULT_OPTIONS, DATA_SCOPE_OPTIONS, ENABLE_STATUS_OPTIONS, LOGIN_RESULT_OPTIONS, MENU_TYPE_OPTIONS } from './constants';
+import { BOOLEAN_RESULT_OPTIONS } from './constants';
 
 type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
 
 function optionLabel(options: readonly { value: string; label: string }[], value?: string | null) {
   return options.find((option) => option.value === value)?.label ?? nullableText(value);
-}
-
-export function statusLabel(status?: string | null) {
-  return optionLabel(ENABLE_STATUS_OPTIONS, status);
 }
 
 export function statusVariant(status?: string | null): BadgeVariant {
@@ -22,35 +19,47 @@ export function nextStatus(status?: string | null): 'ENABLED' | 'DISABLED' {
 }
 
 export function StatusBadge({ status }: { status?: string | null }) {
-  return <Badge variant={statusVariant(status)}>{statusLabel(status)}</Badge>;
-}
-
-export function menuTypeLabel(type?: string | null) {
-  return optionLabel(MENU_TYPE_OPTIONS, type);
+  return (
+    <Badge variant={statusVariant(status)}>
+      <DictText typeCode='IAM_STATUS' value={status} />
+    </Badge>
+  );
 }
 
 export function MenuTypeBadge({ type }: { type?: string | null }) {
-  const variant: BadgeVariant = type === 'BUTTON' ? 'secondary' : type === 'DIR' ? 'outline' : 'default';
-  return <Badge variant={variant}>{menuTypeLabel(type)}</Badge>;
-}
-
-export function dataScopeLabel(type?: string | null) {
-  return optionLabel(DATA_SCOPE_OPTIONS, type);
+  const variant: BadgeVariant =
+    type === 'BUTTON' ? 'secondary' : type === 'DIR' ? 'outline' : 'default';
+  return (
+    <Badge variant={variant}>
+      <DictText typeCode='IAM_MENU_TYPE' value={type} />
+    </Badge>
+  );
 }
 
 export function DataScopeBadge({ type }: { type?: string | null }) {
-  return <Badge variant='outline'>{dataScopeLabel(type)}</Badge>;
+  return (
+    <Badge variant='outline'>
+      <DictText typeCode='IAM_DATA_SCOPE_TYPE' value={type} />
+    </Badge>
+  );
 }
 
-export function loginResultLabel(result?: string | null) {
-  return optionLabel(LOGIN_RESULT_OPTIONS, result);
-}
-
-export function LoginResultBadge({ result, getLabel }: { result?: string | null; getLabel?: (code: string) => string }) {
-  const label = result
-    ? (getLabel ? getLabel(result) : loginResultLabel(result))
-    : '-';
-  return <Badge variant={result === 'SUCCESS' ? 'default' : 'destructive'}>{label}</Badge>;
+export function LoginResultBadge({
+  result,
+  getLabel
+}: {
+  result?: string | null;
+  getLabel?: (code: string) => string;
+}) {
+  return (
+    <Badge variant={result === 'SUCCESS' ? 'default' : 'destructive'}>
+      {result && getLabel ? (
+        getLabel(result)
+      ) : (
+        <DictText typeCode='IAM_LOGIN_RESULT' value={result} />
+      )}
+    </Badge>
+  );
 }
 
 export function BooleanResultBadge({ value }: { value?: boolean | null }) {

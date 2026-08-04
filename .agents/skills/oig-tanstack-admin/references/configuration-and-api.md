@@ -91,6 +91,9 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - `transport.ts` 的 request middleware 只负责注入 `Authorization` 和 token freshness，不再拼装 `service-id` / `client-id` / `service-code` 一类 SSO 头。
 - 401 处理统一收敛到 `transport.ts` 与 `iam/session.ts`；页面层不要自行复制 refresh、清 token 或重定向逻辑。
 - `pnpm codegen` 只调用 `openapi-client generate`，禁止在业务仓库增加生成后 patch 脚本。
+- `pnpm openapi:fetch` 从已运行的后端拉取 OpenAPI；默认地址为 `http://localhost:8080/v3/api-docs`，需要其他地址时设置 `OPENAPI_FETCH_TARGET`。该命令不负责启动或重启后端。
+- `pnpm api` 按顺序执行 `openapi:fetch` 与 `codegen`；接口契约变化时使用它同步 spec 与 generated client。
+- 字典和枚举页面展示必须通过 generated client 批量调用 `/api/system/dict/global/items/options`；页面级缓存一次，表格 cell 禁止发请求。停用项保留在显示映射中，但不得进入可选 options。
 - 生成后的 `openapi/.generated/*-orval-mutator.ts` 由 `openapi-client` 按约定导入 `src/lib/api/transport.ts`，只创建带 `basePath` 的实例。
 - 生成后的 `src/lib/api/clients/*/generated/**/*.ts` 由 `openapi-client` 自动带上 `// @ts-nocheck`。
 - 禁止在 generated 文件中重复注册 middleware。

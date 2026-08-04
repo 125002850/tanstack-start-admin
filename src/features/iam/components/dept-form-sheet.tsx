@@ -20,12 +20,9 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import type {
-  DeptCreateReqDTO,
-  DeptRspDTO,
-  DeptUpdateReqDTO
-} from '@/lib/api/clients/service';
-import { ENABLE_STATUS_OPTIONS } from '../lib/constants';
+import type { DeptCreateReqDTO, DeptRspDTO, DeptUpdateReqDTO } from '@/lib/api/clients/service';
+import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
+import { IAM_STATUS_CODES } from '../lib/constants';
 import { deptSelectOptions } from '../lib/tree';
 
 type DeptFormValues = {
@@ -71,6 +68,11 @@ export default function DeptFormSheet({
   onSubmit: (payload: DeptCreateReqDTO | DeptUpdateReqDTO) => Promise<void>;
 }) {
   const isEdit = !!dept?.deptId;
+  const statusDict = useDict('IAM_STATUS');
+  const statusOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(statusDict.options, IAM_STATUS_CODES),
+    [statusDict.options]
+  );
   const [values, setValues] = React.useState<DeptFormValues>(emptyValues);
   const parentOptions = React.useMemo(() => deptSelectOptions(tree), [tree]);
 
@@ -137,7 +139,11 @@ export default function DeptFormSheet({
           <SheetTitle>{isEdit ? '编辑部门' : '新增部门'}</SheetTitle>
           <SheetDescription>{isEdit ? '修改部门信息。' : '创建同级或下级部门。'}</SheetDescription>
         </SheetHeader>
-        <form id='dept-form' className='min-h-0 flex-1 space-y-4 overflow-auto' onSubmit={handleSubmit}>
+        <form
+          id='dept-form'
+          className='min-h-0 flex-1 space-y-4 overflow-auto'
+          onSubmit={handleSubmit}
+        >
           <FieldShell label='上级部门'>
             <Select value={values.parentId} onValueChange={(parentId) => update({ parentId })}>
               <SelectTrigger className='w-full'>
@@ -161,15 +167,25 @@ export default function DeptFormSheet({
           </FieldShell>
           <div className='grid gap-4 sm:grid-cols-2'>
             <FieldShell label='部门编码'>
-              <Input value={values.deptCode} onChange={(event) => update({ deptCode: event.target.value })} />
+              <Input
+                value={values.deptCode}
+                onChange={(event) => update({ deptCode: event.target.value })}
+              />
             </FieldShell>
             <FieldShell label='部门名称'>
-              <Input value={values.deptName} onChange={(event) => update({ deptName: event.target.value })} />
+              <Input
+                value={values.deptName}
+                onChange={(event) => update({ deptName: event.target.value })}
+              />
             </FieldShell>
           </div>
           <div className='grid gap-4 sm:grid-cols-2'>
             <FieldShell label='排序'>
-              <Input inputMode='numeric' value={values.sortOrder} onChange={(event) => update({ sortOrder: event.target.value })} />
+              <Input
+                inputMode='numeric'
+                value={values.sortOrder}
+                onChange={(event) => update({ sortOrder: event.target.value })}
+              />
             </FieldShell>
             <FieldShell label='状态'>
               <Select
@@ -180,7 +196,7 @@ export default function DeptFormSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ENABLE_STATUS_OPTIONS.map((option) => (
+                  {statusOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -190,7 +206,10 @@ export default function DeptFormSheet({
             </FieldShell>
           </div>
           <FieldShell label='备注'>
-            <Textarea value={values.remark} onChange={(event) => update({ remark: event.target.value })} />
+            <Textarea
+              value={values.remark}
+              onChange={(event) => update({ remark: event.target.value })}
+            />
           </FieldShell>
         </form>
         <SheetFooter className='flex-row justify-end'>

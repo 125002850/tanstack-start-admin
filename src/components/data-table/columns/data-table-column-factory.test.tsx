@@ -38,9 +38,11 @@ interface ChoiceRow {
 
 interface AuditRow {
   id: number;
-  createBy?: number | null;
+  createById?: number | null;
+  createByName?: string | null;
   createTime?: string | null;
-  updateBy?: number | null;
+  updateById?: number | null;
+  updateByName?: string | null;
   updateTime?: string | null;
 }
 
@@ -633,9 +635,11 @@ describe('data-table-column-factory', () => {
     const columns = createDataTableColumnDsl<AuditRow>().audit();
     const record: AuditRow = {
       id: 1,
-      createBy: 10,
+      createById: 10001,
+      createByName: 'sso-admin',
       createTime: '2026-08-01 10:00:00',
-      updateBy: null,
+      updateById: null,
+      updateByName: null,
       updateTime: null
     };
     const renderAuditCell = (column: (typeof columns)[number]) => {
@@ -645,7 +649,7 @@ describe('data-table-column-factory', () => {
     };
 
     expect(columns.map((column) => column.id)).toEqual(['createInfo', 'updateInfo']);
-    expect(getNodeText(renderAuditCell(columns[0]!))).toBe('102026-08-01 10:00:00');
+    expect(getNodeText(renderAuditCell(columns[0]!))).toBe('sso-admin2026-08-01 10:00:00');
     expect(getNodeText(renderAuditCell(columns[1]!))).toBe('--');
   });
 });

@@ -20,12 +20,9 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
-import type {
-  RoleCreateReqDTO,
-  RoleRspDTO,
-  RoleUpdateReqDTO
-} from '@/lib/api/clients/service';
-import { DATA_SCOPE_OPTIONS, ENABLE_STATUS_OPTIONS } from '../lib/constants';
+import type { RoleCreateReqDTO, RoleRspDTO, RoleUpdateReqDTO } from '@/lib/api/clients/service';
+import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
+import { IAM_DATA_SCOPE_TYPE_CODES, IAM_STATUS_CODES } from '../lib/constants';
 
 type RoleFormValues = {
   roleCode: string;
@@ -70,6 +67,16 @@ export default function RoleFormSheet({
   onSubmit: (payload: RoleCreateReqDTO | RoleUpdateReqDTO) => Promise<void>;
 }) {
   const isEdit = !!role?.roleId;
+  const statusDict = useDict('IAM_STATUS');
+  const dataScopeDict = useDict('IAM_DATA_SCOPE_TYPE');
+  const statusOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(statusDict.options, IAM_STATUS_CODES),
+    [statusDict.options]
+  );
+  const dataScopeOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(dataScopeDict.options, IAM_DATA_SCOPE_TYPE_CODES),
+    [dataScopeDict.options]
+  );
   const [values, setValues] = React.useState<RoleFormValues>(emptyRoleValues);
 
   React.useEffect(() => {
@@ -166,7 +173,7 @@ export default function RoleFormSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ENABLE_STATUS_OPTIONS.map((option) => (
+                  {statusOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -186,7 +193,7 @@ export default function RoleFormSheet({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {DATA_SCOPE_OPTIONS.map((option) => (
+                {dataScopeOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

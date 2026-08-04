@@ -28,6 +28,8 @@ import {
 } from '@/lib/api/iam/errors';
 import { baseConfig } from '@/config';
 import { ensureDashboardRouteAccess } from '@/lib/router/dashboard-route-guard';
+import { DictionaryScope } from '@/components/dictionary/dictionary-scope';
+import { dictTypes } from '@/constants/dictTypes';
 
 const meta = defineRouteMeta({
   label: '工作台',
@@ -127,18 +129,20 @@ function DashboardLayout() {
   useWorkspaceDevtools(workspaceEnabled);
 
   return (
-    <KBar>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <Header />
-          <InfobarProvider defaultOpen={false}>
-            {workspaceEnabled && <WorkspaceViewport />}
-            <Outlet />
-            <InfoSidebar side='right' />
-          </InfobarProvider>
-        </SidebarInset>
-      </SidebarProvider>
-    </KBar>
+    <DictionaryScope typeCodes={dictTypes}>
+      <KBar>
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+            <Header />
+            <InfobarProvider defaultOpen={false}>
+              {workspaceEnabled && <WorkspaceViewport />}
+              <Outlet />
+              <InfoSidebar side='right' />
+            </InfobarProvider>
+          </SidebarInset>
+        </SidebarProvider>
+      </KBar>
+    </DictionaryScope>
   );
 }

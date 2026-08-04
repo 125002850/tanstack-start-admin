@@ -29,6 +29,7 @@ function OperationLogDetailSheet({
     enabled: open && logId != null
   });
   const detail = detailQuery.data ?? log;
+  const moduleDict = useDict('IAM_OPERATION_LOG_MODULE');
   const actionDict = useDict('IAM_OPERATION_LOG_ACTION');
 
   return (
@@ -36,17 +37,20 @@ function OperationLogDetailSheet({
       <SheetContent className='flex max-w-2xl flex-col sm:max-w-2xl'>
         <SheetHeader>
           <SheetTitle>操作日志详情</SheetTitle>
-          <SheetDescription>{detail?.module ?? '-'}</SheetDescription>
+          <SheetDescription>{moduleDict.getLabel(detail?.module ?? '')}</SheetDescription>
         </SheetHeader>
         <div className='grid min-h-0 flex-1 gap-3 overflow-auto sm:grid-cols-2'>
           <FieldItem label='日志ID' value={detail?.logId} />
           <FieldItem label='操作人ID' value={detail?.operatorId} />
           <FieldItem label='用户名' value={detail?.operatorUsername} />
           <FieldItem label='员工姓名' value={detail?.operatorStaffName} />
-          <FieldItem label='模块' value={detail?.module} />
+          <FieldItem label='模块' value={moduleDict.getLabel(detail?.module ?? '')} />
           <FieldItem label='动作' value={actionDict.getLabel(detail?.action ?? '')} />
           <FieldItem label='结果' value={detail?.success ? '成功' : '失败'} />
-          <FieldItem label='耗时' value={detail?.costMillis == null ? '-' : `${detail.costMillis} ms`} />
+          <FieldItem
+            label='耗时'
+            value={detail?.costMillis == null ? '-' : `${detail.costMillis} ms`}
+          />
           <FieldItem label='方法' value={detail?.httpMethod} />
           <FieldItem label='IP' value={detail?.ip} />
           <FieldItem label='路径' value={detail?.requestPath} valueMaxLines={2} />

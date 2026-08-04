@@ -419,7 +419,7 @@ describe('project architecture contracts', () => {
     const violations = collectSourceFiles()
       .filter((path) => {
         const projectPath = toProjectPath(path);
-        return !projectPath.endsWith('.test.ts') && !projectPath.endsWith('.test.tsx');
+        return !isTestFile(projectPath) && !projectPath.startsWith('src/test/');
       })
       .filter((path) => /\bQueryClientProvider\b/.test(readFileSync(path, 'utf8')))
       .map(toProjectPath);

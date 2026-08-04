@@ -79,7 +79,11 @@ describe('staff cell editor adapter', () => {
       () => undefined,
       [{ value: '10', label: '研发部' }],
       [{ value: 10, label: '研发部' }],
-      [{ value: 2, label: '审计员' }]
+      [{ value: 2, label: '审计员' }],
+      [
+        { value: 'ENABLED', label: '启用' },
+        { value: 'DISABLED', label: '停用' }
+      ]
     );
     const editableColumns = columns
       .map((column) => column.meta?.editableCell ?? column.meta?.editableChoice)

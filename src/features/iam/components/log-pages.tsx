@@ -17,6 +17,7 @@ import {
   iamOperationLogPageQueryOptions,
   type IamLoginLogPageRequest,
   type IamLoginLogPageResponse,
+  type IamOperationLogPageRequest,
   type IamOperationLogPageResponse,
   type LoginLogRspDTO,
   type OperationLogRspDTO
@@ -60,8 +61,8 @@ function operationLogQueryOptions(request: DataTableDslPageRequestBase) {
     operatorId: dslConditionNumber(condition, 'operatorId'),
     operatorUsername: dslConditionValue(condition, 'operatorUsername'),
     operatorStaffName: dslConditionValue(condition, 'operatorStaffName'),
-    module: dslConditionValue(condition, 'module'),
-    action: dslConditionValue(condition, 'action'),
+    module: dslConditionValue(condition, 'module') as IamOperationLogPageRequest['module'],
+    action: dslConditionValue(condition, 'action') as IamOperationLogPageRequest['action'],
     success: success == null ? undefined : success === 'true',
     requestPath: dslConditionValue(condition, 'requestPath'),
     operationTimeRange: dslDateTimeRange(condition, 'operationTime')
@@ -73,15 +74,15 @@ function getLoginLogColumns(
   loginDicts: {
     eventTypeDict: {
       getLabel: (code: string) => string;
-      options: Array<{ value: string; label: string }>;
+      options: readonly { value: string; label: string }[];
     };
     resultDict: {
       getLabel: (code: string) => string;
-      options: Array<{ value: string; label: string }>;
+      options: readonly { value: string; label: string }[];
     };
     failureReasonDict: {
       getLabel: (code: string) => string;
-      options: Array<{ value: string; label: string }>;
+      options: readonly { value: string; label: string }[];
     };
   }
 ): Array<ColumnDef<LoginLogRspDTO>> {
@@ -148,9 +149,13 @@ function getLoginLogColumns(
 
 function getOperationLogColumns(
   onOpenDetail: (log: OperationLogRspDTO) => void,
+  moduleDict: {
+    getLabel: (code: string) => string;
+    options: readonly { value: string; label: string }[];
+  },
   actionDict: {
     getLabel: (code: string) => string;
-    options: Array<{ value: string; label: string }>;
+    options: readonly { value: string; label: string }[];
   }
 ): Array<ColumnDef<OperationLogRspDTO>> {
   return [
@@ -177,8 +182,10 @@ function getOperationLogColumns(
     }),
     operationLogDsl.field('module', '模块', {
       size: 130,
-      filter: 'text',
-      filterPlaceholder: '搜索模块'
+      filter: 'select',
+      filterOptions: moduleDict.options,
+      filterPlaceholder: '选择模块',
+      renderCell: ({ row }) => moduleDict.getLabel(row.original.module ?? '')
     }),
     operationLogDsl.field('action', '动作', {
       size: 130,
@@ -268,10 +275,11 @@ export function LoginLogPage() {
 
 export function OperationLogPage() {
   const [detailLog, setDetailLog] = React.useState<OperationLogRspDTO | null>(null);
+  const moduleDict = useDict('IAM_OPERATION_LOG_MODULE');
   const actionDict = useDict('IAM_OPERATION_LOG_ACTION');
   const columns = React.useMemo(
-    () => getOperationLogColumns(setDetailLog, actionDict),
-    [actionDict]
+    () => getOperationLogColumns(setDetailLog, moduleDict, actionDict),
+    [actionDict, moduleDict]
   );
   const { table, queryState, refreshProps } = useDslDataTable<
     OperationLogRspDTO,

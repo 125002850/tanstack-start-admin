@@ -2,13 +2,13 @@ import { queryOptions } from '@tanstack/react-query';
 import type { ApiClientError } from '@oig/react-query-generator/core';
 
 import {
-  mdmDictGlobalItemsByType,
-  type MdmDictGlobalItemsByTypeRequest,
-  type MdmDictGlobalItemsByTypeResponse
+  systemDictGlobalItemsByType,
+  type SystemDictGlobalItemsByTypeRequest,
+  type SystemDictGlobalItemsByTypeResponse
 } from '@/lib/api/clients/service';
 
 export type DictionaryItemsQueryRequest = Omit<
-  MdmDictGlobalItemsByTypeRequest,
+  SystemDictGlobalItemsByTypeRequest,
   'condition' | 'sort'
 > & {
   condition?: unknown;
@@ -25,12 +25,12 @@ export const dictionaryItemsByTypeQueryKey = (request: DictionaryItemsQueryReque
 
 export const dictionaryItemsByTypeQueryOptions = (request: DictionaryItemsQueryRequest) =>
   queryOptions<
-    MdmDictGlobalItemsByTypeResponse,
+    SystemDictGlobalItemsByTypeResponse,
     ApiClientError,
-    MdmDictGlobalItemsByTypeResponse,
+    SystemDictGlobalItemsByTypeResponse,
     ReturnType<typeof dictionaryItemsByTypeQueryKey>
   >({
     queryKey: dictionaryItemsByTypeQueryKey(request),
     queryFn: ({ signal }) =>
-      mdmDictGlobalItemsByType(request as MdmDictGlobalItemsByTypeRequest, { signal })
+      systemDictGlobalItemsByType(request as SystemDictGlobalItemsByTypeRequest, { signal })
   });

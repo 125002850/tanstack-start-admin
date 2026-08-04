@@ -23,7 +23,8 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import type { MenuCreateReqDTO, MenuRspDTO, MenuUpdateReqDTO } from '@/lib/api/clients/service';
-import { ENABLE_STATUS_OPTIONS, MENU_TYPE_OPTIONS } from '../lib/constants';
+import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
+import { IAM_MENU_TYPE_CODES, IAM_STATUS_CODES } from '../lib/constants';
 import { flattenMenuTree, menuSelectOptions } from '../lib/tree';
 
 export type MenuFormValues = {
@@ -92,10 +93,20 @@ export default function MenuFormSheet({
 }) {
   const isEdit = !!menu?.menuId;
   const isButtonCreate = !isEdit && initialMenuType === 'BUTTON';
+  const statusDict = useDict('IAM_STATUS');
+  const menuTypeDict = useDict('IAM_MENU_TYPE');
+  const statusOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(statusDict.options, IAM_STATUS_CODES),
+    [statusDict.options]
+  );
+  const allMenuTypeOptions = React.useMemo(
+    () => dictionaryOptionsWithCodeFallback(menuTypeDict.options, IAM_MENU_TYPE_CODES),
+    [menuTypeDict.options]
+  );
   const menuTypeOptions =
     !isEdit && !isButtonCreate
-      ? MENU_TYPE_OPTIONS.filter((option) => option.value !== 'BUTTON')
-      : MENU_TYPE_OPTIONS;
+      ? allMenuTypeOptions.filter((option) => option.value !== 'BUTTON')
+      : allMenuTypeOptions;
   const [values, setValues] = React.useState<MenuFormValues>(emptyValues);
   const effectiveMenuType = isButtonCreate ? 'BUTTON' : values.menuType;
   const isButtonType = effectiveMenuType === 'BUTTON';
@@ -281,7 +292,7 @@ export default function MenuFormSheet({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {ENABLE_STATUS_OPTIONS.map((option) => (
+                      {statusOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

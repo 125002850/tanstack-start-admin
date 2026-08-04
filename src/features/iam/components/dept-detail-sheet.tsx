@@ -1,4 +1,5 @@
 import type { DeptRspDTO } from '@/lib/api/clients/service';
+import { useDict } from '@/hooks/use-dict';
 import { FieldItem } from '@/components/ui/detail-field';
 import {
   Sheet,
@@ -18,6 +19,7 @@ export default function DeptDetailSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const statusDict = useDict('IAM_STATUS');
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className='flex max-w-xl flex-col'>
@@ -32,7 +34,7 @@ export default function DeptDetailSheet({
           <FieldItem label='部门名称' value={dept?.deptName} />
           <FieldItem label='完整路径' value={dept?.fullPath} valueMaxLines={2} />
           <FieldItem label='排序' value={dept?.sortOrder} />
-          <FieldItem label='状态' value={dept?.status} />
+          <FieldItem label='状态' value={dept?.status ? statusDict.getLabel(dept.status) : '-'} />
           <FieldItem label='创建时间' value={formatOptionalDateTime(dept?.createTime)} />
           <FieldItem label='更新时间' value={formatOptionalDateTime(dept?.updateTime)} />
           <FieldItem label='备注' value={dept?.remark} valueMaxLines={2} />

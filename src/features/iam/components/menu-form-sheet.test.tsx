@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { MenuRspDTO } from '@/lib/api/clients/service';
+import { createDictionaryTestWrapper } from '@/test/dictionary-test-provider.fixture';
 
 import MenuFormSheet from './menu-form-sheet';
 
@@ -48,7 +49,8 @@ describe('MenuFormSheet', () => {
         menu={button}
         tree={[PARENT_MENU, button]}
         onSubmit={onSubmit}
-      />
+      />,
+      { wrapper: createDictionaryTestWrapper() }
     );
 
     expect(screen.queryByLabelText('路由路径')).not.toBeInTheDocument();
@@ -92,7 +94,8 @@ describe('MenuFormSheet', () => {
         menu={menu}
         tree={[PARENT_MENU, menu]}
         onSubmit={onSubmit}
-      />
+      />,
+      { wrapper: createDictionaryTestWrapper() }
     );
 
     selectMenuType('BUTTON');
