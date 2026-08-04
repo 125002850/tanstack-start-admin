@@ -77,7 +77,7 @@ describe('DataTable body', () => {
     const firstCell = container.querySelector('tbody td[data-cell-id]');
 
     expect(firstCell?.getAttribute('class')).toContain('px-[15px]');
-    expect(firstCell?.getAttribute('class')).toContain('py-[11px]');
+    expect(firstCell?.getAttribute('class')).toContain('py-2');
     expect(firstCell?.getAttribute('class')).toContain('outline');
     expect(firstCell?.getAttribute('class')).toContain('outline-transparent');
     expect(firstCell?.getAttribute('class')).toContain('transition-[outline-color,box-shadow]');
@@ -754,7 +754,7 @@ describe('DataTable body', () => {
     ) as HTMLTableRowElement | null;
     expect(secondVirtualRow).not.toBeNull();
     expect(secondVirtualRow?.dataset.virtualRowPositioning).toBe('top');
-    expect(secondVirtualRow?.style.top).toBe('42px');
+    expect(secondVirtualRow?.style.top).toBe('56px');
     expect(secondVirtualRow?.style.transform).toBe('');
   });
 
@@ -781,7 +781,7 @@ describe('DataTable body', () => {
     expect(secondVirtualRow).not.toBeNull();
     expect(secondVirtualRow?.dataset.virtualRowPositioning).toBe('transform');
     expect(secondVirtualRow?.style.top).toBe('0px');
-    expect(secondVirtualRow?.style.transform).toBe('translateY(42px)');
+    expect(secondVirtualRow?.style.transform).toBe('translateY(56px)');
   });
 
   it('renders all rows when below threshold', () => {
@@ -804,7 +804,7 @@ describe('DataTable body', () => {
       'tbody[data-virtual-enabled="true"] tr[data-index]'
     );
     expect(virtualRows.length).toBeGreaterThan(0);
-    expect((virtualRows[0] as HTMLTableRowElement).style.height).toBe('42px');
+    expect((virtualRows[0] as HTMLTableRowElement).style.height).toBe('56px');
   });
 
   it('expands the clicked row when clicking normal cell content', async () => {
@@ -972,7 +972,15 @@ describe('DataTable body', () => {
 
     expect(screen.getByTestId('expanded-row-key').textContent).toBe('1');
     expect(screen.getByText('summary:Item 1')).toBeInTheDocument();
-    expect(document.querySelector('[data-slot="data-table-expand-panel"]')).not.toBeNull();
+    const expandPanel = document.querySelector('[data-slot="data-table-expand-panel"]');
+    const expandContent = document.querySelector('[data-slot="data-table-expand-panel-content"]');
+    expect(expandPanel).toHaveClass('min-h-0', 'min-w-0');
+    expect(expandContent).toHaveClass('flex', 'min-h-0', 'min-w-0', 'flex-1', 'overflow-hidden');
+    expect(expandContent?.querySelector('[data-slot="tabs-content"]')).toHaveClass(
+      'min-h-0',
+      'flex-1',
+      'overflow-hidden'
+    );
 
     await user.click(screen.getByRole('button', { name: '关闭详情面板' }));
 
