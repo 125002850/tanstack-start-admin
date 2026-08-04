@@ -45,12 +45,22 @@ function LoginLogDetailSheet({
           <FieldItem label='员工ID' value={detail?.staffId} />
           <FieldItem label='用户名' value={detail?.username} />
           <FieldItem label='员工姓名' value={detail?.staffName} />
-          <FieldItem label='事件' value={detail?.eventType ? eventTypeDict.getLabel(detail.eventType) : '-'} />
-          <FieldItem label='结果' value={detail?.result ? resultDict.getLabel(detail.result) : '-'} />
+          <FieldItem
+            label='事件'
+            value={detail?.eventType ? eventTypeDict.getLabel(detail.eventType) : '-'}
+          />
+          <FieldItem
+            label='结果'
+            value={detail?.result ? resultDict.getLabel(detail.result) : '-'}
+          />
           <FieldItem label='IP' value={detail?.ip} />
           <FieldItem label='Token ID' value={detail?.tokenId} valueMaxLines={1} />
           <FieldItem label='时间' value={formatOptionalDateTime(detail?.operationTime)} />
-          <FieldItem label='失败原因' value={detail?.failureReason ? failureReasonDict.getLabel(detail.failureReason) : '-'} valueMaxLines={2} />
+          <FieldItem
+            label='失败原因'
+            value={detail?.failureReason ? failureReasonDict.getLabel(detail.failureReason) : '-'}
+            valueMaxLines={2}
+          />
           <FieldItem label='User Agent' value={detail?.userAgent} valueMaxLines={2} />
         </div>
       </SheetContent>

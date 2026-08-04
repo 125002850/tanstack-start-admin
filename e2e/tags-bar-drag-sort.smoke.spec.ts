@@ -44,7 +44,7 @@ async function dragTab(page: Page, source: Locator, target: Locator) {
 
   const sourceX = sourceBox.x + sourceBox.width / 2;
   const sourceY = sourceBox.y + sourceBox.height / 2;
-  const targetX = targetBox.x + targetBox.width / 2;
+  const targetX = targetBox.x + targetBox.width / 4;
   const targetY = targetBox.y + targetBox.height / 2;
 
   await page.mouse.move(sourceX, sourceY);
@@ -77,9 +77,11 @@ test('@workspace-v2 drag sorting keeps home first and preserves navigation', asy
   await dragTab(page, exportTab, dictionaryTab);
 
   await expect(page).toHaveURL(/\/dashboard\/system-management\/export-center$/);
-  expect(await tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
+  await expect.poll(() => tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
 
-  await dictionaryTab.click();
+  const dictionaryTabAfterDrag = page.getByRole('tab', { name: /^字典管理/ });
+  await dictionaryTabAfterDrag.focus();
+  await dictionaryTabAfterDrag.press('Enter');
   await expect(page).toHaveURL(/\/dashboard\/system-management\/dictionaries$/);
 });
 
@@ -93,7 +95,7 @@ test('@workspace-v2 drag sorting does not break close actions', async ({ page })
   const dictionaryTab = page.getByRole('tab', { name: /^字典管理/ });
   await dragTab(page, exportTab, dictionaryTab);
 
-  expect(await tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
+  await expect.poll(() => tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
 
   const dictionaryShell = page.locator(
     '[data-slot="workspace-tag-shell"][data-tab-id="/dashboard/system-management/dictionaries"]'

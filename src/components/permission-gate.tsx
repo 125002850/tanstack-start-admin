@@ -10,7 +10,12 @@ type PermissionGateProps = {
   children: React.ReactNode;
 };
 
-export function PermissionGate({ permission, anyOf, fallback = null, children }: PermissionGateProps) {
+export function PermissionGate({
+  permission,
+  anyOf,
+  fallback = null,
+  children
+}: PermissionGateProps) {
   const { data: me } = useQuery(getIamMeQueryOptions());
   const allowed =
     permission != null ? hasIamPermission(me, permission) : hasAnyIamPermission(me, anyOf);

@@ -197,8 +197,14 @@ describe('useWorkspacePage', () => {
 
   it('hidden keep-alive page still writes lifecycle to its own tab', () => {
     const s = useWorkspaceTabStore.getState();
-    s.registerPageDescriptor('/dashboard/system-management/export-center', makeDescriptor('/dashboard/system-management/export-center'));
-    s.registerPageDescriptor('/dashboard/system-management/dictionaries', makeDescriptor('/dashboard/system-management/dictionaries'));
+    s.registerPageDescriptor(
+      '/dashboard/system-management/export-center',
+      makeDescriptor('/dashboard/system-management/export-center')
+    );
+    s.registerPageDescriptor(
+      '/dashboard/system-management/dictionaries',
+      makeDescriptor('/dashboard/system-management/dictionaries')
+    );
 
     // Exports is hidden (keep-alive) — provider still injects /dashboard/system-management/export-center
     const { getByTestId } = renderWithProvider('/dashboard/system-management/export-center');
@@ -206,12 +212,16 @@ describe('useWorkspacePage', () => {
       getByTestId('set-title').click();
     });
 
-    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/system-management/export-center']?.title).toBe(
-      'Updated Title'
-    );
-    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.title).not.toBe(
-      'Updated Title'
-    );
+    expect(
+      useWorkspaceTabStore.getState().lifecycleSnapshots[
+        '/dashboard/system-management/export-center'
+      ]?.title
+    ).toBe('Updated Title');
+    expect(
+      useWorkspaceTabStore.getState().lifecycleSnapshots[
+        '/dashboard/system-management/dictionaries'
+      ]?.title
+    ).not.toBe('Updated Title');
   });
 
   it('reads active=false from provider when page is hidden', () => {
@@ -219,7 +229,13 @@ describe('useWorkspacePage', () => {
     const { getByTestId } = render(
       React.createElement(
         WorkspacePageContext.Provider,
-        { value: { active: false, tabId: '/dashboard/system-management/export-center', updateLifecycle } },
+        {
+          value: {
+            active: false,
+            tabId: '/dashboard/system-management/export-center',
+            updateLifecycle
+          }
+        },
         React.createElement(TestHarness)
       )
     );

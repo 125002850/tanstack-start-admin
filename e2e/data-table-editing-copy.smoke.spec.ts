@@ -62,9 +62,7 @@ test('@workspace-v2 copies a dragged range to the clipboard as row-major TSV', a
 
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+C' : 'Control+C');
   await expect(example.locator('td[data-cell-copy-flash="true"]')).toHaveCount(4);
-  await expect.poll(() => readClipboard(page)).toBe(
-    '记录 001\t13800000001\n记录 002\t13800000002'
-  );
+  await expect.poll(() => readClipboard(page)).toBe('记录 001\t13800000001\n记录 002\t13800000002');
 });
 
 test('@workspace-v2 copies a filtered single-row selection to the clipboard', async ({ page }) => {

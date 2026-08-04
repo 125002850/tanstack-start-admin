@@ -5,7 +5,9 @@ interface StatusToggleBadgeProps {
   status?: string;
   onClick: () => void;
   variant?: 'default' | 'destructive' | 'secondary' | 'outline';
-  getVariant?: (isEnabled: boolean) => 'default' | 'destructive' | 'secondary' | 'outline' | undefined;
+  getVariant?: (
+    isEnabled: boolean
+  ) => 'default' | 'destructive' | 'secondary' | 'outline' | undefined;
 }
 
 function isEnabledStatus(status?: string): boolean {

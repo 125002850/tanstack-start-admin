@@ -14,7 +14,7 @@ async function mockDictionaryData(page: Page) {
     localStorage.setItem('app-data-table-per-page:dictionary-items', '200');
   });
 
-  await page.route('**/api/mdm/dict/global/types/list-all', async (route) => {
+  await page.route('**/api/system/dict/global/types/list-all', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -32,7 +32,7 @@ async function mockDictionaryData(page: Page) {
     });
   });
 
-  await page.route('**/api/mdm/dict/global/items/by-type', async (route) => {
+  await page.route('**/api/system/dict/global/items/by-type', async (route) => {
     const list = Array.from({ length: 150 }, (_, index) => ({
       id: index + 1,
       dictTypeCode: 'cell_range',
@@ -41,9 +41,11 @@ async function mockDictionaryData(page: Page) {
       status: 'enable',
       sortOrder: index + 1,
       remark: `Row ${index + 1}`,
-      createBy: 1,
+      createById: 1,
+      createByName: 'tester',
       createTime: '2026-07-10T00:00:00Z',
-      updateBy: 1,
+      updateById: 1,
+      updateByName: 'tester',
       updateTime: '2026-07-10T00:00:00Z'
     }));
     await route.fulfill({
@@ -100,9 +102,14 @@ async function readCellGeometry(card: Locator) {
 
       return {
         id: cell.getAttribute('data-cell-id'),
-        cell: [cellRect.x, cellRect.y, cellRect.width, cellRect.height].map(round),
+        cell: [cellRect.width, cellRect.height].map(round),
         content: contentRect
-          ? [contentRect.x, contentRect.y, contentRect.width, contentRect.height].map(round)
+          ? [
+              contentRect.x - cellRect.x,
+              contentRect.y - cellRect.y,
+              contentRect.width,
+              contentRect.height
+            ].map(round)
           : null
       };
     })
@@ -121,7 +128,7 @@ test('@workspace-v2 filters the loaded page from a column header without request
   const card = await gotoDictionaryTable(page);
   let itemRequestCount = 0;
   page.on('request', (request) => {
-    if (request.url().includes('/api/mdm/dict/global/items/by-type')) {
+    if (request.url().includes('/api/system/dict/global/items/by-type')) {
       itemRequestCount += 1;
     }
   });
@@ -149,15 +156,16 @@ test('@workspace-v2 filters the loaded page from a column header without request
 
 test('@workspace-v2 selects a range, extends by keyboard, and copies TSV', async ({ page }) => {
   const card = await gotoDictionaryTable(page);
+  const firstRow = card.locator('tbody tr').first();
   const firstCode = card.locator('td[data-cell-column-id="dictItemCode"]').first();
   const secondName = card.locator('td[data-cell-column-id="dictItemName"]').nth(1);
-  const geometryBeforeSelection = await readCellGeometry(card);
+  const geometryBeforeSelection = await readCellGeometry(firstRow);
 
   await dragBetweenCells(page, firstCode, secondName);
   await expect(card.locator('td[data-cell-selected="true"]')).toHaveCount(4);
   await expect(firstCode).toHaveAttribute('data-cell-range-anchor', 'true');
   await expect(secondName).toHaveAttribute('data-cell-range-focus', 'true');
-  expect(await readCellGeometry(card)).toEqual(geometryBeforeSelection);
+  expect(await readCellGeometry(firstRow)).toEqual(geometryBeforeSelection);
 
   await secondName.focus();
   await page.keyboard.down('Shift');

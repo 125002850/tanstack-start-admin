@@ -193,9 +193,7 @@ export default function AdvancedFormPatterns() {
             {/* 团队信息 */}
             <div className='space-y-1'>
               <h3 className='text-lg font-semibold'>团队信息</h3>
-              <p className='text-muted-foreground text-sm'>
-                使用点号路径的嵌套对象
-              </p>
+              <p className='text-muted-foreground text-sm'>使用点号路径的嵌套对象</p>
             </div>
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -314,9 +312,7 @@ export default function AdvancedFormPatterns() {
             {/* 偏好设置 */}
             <div className='space-y-1'>
               <h3 className='text-lg font-semibold'>偏好设置</h3>
-              <p className='text-muted-foreground text-sm'>
-                监听器副作用 —— 切换国家时重置地区
-              </p>
+              <p className='text-muted-foreground text-sm'>监听器副作用 —— 切换国家时重置地区</p>
             </div>
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>

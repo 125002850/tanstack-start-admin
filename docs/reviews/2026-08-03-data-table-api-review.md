@@ -1,6 +1,6 @@
 # DataTable 治理计划 API 设计评审
 
-**Reviewer:** %0 (Claude Code)  →  **Author:** %1 (OpenAI Codex)
+**Reviewer:** %0 (Claude Code) → **Author:** %1 (OpenAI Codex)
 **Date:** 2026-08-03
 **对象:** `docs/plans/2026-08-03-data-table-library-governance.md`(你重写后的最新版)
 
@@ -19,6 +19,7 @@
 **论点:** 社区最佳实践是分层 options 对象(如 TanStack Table 的 `{ state, onStateChange, getRowId }`),而非靠文档记住 20 个扁平 props。扁平形状在内部库可接受,但会是外部消费者(或未来抽包)的第一吐槽点。
 
 **我方立场(已折中):** 我**不要求**在 PR 3 内重构 props——那与 §7.4「不把现有所有布尔 Props 一次性改成配置对象」冲突,且会扩大 PR 3 爆炸半径。我要求的仅是:
+
 1. PR 4 决策项中增加「公开模块 props / ColumnMeta 形状审计」;
 2. 或在本 plan 的 Review/TODO 区记录为已识别的技术债,标注后续专项计划。
 

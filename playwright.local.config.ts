@@ -1,17 +1,17 @@
-import { existsSync } from 'node:fs'
-import { defineConfig } from '@playwright/test'
-import baseConfig from './playwright.config'
+import { existsSync } from 'node:fs';
+import { defineConfig } from '@playwright/test';
+import baseConfig from './playwright.config';
 
-const baseUse = baseConfig.use ?? {}
+const baseUse = baseConfig.use ?? {};
 const baseLaunchOptions =
-  'launchOptions' in baseUse && baseUse.launchOptions ? baseUse.launchOptions : {}
+  'launchOptions' in baseUse && baseUse.launchOptions ? baseUse.launchOptions : {};
 const baseArgs =
   'args' in baseLaunchOptions && Array.isArray(baseLaunchOptions.args)
     ? baseLaunchOptions.args
-    : []
+    : [];
 
-const storageStatePath = 'playwright/.auth/user.json'
-const storageState = existsSync(storageStatePath) ? storageStatePath : undefined
+const storageStatePath = 'playwright/.auth/user.json';
+const storageState = existsSync(storageStatePath) ? storageStatePath : undefined;
 
 export default defineConfig({
   ...baseConfig,
@@ -25,4 +25,4 @@ export default defineConfig({
       args: [...baseArgs, '--enable-features=HttpsUpgrades']
     }
   }
-})
+});

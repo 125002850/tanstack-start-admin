@@ -489,7 +489,9 @@ describe('Workspace Routing Integration', () => {
 
       const state = useWorkspaceTabStore.getState();
       expect(getDescriptors()['/dashboard/system-management/dictionaries']).toBeDefined();
-      expect(getDescriptors()['/dashboard/system-management/dictionaries']?.tabId).toBe('/dashboard/system-management/dictionaries');
+      expect(getDescriptors()['/dashboard/system-management/dictionaries']?.tabId).toBe(
+        '/dashboard/system-management/dictionaries'
+      );
       expect(state.tabs['/dashboard/system-management/dictionaries']).toBeDefined();
     });
 
@@ -550,7 +552,9 @@ describe('Workspace Routing Integration', () => {
 
       const itemsEl = getByTestId('v2-export-center');
       expect(itemsEl.style.display).not.toBe('none');
-      expect(useWorkspaceTabStore.getState().activeId).toBe('/dashboard/system-management/export-center');
+      expect(useWorkspaceTabStore.getState().activeId).toBe(
+        '/dashboard/system-management/export-center'
+      );
 
       rerender(
         React.createElement(React.Fragment, null, [
@@ -582,7 +586,8 @@ describe('Workspace Routing Integration', () => {
       openRegisteredPage('/dashboard/system-management/dictionaries', {
         title: 'Dictionaries',
         keepAlive: true,
-        render: () => React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
+        render: () =>
+          React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
       });
 
       useWorkspaceTabStore.setState({ activeId: '/dashboard/forms/basic' });
@@ -622,7 +627,8 @@ describe('Workspace Routing Integration', () => {
       openRegisteredPage('/dashboard/system-management/dictionaries', {
         title: 'Dictionaries',
         keepAlive: true,
-        render: () => React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
+        render: () =>
+          React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
       });
 
       useWorkspaceTabStore.setState({ activeId: '/dashboard/system-management/audit-log' });
@@ -656,7 +662,8 @@ describe('Workspace Routing Integration', () => {
       openRegisteredPage('/dashboard/system-management/dictionaries', {
         title: 'Dictionaries',
         keepAlive: true,
-        render: () => React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
+        render: () =>
+          React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
       });
 
       useWorkspaceTabStore.setState({ activeId: '/dashboard/system-management/audit-log' });
@@ -729,7 +736,8 @@ describe('Workspace Routing Integration', () => {
       openRegisteredPage('/dashboard/system-management/dictionaries', {
         title: 'Dictionaries',
         keepAlive: true,
-        render: () => React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
+        render: () =>
+          React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
       });
       useWorkspaceTabStore.setState({
         activeId: '/dashboard/system-management/export-center'
@@ -755,7 +763,9 @@ describe('Workspace Routing Integration', () => {
       });
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard/system-management/dictionaries' });
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: '/dashboard/system-management/dictionaries'
+        });
       });
       await waitFor(() => {
         expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -772,7 +782,8 @@ describe('Workspace Routing Integration', () => {
       openRegisteredPage('/dashboard/system-management/dictionaries', {
         title: 'Dictionaries',
         keepAlive: true,
-        render: () => React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
+        render: () =>
+          React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
       });
 
       useWorkspaceTabStore.setState({ activeId: '/dashboard/dialog-owner' });
@@ -800,7 +811,8 @@ describe('Workspace Routing Integration', () => {
       openRegisteredPage('/dashboard/system-management/dictionaries', {
         title: 'Dictionaries',
         keepAlive: true,
-        render: () => React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
+        render: () =>
+          React.createElement('div', { 'data-testid': 'dictionaries-page' }, 'Dictionaries')
       });
 
       useWorkspaceTabStore.setState({ activeId: '/dashboard/sheet-owner' });
@@ -874,9 +886,15 @@ describe('Workspace Routing Integration', () => {
     it('title can be updated via updateLifecycle', () => {
       openRegisteredPage('/dashboard/system-management/dictionaries', { title: 'Dictionaries' });
 
-      getState().updateLifecycle('/dashboard/system-management/dictionaries', { title: 'Dictionaries (99)' });
-      expect(getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.title).toBe('Dictionaries (99)');
-      expect(getState().tabs['/dashboard/system-management/dictionaries']?.title).toBe('Dictionaries');
+      getState().updateLifecycle('/dashboard/system-management/dictionaries', {
+        title: 'Dictionaries (99)'
+      });
+      expect(
+        getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.title
+      ).toBe('Dictionaries (99)');
+      expect(getState().tabs['/dashboard/system-management/dictionaries']?.title).toBe(
+        'Dictionaries'
+      );
     });
 
     it('dirty flag can be toggled', () => {
@@ -889,10 +907,14 @@ describe('Workspace Routing Integration', () => {
       });
 
       getState().updateLifecycle('/dashboard/system-management/dictionaries', { dirty: true });
-      expect(getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.dirty).toBe(true);
+      expect(
+        getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.dirty
+      ).toBe(true);
 
       getState().updateLifecycle('/dashboard/system-management/dictionaries', { dirty: false });
-      expect(getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.dirty).toBe(false);
+      expect(
+        getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.dirty
+      ).toBe(false);
     });
 
     it('closeGuard can be set and is preserved in lifecycle snapshot', () => {
@@ -905,8 +927,12 @@ describe('Workspace Routing Integration', () => {
         render: () => null
       });
 
-      getState().updateLifecycle('/dashboard/system-management/dictionaries', { closeGuard: guard });
-      expect(getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.closeGuard).toBe(guard);
+      getState().updateLifecycle('/dashboard/system-management/dictionaries', {
+        closeGuard: guard
+      });
+      expect(
+        getState().lifecycleSnapshots['/dashboard/system-management/dictionaries']?.closeGuard
+      ).toBe(guard);
     });
   });
 
@@ -1112,7 +1138,9 @@ describe('Workspace Routing Integration', () => {
       );
 
       expect(getByTestId('workspace-portal')).toBeDefined();
-      expect(useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']).toBeDefined();
+      expect(
+        useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']
+      ).toBeDefined();
 
       vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(false);
       rerender(React.createElement(WorkspaceFlagToggleHarness));
@@ -1128,7 +1156,9 @@ describe('Workspace Routing Integration', () => {
       const boundaryRoot = render(React.createElement(WorkspaceFlagToggleHarness));
 
       expect(boundaryRoot.queryAllByTestId('workspace-portal').length).toBeGreaterThan(0);
-      expect(useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']).toBeDefined();
+      expect(
+        useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']
+      ).toBeDefined();
 
       vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(false);
       boundaryRoot.rerender(React.createElement(WorkspaceFlagToggleHarness));
@@ -1136,7 +1166,9 @@ describe('Workspace Routing Integration', () => {
       expect(boundaryRoot.getByTestId('inline-disabled')).toBeDefined();
       expect(boundaryRoot.queryAllByTestId('workspace-portal')).toHaveLength(0);
       expect(viewportRoot.queryAllByTestId('workspace-portal')).toHaveLength(0);
-      expect(useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']).toBeUndefined();
+      expect(
+        useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']
+      ).toBeUndefined();
       expect(getDescriptors()['/dashboard/system-management/dictionaries']).toBeUndefined();
     });
   });
@@ -1218,7 +1250,10 @@ describe('Workspace Routing Integration', () => {
     it('close-current with guard returning false does not close the tab', async () => {
       setupTab('/dashboard/system-management/dictionaries', 'Dictionaries');
       const guard = vi.fn(() => false);
-      getState().updateLifecycle('/dashboard/system-management/dictionaries', { closeGuard: guard, dirty: true });
+      getState().updateLifecycle('/dashboard/system-management/dictionaries', {
+        closeGuard: guard,
+        dirty: true
+      });
 
       const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
       render(React.createElement(CloseGuardTester, { actionsRef }));
@@ -1227,13 +1262,18 @@ describe('Workspace Routing Integration', () => {
 
       // Tab still exists — guard returned false
       expect(getState().tabs['/dashboard/system-management/dictionaries']).toBeDefined();
-      expect(guard).toHaveBeenCalledWith({ tabId: '/dashboard/system-management/dictionaries', reason: 'close-current' });
+      expect(guard).toHaveBeenCalledWith({
+        tabId: '/dashboard/system-management/dictionaries',
+        reason: 'close-current'
+      });
     });
 
     it('close-current with guard returning true allows close', async () => {
       setupTab('/dashboard/system-management/dictionaries', 'Dictionaries');
       const guard = vi.fn(() => true);
-      getState().updateLifecycle('/dashboard/system-management/dictionaries', { closeGuard: guard });
+      getState().updateLifecycle('/dashboard/system-management/dictionaries', {
+        closeGuard: guard
+      });
 
       const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
       render(React.createElement(CloseGuardTester, { actionsRef }));
@@ -1249,8 +1289,13 @@ describe('Workspace Routing Integration', () => {
       setupTab('/dashboard/settings', 'Settings');
 
       // Exports lets close go through, Dictionaries rejects
-      getState().updateLifecycle('/dashboard/system-management/export-center', { closeGuard: () => true });
-      getState().updateLifecycle('/dashboard/system-management/dictionaries', { closeGuard: () => false, dirty: true });
+      getState().updateLifecycle('/dashboard/system-management/export-center', {
+        closeGuard: () => true
+      });
+      getState().updateLifecycle('/dashboard/system-management/dictionaries', {
+        closeGuard: () => false,
+        dirty: true
+      });
       getState().updateLifecycle('/dashboard/settings', { closeGuard: () => true });
 
       const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
@@ -1269,7 +1314,10 @@ describe('Workspace Routing Integration', () => {
       setupTab('/dashboard/system-management/export-center', 'Exports');
       setupTab('/dashboard/system-management/dictionaries', 'Dictionaries');
 
-      getState().updateLifecycle('/dashboard/system-management/export-center', { closeGuard: () => false, dirty: true });
+      getState().updateLifecycle('/dashboard/system-management/export-center', {
+        closeGuard: () => false,
+        dirty: true
+      });
 
       const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
       render(React.createElement(CloseGuardTester, { actionsRef }));
@@ -1278,7 +1326,9 @@ describe('Workspace Routing Integration', () => {
       await act(() => actionsRef.current!.closeOther('/dashboard/system-management/dictionaries'));
 
       // Navigated to the rejecting tab
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard/system-management/export-center' });
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: '/dashboard/system-management/export-center'
+      });
       // Dictionaries still exists
       expect(getState().tabs['/dashboard/system-management/dictionaries']).toBeDefined();
     });
@@ -1287,8 +1337,13 @@ describe('Workspace Routing Integration', () => {
       setupTab('/dashboard/system-management/export-center', 'Exports');
       setupTab('/dashboard/system-management/dictionaries', 'Dictionaries');
 
-      getState().updateLifecycle('/dashboard/system-management/export-center', { closeGuard: () => true });
-      getState().updateLifecycle('/dashboard/system-management/dictionaries', { closeGuard: () => false, dirty: true });
+      getState().updateLifecycle('/dashboard/system-management/export-center', {
+        closeGuard: () => true
+      });
+      getState().updateLifecycle('/dashboard/system-management/dictionaries', {
+        closeGuard: () => false,
+        dirty: true
+      });
 
       const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
       render(React.createElement(CloseGuardTester, { actionsRef }));
@@ -1296,7 +1351,9 @@ describe('Workspace Routing Integration', () => {
       mockNavigate.mockClear();
       await act(() => actionsRef.current!.closeAll());
 
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard/system-management/dictionaries' });
+      expect(mockNavigate).toHaveBeenCalledWith({
+        to: '/dashboard/system-management/dictionaries'
+      });
       // Exports still exists (batch aborted before processing it)
       expect(getState().tabs['/dashboard/system-management/export-center']).toBeDefined();
     });
@@ -1344,7 +1401,9 @@ describe('Workspace Routing Integration', () => {
       const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
       render(React.createElement(CloseGuardTester, { actionsRef }));
 
-      const closePromise = act(() => actionsRef.current!.close('/dashboard/system-management/dictionaries'));
+      const closePromise = act(() =>
+        actionsRef.current!.close('/dashboard/system-management/dictionaries')
+      );
       vi.advanceTimersByTime(2000); // past 1500ms timeout
       await closePromise;
 
