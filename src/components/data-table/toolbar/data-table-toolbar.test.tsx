@@ -93,6 +93,44 @@ describe('DataTableToolbar filter variant dispatch', () => {
     expect(screen.getByRole('textbox')).toBeInTheDocument();
   });
 
+  it('commits a pending text filter when the input loses focus', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        meta: { variant: 'text' as const, label: 'Name' }
+      }
+    ];
+    render(<ToolbarHarness columns={columns} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: '1' } });
+
+    expect(input).toHaveValue('1');
+    expect(screen.queryByRole('button', { name: '重置筛选条件' })).not.toBeInTheDocument();
+
+    fireEvent.blur(input);
+
+    expect(screen.getByRole('button', { name: '重置筛选条件' })).toBeInTheDocument();
+  });
+
+  it('commits a pending text filter when Enter is pressed', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        meta: { variant: 'text' as const, label: 'Name' }
+      }
+    ];
+    render(<ToolbarHarness columns={columns} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: '123' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(screen.getByRole('button', { name: '重置筛选条件' })).toBeInTheDocument();
+  });
+
   it('renders faceted filter for columns with variant: "multiSelect"', () => {
     const columns: ColumnDef<TestRow>[] = [
       {

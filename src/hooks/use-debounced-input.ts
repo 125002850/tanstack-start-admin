@@ -10,7 +10,7 @@ interface UseDebouncedInputOptions {
 export function useDebouncedInput({
   value: externalValue,
   onChange,
-  debounceMs = 300,
+  debounceMs = 300
 }: UseDebouncedInputOptions) {
   const [localValue, setLocalValue] = React.useState(externalValue);
   const isComposingRef = React.useRef(false);
@@ -45,10 +45,31 @@ export function useDebouncedInput({
     [debouncedOnChange]
   );
 
+  const flushPendingChange = React.useCallback(() => {
+    if (!isComposingRef.current) {
+      debouncedOnChange.flush();
+    }
+  }, [debouncedOnChange]);
+
+  const handleBlur = React.useCallback(() => {
+    flushPendingChange();
+  }, [flushPendingChange]);
+
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+        flushPendingChange();
+      }
+    },
+    [flushPendingChange]
+  );
+
   return {
     value: localValue,
     onChange: handleChange,
+    onBlur: handleBlur,
+    onKeyDown: handleKeyDown,
     onCompositionStart: handleCompositionStart,
-    onCompositionEnd: handleCompositionEnd,
+    onCompositionEnd: handleCompositionEnd
   };
 }
