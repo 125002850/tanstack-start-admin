@@ -1,4 +1,4 @@
-import { type DraggableSyntheticListeners } from '@dnd-kit/core';
+import type { DraggableSyntheticListeners } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import * as React from 'react';
@@ -55,27 +55,12 @@ interface TagContentProps {
   dirty: boolean;
   closable: boolean;
   isActive: boolean;
-  closeAriaLabel: string;
-  interactiveClose?: boolean;
-  onCloseClick?: (event: React.MouseEvent) => void;
-  onCloseKeyDown?: (event: React.KeyboardEvent) => void;
-  onClosePointerDown?: (event: React.SyntheticEvent) => void;
 }
 
 // TagContent 只负责"标签内部内容"，不关心它是按钮、占位还是 overlay。
 // 这样可以让真实标签、placeholder、overlay 共享同一套标题 / 脏状态 / 关闭图标渲染。
 function TagContent(props: TagContentProps) {
-  const {
-    title,
-    dirty,
-    closable,
-    isActive,
-    closeAriaLabel,
-    interactiveClose = false,
-    onCloseClick,
-    onCloseKeyDown,
-    onClosePointerDown
-  } = props;
+  const { title, dirty, closable, isActive } = props;
 
   return (
     <>
@@ -86,33 +71,11 @@ function TagContent(props: TagContentProps) {
           aria-label={`${title} has unsaved changes`}
         />
       )}
-      {closable && interactiveClose ? (
-        <span
-          role='button'
-          aria-label={closeAriaLabel}
-          tabIndex={-1}
-          onClick={onCloseClick}
-          onKeyDown={onCloseKeyDown}
-          onMouseDown={(event) => onClosePointerDown?.(event)}
-          onPointerDown={(event) => onClosePointerDown?.(event)}
-          onTouchStart={(event) => onClosePointerDown?.(event)}
-          className={cn(
-            'ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm',
-            isActive ? 'visible' : 'invisible group-hover:visible',
-            'opacity-40 transition-opacity group-hover:opacity-100',
-            'hover:text-foreground',
-            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
-          )}
-        >
-          {/* 关闭按钮会阻断 pointerDown，避免长按时把"关闭"误识别成拖拽起点。 */}
-          <Icons.close className='size-3 cursor-pointer' />
-        </span>
-      ) : null}
-      {closable && !interactiveClose ? (
+      {closable ? (
         <span
           aria-hidden='true'
           className={cn(
-            'ml-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm opacity-40',
+            'ml-0.5 flex size-6 shrink-0 items-center justify-center rounded-sm opacity-40',
             isActive ? 'visible' : 'invisible'
           )}
         >
@@ -132,7 +95,6 @@ interface InteractiveTagButtonProps {
   onActivate: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   onClose: (event: React.MouseEvent) => void;
-  onCloseKeyDown: (event: React.KeyboardEvent) => void;
   onClosePointerDown: (event: React.SyntheticEvent) => void;
   tabRef?: (node: HTMLButtonElement | null) => void;
   listeners?: DraggableSyntheticListeners;
@@ -140,7 +102,8 @@ interface InteractiveTagButtonProps {
 }
 
 // 真正可交互的标签按钮。
-// dnd listeners 直接挂在 button 上，让整块标签都能作为拖拽抓手。
+// 标签标题同时承担导航与拖拽激活；Sensor 的移动阈值负责区分点击和排序。
+// 关闭操作仍使用独立原生按钮，避免嵌套交互元素。
 function InteractiveTagButton(props: InteractiveTagButtonProps) {
   const {
     id,
@@ -151,7 +114,6 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
     onActivate,
     onKeyDown,
     onClose,
-    onCloseKeyDown,
     onClosePointerDown,
     tabRef,
     listeners,
@@ -159,31 +121,54 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
   } = props;
 
   return (
-    <button
-      ref={tabRef}
-      data-slot='workspace-tag'
+    <div
+      data-slot='workspace-tag-shell'
       data-tab-id={id}
       data-pinned={dataPinned}
-      role='tab'
-      aria-selected={isActive}
-      tabIndex={isActive ? 0 : -1}
-      {...listeners}
-      onClick={onActivate}
-      onKeyDown={onKeyDown}
       className={getTagButtonClassName(isActive)}
     >
-      <TagContent
-        title={title}
-        dirty={dirty}
-        closable={closable}
-        isActive={isActive}
-        closeAriaLabel={`Close ${title}`}
-        interactiveClose
-        onCloseClick={onClose}
-        onCloseKeyDown={onCloseKeyDown}
-        onClosePointerDown={onClosePointerDown}
-      />
-    </button>
+      <button
+        ref={tabRef}
+        data-slot='workspace-tag'
+        data-tab-id={id}
+        data-pinned={dataPinned}
+        role='tab'
+        aria-selected={isActive}
+        tabIndex={isActive ? 0 : -1}
+        {...listeners}
+        onClick={onActivate}
+        onKeyDown={onKeyDown}
+        className={cn(
+          'inline-flex h-full min-w-0 items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+          closable ? 'pl-2.5 pr-0.5' : 'px-2.5',
+          listeners ? 'cursor-grab active:cursor-grabbing' : undefined
+        )}
+      >
+        <TagContent title={title} dirty={dirty} closable={false} isActive={isActive} />
+      </button>
+      {closable ? (
+        <button
+          type='button'
+          data-slot='workspace-tag-close'
+          aria-label={`关闭：${title}`}
+          onClick={onClose}
+          onMouseDown={onClosePointerDown}
+          onPointerDown={onClosePointerDown}
+          onTouchStart={onClosePointerDown}
+          className={cn(
+            'mr-0.5 flex size-6 shrink-0 items-center justify-center rounded-sm transition-[color,opacity]',
+            'hover:text-foreground hover:opacity-100',
+            'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            isActive
+              ? 'opacity-50'
+              : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-50 group-focus-within:pointer-events-auto group-focus-within:opacity-50'
+          )}
+        >
+          {/* 原生按钮与 tab 为兄弟节点，避免嵌套交互元素，同时阻断拖拽激活。 */}
+          <Icons.close className='size-3' />
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -216,13 +201,7 @@ function PlaceholderTag(props: PlaceholderTagProps) {
           : undefined
       }
     >
-      <TagContent
-        title={title}
-        dirty={dirty}
-        closable={closable}
-        isActive={isActive}
-        closeAriaLabel={`Close ${title}`}
-      />
+      <TagContent title={title} dirty={dirty} closable={closable} isActive={isActive} />
     </div>
   );
 }
@@ -246,7 +225,7 @@ export function OverlayTag(props: OverlayTagProps) {
       aria-hidden='true'
       className={cn(
         getTagButtonClassName(isActive),
-        'pointer-events-none scale-[1.02] shadow-lg ring-1 ring-border/70'
+        'pointer-events-none gap-1 px-2.5 scale-[1.02] shadow-lg ring-1 ring-border/70'
       )}
       style={
         metrics
@@ -257,13 +236,7 @@ export function OverlayTag(props: OverlayTagProps) {
           : undefined
       }
     >
-      <TagContent
-        title={title}
-        dirty={dirty}
-        closable={closable}
-        isActive={isActive}
-        closeAriaLabel={`Close ${title}`}
-      />
+      <TagContent title={title} dirty={dirty} closable={closable} isActive={isActive} />
     </div>
   );
 }
@@ -273,7 +246,6 @@ interface TagInteractionCallbacks {
   activate: (event: React.MouseEvent<HTMLButtonElement>, id: WorkspaceTabId) => void;
   handleKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>, id: WorkspaceTabId) => void;
   handleClose: (event: React.MouseEvent, id: WorkspaceTabId) => void;
-  handleCloseKeyDown: (event: React.KeyboardEvent, id: WorkspaceTabId) => void;
   handleClosePointerDown: (event: React.SyntheticEvent) => void;
 }
 
@@ -297,7 +269,6 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
     activate,
     handleKeyDown,
     handleClose,
-    handleCloseKeyDown,
     handleClosePointerDown,
     refresh,
     close,
@@ -326,7 +297,6 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
           onActivate={(event) => activate(event, id)}
           onKeyDown={(event) => handleKeyDown(event, id)}
           onClose={(event) => handleClose(event, id)}
-          onCloseKeyDown={(event) => handleCloseKeyDown(event, id)}
           onClosePointerDown={handleClosePointerDown}
         />
       </div>
@@ -357,7 +327,6 @@ export function SortableTagItem(props: SortableTagItemProps) {
     activate,
     handleKeyDown,
     handleClose,
-    handleCloseKeyDown,
     handleClosePointerDown,
     refresh,
     close,
@@ -377,7 +346,6 @@ export function SortableTagItem(props: SortableTagItemProps) {
     [transform, transition]
   );
 
-  // button 既是焦点目标，也是拖拽激活器，所以同时注册给 sortable 和外层 refs。
   const setButtonRef = React.useCallback(
     (node: HTMLButtonElement | null) => {
       setActivatorNodeRef(node);
@@ -418,7 +386,6 @@ export function SortableTagItem(props: SortableTagItemProps) {
             onActivate={(event) => activate(event, id)}
             onKeyDown={(event) => handleKeyDown(event, id)}
             onClose={(event) => handleClose(event, id)}
-            onCloseKeyDown={(event) => handleCloseKeyDown(event, id)}
             onClosePointerDown={handleClosePointerDown}
           />
         )}

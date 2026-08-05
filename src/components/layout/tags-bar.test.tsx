@@ -136,7 +136,10 @@ describe('TagsBar', () => {
 
     const tab = screen.getByRole('tab', { name: /仪表盘/ });
     expect(tab).toHaveAttribute('aria-selected', 'true');
-    expect(tab).toHaveClass('bg-card', 'text-card-foreground');
+    expect(tab.closest('[data-slot="workspace-tag-shell"]')).toHaveClass(
+      'bg-card',
+      'text-card-foreground'
+    );
   });
 
   it('uses a native horizontal scroll viewport with hidden scrollbars', () => {
@@ -209,20 +212,38 @@ describe('TagsBar', () => {
     openTab('/dashboard/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
 
-    expect(screen.queryByRole('button', { name: /Close 仪表盘/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '关闭：仪表盘' })).not.toBeInTheDocument();
   });
 
-  it('shows close buttons only for the active or hovered tab while preserving their space', () => {
+  it('uses sibling native close buttons with an accessible 24px target', () => {
     openTab('/dashboard/system-management/dictionaries', 'Dictionaries');
     openTab('/dashboard/chat', 'Chat');
     render(<TagsBar />);
 
-    const inactiveClose = screen.getByRole('button', { name: /Close Dictionaries/ });
-    const activeClose = screen.getByRole('button', { name: /Close Chat/ });
+    const inactiveClose = screen.getByRole('button', { name: '关闭：Dictionaries' });
+    const activeClose = screen.getByRole('button', { name: '关闭：Chat' });
 
-    expect(inactiveClose).toHaveClass('invisible', 'group-hover:visible', 'size-3.5');
-    expect(activeClose).toHaveClass('visible', 'size-3.5');
-    expect(activeClose).not.toHaveClass('invisible');
+    expect(inactiveClose).toHaveAttribute('type', 'button');
+    expect(inactiveClose).toHaveClass('opacity-0', 'group-hover:opacity-50', 'size-6');
+    expect(activeClose).toHaveClass('opacity-50', 'size-6');
+    expect(activeClose.closest('[role="tab"]')).toBeNull();
+
+    fireEvent.click(inactiveClose);
+    expect(
+      useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']
+    ).toBeUndefined();
+  });
+
+  it('uses the tab surface as the drag activator without rendering a handle', () => {
+    setupHomeAndChat();
+    render(<TagsBar />);
+
+    const chatTab = screen.getByRole('tab', { name: 'Chat' });
+    const homeTab = screen.getByRole('tab', { name: '仪表盘' });
+
+    expect(document.querySelector('[data-slot="workspace-tag-drag-handle"]')).toBeNull();
+    expect(chatTab).toHaveClass('cursor-grab', 'active:cursor-grabbing');
+    expect(homeTab).not.toHaveClass('cursor-grab');
   });
 
   it('ArrowLeft and ArrowRight move focus across opened tabs', () => {
@@ -289,7 +310,11 @@ describe('TagsBar', () => {
     render(<TagsBar />);
 
     const ids = screen.getAllByRole('tab').map((tab) => tab.getAttribute('data-tab-id'));
-    expect(ids).toEqual(['/dashboard/overview', '/dashboard/system-management/dictionaries', '/dashboard/chat']);
+    expect(ids).toEqual([
+      '/dashboard/overview',
+      '/dashboard/system-management/dictionaries',
+      '/dashboard/chat'
+    ]);
     expect(screen.getByRole('tab', { name: /仪表盘/ })).toHaveAttribute('data-pinned', 'home');
   });
 });

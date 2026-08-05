@@ -18,11 +18,10 @@ import type { WorkspaceTabId } from '@/features/workspace-tabs/types';
 import { cn } from '@/lib/utils';
 import { OverlayTag, PinnedHomeTag, SortableTagItem } from './components';
 import {
-  dropAnimation,
   HOME_ID,
-  LONG_PRESS_DELAY_MS,
-  LONG_PRESS_TOLERANCE_PX,
-  LONG_PRESS_TOUCH_TOLERANCE_PX
+  MOUSE_DRAG_ACTIVATION_DISTANCE_PX,
+  TOUCH_DRAG_ACTIVATION_DELAY_MS,
+  TOUCH_DRAG_TOLERANCE_PX
 } from './constant';
 import { reconcileVisualOrder } from './helper';
 import type { OverlayMetrics } from './types';
@@ -55,8 +54,6 @@ export default function TagsBar() {
   const tabsRef = React.useRef<Map<string, HTMLButtonElement>>(new Map());
   const viewportRef = React.useRef<HTMLDivElement | null>(null);
   const contentRef = React.useRef<HTMLDivElement | null>(null);
-  const suppressClickRef = React.useRef(false);
-  const suppressClickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [visualOrder, setVisualOrder] = React.useState<WorkspaceTabId[]>(() =>
     reconcileVisualOrder(openedOrder, openedOrder)
@@ -82,14 +79,6 @@ export default function TagsBar() {
     if (dragState.activeId) return;
     setVisualOrder((current) => reconcileVisualOrder(openedOrder, current));
   }, [dragState.activeId, openedOrder]);
-
-  React.useEffect(() => {
-    return () => {
-      if (suppressClickTimerRef.current !== null) {
-        clearTimeout(suppressClickTimerRef.current);
-      }
-    };
-  }, []);
 
   const updateScrollHints = React.useCallback(() => {
     const viewport = viewportRef.current;
@@ -148,14 +137,13 @@ export default function TagsBar() {
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        delay: LONG_PRESS_DELAY_MS,
-        tolerance: LONG_PRESS_TOLERANCE_PX
+        distance: MOUSE_DRAG_ACTIVATION_DISTANCE_PX
       }
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: LONG_PRESS_DELAY_MS,
-        tolerance: LONG_PRESS_TOUCH_TOLERANCE_PX
+        delay: TOUCH_DRAG_ACTIVATION_DELAY_MS,
+        tolerance: TOUCH_DRAG_TOLERANCE_PX
       }
     })
   );
@@ -198,29 +186,9 @@ export default function TagsBar() {
     [activeId, dragState.snapshot, lifecycleSnapshots, tabs]
   );
 
-  const armSuppressClick = React.useCallback(() => {
-    suppressClickRef.current = true;
-    if (suppressClickTimerRef.current !== null) {
-      clearTimeout(suppressClickTimerRef.current);
-    }
-    suppressClickTimerRef.current = setTimeout(() => {
-      suppressClickRef.current = false;
-      suppressClickTimerRef.current = null;
-    }, 0);
-  }, []);
-
   const activate = React.useCallback(
     (event: React.MouseEvent<HTMLButtonElement>, id: WorkspaceTabId) => {
       event.stopPropagation();
-      if (suppressClickRef.current) {
-        event.preventDefault();
-        suppressClickRef.current = false;
-        if (suppressClickTimerRef.current !== null) {
-          clearTimeout(suppressClickTimerRef.current);
-          suppressClickTimerRef.current = null;
-        }
-        return;
-      }
       const tab = tabs[id];
       if (tab && id !== activeId) {
         openOrActivate(tab);
@@ -235,6 +203,8 @@ export default function TagsBar() {
       const id = event.active.id as WorkspaceTabId;
       const tab = tabs[id];
       const activeTab = tabsRef.current.get(id);
+      const activeShell = activeTab?.closest<HTMLElement>('[data-slot="workspace-tag-shell"]');
+      const activeElement = activeShell ?? activeTab;
 
       setDragState({
         activeId: id,
@@ -245,13 +215,15 @@ export default function TagsBar() {
           dirty: Boolean(lifecycleSnapshots[id]?.dirty),
           isActive: id === activeId
         },
-        overlayMetrics: activeTab
-          ? { width: activeTab.getBoundingClientRect().width, height: activeTab.getBoundingClientRect().height }
+        overlayMetrics: activeElement
+          ? {
+              width: activeElement.getBoundingClientRect().width,
+              height: activeElement.getBoundingClientRect().height
+            }
           : null
       });
-      armSuppressClick();
     },
-    [activeId, armSuppressClick, lifecycleSnapshots, tabs]
+    [activeId, lifecycleSnapshots, tabs]
   );
 
   const handleDragEnd = React.useCallback(
@@ -320,16 +292,6 @@ export default function TagsBar() {
 
   const handleClose = React.useCallback(
     (event: React.MouseEvent, id: WorkspaceTabId) => {
-      event.stopPropagation();
-      void close(id);
-    },
-    [close]
-  );
-
-  const handleCloseKeyDown = React.useCallback(
-    (event: React.KeyboardEvent, id: WorkspaceTabId) => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      event.preventDefault();
       event.stopPropagation();
       void close(id);
     },
@@ -413,7 +375,6 @@ export default function TagsBar() {
                   activate={activate}
                   handleKeyDown={handleKeyDown}
                   handleClose={handleClose}
-                  handleCloseKeyDown={handleCloseKeyDown}
                   handleClosePointerDown={stopClosePointerDown}
                   refresh={refresh}
                   close={close}
@@ -435,12 +396,13 @@ export default function TagsBar() {
                       dirty={tagState.dirty}
                       closable={tagState.closable}
                       isActive={tagState.isActive}
-                      placeholderMetrics={dragState.activeId === id ? dragState.overlayMetrics : null}
+                      placeholderMetrics={
+                        dragState.activeId === id ? dragState.overlayMetrics : null
+                      }
                       registerTabRef={registerTabRef}
                       activate={activate}
                       handleKeyDown={handleKeyDown}
                       handleClose={handleClose}
-                      handleCloseKeyDown={handleCloseKeyDown}
                       handleClosePointerDown={stopClosePointerDown}
                       refresh={refresh}
                       close={close}
@@ -456,7 +418,7 @@ export default function TagsBar() {
 
         {overlayMounted && typeof document !== 'undefined'
           ? ReactDOM.createPortal(
-              <DragOverlay dropAnimation={dropAnimation}>
+              <DragOverlay dropAnimation={null}>
                 {dragState.snapshot ? (
                   <OverlayTag
                     title={dragState.snapshot.title}
