@@ -62,7 +62,7 @@ export function PieGraph() {
           config={chartConfig}
           className='[&_.recharts-text]:fill-background mx-auto aspect-square max-h-[300px] min-h-[250px]'
         >
-          <PieChart>
+          <PieChart accessibilityLayer>
             <ChartTooltip content={<ChartTooltipContent nameKey='visitors' hideLabel />} />
             <Pie
               data={chartData}
