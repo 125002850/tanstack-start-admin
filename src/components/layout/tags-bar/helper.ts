@@ -28,9 +28,8 @@ export function reconcileVisualOrder(
 // active 态和 inactive 态都集中在这里，避免组件层散落条件判断。
 export function getTagButtonClassName(isActive: boolean) {
   return cn(
-    'group inline-flex h-7 shrink-0 items-center gap-1 rounded-sm px-2.5 text-xs transition-colors',
+    'group inline-flex h-7 shrink-0 items-center rounded-sm text-xs transition-colors',
     'hover:text-foreground',
-    'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
     isActive
       ? 'bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,0.12)]'
       : 'text-muted-foreground'
