@@ -254,7 +254,7 @@ describe('DataTable body', () => {
       expect(cell).toHaveStyle({
         position: 'sticky',
         top: '-1px',
-        zIndex: '10'
+        zIndex: '22'
       });
     });
   });

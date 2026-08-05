@@ -9,6 +9,11 @@ const DATA_TABLE_PINNED_SHADOW_GRADIENT_COLOR =
   'var(--data-table-pinned-shadow-gradient-color, color-mix(in oklch, var(--foreground) 3.5%, transparent))';
 const DATA_TABLE_PINNED_SHADOW_LAYER_WIDTH = 18;
 
+// globals.css 中选区边框的层级为 20；fixed 表体必须覆盖选区，sticky 表头再依次覆盖表体。
+export const DATA_TABLE_PINNED_CELL_Z_INDEX = 21;
+export const DATA_TABLE_STICKY_HEADER_Z_INDEX = 22;
+export const DATA_TABLE_PINNED_STICKY_HEADER_Z_INDEX = 23;
+
 export const DATA_TABLE_PINNED_SHADOWS = {
   left: `8px 0 16px -15px ${DATA_TABLE_PINNED_SHADOW_COLOR}, 18px 0 28px -26px ${DATA_TABLE_PINNED_SHADOW_SOFT_COLOR}`,
   right: `-8px 0 16px -15px ${DATA_TABLE_PINNED_SHADOW_COLOR}, -18px 0 28px -26px ${DATA_TABLE_PINNED_SHADOW_SOFT_COLOR}`
@@ -72,7 +77,7 @@ export function getCommonPinningStyles<TData>({
       position: 'sticky',
       pointerEvents: 'auto',
       width: column.getSize(),
-      zIndex: 2
+      zIndex: DATA_TABLE_PINNED_CELL_Z_INDEX
     };
   }
 
