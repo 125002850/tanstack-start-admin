@@ -15,7 +15,8 @@ const meta = defineRouteMeta({
     shortcut: ['b', 's']
   },
   workspace: {
-    refreshPolicy: 'query-invalidate'
+    refreshPolicy: 'query-invalidate',
+    keepAlive: true
   }
 });
 
