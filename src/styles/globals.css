@@ -7,7 +7,69 @@
 @import '@fontsource/geist-sans';
 @import '@fontsource/geist-mono';
 
-/* Theme font stacks fall back to system fonts unless a theme makes a font essential. */
+/* Theme-only fonts are limited to the Latin subset and load only when selected. */
+@font-face {
+  font-family: 'Fira Code Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 700;
+  src: url('@fontsource-variable/fira-code/files/fira-code-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url('@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Outfit Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Playfair Display Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  src: url('@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Merriweather';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/merriweather/files/merriweather-latin-400-normal.woff2') format('woff2');
+}
+
+/* Fontsource exposes font faces; these variables are consumed by theme CSS. */
+:root {
+  --font-fira-code: 'Fira Code Variable';
+  --font-inter: 'Inter Variable';
+  --font-jetbrains-mono: 'JetBrains Mono Variable';
+  --font-outfit: 'Outfit Variable';
+  --font-playfair-display: 'Playfair Display Variable';
+  --font-merriweather: 'Merriweather';
+}
 
 @custom-variant dark (&:is(.dark *));
 
