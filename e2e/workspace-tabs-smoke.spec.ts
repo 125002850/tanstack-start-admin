@@ -1,8 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mockIamSession } from './support/mock-iam-session';
+import { mockMdmWorkspaceApis } from './support/mock-mdm-workspace-apis';
 
 test.beforeEach(async ({ page }) => {
   await mockIamSession(page);
+  await mockMdmWorkspaceApis(page);
 });
 
 async function expectWorkspaceTabs(page: Page) {
