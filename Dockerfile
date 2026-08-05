@@ -1,8 +1,10 @@
+ARG APP_BASE_PATH=/tanstack-start-admin
+
 FROM nexus.oigit.cn/library/node:22-alpine AS builder
 WORKDIR /app
 
 ARG NPM_REGISTRY=http://192.168.186.125:8081/repository/npm
-ARG APP_BASE_PATH=/tanstack-start-admin
+ARG APP_BASE_PATH
 ARG APP_GATEWAY=/admin-api
 ENV HUSKY=0
 ENV COREPACK_NPM_REGISTRY=$NPM_REGISTRY \
@@ -16,6 +18,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+RUN node scripts/render-nginx-config.mjs
 RUN pnpm codegen && pnpm build
 
 ARG VERSION_INFO=""
@@ -25,8 +28,9 @@ RUN if [ -n "$VERSION_INFO" ]; then \
 
 FROM nexus.oigit.cn/library/nginx:1.21 AS runner
 
-COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist /usr/share/nginx/html/tanstack-start-admin
+ARG APP_BASE_PATH
+COPY --from=builder /tmp/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/dist /usr/share/nginx/html${APP_BASE_PATH}
 
 EXPOSE 80
 

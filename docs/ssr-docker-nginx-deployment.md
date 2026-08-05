@@ -8,14 +8,12 @@
 
 ## 涉及文件
 
-- `.gitlab-ci.yml`
+- `.gitlab-ci.yml.example`(模板参考,复制为 `.gitlab-ci.yml` 才会触发 CI)
 - `Dockerfile`
 - `.dockerignore`
 - `docker-compose.yml`
-- `nginx.conf.example`
-- `deploy/nginx.conf`
-- `deploy/<branch>/nginx.conf`
-- `deploy/<branch>/source.env`
+- `nginx.conf.template`
+- `scripts/render-nginx-config.mjs`
 
 ## CI 模型
 
@@ -28,72 +26,51 @@ build -> deploy
 `build` 阶段执行：
 
 1. 读取团队远程模板中定义的 `UTILS_URL`
-2. 读取 `deploy/$CI_COMMIT_REF_NAME/source.env`
-3. 复制分支 Nginx 配置到 `deploy/nginx.conf`
-4. 使用项目级 `.npmrc-ci` 配置 npm 私服，避免写入 runner 用户目录
-5. 调用 `npx $UTILS_URL build:image`
+2. 根据 `workflow.rules.variables` 注入当前分支的镜像仓库和 Kubernetes 元数据
+3. 使用项目级 `.npmrc-ci` 配置 npm 私服，避免写入 runner 用户目录
+4. 调用 `npx $UTILS_URL build:image`
 
 项目构建不再在 CI 脚本里执行。`pnpm build` 位于 Dockerfile 的 builder stage 中，避免 CI 构建一次、Dockerfile 再构建一次。
 
-`deploy` 阶段沿用团队模板：
+`deploy` 阶段沿用团队的 Kubernetes 部署模板：
 
 ```yaml
-extends:
-  - .include_env
-  - .deploy_k8s
+extends: .deploy_k8s
 ```
 
-团队工具会根据 `source.env` 中的 K8s 元数据执行镜像更新。
+GitLab 会将匹配当前分支的变量提供给 build 和 deploy job，团队工具据此执行镜像构建与 Kubernetes 更新。
 
 ## 分支约定
 
-当前配置：
+分支差异直接维护在 `.gitlab-ci.yml.example` 的 `workflow.rules.variables` 中，不再维护分支级部署文件：
 
-- `develop`：构建并部署
-- `main`：构建并部署
-- `release`：只构建镜像
+| 分支         | 行为         |
+| ------------ | ------------ |
+| `main`       | 构建并部署   |
+| `features/*` | 只构建镜像   |
 
-每个分支都需要存在：
-
-```text
-deploy/<branch>/nginx.conf
-deploy/<branch>/source.env
-```
-
-## source.env
-
-`source.env` 是 shell 文件，会被 CI `source`。
-
-当前默认字段：
-
-```bash
-export PROJECT_DIR=front
-export K8S_PROJECT=front
-export DEPLOYMENT_NAME=tanstack-start-admin-v1
-export VITE_ENABLE_WORKSPACE_TABS=1
-export VITE_ENABLE_DATA_TABLE_VIRTUALIZATION=1
-export VITE_APP_SSO_CLIENT_ID=
-export VITE_APP_SSO_SERVICE_ID=
-export VITE_APP_SSO_SERVICE_CODE=
-```
+公共变量 `PROJECT_NAME=tanstack-start-admin`、`DEPLOYMENT_BASE=''` 在顶层 `variables` 中定义一次。
 
 说明：
 
-- `PROJECT_DIR` 影响镜像仓库路径：`nexus.oigit.cn/$PROJECT_DIR/$CI_PROJECT_NAME:<tag>`
+- `PROJECT_DIR` 和 `PROJECT_NAME` 共同决定镜像仓库路径：`nexus.oigit.cn/$PROJECT_DIR/$PROJECT_NAME:<tag>`
 - `K8S_PROJECT` 是 K8s namespace
-- `DEPLOYMENT_NAME` 是需要更新镜像的工作负载
-- `VITE_*` 会在构建期固化到前端静态资源中
+- `PROJECT_NAME` 通过 `-p` 显式传给团队工具，同时决定镜像名、容器名和默认工作负载名
+- `DEPLOYMENT_BASE` 保留团队工具的默认部署名称解析行为
 
-如果实际 namespace 或工作负载名称不同，优先修改对应分支的 `source.env`。
+> 模板示例采用 `PROJECT_DIR=front`、`K8S_PROJECT=front`、`PROJECT_NAME=tanstack-start-admin`。真正启用 CI 时，复制为 `.gitlab-ci.yml` 并按实际 namespace 与镜像名调整。
+
+如果 namespace 或镜像仓库路径变化，修改对应分支的 `workflow.rules.variables`。
 
 ## Docker 镜像
 
 Dockerfile 使用 multi-stage：
 
-1. `nexus.oigit.cn/library/node:22-alpine` 安装依赖并执行 `pnpm build`
-2. 构建前执行 `pnpm codegen`，生成 `src/lib/api/clients/*/generated/` 和 `openapi/.generated/`
-3. 写入可选 `dist/version.js`
-4. `nexus.oigit.cn/library/nginx:1.21` 只复制 `dist/` 和 Nginx 配置
+1. `nexus.oigit.cn/library/node:22-alpine` 安装依赖
+2. 使用 `APP_BASE_PATH` 将根目录 `nginx.conf.template` 渲染到 `/tmp/nginx.conf`
+3. 执行 `pnpm codegen` 和 `pnpm build`，生成 API client 与 Vite 静态产物
+4. 写入可选 `dist/version.js`
+5. `nexus.oigit.cn/library/nginx:1.21` 复制 `dist/` 和渲染后的 Nginx 配置
 
 `generated/` 目录不提交到仓库，因此 Docker build 必须在 `pnpm build` 前重新生成 API client。
 
@@ -117,32 +94,38 @@ curl -I http://127.0.0.1:3000/tanstack-start-admin/
 
 ## Nginx 配置
 
-当前 Nginx 配置用于子路径 SPA：
+根目录 `nginx.conf.template` 是唯一 Nginx 配置源，`${APP_BASE_PATH}` 在 Docker builder 阶段被替换。模板用于子路径 SPA：
 
 ```nginx
 root /usr/share/nginx/html;
 index index.html;
 
 location = / {
-    return 302 /tanstack-start-admin/;
+    return 302 ${APP_BASE_PATH}/;
 }
 
-location /tanstack-start-admin/ {
-    try_files $uri $uri/ /tanstack-start-admin/index.html;
+location ${APP_BASE_PATH}/ {
+    try_files $uri $uri/ ${APP_BASE_PATH}/index.html;
 }
 ```
 
 说明：
 
-- Dockerfile 将 `dist/` 复制到 `/usr/share/nginx/html/tanstack-start-admin`，因此 Nginx 使用 `root + /tanstack-start-admin/...` 即可直接命中文件。
-- 只有 `/tanstack-start-admin/` 进入 SPA fallback，避免 `/admin-api/...` API 请求被前端 `index.html` 吃掉。
+- Dockerfile 将 `dist/` 复制到 `/usr/share/nginx/html${APP_BASE_PATH}`，因此 Nginx 使用 `root + ${APP_BASE_PATH}/...` 即可直接命中文件。
+- 只有 `${APP_BASE_PATH}/` 进入 SPA fallback，避免 `/admin-api/...` API 请求被前端 `index.html` 吃掉。
 - `index index.html` 放在 `server` 级，对当前 server 的 location 生效，不需要在 `location /` 内重复配置。
 - `client_max_body_size`、`absolute_redirect`、gzip 和 proxy timeout 作为团队 Nginx 基线配置保留在 `server` 级。
 - 当前容器只承载静态资源，`proxy_*` timeout 只有在后续增加 `proxy_pass` 的 API location 时才会实际生效。
 
 静态资源设置长期缓存，`version.js` 设置 `no-store`。
 
-如果生产环境需要在前端容器内代理后端 API，应在对应分支的 `deploy/<branch>/nginx.conf` 中增加明确的 API location；不要把未知后端地址写进公共默认配置。
+如果生产环境需要在前端容器内代理后端 API，应在模板中增加明确的 API location 和独立配置变量；不要把未知后端地址写进公共默认配置。
+
+## 构建期特性开关
+
+旧的 `deploy/<branch>/source.env` 中 `VITE_ENABLE_WORKSPACE_TABS`、`VITE_ENABLE_DATA_TABLE_VIRTUALIZATION` 等字段不再维护。`src/config/env.ts` 集中读取 `VITE_*` 且 `workspaceTabsEnabled` 默认 `true`，未显式传入即启用。如需按环境开关，应在 Dockerfile 增加对应 `ARG` 并通过 CI `build:image` 的 `--build-arg` 传入。
+
+SSO 分支额外读取 `VITE_APP_SSO_CLIENT_ID`、`VITE_APP_SSO_SERVICE_ID`、`VITE_APP_SSO_SERVICE_CODE`（见 `src/config/env.ts`），启用 CI 时同样需通过 `--build-arg` 注入。
 
 ## 验收
 
@@ -151,6 +134,7 @@ location /tanstack-start-admin/ {
 ```bash
 APP_BASE_PATH=/tanstack-start-admin APP_GATEWAY=/admin-api pnpm codegen
 APP_BASE_PATH=/tanstack-start-admin APP_GATEWAY=/admin-api pnpm build
+APP_BASE_PATH=/tanstack-start-admin node scripts/render-nginx-config.mjs
 ```
 
 具备 Docker daemon 时继续执行：
@@ -164,6 +148,6 @@ curl -I http://127.0.0.1:3000/tanstack-start-admin/
 CI 首次跑通后，重点检查：
 
 - `build:image` 是否成功 push 到 `nexus.oigit.cn/front/tanstack-start-admin`
-- `develop` / `main` 的 `deploy` 阶段是否更新到正确 namespace
+- `main` 的 `deploy` 阶段是否更新到正确 namespace
 - 浏览器访问深层路由是否能回退到 `index.html`
 - `/admin-api/...` API 路由是否由 Ingress 或后端服务正确承接，不能落到前端 SPA fallback

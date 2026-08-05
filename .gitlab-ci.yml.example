@@ -1,0 +1,42 @@
+# 示例部署流水线:复制为 .gitlab-ci.yml 并在 yh GitLab 推送后才会触发 CI。
+# 当前项目仅作模板,不提交根目录 .gitlab-ci.yml,避免无意触发流水线。
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      variables:
+        PROJECT_DIR: front
+        K8S_PROJECT: front
+
+stages:
+  - build
+  - deploy
+
+variables:
+  DEPLOYMENT_BASE: ''
+  PROJECT_NAME: tanstack-start-admin
+
+include:
+  remote: 'http://192.168.186.118/FRONT/oig-cli-shared-utils/-/raw/master/gitlab-ci-front-tpl.yml'
+
+build:
+  stage: build
+  variables:
+    NPM_CONFIG_USERCONFIG: $CI_PROJECT_DIR/.npmrc-ci
+    NPM_CONFIG_CACHE: $CI_PROJECT_DIR/.npm-cache
+  only:
+    - main
+    - /^features\//
+
+  before_script:
+    - npm config --userconfig "$NPM_CONFIG_USERCONFIG" set registry http://192.168.186.125:8081/repository/npm
+
+  script:
+    - npx $UTILS_URL build:image -p "$PROJECT_NAME" --no-version --build-arg VERSION_INFO=${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+
+deploy:
+  stage: deploy
+  only:
+    - main
+  extends: .deploy_k8s
+  script:
+    - npx $UTILS_URL deploy -p "$PROJECT_NAME"
