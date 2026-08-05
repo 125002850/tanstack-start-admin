@@ -19,34 +19,42 @@ import {
   FieldTitle
 } from '@/components/ui/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
-import {
-  TextField,
-  TextareaField,
-  SelectField,
-  CheckboxField,
-  SwitchField,
-  RadioGroupField,
-  SliderField,
-  FileUploadField,
-  FormTextField,
-  FormTextareaField,
-  FormSelectField,
-  FormCheckboxField,
-  FormSwitchField,
-  FormRadioGroupField,
-  FormSliderField,
-  FormFileUploadField
-} from '@/components/forms/fields';
+import { CheckboxField, FormCheckboxField } from '@/components/forms/fields/checkbox-field';
+import type { FileUploadFieldProps } from '@/components/forms/fields/file-upload-field';
+import { FormRadioGroupField, RadioGroupField } from '@/components/forms/fields/radio-group-field';
+import { FormSelectField, SelectField } from '@/components/forms/fields/select-field';
+import { FormSliderField, SliderField } from '@/components/forms/fields/slider-field';
+import { FormSwitchField, SwitchField } from '@/components/forms/fields/switch-field';
+import { FormTextField, TextField } from '@/components/forms/fields/text-field';
+import { FormTextareaField, TextareaField } from '@/components/forms/fields/textarea-field';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
   fieldContext,
   formContext,
   withFormItemContext,
   useFormContext,
+  createFormField,
   FormFieldSet,
   FormField,
   FormFieldError
 } from './form-context';
+
+const LazyFileUploadField = React.lazy(() =>
+  import('@/components/forms/fields/file-upload-field').then(({ FileUploadField }) => ({
+    default: FileUploadField
+  }))
+);
+
+function FileUploadField(props: FileUploadFieldProps) {
+  return (
+    <React.Suspense fallback={<Skeleton className='h-24 w-full' />}>
+      <LazyFileUploadField {...props} />
+    </React.Suspense>
+  );
+}
+
+const FormFileUploadField = createFormField(FileUploadField);
 
 const AppTextField = withFormItemContext(TextField);
 const AppTextareaField = withFormItemContext(TextareaField);

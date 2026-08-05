@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { HeadContent, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import * as React from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
 import { ActiveThemeProvider } from '@/components/themes/active-theme';
@@ -14,6 +14,14 @@ const META_THEME_COLORS = {
   light: '#ffffff',
   dark: '#09090b'
 };
+
+const RouterDevtools = import.meta.env.DEV
+  ? React.lazy(() =>
+      import('@tanstack/react-router-devtools').then(({ TanStackRouterDevtools }) => ({
+        default: TanStackRouterDevtools
+      }))
+    )
+  : null;
 
 function getInitialTheme() {
   try {
@@ -70,7 +78,11 @@ function RootDocument() {
           <Outlet />
         </ActiveThemeProvider>
       </ThemeProvider>
-      <TanStackRouterDevtools position='bottom-left' />
+      {RouterDevtools ? (
+        <React.Suspense fallback={null}>
+          <RouterDevtools position='bottom-left' />
+        </React.Suspense>
+      ) : null}
     </>
   );
 }

@@ -4,64 +4,6 @@ import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 
-function manualChunks(id: string) {
-  const normalizedId = id.replaceAll('\\', '/');
-
-  if (!normalizedId.includes('/node_modules/')) {
-    return undefined;
-  }
-
-  if (
-    normalizedId.includes('/node_modules/react/') ||
-    normalizedId.includes('/node_modules/react-dom/')
-  ) {
-    return 'vendor-react';
-  }
-
-  if (normalizedId.includes('/node_modules/@tanstack/')) {
-    return 'vendor-tanstack';
-  }
-
-  if (
-    normalizedId.includes('/node_modules/@radix-ui/') ||
-    normalizedId.includes('/node_modules/radix-ui/') ||
-    normalizedId.includes('/node_modules/cmdk/') ||
-    normalizedId.includes('/node_modules/vaul/')
-  ) {
-    return 'vendor-radix';
-  }
-
-  if (normalizedId.includes('/node_modules/recharts/')) {
-    return 'vendor-charts';
-  }
-
-  if (normalizedId.includes('/node_modules/@tabler/icons-react/')) {
-    return 'vendor-icons';
-  }
-
-  if (normalizedId.includes('/node_modules/@dnd-kit/')) {
-    return 'vendor-dnd';
-  }
-
-  if (normalizedId.includes('/node_modules/react-day-picker/')) {
-    return 'vendor-calendar';
-  }
-
-  if (normalizedId.includes('/node_modules/date-fns/')) {
-    return 'vendor-date';
-  }
-
-  if (normalizedId.includes('/node_modules/motion/')) {
-    return 'vendor-motion';
-  }
-
-  if (normalizedId.includes('/node_modules/zod/')) {
-    return 'vendor-validation';
-  }
-
-  return undefined;
-}
-
 function normalizeBasePath(value: string | undefined) {
   if (!value || value === '/') {
     return '/';
@@ -113,18 +55,11 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       tailwindcss(),
-      tanstackRouter({ target: 'react' }),
+      tanstackRouter({ target: 'react', autoCodeSplitting: true }),
       viteReact(),
       ...(process.env.ANALYZE === 'true'
         ? [visualizer({ emitFile: true, filename: 'stats.html', gzipSize: true, brotliSize: true })]
         : [])
-    ],
-    build: {
-      rolldownOptions: {
-        output: {
-          manualChunks
-        }
-      }
-    }
+    ]
   };
 });

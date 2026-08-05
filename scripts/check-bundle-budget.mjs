@@ -12,16 +12,23 @@
  * - largest css: 202,721 bytes -> 243,266
  * - largest image: 3,025,307 bytes -> 3,630,369
  *
+ * Initial-load gzip budgets were measured after enabling route auto code splitting on 2026-08-03
+ * and set to 120% of baseline:
+ * - initial js gzip: 145,625 bytes -> 175,000
+ * - app css gzip: 35,350 bytes -> 43,000
+ *
  * Override with environment variables:
  * BUNDLE_BUDGET_TOTAL_BYTES, BUNDLE_BUDGET_JS_BYTES, BUNDLE_BUDGET_CSS_BYTES,
  * BUNDLE_BUDGET_IMAGE_BYTES, BUNDLE_BUDGET_MAX_JS_BYTES,
  * BUNDLE_BUDGET_MAX_CSS_BYTES, BUNDLE_BUDGET_MAX_IMAGE_BYTES,
+ * BUNDLE_BUDGET_INITIAL_JS_GZIP_BYTES, BUNDLE_BUDGET_APP_CSS_GZIP_BYTES,
  * BUNDLE_BUDGET_TOP_N.
  */
 
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
+import { gzipSync } from 'node:zlib';
 
 const DEFAULT_BUDGETS = {
   totalBytes: 11_123_967,
@@ -30,7 +37,9 @@ const DEFAULT_BUDGETS = {
   imageBytes: 7_939_810,
   maxJsBytes: 579_854,
   maxCssBytes: 243_266,
-  maxImageBytes: 3_630_369
+  maxImageBytes: 3_630_369,
+  initialJsGzipBytes: 175_000,
+  appCssGzipBytes: 43_000
 };
 
 const IMAGE_EXTENSIONS = new Set(['.avif', '.gif', '.jpg', '.jpeg', '.png', '.svg', '.webp']);
@@ -61,6 +70,14 @@ function getBudgets() {
     maxImageBytes: parseIntegerEnv(
       'BUNDLE_BUDGET_MAX_IMAGE_BYTES',
       DEFAULT_BUDGETS.maxImageBytes
+    ),
+    initialJsGzipBytes: parseIntegerEnv(
+      'BUNDLE_BUDGET_INITIAL_JS_GZIP_BYTES',
+      DEFAULT_BUDGETS.initialJsGzipBytes
+    ),
+    appCssGzipBytes: parseIntegerEnv(
+      'BUNDLE_BUDGET_APP_CSS_GZIP_BYTES',
+      DEFAULT_BUDGETS.appCssGzipBytes
     )
   };
 }
@@ -93,6 +110,56 @@ function collectFiles(root) {
 
 function sum(files) {
   return files.reduce((total, file) => total + file.size, 0);
+}
+
+function sumGzip(files) {
+  return files.reduce(
+    (total, file) => total + gzipSync(readFileSync(file.path)).byteLength,
+    0
+  );
+}
+
+function getHtmlAttribute(tag, name) {
+  const match = tag.match(new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`, 'i'));
+  return match?.[2];
+}
+
+function collectInitialJsFiles(files) {
+  const indexPath = join(DIST_DIR, 'index.html');
+  if (!existsSync(indexPath)) {
+    throw new Error(`index.html not found: ${indexPath}`);
+  }
+
+  const html = readFileSync(indexPath, 'utf8');
+  const tags = html.match(/<(?:script|link)\b[^>]*>/gi) ?? [];
+  const initialAssetUrls = new Set();
+
+  for (const tag of tags) {
+    if (/^<script\b/i.test(tag) && getHtmlAttribute(tag, 'type') === 'module') {
+      const src = getHtmlAttribute(tag, 'src');
+      if (src) initialAssetUrls.add(src);
+      continue;
+    }
+
+    if (/^<link\b/i.test(tag)) {
+      const rel = getHtmlAttribute(tag, 'rel')?.toLowerCase().split(/\s+/) ?? [];
+      const href = getHtmlAttribute(tag, 'href');
+      if (rel.includes('modulepreload') && href) initialAssetUrls.add(href);
+    }
+  }
+
+  return [...initialAssetUrls].map((assetUrl) => {
+    const normalizedUrl = assetUrl.split(/[?#]/, 1)[0]?.replaceAll('\\', '/');
+    const match = files.find(
+      (file) =>
+        normalizedUrl === file.relativePath || normalizedUrl?.endsWith(`/${file.relativePath}`)
+    );
+
+    if (!match || match.extension !== '.js') {
+      throw new Error(`initial JS asset not found in dist: ${assetUrl}`);
+    }
+    return match;
+  });
 }
 
 function largest(files) {
@@ -157,6 +224,7 @@ function main() {
   const jsFiles = files.filter((file) => file.extension === '.js');
   const cssFiles = files.filter((file) => file.extension === '.css');
   const imageFiles = files.filter((file) => IMAGE_EXTENSIONS.has(file.extension));
+  const initialJsFiles = collectInitialJsFiles(files);
 
   const metrics = {
     totalBytes: sum(files),
@@ -165,7 +233,9 @@ function main() {
     imageBytes: sum(imageFiles),
     maxJsBytes: largest(jsFiles)?.size ?? 0,
     maxCssBytes: largest(cssFiles)?.size ?? 0,
-    maxImageBytes: largest(imageFiles)?.size ?? 0
+    maxImageBytes: largest(imageFiles)?.size ?? 0,
+    initialJsGzipBytes: sumGzip(initialJsFiles),
+    appCssGzipBytes: sumGzip(cssFiles)
   };
   const failures = [];
 
@@ -178,6 +248,13 @@ function main() {
   assertBudget(failures, 'largest js asset', metrics.maxJsBytes, budgets.maxJsBytes);
   assertBudget(failures, 'largest css asset', metrics.maxCssBytes, budgets.maxCssBytes);
   assertBudget(failures, 'largest image asset', metrics.maxImageBytes, budgets.maxImageBytes);
+  assertBudget(
+    failures,
+    'initial js gzip bytes',
+    metrics.initialJsGzipBytes,
+    budgets.initialJsGzipBytes
+  );
+  assertBudget(failures, 'app css gzip bytes', metrics.appCssGzipBytes, budgets.appCssGzipBytes);
 
   printTopAssets('JS', jsFiles, topN);
   printTopAssets('CSS', cssFiles, topN);
