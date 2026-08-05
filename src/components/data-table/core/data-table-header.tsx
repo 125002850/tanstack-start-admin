@@ -16,7 +16,11 @@ import {
   DATA_TABLE_ROW_NUMBER_COLUMN_ID,
   DATA_TABLE_SELECT_COLUMN_ID
 } from '@/hooks/use-data-table/constants';
-import { getCommonPinningStyles } from '@/components/data-table/core/data-table-pinning';
+import {
+  DATA_TABLE_PINNED_STICKY_HEADER_Z_INDEX,
+  DATA_TABLE_STICKY_HEADER_Z_INDEX,
+  getCommonPinningStyles
+} from '@/components/data-table/core/data-table-pinning';
 import { getDataTableColumnLabel } from '@/components/data-table/columns/data-table-column-label';
 import { cn } from '@/lib/utils';
 import type { DataTableColumnRenderItem, DataTableColumnVirtualWindow } from '@/types/data-table';
@@ -117,7 +121,7 @@ function getStickyHeaderCellStyles<TData>(
     ...styles,
     position: 'sticky',
     top: rowIndex * DATA_TABLE_HEADER_ROW_HEIGHT_PX + HEADER_STICKY_TOP_OFFSET_PX,
-    zIndex: pinnedSide ? 12 : 10
+    zIndex: pinnedSide ? DATA_TABLE_PINNED_STICKY_HEADER_Z_INDEX : DATA_TABLE_STICKY_HEADER_Z_INDEX
   };
 }
 
@@ -326,7 +330,7 @@ export function DataTableHeader<TData>({
           ...getColumnVirtualCellWidthStyle(size),
           position: 'sticky',
           top: HEADER_STICKY_TOP_OFFSET_PX,
-          zIndex: 10
+          zIndex: DATA_TABLE_STICKY_HEADER_Z_INDEX
         }}
       />
     );

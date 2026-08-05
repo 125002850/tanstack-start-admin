@@ -308,6 +308,7 @@ describe('DataTable actions column', () => {
 
     expect(actionsHeader?.getAttribute('style')).toContain('position: sticky');
     expect(actionsHeader?.getAttribute('style')).toContain('right:');
+    expect(actionsHeader?.getAttribute('style')).toContain('z-index: 23;');
     expect(actionsHeader?.querySelector('[data-resizing]')).toBeNull();
   });
 
@@ -320,7 +321,7 @@ describe('DataTable actions column', () => {
     expect(shadowedCell?.getAttribute('style')).toContain(expectedShadow);
     expect(shadowedCell?.getAttribute('style')).toContain('right: -1px;');
     expect(shadowedCell?.getAttribute('style')).toContain('pointer-events: auto;');
-    expect(shadowedCell?.getAttribute('style')).toContain('z-index: 2;');
+    expect(shadowedCell?.getAttribute('style')).toContain('z-index: 21;');
     expect(
       shadowedCell
         ?.querySelector('[data-slot="data-table-pinned-cell-base"]')
