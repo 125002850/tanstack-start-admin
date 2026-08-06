@@ -193,7 +193,10 @@ function isSameRange(left: DataTableCellRange | null, right: DataTableCellRange 
   );
 }
 
-function formatMatrixPasteFailure(failure: DataTableMatrixPasteFailure): {
+function formatMatrixPasteFailure(
+  failure: DataTableMatrixPasteFailure,
+  resolveColumnLabel: (columnId: string) => string
+): {
   message: string;
   description?: string;
 } {
@@ -207,7 +210,7 @@ function formatMatrixPasteFailure(failure: DataTableMatrixPasteFailure): {
     ? dataTableMessages.matrix.targetCoordinate(
         failure.target.rowIndex + 1,
         failure.target.columnIndex + 1,
-        failure.target.columnId
+        failure.target.columnId ? resolveColumnLabel(failure.target.columnId) : undefined
       )
     : undefined;
   const coordinates = [source, target].filter(Boolean).join(' → ');
@@ -294,6 +297,18 @@ export function useDataTableCellSelection<TData>({
   const pasteColumns = useMemo(
     () => matrixPasteColumns ?? selectableColumns,
     [matrixPasteColumns, selectableColumns]
+  );
+  const columnLabelById = useMemo(() => {
+    const labels = new Map<string, string>();
+    for (const column of pasteColumns) {
+      const editable = getEditableColumnMeta(column);
+      if (editable?.title) labels.set(column.id, editable.title);
+    }
+    return labels;
+  }, [pasteColumns]);
+  const resolveColumnLabel = useCallback(
+    (columnId: string) => columnLabelById.get(columnId) ?? columnId,
+    [columnLabelById]
   );
   const matrixPasteColumnContracts = useMemo(
     () =>
@@ -799,7 +814,7 @@ export function useDataTableCellSelection<TData>({
           if (plan.status === 'invalid') {
             const failure = plan.failures[0];
             if (!failure || failure.code === 'aborted') return;
-            const feedback = formatMatrixPasteFailure(failure);
+            const feedback = formatMatrixPasteFailure(failure, resolveColumnLabel);
             toast.error(
               feedback.message,
               feedback.description ? { description: feedback.description } : undefined
@@ -837,7 +852,7 @@ export function useDataTableCellSelection<TData>({
           );
         });
     },
-    [editing, matrixPasteColumnContracts, rightPinnedColumnIds, rows]
+    [editing, matrixPasteColumnContracts, resolveColumnLabel, rightPinnedColumnIds, rows]
   );
 
   const runAtomicFill = useCallback(
@@ -882,7 +897,7 @@ export function useDataTableCellSelection<TData>({
           if (plan.status === 'invalid') {
             const failure = plan.failures[0];
             if (!failure || failure.code === 'aborted') return;
-            const feedback = formatMatrixPasteFailure(failure);
+            const feedback = formatMatrixPasteFailure(failure, resolveColumnLabel);
             toast.error(
               feedback.message,
               feedback.description ? { description: feedback.description } : undefined
@@ -931,7 +946,7 @@ export function useDataTableCellSelection<TData>({
           );
         });
     },
-    [editing, focusCoordinate, matrixPasteColumnContracts, rangeIndex, rightPinnedColumnIds, rows]
+    [editing, focusCoordinate, matrixPasteColumnContracts, rangeIndex, resolveColumnLabel, rightPinnedColumnIds, rows]
   );
 
   const handleDocumentFillPointerEnd = useCallback(

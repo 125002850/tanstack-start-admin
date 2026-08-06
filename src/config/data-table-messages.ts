@@ -70,7 +70,7 @@ export interface DataTableMessageCatalog {
     pasteTargetColumnUnavailable: string;
     failed: string;
     sourceCoordinate: (rowIndex: number, columnIndex: number) => string;
-    targetCoordinate: (rowIndex: number, columnIndex: number, columnId?: string) => string;
+    targetCoordinate: (rowIndex: number, columnIndex: number, columnLabel?: string) => string;
   };
   fill: {
     targetShapeInvalid: string;
@@ -152,8 +152,8 @@ export const dataTableZhCnMessages: DataTableMessageCatalog = {
     pasteTargetColumnUnavailable: '矩阵粘贴的目标列不可用。',
     failed: '矩阵粘贴失败。',
     sourceCoordinate: (rowIndex, columnIndex) => `来源：第 ${rowIndex} 行第 ${columnIndex} 列`,
-    targetCoordinate: (rowIndex, columnIndex, columnId) =>
-      `目标：第 ${rowIndex} 行第 ${columnIndex} 列${columnId ? `（${columnId}）` : ''}`
+    targetCoordinate: (rowIndex, columnIndex, columnLabel) =>
+      `目标：第 ${rowIndex} 行第 ${columnIndex} 列${columnLabel ? `（${columnLabel}）` : ''}`
   },
   fill: {
     targetShapeInvalid: '填充区域必须紧邻源区域，并沿其整条边或对角连续向外扩展。',
