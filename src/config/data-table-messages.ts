@@ -156,7 +156,7 @@ export const dataTableZhCnMessages: DataTableMessageCatalog = {
       `目标：第 ${rowIndex} 行第 ${columnIndex} 列${columnId ? `（${columnId}）` : ''}`
   },
   fill: {
-    targetShapeInvalid: '填充区域必须从源区域的一整条边连续向外扩展。',
+    targetShapeInvalid: '填充区域必须紧邻源区域，并沿其整条边或对角连续向外扩展。',
     emptyRange: '填充源区域和目标区域不能为空。',
     sourceCellUnavailable: '填充源单元格必须可见并具备可用的编辑解析器。',
     finishActiveEdit: '请先完成当前单元格编辑，再填充区域。',

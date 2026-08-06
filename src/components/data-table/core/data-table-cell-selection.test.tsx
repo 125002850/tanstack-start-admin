@@ -333,6 +333,58 @@ describe('DataTable cell selection', () => {
     );
   });
 
+  it('fills the expanded rectangle when the fill handle is dragged diagonally', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { container } = render(<EditableSelectionHarness onChange={onChange} />);
+    const statusRow1 = container.querySelector<HTMLTableCellElement>(
+      'td[data-cell-row-id="1"][data-cell-column-id="status"]'
+    );
+    const nameRow1 = container.querySelector<HTMLTableCellElement>(
+      'td[data-cell-row-id="1"][data-cell-column-id="name"]'
+    );
+    const nameRow2 = container.querySelector<HTMLTableCellElement>(
+      'td[data-cell-row-id="2"][data-cell-column-id="name"]'
+    );
+    const statusRow2 = container.querySelector<HTMLTableCellElement>(
+      'td[data-cell-row-id="2"][data-cell-column-id="status"]'
+    );
+    if (!statusRow1 || !nameRow1 || !nameRow2 || !statusRow2) {
+      throw new Error('diagonal fill cells missing');
+    }
+
+    await user.click(statusRow1);
+    const handle = screen.getByRole('button', { name: '填充所选单元格' });
+    dispatchCellPointerEvent(handle, 'pointerdown', { pointerId: 13 });
+    // Diagonal (down-left): pointer is beyond the source on both row and column axes.
+    dispatchCellPointerEvent(nameRow2, 'pointermove', {
+      pointerId: 13,
+      clientX: 40,
+      clientY: 80
+    });
+
+    await waitFor(() => expect(nameRow1).toHaveAttribute('data-cell-fill-preview', 'true'));
+    expect(nameRow2).toHaveAttribute('data-cell-fill-preview', 'true');
+    expect(statusRow2).toHaveAttribute('data-cell-fill-preview', 'true');
+    expect(statusRow1).not.toHaveAttribute('data-cell-fill-preview');
+
+    dispatchCellPointerEvent(nameRow2, 'pointerup', { pointerId: 13, clientX: 40, clientY: 80 });
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledOnce());
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        reason: 'fill',
+        changes: [
+          { rowId: '1', field: 'name', previousValue: '记录 1', value: 'DRAFT' },
+          { rowId: '2', field: 'name', previousValue: '记录 2', value: 'DRAFT' },
+          { rowId: '2', field: 'status', previousValue: 'READY', value: 'DRAFT' }
+        ]
+      })
+    );
+    // The whole expanded rectangle (source + fill target) becomes the new selection.
+    expect(container.querySelectorAll('td[data-cell-selected="true"]')).toHaveLength(4);
+  });
+
   it('auto-scrolls its own viewport while dragging the fill handle', async () => {
     let frame: FrameRequestCallback | null = null;
     const cancelAnimationFrame = vi.fn();

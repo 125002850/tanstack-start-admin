@@ -326,6 +326,7 @@ export function useDataTableCellSelection<TData>({
     [copyFeedback, rangeIndex]
   );
   const fillPreviewBounds = fillPreview?.targetBounds ?? null;
+  const fillPreviewSourceBounds = fillPreview?.sourceBounds ?? null;
   const cellsByCoordinate = useMemo(() => {
     const cells = new Map<string, Cell<TData, unknown>>();
     for (const row of rows) {
@@ -1207,7 +1208,10 @@ export function useDataTableCellSelection<TData>({
           : false;
       const fillPreviewed =
         selectable && fillPreviewBounds
-          ? isDataTableCellInRange(coordinate, fillPreviewBounds, rangeIndex)
+          ? isDataTableCellInRange(coordinate, fillPreviewBounds, rangeIndex) &&
+            !(fillPreviewSourceBounds
+              ? isDataTableCellInRange(coordinate, fillPreviewSourceBounds, rangeIndex)
+              : false)
           : false;
       const editableConfig = getEditableCellMeta(cell);
       const serverError = editableConfig
@@ -1289,6 +1293,7 @@ export function useDataTableCellSelection<TData>({
       copyFeedbackBounds,
       editing,
       fillPreviewBounds,
+      fillPreviewSourceBounds,
       handleCellFocus,
       handleCellKeyDown,
       ownerId,

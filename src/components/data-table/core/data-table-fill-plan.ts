@@ -7,7 +7,8 @@ import {
   type DataTableMatrixPastePlan,
   type DataTableMatrixPasteRow,
   type DataTableMatrixPasteSkipped,
-  type DataTableMatrixPasteSourceCoordinate
+  type DataTableMatrixPasteSourceCoordinate,
+  type DataTableMatrixPasteTargetCoordinate
 } from './data-table-matrix-paste';
 import type {
   DataTableCellEditableContext,
@@ -16,7 +17,15 @@ import type {
 } from '@/types/data-table';
 import { dataTableMessages } from '@/config/data-table-messages';
 
-export type DataTableFillDirection = 'up' | 'right' | 'down' | 'left';
+export type DataTableFillDirection =
+  | 'up'
+  | 'right'
+  | 'down'
+  | 'left'
+  | 'up-left'
+  | 'up-right'
+  | 'down-left'
+  | 'down-right';
 
 export type DataTableFillBounds = {
   readonly rowStart: number;
@@ -90,6 +99,20 @@ function resolveFillDirection(
     if (targetBounds.columnEnd + 1 === sourceBounds.columnStart) return 'left';
     if (sourceBounds.columnEnd + 1 === targetBounds.columnStart) return 'right';
   }
+  const spansRows =
+    targetBounds.rowStart <= sourceBounds.rowStart && targetBounds.rowEnd >= sourceBounds.rowEnd;
+  const spansColumns =
+    targetBounds.columnStart <= sourceBounds.columnStart &&
+    targetBounds.columnEnd >= sourceBounds.columnEnd;
+  if (spansRows && spansColumns) {
+    const up = targetBounds.rowStart < sourceBounds.rowStart;
+    const down = targetBounds.rowEnd > sourceBounds.rowEnd;
+    const left = targetBounds.columnStart < sourceBounds.columnStart;
+    const right = targetBounds.columnEnd > sourceBounds.columnEnd;
+    if ((up || down) && (left || right)) {
+      return `${up ? 'up' : 'down'}-${left ? 'left' : 'right'}` as DataTableFillDirection;
+    }
+  }
   return null;
 }
 
@@ -147,7 +170,22 @@ export function resolveDataTableFillTarget(
       }
     };
   }
-  return null;
+
+  // Diagonal corner fill: the pointer is beyond the source band on both axes.
+  // The target is the expanded rectangle (source ∪ pointer); source cells are
+  // excluded from the generated operations by prepareDataTableFillPlan.
+  const expandedBounds = {
+    rowStart: Math.min(sourceBounds.rowStart, coordinate.rowIndex),
+    rowEnd: Math.max(sourceBounds.rowEnd, coordinate.rowIndex),
+    columnStart: Math.min(sourceBounds.columnStart, coordinate.columnIndex),
+    columnEnd: Math.max(sourceBounds.columnEnd, coordinate.columnIndex)
+  };
+  const direction = resolveFillDirection(sourceBounds, expandedBounds);
+  if (!direction) return null;
+  return {
+    direction,
+    targetBounds: expandedBounds
+  };
 }
 
 function getExecutableCodec<TData>(editableCell: DataTableEditableColumnMeta<TData>) {
@@ -226,6 +264,18 @@ function mapFillSourceCoordinate(
   });
 }
 
+function isTargetInsideFillSource(
+  target: DataTableMatrixPasteTargetCoordinate,
+  sourceBounds: DataTableFillBounds
+): boolean {
+  return (
+    target.rowIndex >= sourceBounds.rowStart &&
+    target.rowIndex <= sourceBounds.rowEnd &&
+    target.columnIndex >= sourceBounds.columnStart &&
+    target.columnIndex <= sourceBounds.columnEnd
+  );
+}
+
 function remapMatrixPlan<TData>(
   matrixPlan: DataTableMatrixPastePlan<TData>,
   sourceBounds: DataTableFillBounds,
@@ -235,12 +285,14 @@ function remapMatrixPlan<TData>(
   const mapSource = (source: DataTableMatrixPasteSourceCoordinate) =>
     mapFillSourceCoordinate(source, sourceBounds, targetBounds);
   const operations = Object.freeze(
-    matrixPlan.operations.map((operation) =>
-      Object.freeze({
-        ...operation,
-        source: mapSource(operation.source)
-      })
-    )
+    matrixPlan.operations
+      .filter((operation) => !isTargetInsideFillSource(operation.target, sourceBounds))
+      .map((operation) =>
+        Object.freeze({
+          ...operation,
+          source: mapSource(operation.source)
+        })
+      )
   ) as readonly DataTableMatrixPasteOperation<TData>[];
   const failures = Object.freeze(
     matrixPlan.failures.map((failure) =>
@@ -253,12 +305,14 @@ function remapMatrixPlan<TData>(
     )
   ) as readonly DataTableMatrixPasteFailure[];
   const skipped = Object.freeze(
-    matrixPlan.skipped.map((entry) =>
-      Object.freeze({
-        ...entry,
-        source: mapSource(entry.source)
-      })
-    )
+    matrixPlan.skipped
+      .filter((entry) => !isTargetInsideFillSource(entry.target, sourceBounds))
+      .map((entry) =>
+        Object.freeze({
+          ...entry,
+          source: mapSource(entry.source)
+        })
+      )
   ) as readonly DataTableMatrixPasteSkipped[];
   const shared = {
     ...matrixPlan,
