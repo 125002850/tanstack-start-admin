@@ -280,10 +280,14 @@ function remapMatrixPlan<TData>(
   matrixPlan: DataTableMatrixPastePlan<TData>,
   sourceBounds: DataTableFillBounds,
   targetBounds: DataTableFillBounds,
-  direction: DataTableFillDirection
+  direction: DataTableFillDirection,
+  resolveSourceColumnId?: (columnIndex: number) => string | undefined
 ): DataTableFillPlan<TData> {
-  const mapSource = (source: DataTableMatrixPasteSourceCoordinate) =>
-    mapFillSourceCoordinate(source, sourceBounds, targetBounds);
+  const mapSource = (source: DataTableMatrixPasteSourceCoordinate) => {
+    const mapped = mapFillSourceCoordinate(source, sourceBounds, targetBounds);
+    const columnId = resolveSourceColumnId?.(mapped.columnIndex);
+    return columnId === undefined ? mapped : { ...mapped, columnId };
+  };
   const operations = Object.freeze(
     matrixPlan.operations
       .filter((operation) => !isTargetInsideFillSource(operation.target, sourceBounds))
@@ -431,5 +435,11 @@ export async function prepareDataTableFillPlan<TData>({
     ...(signal === undefined ? {} : { signal })
   });
 
-  return remapMatrixPlan(matrixPlan, sourceBounds, targetBounds, direction);
+  return remapMatrixPlan(
+    matrixPlan,
+    sourceBounds,
+    targetBounds,
+    direction,
+    (columnIndex) => columns[columnIndex]?.columnId
+  );
 }

@@ -203,7 +203,8 @@ function formatMatrixPasteFailure(
   const source = failure.source
     ? dataTableMessages.matrix.sourceCoordinate(
         failure.source.rowIndex + 1,
-        failure.source.columnIndex + 1
+        failure.source.columnIndex + 1,
+        failure.source.columnId ? resolveColumnLabel(failure.source.columnId) : undefined
       )
     : undefined;
   const target = failure.target

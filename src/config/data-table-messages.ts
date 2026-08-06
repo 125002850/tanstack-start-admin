@@ -69,7 +69,7 @@ export interface DataTableMessageCatalog {
     deleteTargetColumnUnavailable: string;
     pasteTargetColumnUnavailable: string;
     failed: string;
-    sourceCoordinate: (rowIndex: number, columnIndex: number) => string;
+    sourceCoordinate: (rowIndex: number, columnIndex: number, columnLabel?: string) => string;
     targetCoordinate: (rowIndex: number, columnIndex: number, columnLabel?: string) => string;
   };
   fill: {
@@ -151,7 +151,8 @@ export const dataTableZhCnMessages: DataTableMessageCatalog = {
     deleteTargetColumnUnavailable: '矩阵删除的目标列不可用。',
     pasteTargetColumnUnavailable: '矩阵粘贴的目标列不可用。',
     failed: '矩阵粘贴失败。',
-    sourceCoordinate: (rowIndex, columnIndex) => `来源：第 ${rowIndex} 行第 ${columnIndex} 列`,
+    sourceCoordinate: (rowIndex, columnIndex, columnLabel) =>
+      `来源：第 ${rowIndex} 行第 ${columnIndex} 列${columnLabel ? `（${columnLabel}）` : ''}`,
     targetCoordinate: (rowIndex, columnIndex, columnLabel) =>
       `目标：第 ${rowIndex} 行第 ${columnIndex} 列${columnLabel ? `（${columnLabel}）` : ''}`
   },

@@ -11,6 +11,7 @@ const DEFAULT_MATRIX_PASTE_YIELD_EVERY = 250;
 export type DataTableMatrixPasteSourceCoordinate = {
   readonly rowIndex: number;
   readonly columnIndex: number;
+  readonly columnId?: string;
 };
 
 export type DataTableMatrixPasteTargetCoordinate = {
