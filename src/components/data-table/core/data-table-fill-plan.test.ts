@@ -133,14 +133,41 @@ describe('resolveDataTableFillTarget', () => {
         direction: 'left',
         targetBounds: { rowStart: 1, rowEnd: 2, columnStart: 0, columnEnd: 0 }
       }
+    },
+    {
+      coordinate: { rowIndex: 4, columnIndex: 4 },
+      expected: {
+        direction: 'down-right',
+        targetBounds: { rowStart: 1, rowEnd: 4, columnStart: 1, columnEnd: 4 }
+      }
+    },
+    {
+      coordinate: { rowIndex: 0, columnIndex: 0 },
+      expected: {
+        direction: 'up-left',
+        targetBounds: { rowStart: 0, rowEnd: 2, columnStart: 0, columnEnd: 2 }
+      }
+    },
+    {
+      coordinate: { rowIndex: 0, columnIndex: 4 },
+      expected: {
+        direction: 'up-right',
+        targetBounds: { rowStart: 0, rowEnd: 2, columnStart: 1, columnEnd: 4 }
+      }
+    },
+    {
+      coordinate: { rowIndex: 4, columnIndex: 0 },
+      expected: {
+        direction: 'down-left',
+        targetBounds: { rowStart: 1, rowEnd: 4, columnStart: 0, columnEnd: 2 }
+      }
     }
   ])('resolves a $expected.direction extension', ({ coordinate, expected }) => {
     expect(resolveDataTableFillTarget(source, coordinate)).toEqual(expected);
   });
 
-  it('rejects a coordinate inside the source or outside both axes', () => {
+  it('rejects a coordinate inside the source', () => {
     expect(resolveDataTableFillTarget(source, { rowIndex: 1, columnIndex: 1 })).toBeNull();
-    expect(resolveDataTableFillTarget(source, { rowIndex: 4, columnIndex: 4 })).toBeNull();
   });
 });
 
@@ -220,6 +247,47 @@ describe('prepareDataTableFillPlan', () => {
     ]);
   });
 
+  it('repeats a 2x2 rectangle diagonally into the expanded region without rewriting the source', async () => {
+    const plan = await prepareDataTableFillPlan({
+      rows: createRows(),
+      columns: createTextColumns(),
+      sourceBounds: { rowStart: 0, rowEnd: 1, columnStart: 0, columnEnd: 1 },
+      targetBounds: { rowStart: 0, rowEnd: 3, columnStart: 0, columnEnd: 3 },
+      revision: 5,
+      isCellEditable: () => true
+    });
+
+    expect(plan.status).toBe('ready');
+    expect(plan.direction).toBe('down-right');
+    expect(plan.fillSourceShape).toEqual({ rows: 2, columns: 2, cells: 4 });
+    expect(plan.fillTargetShape).toEqual({ rows: 4, columns: 4, cells: 16 });
+    // 12 fill cells = the full 4x4 expansion minus the 2x2 source block.
+    expect(plan.operations).toHaveLength(12);
+    expect(plan.operations.map((operation) => operation.value)).toEqual([
+      'A1',
+      'B1',
+      'A2',
+      'B2',
+      'A1',
+      'B1',
+      'A1',
+      'B1',
+      'A2',
+      'B2',
+      'A2',
+      'B2'
+    ]);
+    // Source cells (rows 0-1, columns 0-1) must never be touched by the fill.
+    for (const operation of plan.operations) {
+      const insideSource =
+        operation.target.rowIndex >= 0 &&
+        operation.target.rowIndex <= 1 &&
+        operation.target.columnIndex >= 0 &&
+        operation.target.columnIndex <= 1;
+      expect(insideSource).toBe(false);
+    }
+  });
+
   it('repeats numeric source values without inferring a sequence', async () => {
     const rows = createRows();
     rows[0]!.row.amount = 1;
@@ -264,7 +332,7 @@ describe('prepareDataTableFillPlan', () => {
     expect(plan.failures).toEqual([
       expect.objectContaining({
         code: 'invalid-fill-shape',
-        errors: ['填充区域必须从源区域的一整条边连续向外扩展。']
+        errors: ['填充区域必须紧邻源区域，并沿其整条边或对角连续向外扩展。']
       })
     ]);
   });
