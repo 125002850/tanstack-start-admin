@@ -366,7 +366,7 @@ describe('prepareDataTableFillPlan', () => {
     expect(plan.failures).toEqual([
       expect.objectContaining({
         code: 'parse',
-        source: { rowIndex: 0, columnIndex: 0 },
+        source: { rowIndex: 0, columnIndex: 0, columnId: 'sourceA' },
         target: expect.objectContaining({
           rowIndex: 0,
           columnIndex: 1,
