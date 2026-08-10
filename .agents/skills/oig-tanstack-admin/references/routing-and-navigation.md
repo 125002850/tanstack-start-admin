@@ -100,6 +100,7 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 
 - dashboard 路由新增菜单页时，必须声明 `nav.visible`、`nav.group`、`nav.order`；受 SSO 菜单权限控制的业务页还必须声明 `nav.menuKey`。
 - dashboard 业务页面默认接入 workspace tabs。
+- workspace tab 主表面的点击/拖拽区分、关闭按钮边界和排序验证必须遵循 [拖拽与 Pointer 交互规范](drag-and-pointer-interactions.md)。
 - 除重定向页、纯容器页或明确说明的不托管页面外，不要设置 `workspace.tagEnabled: false`。
 - 新增标准实际内容页默认使用 `WorkspacePageRoute` 托管页面实例；该组件在 workspace 启用时自动套 `PageContainer`，禁用时直接渲染页面主体。
 - `WorkspacePageRoute.render` 必须传入不包含 `PageContainer` 的 Management/page body 组件；需要标题、描述、Infobar 或 header action 时，通过 `pageContainerProps` 传给内部 `PageContainer`。

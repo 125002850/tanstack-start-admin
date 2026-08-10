@@ -3,11 +3,7 @@ import {
   DndContext,
   type DragEndEvent,
   DragOverlay,
-  type DragStartEvent,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors
+  type DragStartEvent
 } from '@dnd-kit/core';
 import { arrayMove, horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import * as React from 'react';
@@ -15,14 +11,10 @@ import * as ReactDOM from 'react-dom';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useWorkspaceTags } from '@/features/workspace-tabs/hooks/use-workspace-tags';
 import type { WorkspaceTabId } from '@/features/workspace-tabs/types';
+import { useDndClickDragSensors } from '@/hooks/use-dnd-click-drag-sensors';
 import { cn } from '@/lib/utils';
 import { OverlayTag, PinnedHomeTag, SortableTagItem } from './components';
-import {
-  HOME_ID,
-  MOUSE_DRAG_ACTIVATION_DISTANCE_PX,
-  TOUCH_DRAG_ACTIVATION_DELAY_MS,
-  TOUCH_DRAG_TOLERANCE_PX
-} from './constant';
+import { HOME_ID } from './constant';
 import { reconcileVisualOrder } from './helper';
 import type { OverlayMetrics } from './types';
 
@@ -134,19 +126,7 @@ export default function TagsBar() {
     };
   }, [updateScrollHints]);
 
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: MOUSE_DRAG_ACTIVATION_DISTANCE_PX
-      }
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: TOUCH_DRAG_ACTIVATION_DELAY_MS,
-        tolerance: TOUCH_DRAG_TOLERANCE_PX
-      }
-    })
-  );
+  const sensors = useDndClickDragSensors();
 
   const registerTabRef = React.useCallback((id: WorkspaceTabId, node: HTMLButtonElement | null) => {
     if (node) {

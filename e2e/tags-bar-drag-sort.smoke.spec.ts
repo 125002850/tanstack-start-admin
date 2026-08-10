@@ -28,7 +28,7 @@ async function openSidebarPage(page: Page, label: string, path: string) {
   );
 }
 
-async function longPressDragTab(page: Page, source: Locator, target: Locator) {
+async function dragTabByDistance(page: Page, source: Locator, target: Locator) {
   const sourceBox = await source.boundingBox();
   const targetBox = await target.boundingBox();
 
@@ -43,7 +43,6 @@ async function longPressDragTab(page: Page, source: Locator, target: Locator) {
 
   await page.mouse.move(sourceX, sourceY);
   await page.mouse.down();
-  await page.waitForTimeout(220);
   await page.mouse.move(sourceX - 12, sourceY, { steps: 3 });
   await page.mouse.move(targetX, targetY, { steps: 18 });
   await page.waitForTimeout(100);
@@ -67,7 +66,12 @@ test('@workspace-v2 drag sorting keeps home first and preserves navigation', asy
 
   const exportTab = page.getByRole('tab', { name: /^导出中心/ });
   const dictionaryTab = page.getByRole('tab', { name: /^字典管理/ });
-  await longPressDragTab(page, exportTab, dictionaryTab);
+  await dictionaryTab.click();
+  await expect(page).toHaveURL(/\/dashboard\/system-management\/dictionaries$/);
+  await exportTab.click();
+  await expect(page).toHaveURL(/\/dashboard\/system-management\/export-center$/);
+
+  await dragTabByDistance(page, exportTab, dictionaryTab);
 
   await expect(page).toHaveURL(/\/dashboard\/system-management\/export-center$/);
   await expect.poll(() => tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
@@ -86,16 +90,16 @@ test('@workspace-v2 drag sorting does not break close actions', async ({ page })
 
   const exportTab = page.getByRole('tab', { name: /^导出中心/ });
   const dictionaryTab = page.getByRole('tab', { name: /^字典管理/ });
-  await longPressDragTab(page, exportTab, dictionaryTab);
+  await dragTabByDistance(page, exportTab, dictionaryTab);
 
   await expect.poll(() => tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
 
-  const dictionaryWorkspaceTag = page.locator(
-    '[data-slot="workspace-tag"][data-tab-id="/dashboard/system-management/dictionaries"]'
+  const dictionaryWorkspaceTagShell = page.locator(
+    '[data-slot="workspace-tag-shell"][data-tab-id="/dashboard/system-management/dictionaries"]'
   );
-  await dictionaryWorkspaceTag.hover();
-  const closeDictionary = dictionaryWorkspaceTag.getByRole('button', {
-    name: 'Close 字典管理'
+  await dictionaryWorkspaceTagShell.hover();
+  const closeDictionary = dictionaryWorkspaceTagShell.getByRole('button', {
+    name: '关闭：字典管理'
   });
   await expect(closeDictionary).toBeVisible();
   await closeDictionary.click();
