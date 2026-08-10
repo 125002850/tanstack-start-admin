@@ -215,7 +215,6 @@ export function DataTable<TData>({
     handleColumnDragCancel,
     handleColumnDragEnd,
     handleColumnDragStart,
-    handleHeaderClickCapture,
     isColumnDragging,
     sortableColumnIds
   } = useDataTableColumnDnd({
@@ -408,7 +407,6 @@ export function DataTable<TData>({
                   columnDragMotionById={columnDragMotionById}
                   tableElementRef={tableElementRef}
                   headerRowRef={headerRowRef}
-                  onHeaderClickCapture={handleHeaderClickCapture}
                 />
                 {resolvedDataTableBody}
               </Table>

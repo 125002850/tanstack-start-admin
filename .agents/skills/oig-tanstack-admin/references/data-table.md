@@ -38,6 +38,7 @@
 - 保持用户输入、候选值、已提交草稿和服务端数据边界清晰；任何自动归一化都必须有测试，禁止静默四舍五入或改变领域单位。
 - 将性能成本收敛到使用点：候选值、虚拟列表和派生数据按需计算；禁止在关闭的浮层或未启用的能力上执行全量扫描。
 - 测试与实现同层放置；纯算法优先单测，跨 hook/组件状态补集成测试，虚拟化、焦点、Popover 和真实指针竞争补 Playwright 回归。
+- 表头点击/拖拽共面、交互目标排除和浮层 pointer 竞争必须遵循 [拖拽与 Pointer 交互规范](drag-and-pointer-interactions.md)。
 
 ## Hook 选型
 
@@ -133,7 +134,7 @@
 - 默认选择语义是当前已加载页：`selectedRows`、`selectedRowIds` 和 `getSelectedRows()` 都不得表达跨页全量选择。
 - 启用 `showSelectColumn` 时必须优先提供稳定 `rowId`；开发环境检测到 index fallback row id 时必须 warning，提示当前选择是 page-scoped 且不适合跨页批量。
 - `rowId` key 与 `rowId` function 的解析必须复用 `resolveDataTableRowId()`；TanStack `getRowId` 由共享 runtime 统一装配，禁止页面层复制或覆盖行 ID 解析逻辑。
-- 展开分屏生命周期和尺寸逻辑统一收敛在 `useDataTableExpandPanel`；列拖拽状态和 handler 统一收敛在 `useDataTableColumnDnd`，新 hook 只供 `DataTable` 内部装配。
+- 展开分屏生命周期和尺寸逻辑统一收敛在 `useDataTableExpandPanel`；列拖拽状态和 handler 统一收敛在 `useDataTableColumnDnd`，新 hook 只供 `DataTable` 内部装配。点击/拖拽共面的 sensor 统一复用顶层 `useDndClickDragSensors`。
 
 ## 表格操作
 

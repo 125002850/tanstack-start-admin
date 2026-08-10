@@ -1,6 +1,6 @@
 ---
 name: oig-tanstack-admin
-description: oig tanstack admin 团队开发规范与任务路由。分析、设计、修改或审查本仓库代码，处理项目结构与目录归属、React 页面、Shadcn UI、表单、SearchCombobox、overlay portal、Card、PageContainer、DataTable、路由导航、workspace tabs、环境配置、OpenAPI/API transport，或创建 Git 提交、推送远端时使用。
+description: oig tanstack admin 团队开发规范与任务路由。分析、设计、修改或审查本仓库代码，处理项目结构与目录归属、React 页面、Shadcn UI、表单、SearchCombobox、overlay portal、拖拽与点击/pointer 交互、Card、PageContainer、DataTable、路由导航、workspace tabs、环境配置、OpenAPI/API transport，或创建 Git 提交、推送远端时使用。
 ---
 
 # Oig Tanstack Admin
@@ -28,6 +28,7 @@ description: oig tanstack admin 团队开发规范与任务路由。分析、设
 | TanStack Router、route metadata、侧边栏、KBar、breadcrumb、workspace tabs | `references/routing-and-navigation.md`                                |
 | 新增 dashboard 内容页                                                     | `references/routing-and-navigation.md`、`references/ui-components.md` |
 | 表单、字段校验、Sheet/Dialog 表单、SearchCombobox、overlay portal         | `references/forms.md`                                                 |
+| 拖拽排序、点击/拖拽共面、Dropdown/Popover pointer 竞争                   | `references/drag-and-pointer-interactions.md`                         |
 | 环境变量、配置中心、请求头、OpenAPI、API transport                        | `references/configuration-and-api.md`                                 |
 | Git commit、push、提交标题、commitlint、远端校验                          | `references/git-commits.md`                                           |
 

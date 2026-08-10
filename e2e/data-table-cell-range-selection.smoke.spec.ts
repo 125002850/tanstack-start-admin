@@ -401,41 +401,61 @@ test('@workspace-v2 auto-scrolls virtual rows and maps RTL horizontal arrows', a
   );
 });
 
-test('@workspace-v2 moves virtualized body cells with their headers during column drag', async ({
+test('@workspace-v2 distinguishes header menu clicks from virtualized column dragging', async ({
   page
 }) => {
   const card = await gotoDictionaryTable(page);
   const table = card.locator('table[data-slot="table"]');
   const sourceHeader = card.locator('th[data-column-id="dictItemCode"]');
   const targetHeader = card.locator('th[data-column-id="dictItemName"]');
-  const sourceActivator = sourceHeader.locator('[data-slot="data-table-column-order-activator"]');
+  const sourceMenuTrigger = sourceHeader.locator('[data-slot="dropdown-menu-trigger"]');
+  const sourceFilterTrigger = sourceHeader.getByRole('button', {
+    name: '筛选当前页：字典项编码'
+  });
   const sourceCell = card.locator('td[data-cell-column-id="dictItemCode"]').first();
   const targetCell = card.locator('td[data-cell-column-id="dictItemName"]').first();
 
   await expect(card.locator('tbody[data-virtual-enabled="true"]')).toBeVisible();
+  await sourceMenuTrigger.click();
+  await expect(page.getByRole('menu', { name: '字典项编码' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sourceHeader.getByRole('button', { name: /拖拽调整/ })).toHaveCount(0);
+
+  const sourceFilterBox = await sourceFilterTrigger.boundingBox();
+  if (!sourceFilterBox) throw new Error('DataTable column filter bounding box unavailable');
+  await page.mouse.move(
+    sourceFilterBox.x + sourceFilterBox.width / 2,
+    sourceFilterBox.y + sourceFilterBox.height / 2
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    sourceFilterBox.x + sourceFilterBox.width / 2 + 12,
+    sourceFilterBox.y + sourceFilterBox.height / 2
+  );
+  await expect(table).not.toHaveAttribute('data-column-reordering');
+  await page.mouse.up();
+  await page.keyboard.press('Escape');
 
   const sourceHeaderBefore = await sourceHeader.boundingBox();
   const targetHeaderBefore = await targetHeader.boundingBox();
   const sourceCellBefore = await sourceCell.boundingBox();
   const targetCellBefore = await targetCell.boundingBox();
-  const sourceActivatorBox = await sourceActivator.boundingBox();
+  const sourceSurfaceBox = await sourceMenuTrigger.boundingBox();
   if (
     !sourceHeaderBefore ||
     !targetHeaderBefore ||
     !sourceCellBefore ||
     !targetCellBefore ||
-    !sourceActivatorBox
+    !sourceSurfaceBox
   ) {
     throw new Error('DataTable column drag bounding box unavailable');
   }
 
-  await sourceActivator.dispatchEvent('mousedown', {
-    button: 0,
-    buttons: 1,
-    clientX: sourceActivatorBox.x + sourceActivatorBox.width / 2,
-    clientY: sourceActivatorBox.y + sourceActivatorBox.height / 2
-  });
-  await page.waitForTimeout(220);
+  await page.mouse.move(
+    sourceSurfaceBox.x + sourceSurfaceBox.width / 2,
+    sourceSurfaceBox.y + sourceSurfaceBox.height / 2
+  );
+  await page.mouse.down();
   await page.mouse.move(
     targetHeaderBefore.x + targetHeaderBefore.width * 0.8,
     targetHeaderBefore.y + targetHeaderBefore.height / 2,
@@ -443,6 +463,7 @@ test('@workspace-v2 moves virtualized body cells with their headers during colum
   );
 
   await expect(table).toHaveAttribute('data-column-reordering', 'true');
+  await expect(page.getByRole('menu', { name: '字典项编码' })).toHaveCount(0);
   await expect(sourceCell).toHaveAttribute('data-column-drag-motion', 'true');
   await expect(targetCell).toHaveAttribute('data-column-drag-motion', 'true');
 
@@ -475,6 +496,7 @@ test('@workspace-v2 moves virtualized body cells with their headers during colum
 
   await page.mouse.up();
   await expect(table).not.toHaveAttribute('data-column-reordering');
+  await expect(page.getByRole('menu', { name: '字典项编码' })).toHaveCount(0);
   await expect
     .poll(async () => {
       const [sourceHeaderAfter, sourceCellAfter, targetHeaderAfter, targetCellAfter] =
