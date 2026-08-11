@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { useWorkspaceTabStore } from '../utils/store';
 import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { WorkspaceViewport } from './workspace-viewport';
@@ -95,6 +95,60 @@ describe('WorkspaceViewport', () => {
       expect(el).toBeDefined();
       // Active content should NOT have display:none (it's visible)
       expect(el.style.display).not.toBe('none');
+    });
+
+    it('reuses page content when only the active workspace tab changes', () => {
+      const renderActive = vi.fn(() =>
+        React.createElement('div', { 'data-testid': 'active-content' }, 'Active')
+      );
+      const renderInactive = vi.fn(() =>
+        React.createElement('div', { 'data-testid': 'inactive-content' }, 'Inactive')
+      );
+      setStoreState(
+        {
+          '/dashboard/active': {
+            id: '/dashboard/active',
+            keepAlive: true,
+            href: '/dashboard/active',
+            title: 'Active',
+            closable: true
+          },
+          '/dashboard/inactive': {
+            id: '/dashboard/inactive',
+            keepAlive: true,
+            href: '/dashboard/inactive',
+            title: 'Inactive',
+            closable: true
+          }
+        },
+        '/dashboard/active',
+        [],
+        {
+          pageDescriptors: {
+            '/dashboard/active': makePageDescriptor({
+              tabId: '/dashboard/active',
+              render: renderActive
+            }),
+            '/dashboard/inactive': makePageDescriptor({
+              tabId: '/dashboard/inactive',
+              render: renderInactive
+            })
+          }
+        }
+      );
+
+      render(React.createElement(WorkspaceViewport));
+      expect(renderActive).toHaveBeenCalledTimes(1);
+      expect(renderInactive).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        useWorkspaceTabStore.setState({ activeId: '/dashboard/inactive' });
+      });
+
+      expect(renderActive).toHaveBeenCalledTimes(1);
+      expect(renderInactive).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('active-content')).not.toBeVisible();
+      expect(screen.getByTestId('inactive-content')).toBeVisible();
     });
 
     it('renders inactive keep-alive tabs via Activity hidden', () => {

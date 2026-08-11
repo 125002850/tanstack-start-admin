@@ -1,10 +1,15 @@
 import * as React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, act, cleanup } from '@testing-library/react';
 import { useWorkspaceTabStore } from '../utils/store';
 import { useWorkspacePageRegistryStore } from '../utils/page-registry';
 import { resetWorkspacePageOverlays } from '../utils/page-overlays';
-import { useWorkspacePage, WorkspacePageContext } from './use-workspace-page';
+import {
+  useWorkspacePage,
+  useWorkspacePageLifecycle,
+  WorkspacePageActiveContext,
+  WorkspacePageLifecycleContext
+} from './use-workspace-page';
 import type { WorkspacePageDescriptor, WorkspacePageLifecyclePatch } from '../types';
 
 function makeDescriptor(tabId: string): WorkspacePageDescriptor {
@@ -74,12 +79,26 @@ function renderWithProvider(tabId: string) {
   const updateLifecycle = makeUpdateLifecycle(tabId);
   return render(
     React.createElement(
-      WorkspacePageContext.Provider,
-      { value: { active: true, tabId, updateLifecycle } },
-      React.createElement(TestHarness)
+      WorkspacePageActiveContext.Provider,
+      { value: true },
+      React.createElement(
+        WorkspacePageLifecycleContext.Provider,
+        { value: { tabId, updateLifecycle } },
+        React.createElement(TestHarness)
+      )
     )
   );
 }
+
+const LifecycleHarness = React.memo(function LifecycleHarness({
+  onRender
+}: {
+  onRender: () => void;
+}) {
+  useWorkspacePageLifecycle();
+  onRender();
+  return null;
+});
 
 describe('useWorkspacePage', () => {
   beforeEach(() => {
@@ -105,6 +124,26 @@ describe('useWorkspacePage', () => {
     act(() => {
       getByTestId('set-title').click();
     });
+  });
+
+  it('does not re-render lifecycle-only consumers when workspace activity changes', () => {
+    const onRender = vi.fn();
+    const lifecycleValue = {
+      tabId: '/dashboard/test-page',
+      updateLifecycle: makeUpdateLifecycle('/dashboard/test-page')
+    };
+    const renderTree = (active: boolean) => (
+      <WorkspacePageActiveContext.Provider value={active}>
+        <WorkspacePageLifecycleContext.Provider value={lifecycleValue}>
+          <LifecycleHarness onRender={onRender} />
+        </WorkspacePageLifecycleContext.Provider>
+      </WorkspacePageActiveContext.Provider>
+    );
+    const view = render(renderTree(true));
+
+    view.rerender(renderTree(false));
+
+    expect(onRender).toHaveBeenCalledTimes(1);
   });
 
   it('no-op updateLifecycle when context is null does not write to store', () => {
@@ -228,15 +267,18 @@ describe('useWorkspacePage', () => {
     const updateLifecycle = makeUpdateLifecycle('/dashboard/system-management/export-center');
     const { getByTestId } = render(
       React.createElement(
-        WorkspacePageContext.Provider,
-        {
-          value: {
-            active: false,
-            tabId: '/dashboard/system-management/export-center',
-            updateLifecycle
-          }
-        },
-        React.createElement(TestHarness)
+        WorkspacePageActiveContext.Provider,
+        { value: false },
+        React.createElement(
+          WorkspacePageLifecycleContext.Provider,
+          {
+            value: {
+              tabId: '/dashboard/system-management/export-center',
+              updateLifecycle
+            }
+          },
+          React.createElement(TestHarness)
+        )
       )
     );
 
