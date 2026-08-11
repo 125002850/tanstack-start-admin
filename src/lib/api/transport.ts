@@ -1,7 +1,7 @@
 import {
-  createApiClientCustomInstanceFactory,
-  createTransport,
-  HttpError
+  HttpError,
+  setTransportMiddlewares,
+  type TransportMiddleware
 } from '@oig/react-query-generator/core';
 
 import {
@@ -11,8 +11,6 @@ import {
   refreshIamSession
 } from './iam/session';
 import { HTTP_STATUS_UNAUTHORIZED } from '../http-status';
-
-const transport = createTransport({ defaultCredentials: 'same-origin' });
 
 function isIamAuthEndpoint(url: string): boolean {
   return /\/api\/iam\/auth\/(?:login|refresh|logout|password\/change)(?:[?#]|$)/.test(url);
@@ -27,7 +25,7 @@ function withAuthHeader(init?: HeadersInit): Headers {
   return headers;
 }
 
-transport.registerMiddleware(async (context, next) => {
+const authMiddleware: TransportMiddleware = async (context, next) => {
   if (!isIamAuthEndpoint(context.url)) {
     await ensureFreshAccessToken();
   }
@@ -39,9 +37,9 @@ transport.registerMiddleware(async (context, next) => {
       headers: withAuthHeader(context.options.headers)
     }
   });
-});
+};
 
-transport.registerMiddleware(async (context, next) => {
+const refreshMiddleware: TransportMiddleware = async (context, next) => {
   try {
     return await next(context);
   } catch (error) {
@@ -68,6 +66,8 @@ transport.registerMiddleware(async (context, next) => {
     }
     throw error;
   }
-});
+};
 
-export const createApiClientCustomInstance = createApiClientCustomInstanceFactory(transport);
+export function configureApiTransport() {
+  setTransportMiddlewares([authMiddleware, refreshMiddleware]);
+}

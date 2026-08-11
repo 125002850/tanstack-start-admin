@@ -26,8 +26,14 @@ import type {
 } from '@/types/data-table';
 import { ExportRecordLinkButtonCell } from './export-record-link-button-cell';
 import {
+  type BatchDownloadExportRecordsRequest,
+  type BatchDownloadExportRecordsResponse,
   batchDownloadExportRecordsMutationOptions,
+  type DeleteExportRecordRequest,
+  type DeleteExportRecordResponse,
   deleteExportRecordMutationOptions,
+  type DownloadExportRecordRequest,
+  type DownloadExportRecordResponse,
   downloadExportRecordMutationOptions,
   type ExportRecordRspDTO,
   pageMyExportRecordsQueryKey,
@@ -213,7 +219,11 @@ export default function ExportCenterManagementPage() {
   );
 
   const downloadMutationOpts = downloadExportRecordMutationOptions();
-  const downloadMutation = useMutation({
+  const downloadMutation = useMutation<
+    DownloadExportRecordResponse,
+    ApiClientError,
+    DownloadExportRecordRequest
+  >({
     ...downloadMutationOpts,
     onSuccess: async (...args) => {
       await Promise.all([
@@ -252,7 +262,11 @@ export default function ExportCenterManagementPage() {
   }, []);
 
   const batchDownloadMutationOpts = batchDownloadExportRecordsMutationOptions();
-  const batchDownloadMutation = useMutation({
+  const batchDownloadMutation = useMutation<
+    BatchDownloadExportRecordsResponse,
+    ApiClientError,
+    BatchDownloadExportRecordsRequest
+  >({
     ...batchDownloadMutationOpts,
     onSuccess: async (...args) => {
       await Promise.all([
@@ -346,7 +360,11 @@ export default function ExportCenterManagementPage() {
   );
 
   const deleteMutationOpts = deleteExportRecordMutationOptions();
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<
+    DeleteExportRecordResponse,
+    ApiClientError,
+    DeleteExportRecordRequest
+  >({
     ...deleteMutationOpts,
     onSuccess: async (...args) => {
       await Promise.all([

@@ -16,6 +16,8 @@ export default defineClientManifests([
       fetchTarget
     },
     outputDir: 'src/lib/api/clients/service/generated',
+    transportBinding: 'core-singleton',
+    voidEnvelopeSchemas: ['RVoid'],
     ...(appGateway
       ? {
           transportProfile: {

@@ -2,6 +2,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearTransportMiddlewares,
+  createDefaultApiClientCustomInstance,
   createTransport,
   HttpError,
   type TransportInstance
@@ -188,28 +190,36 @@ describe('production transport module integration', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
+    clearTransportMiddlewares();
     vi.clearAllMocks();
     mockIamSession.ensureFreshAccessToken.mockResolvedValue('access-token');
     mockIamSession.getAuthHeader.mockReturnValue('Bearer production-token');
   });
 
   afterEach(() => {
+    clearTransportMiddlewares();
     globalThis.fetch = originalFetch;
-    vi.resetModules();
   });
 
-  it('exports a generated-client factory that injects IAM bearer token', async () => {
+  it('configures the singleton without accumulating IAM middleware', async () => {
     let capturedHeaders: Headers | undefined;
     globalThis.fetch = vi.fn().mockImplementation(async (_url, init) => {
       capturedHeaders = new Headers((init as RequestInit)?.headers);
       return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
     });
 
-    const { createApiClientCustomInstance } = await import('./transport');
-    const client = createApiClientCustomInstance('/test-base', { credentials: 'same-origin' });
+    const { configureApiTransport } = await import('./transport');
+    const client = createDefaultApiClientCustomInstance('/test-base', {
+      credentials: 'same-origin'
+    });
+
+    configureApiTransport();
+    configureApiTransport();
 
     await client('/api/endpoint');
 
     expect(capturedHeaders?.get('Authorization')).toBe('Bearer production-token');
+    expect(mockIamSession.ensureFreshAccessToken).toHaveBeenCalledOnce();
+    expect(mockIamSession.getAuthHeader).toHaveBeenCalledOnce();
   });
 });

@@ -21,14 +21,14 @@ export const IAM_MANAGEMENT_QUERY_KEYS = {
 export function iamDeptTreeQueryOptions(request: DeptTreeReqDTO = {}) {
   return queryOptions<DeptRspDTO[], ApiClientError>({
     queryKey: IAM_MANAGEMENT_QUERY_KEYS.deptTree(request),
-    queryFn: ({ signal }) => iamDeptTree(request, { signal })
+    queryFn: async ({ signal }) => (await iamDeptTree(request, { signal })) ?? []
   });
 }
 
 export function iamMenuTreeQueryOptions(request: MenuTreeReqDTO = {}) {
   return queryOptions<MenuRspDTO[], ApiClientError>({
     queryKey: IAM_MANAGEMENT_QUERY_KEYS.menuTree(request),
-    queryFn: ({ signal }) => iamMenuTree(request, { signal })
+    queryFn: async ({ signal }) => (await iamMenuTree(request, { signal })) ?? []
   });
 }
 
@@ -36,6 +36,6 @@ export function iamRoleOptionsQueryOptions() {
   return queryOptions<IamRolePageResponse, ApiClientError, RoleRspDTO[]>({
     queryKey: IAM_MANAGEMENT_QUERY_KEYS.roleOptions,
     queryFn: ({ signal }) => iamRolePage({ pageNo: 1, pageSize: 500 }, { signal }),
-    select: (data) => data.list ?? []
+    select: (data) => data?.list ?? []
   });
 }

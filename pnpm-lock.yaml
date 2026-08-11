@@ -4,7 +4,7 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-pnpmfileChecksum: sha256-Dh3W31EJdYfrlsVr/Q9gxjI+qg+sy4ac8e9eOCP0J3w=
+pnpmfileChecksum: sha256-vLN/kRhtYLtWTlVfyGBIS/x3PHcggK1OmDpiTEs5ITA=
 
 importers:
 
@@ -59,8 +59,8 @@ importers:
         specifier: ^5.0.20
         version: 5.2.9
       '@oig/react-query-generator':
-        specifier: 3.7.0
-        version: 3.7.0(@tanstack/react-query@5.100.10(react@19.2.6))(@typescript/typescript6@6.0.2)(prettier@3.8.3)
+        specifier: 5.0.0
+        version: 5.0.0(@tanstack/react-query@5.100.10(react@19.2.6))(@typescript/typescript6@6.0.2)(prettier@3.8.3)
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -825,8 +825,9 @@ packages:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
 
-  '@oig/react-query-generator@3.7.0':
-    resolution: {integrity: sha512-lwyrxom8waZDL1PH+HszmGmp4/bujVMtCos2mB403rH6fdd1rICAJ/6sqGhwzwJzGBaK5WEdORmMD6JN7bHtog==}
+  '@oig/react-query-generator@5.0.0':
+    resolution: {integrity: sha512-e+qMG3nKywuTsIBjTFSX3uQmIK6JOUR/Yk4kYVJeF+/1sdYZF/24oJ6H1Ipzqyi6kP1ppRH06DZheP9D2+X49g==}
+    engines: {node: '>=22.18.0'}
     hasBin: true
     peerDependencies:
       '@tanstack/react-query': ^5.95.2
@@ -4770,7 +4771,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@oig/react-query-generator@3.7.0(@tanstack/react-query@5.100.10(react@19.2.6))(@typescript/typescript6@6.0.2)(prettier@3.8.3)':
+  '@oig/react-query-generator@5.0.0(@tanstack/react-query@5.100.10(react@19.2.6))(@typescript/typescript6@6.0.2)(prettier@3.8.3)':
     dependencies:
       '@tanstack/react-query': 5.100.10(react@19.2.6)
       jiti: 2.7.0

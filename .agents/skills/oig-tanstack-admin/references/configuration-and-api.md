@@ -79,7 +79,8 @@ export function isDataTableVirtualizationEnabled(): boolean {
 
 运行时边界：
 
-- `src/lib/api/transport.ts`：OpenAPI generated client 的唯一共享 transport，统一注入 `Authorization`，并在 401 时触发 refresh / logout。
+- `src/main.tsx`：创建 Router 前调用 `configureApiTransport()`，作为共享 transport middleware 的唯一启动 owner。
+- `src/lib/api/transport.ts`：定义 OpenAPI generated client 的共享 middleware，通过 `setTransportMiddlewares()` 统一注入 `Authorization`，并在 401 时触发 refresh / logout。
 - `src/lib/api/iam/session.ts`：维护 access token、refresh token、登出跳转和密码修改后的 token 更新。
 - `src/lib/api/iam/request.ts`：本地 IAM `/api/iam/*` 信封接口的手写请求边界，负责 `fetch`、超时、JSON 解码和业务错误转换。
 - `src/lib/api/iam/queries.ts`：维护 `iam/me` 查询、权限快照和当前账号归一化。
@@ -89,11 +90,13 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - generated API、业务 query/mutation 和页面代码必须优先复用共享 transport 或 `iamRequest()`，禁止在边界外散落 `fetch`。
 - 当前仓库允许直接调用 `fetch` 的 runtime 边界只有 `src/lib/api/iam/request.ts`；新增例外前必须同步调整契约测试。
 - `transport.ts` 的 request middleware 只负责注入 `Authorization` 和 token freshness，不再拼装 `service-id` / `client-id` / `service-code` 一类 SSO 头。
+- 共享 middleware 配置必须使用 `setTransportMiddlewares()` 的替换语义，禁止在启动路径使用 `registerTransportMiddleware()`，避免 HMR 或重复初始化累加执行。
 - 401 处理统一收敛到 `transport.ts` 与 `iam/session.ts`；页面层不要自行复制 refresh、清 token 或重定向逻辑。
 - `pnpm codegen` 只调用 `openapi-client generate`，禁止在业务仓库增加生成后 patch 脚本。
 - `pnpm openapi:fetch` 从已运行的后端拉取 OpenAPI；默认地址为 `http://localhost:8080/v3/api-docs`，需要其他地址时设置 `OPENAPI_FETCH_TARGET`。该命令不负责启动或重启后端。
 - `pnpm api` 按顺序执行 `openapi:fetch` 与 `codegen`；接口契约变化时使用它同步 spec 与 generated client。
 - 字典和枚举页面展示必须通过 generated client 批量调用 `/api/system/dict/global/items/options`；页面级缓存一次，表格 cell 禁止发请求。停用项保留在显示映射中，但不得进入可选 options。
-- 生成后的 `openapi/.generated/*-orval-mutator.ts` 由 `openapi-client` 按约定导入 `src/lib/api/transport.ts`，只创建带 `basePath` 的实例。
+- `openapi/clients.ts` 的 `service` client 必须声明 `transportBinding: 'core-singleton'`；单 SPA 共享 package core 单例，如果未来出现 SSR、同页多应用或不同认证管线，再改用独立 transport 或 custom mutator。
+- 生成后的 `openapi/.generated/*-orval-mutator.ts` 只能从 `@oig/react-query-generator/core` 导入 `createDefaultApiClientCustomInstance`，不得反向依赖项目 `transport.ts`。
 - 生成后的 `src/lib/api/clients/*/generated/**/*.ts` 由 `openapi-client` 自动带上 `// @ts-nocheck`。
 - 禁止在 generated 文件中重复注册 middleware。

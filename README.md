@@ -483,7 +483,7 @@ export function isDataTableVirtualizationEnabled(): boolean {
 
 本地 IAM 运行链路由 `src/lib/api/iam/` 和共享 transport 维护：
 
-- `src/lib/api/transport.ts`：统一创建请求实例、注入 `Authorization`、处理 401 刷新与登出跳转。
+- `src/lib/api/transport.ts`：统一配置 generated client 的共享 middleware，注入 `Authorization`、处理 401 刷新与登出跳转。
 - `src/lib/api/iam/session.ts`：维护 access token、refresh token、改密后 token 更新和登出清理。
 - `src/lib/api/iam/queries.ts`：维护 `iam/me` 查询、当前账号信息归一化和权限快照缓存。
 
@@ -524,7 +524,7 @@ pnpm dev
 - `APP_BASE_PATH`：非根路径部署时的公共路径
 
 > [!IMPORTANT]
-> 当前仓库统一使用 `pnpm`，锁文件以 `pnpm-lock.yaml` 为准，不再维护 `bun.lock`。Vite 8 要求 Node.js `^20.19.0 || >=22.12.0`。
+> 当前仓库统一使用 `pnpm`，锁文件以 `pnpm-lock.yaml` 为准，不再维护 `bun.lock`。项目及 `@oig/react-query-generator` 5.x 要求 Node.js `>=22.18.0`。
 
 > [!NOTE]
 > 当前项目使用 TypeScript 7 执行 `pnpm typecheck`。由于 TypeScript 7.0 尚未提供程序化 Compiler API，依赖该 API 的代码生成和配置加载工具暂时通过官方 `@typescript/typescript6` 兼容包运行；`package.json` 中的 `@typescript/native` 提供 TypeScript 7 的 `tsc`，`typescript` 别名提供 TypeScript 6 API。待 TypeScript 7.1 及相关工具完成 API 迁移后再移除兼容包。
