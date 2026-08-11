@@ -36,16 +36,18 @@ function getDescriptors() {
 
 describe('WorkspacePageBoundary', () => {
   let pathname = '/dashboard/users';
+  let searchStr = '';
   let matches: unknown[] = [{ options: { staticData: { label: '用户' } } }];
 
   beforeEach(() => {
     pathname = '/dashboard/users';
+    searchStr = '';
     matches = [{ options: { staticData: { label: '用户' } } }];
     resetStore();
     cleanup();
 
     mockUseRouterState.mockImplementation(({ select }: { select: (state: unknown) => unknown }) =>
-      select({ location: { pathname }, matches })
+      select({ location: { pathname, searchStr }, matches })
     );
     mockUseRouter.mockReturnValue({
       routesByPath: {
@@ -161,7 +163,7 @@ describe('WorkspacePageBoundary', () => {
     expect(renderDisabled).not.toHaveBeenCalled();
   });
 
-  it('keeps the cached descriptor when the same route boundary mounts again', () => {
+  it('keeps the cached descriptor when the same route boundary mounts again at the same URL', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
     const firstRender = vi.fn(() => <div>Cached users</div>);
     const replacementRender = vi.fn(() => <div>Replacement users</div>);
@@ -177,6 +179,26 @@ describe('WorkspacePageBoundary', () => {
     const descriptorView = render(<>{cachedDescriptor!.render()}</>);
     expect(descriptorView.getByText('Cached users')).toBeTruthy();
     expect(replacementRender).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the cached descriptor when the same route boundary mounts at a different URL', () => {
+    vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
+    const firstRender = vi.fn(() => <div>August users</div>);
+    const replacementRender = vi.fn(() => <div>September users</div>);
+
+    const routeView = render(<WorkspacePageBoundary render={firstRender} />);
+    const cachedDescriptor = getDescriptors()['/dashboard/users'];
+    expect(cachedDescriptor).toBeDefined();
+
+    routeView.unmount();
+    searchStr = '?month=2026-09';
+    render(<WorkspacePageBoundary render={replacementRender} />);
+
+    const refreshedDescriptor = getDescriptors()['/dashboard/users'];
+    expect(refreshedDescriptor).not.toBe(cachedDescriptor);
+    const descriptorView = render(<>{refreshedDescriptor!.render()}</>);
+    expect(descriptorView.getByText('September users')).toBeTruthy();
+    expect(replacementRender).toHaveBeenCalledTimes(1);
   });
 
   it('does not let an outgoing route register its render under the next pathname', () => {

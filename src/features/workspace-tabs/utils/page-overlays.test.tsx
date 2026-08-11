@@ -48,4 +48,27 @@ describe('workspace page overlays', () => {
     expect(trigger).toHaveAttribute('data-state', 'closed');
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
+
+  it('does not wait for persistent content controlled by a regular tab', () => {
+    const tabId = '/dashboard/calendar';
+
+    render(
+      <div
+        ref={(root) => {
+          if (root) registerWorkspacePageOverlayRoot(tabId, root);
+        }}
+      >
+        <button aria-controls='calendar-panel' aria-selected='true' role='tab'>
+          Calendar
+        </button>
+        <div id='calendar-panel' role='tabpanel'>
+          Calendar content
+        </div>
+      </div>
+    );
+
+    const dismissResult = dismissWorkspacePageOverlays(tabId);
+
+    expect(dismissResult.hasPendingExit).toBe(false);
+  });
 });

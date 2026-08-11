@@ -31,8 +31,9 @@ export function WorkspacePageBoundary({
 }: WorkspacePageBoundaryProps) {
   const enabled = isWorkspaceTabsEnabled();
   const router = useRouter();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const normalizedPathname = normalizeRoutePath(pathname);
+  const location = useRouterState({ select: (s) => s.location });
+  const normalizedPathname = normalizeRoutePath(location.pathname);
+  const renderKey = `${normalizedPathname}${location.searchStr || ''}`;
   const initialPathnameRef = React.useRef(normalizedPathname);
   const resolvedTabId = normalizeRoutePath(tabId ?? initialPathnameRef.current);
   const routeMatch = React.useMemo(
@@ -70,6 +71,7 @@ export function WorkspacePageBoundary({
       initialTitle={resolvedInitialTitle}
       keepAlive={resolvedKeepAlive}
       closable={resolvedClosable}
+      renderKey={renderKey}
       render={render}
       errorFallback={errorFallback}
     />
@@ -81,6 +83,7 @@ function WorkspacePageBoundaryRegistration({
   initialTitle,
   keepAlive,
   closable,
+  renderKey,
   render,
   errorFallback
 }: {
@@ -88,31 +91,38 @@ function WorkspacePageBoundaryRegistration({
   initialTitle: string;
   keepAlive: boolean;
   closable: boolean;
+  renderKey: string;
   render: () => React.ReactNode;
   errorFallback?: React.ReactNode;
 }) {
-  const renderRef = React.useRef(render);
-  renderRef.current = render;
-
-  const stableRender = React.useCallback(() => renderRef.current(), []);
+  const hasCommittedRef = React.useRef(false);
   const descriptor = React.useMemo<WorkspacePageDescriptor>(
     () => ({
       tabId,
       initialTitle,
       keepAlive,
       closable,
-      render: stableRender,
+      renderKey,
+      render,
       errorFallback
     }),
-    [closable, errorFallback, initialTitle, keepAlive, stableRender, tabId]
+    [closable, errorFallback, initialTitle, keepAlive, render, renderKey, tabId]
   );
 
   const useIsomorphicLayoutEffect =
     typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
 
   useIsomorphicLayoutEffect(() => {
-    if (useWorkspacePageRegistryStore.getState().descriptors[tabId]) return;
-    useWorkspaceTabStore.getState().registerPageDescriptor(tabId, descriptor);
+    const existingDescriptor = useWorkspacePageRegistryStore.getState().descriptors[tabId];
+    const shouldRefresh =
+      !existingDescriptor ||
+      existingDescriptor.renderKey !== descriptor.renderKey ||
+      hasCommittedRef.current;
+
+    if (shouldRefresh) {
+      useWorkspaceTabStore.getState().registerPageDescriptor(tabId, descriptor);
+    }
+    hasCommittedRef.current = true;
   }, [descriptor, tabId]);
 
   return null;

@@ -38,7 +38,6 @@ const OPEN_CONTENT_SELECTOR = [
   '[role="tooltip"][data-state]:not([data-state="closed"])'
 ].join(',');
 
-const CONTROLLED_TRIGGER_SELECTOR = '[aria-controls]';
 const SETTLED_CLOSED_TOOLTIP_SELECTOR = [
   '[data-slot="tooltip-content"][data-state="closed"]',
   '[data-slot="data-table-cell-tooltip-content"][data-state="closed"]'
@@ -72,11 +71,6 @@ function dismissWorkspacePageDomOverlays(tabId: WorkspaceTabId): WorkspaceOverla
   const controlledContentIds = new Set<string>();
 
   if (root?.isConnected) {
-    const controlledTriggers = collectHtmlElements(root, CONTROLLED_TRIGGER_SELECTOR);
-    for (const trigger of controlledTriggers) {
-      collectControlledContent(trigger, ownerDocument, controlledContentIds, pendingTargets);
-    }
-
     const openTriggers = collectHtmlElements(root, OPEN_TRIGGER_SELECTOR);
     for (const trigger of openTriggers) {
       collectControlledContent(trigger, ownerDocument, controlledContentIds, pendingTargets);

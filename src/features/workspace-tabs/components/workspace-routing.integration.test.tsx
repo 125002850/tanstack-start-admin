@@ -129,13 +129,13 @@ vi.mock('@tanstack/react-router', () => ({
     select
   }: {
     select?: (state: {
-      location: { pathname: string; search: string };
+      location: { pathname: string; search: string; searchStr: string };
       matches: unknown[];
     }) => unknown;
   }) => {
     const leafMatch = mockRoutesByPath[mockPathname] ?? {};
     const state = {
-      location: { pathname: mockPathname, search: mockSearch },
+      location: { pathname: mockPathname, search: mockSearch, searchStr: mockSearch },
       matches: [leafMatch]
     };
     return select ? select(state) : state;
@@ -201,6 +201,19 @@ function NonWorkspaceRouteHarness({
   useDashboardRouteTagSync(isWorkspaceTabsEnabled());
 
   return React.createElement('div', { 'data-testid': testId }, title);
+}
+
+function RouteSearchStateProbe({ month }: { month: string }) {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <div>
+      <span data-testid='route-search-month'>{month}</span>
+      <button type='button' onClick={() => setCount((value) => value + 1)}>
+        页面状态 {count}
+      </button>
+    </div>
+  );
 }
 
 function GlobalPortalPage({ testId, text }: { testId: string; text: string }) {
@@ -534,6 +547,43 @@ describe('Workspace Routing Integration', () => {
       const itemsEl = getByTestId('v2-export-center');
       expect(itemsEl).toBeDefined();
       expect(itemsEl).not.toBeVisible();
+    });
+
+    it('updates cached page route props without resetting its local state', async () => {
+      const user = userEvent.setup();
+      mockPathname = '/dashboard/system-management/dictionaries';
+
+      const view = render(
+        <>
+          <V2RoutingHarness
+            pathname='/dashboard/system-management/dictionaries'
+            title='Dictionaries'
+            keepAlive={true}
+            testId='v2-dictionaries'
+            render={() => <RouteSearchStateProbe month='2026-08' />}
+          />
+          <WorkspaceViewport />
+        </>
+      );
+
+      await user.click(view.getByRole('button', { name: '页面状态 0' }));
+      expect(view.getByRole('button', { name: '页面状态 1' })).toBeVisible();
+
+      view.rerender(
+        <>
+          <V2RoutingHarness
+            pathname='/dashboard/system-management/dictionaries'
+            title='Dictionaries'
+            keepAlive={true}
+            testId='v2-dictionaries'
+            render={() => <RouteSearchStateProbe month='2026-09' />}
+          />
+          <WorkspaceViewport />
+        </>
+      );
+
+      expect(view.getByTestId('route-search-month')).toHaveTextContent('2026-09');
+      expect(view.getByRole('button', { name: '页面状态 1' })).toBeVisible();
     });
 
     it('hides the cached workspace page after navigating to a tag-disabled route', () => {

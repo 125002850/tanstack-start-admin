@@ -83,6 +83,8 @@ export interface WorkspacePageDescriptor {
   initialTitle: string;
   keepAlive: boolean;
   closable: boolean;
+  /** URL snapshot represented by the registered render callback. */
+  renderKey?: string;
   render: () => React.ReactNode;
   errorFallback?: React.ReactNode;
 }
