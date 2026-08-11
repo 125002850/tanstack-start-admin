@@ -6,7 +6,10 @@ import {
   dismissWorkspacePageOverlays,
   registerWorkspacePageOverlayRoot
 } from '../utils/page-overlays';
-import { WorkspacePageContext } from '../hooks/use-workspace-page';
+import {
+  WorkspacePageActiveContext,
+  WorkspacePageLifecycleContext
+} from '../hooks/use-workspace-page';
 import { Activity } from './activity';
 import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary';
 import { Icons } from '@/components/icons';
@@ -93,9 +96,11 @@ function PageRenderer({
   hidden: boolean;
   tagId: string;
 }) {
+  const content = React.useMemo(() => render(), [render]);
+
   return (
     <Activity mode={hidden ? 'hidden' : 'visible'}>
-      <WorkspacePageOverlayRoot tagId={tagId}>{render()}</WorkspacePageOverlayRoot>
+      <WorkspacePageOverlayRoot tagId={tagId}>{content}</WorkspacePageOverlayRoot>
     </Activity>
   );
 }
@@ -141,12 +146,18 @@ function PageContextProvider({
     [tagId]
   );
 
-  const value = React.useMemo(
-    () => ({ active, tabId: tagId, updateLifecycle }),
-    [active, tagId, updateLifecycle]
+  const lifecycleValue = React.useMemo(
+    () => ({ tabId: tagId, updateLifecycle }),
+    [tagId, updateLifecycle]
   );
 
-  return <WorkspacePageContext.Provider value={value}>{children}</WorkspacePageContext.Provider>;
+  return (
+    <WorkspacePageActiveContext.Provider value={active}>
+      <WorkspacePageLifecycleContext.Provider value={lifecycleValue}>
+        {children}
+      </WorkspacePageLifecycleContext.Provider>
+    </WorkspacePageActiveContext.Provider>
+  );
 }
 
 function renderDefaultWorkspaceFallback(error: Error) {

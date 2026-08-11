@@ -1,27 +1,38 @@
-import { useContext, createContext } from 'react';
+import { useContext, createContext, useMemo } from 'react';
 import type { UseWorkspacePageResult } from '../types';
 
+type WorkspacePageLifecycleChannel = Omit<UseWorkspacePageResult, 'active'>;
+
+const fallbackLifecycleChannel: WorkspacePageLifecycleChannel = {
+  tabId: '',
+  updateLifecycle: () => {}
+};
+
+/** Context channels injected by ActivityHost (WorkspaceViewport). */
+export const WorkspacePageLifecycleContext = createContext<WorkspacePageLifecycleChannel | null>(
+  null
+);
+export const WorkspacePageActiveContext = createContext(true);
+
 /**
- * Context injected by ActivityHost (WorkspaceViewport).
- * Each rendered page is wrapped in a Provider that carries the full
- * lifecycle channel — { tabId, updateLifecycle } — so the page receives
- * its owning tabId and a store-backed updater without coupling to the
- * router pathname.
+ * Stable lifecycle channel for pages that do not render from workspace visibility.
+ * Keeping this separate from `active` prevents an entire page from re-rendering
+ * whenever its workspace tab is hidden or restored.
  */
-export const WorkspacePageContext = createContext<UseWorkspacePageResult | null>(null);
+export function useWorkspacePageLifecycle(): WorkspacePageLifecycleChannel {
+  return useContext(WorkspacePageLifecycleContext) ?? fallbackLifecycleChannel;
+}
 
 /**
  * Provides the page lifecycle channel for a page instance hosted by ActivityHost.
  *
- * Reads { tabId, updateLifecycle } from WorkspacePageContext, which is injected
- * by the viewport. This guarantees lifecycle updates always target the correct
- * tab — even when the page is rendered hidden (keep-alive) or in a
- * multi-instance scenario where the current router pathname would be wrong.
+ * Reads the stable lifecycle channel plus the independently changing activity
+ * channel. Consumers that do not render from `active` should use
+ * useWorkspacePageLifecycle() to avoid visibility-only re-renders.
  */
 export function useWorkspacePage(): UseWorkspacePageResult {
-  const ctx = useContext(WorkspacePageContext);
-  if (!ctx) {
-    return { active: true, tabId: '', updateLifecycle: () => {} };
-  }
-  return ctx;
+  const lifecycle = useWorkspacePageLifecycle();
+  const active = useContext(WorkspacePageActiveContext);
+
+  return useMemo(() => ({ active, ...lifecycle }), [active, lifecycle]);
 }
