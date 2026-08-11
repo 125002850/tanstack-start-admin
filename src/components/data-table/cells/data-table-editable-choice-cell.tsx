@@ -574,8 +574,10 @@ export function DataTableEditableChoiceCell<TData, TValue>({
   const remoteStates = React.useContext(DataTableRemoteChoiceLabelContext);
   if (!config) return null;
   const activeCell = runtime?.activeCell;
+  const readyCell = runtime?.readyCell;
   const isActive =
     activeCell?.rowId === context.row.id && activeCell.columnId === context.column.id;
+  const isReady = readyCell?.rowId === context.row.id && readyCell.columnId === context.column.id;
   const remoteState = remoteStates.get(context.column.id) ?? EMPTY_REMOTE_LABEL_STATE;
   const value = context.getValue();
 
@@ -592,7 +594,7 @@ export function DataTableEditableChoiceCell<TData, TValue>({
             remoteState
           })}
         </div>
-        {runtime ? (
+        {runtime && isReady ? (
           <ChoiceEditorReadyTrigger
             config={config}
             value={value}

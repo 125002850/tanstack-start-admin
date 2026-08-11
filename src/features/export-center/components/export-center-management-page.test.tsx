@@ -428,6 +428,37 @@ describe('ExportCenterManagementPage', () => {
     expect(screen.getByText('客户汇总-20260629.csv')).toBeInTheDocument();
   });
 
+  it('sorts directly when clicking a sortable column header', async () => {
+    const requests: ExportRecordRequest[] = [];
+    serviceMocks.pageMyExportRecordsQueryOptions.mockImplementation(
+      (request: ExportRecordRequest) => {
+        requests.push(request);
+
+        return queryOptions({
+          queryKey: ['export-center-page-sorted', request],
+          queryFn: async () => ({ total: EXPORT_CENTER_ROWS.length, list: EXPORT_CENTER_ROWS })
+        });
+      }
+    );
+
+    const user = userEvent.setup();
+    render(<ExportCenterManagementPage />, { wrapper: createWrapper() });
+
+    await screen.findByText('导出记录-20260629.csv');
+    const sortButton = screen.getByRole('button', { name: '下载次数：升序' });
+    await user.click(sortButton);
+
+    await waitFor(() => {
+      expect(requests.at(-1)?.sort).toEqual([
+        {
+          field: 'downloadCount',
+          direction: 'ASC'
+        }
+      ]);
+    });
+    expect(screen.getByRole('button', { name: '下载次数：降序' })).toBeInTheDocument();
+  });
+
   it('downloads a row file through the shared download utility', async () => {
     const user = userEvent.setup();
     render(<ExportCenterManagementPage />, { wrapper: createWrapper() });

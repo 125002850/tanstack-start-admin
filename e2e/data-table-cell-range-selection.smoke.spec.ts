@@ -154,6 +154,46 @@ test('@workspace-v2 filters the loaded page from a column header without request
   await expect.poll(() => itemRequestCount).toBeGreaterThan(0);
 });
 
+test('@workspace-v2 sorts from the header and keeps the filter action pinned right', async ({
+  page
+}) => {
+  const card = await gotoDictionaryTable(page);
+  const sortHeader = card.locator('th[data-column-id="sort"]');
+  const codeHeader = card.locator('th[data-column-id="dictItemCode"]');
+  const codeTitle = codeHeader.getByText('字典项编码', { exact: true });
+  const codeFilter = codeHeader.getByRole('button', {
+    name: '筛选当前页：字典项编码'
+  });
+
+  await expect(sortHeader).toHaveAttribute('aria-sort', 'none');
+  const sortRequestPromise = page.waitForRequest((request) => {
+    if (!request.url().includes('/api/system/dict/global/items/by-type')) return false;
+    const payload = request.postDataJSON() as { sort?: Array<{ field?: string }> } | null;
+    return payload?.sort?.[0]?.field === 'sortOrder';
+  });
+
+  await sortHeader.getByRole('button', { name: '排序：升序' }).click();
+
+  const sortRequest = await sortRequestPromise;
+  expect(sortRequest.postDataJSON()).toMatchObject({
+    sort: [{ field: 'sortOrder', direction: 'ASC' }]
+  });
+  await expect(sortHeader).toHaveAttribute('aria-sort', 'ascending');
+  await expect(sortHeader.getByRole('button', { name: '排序：降序' })).toBeVisible();
+  await expect(codeTitle).toHaveCSS('text-align', 'center');
+  await expect(codeTitle.locator('..')).toHaveCSS('padding-left', '20px');
+  await expect(codeTitle.locator('..')).toHaveCSS('padding-right', '20px');
+
+  const [headerBox, filterBox] = await Promise.all([
+    codeHeader.boundingBox(),
+    codeFilter.boundingBox()
+  ]);
+  if (!headerBox || !filterBox) throw new Error('DataTable header geometry unavailable');
+  expect(
+    Math.abs(headerBox.x + headerBox.width - (filterBox.x + filterBox.width))
+  ).toBeLessThanOrEqual(12);
+});
+
 test('@workspace-v2 selects a range, extends by keyboard, and copies TSV', async ({ page }) => {
   const card = await gotoDictionaryTable(page);
   const firstRow = card.locator('tbody tr').first();

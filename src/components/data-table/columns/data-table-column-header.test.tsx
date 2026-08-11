@@ -19,7 +19,11 @@ const SORTABLE_COLUMNS: ColumnDef<HeaderTestRow>[] = [
 
 afterEach(cleanup);
 
-function SortableHeaderHarness() {
+function SortableHeaderHarness({
+  align
+}: {
+  align?: 'left' | 'center' | 'right';
+} = {}) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const table = useReactTable({
     data: [
@@ -38,7 +42,7 @@ function SortableHeaderHarness() {
 
   return (
     <>
-      <DataTableColumnHeader column={column} title='姓名' />
+      <DataTableColumnHeader column={column} title='姓名' align={align} />
       <output data-testid='sorting-state'>{JSON.stringify(sorting)}</output>
     </>
   );
@@ -65,6 +69,27 @@ function HideableOnlyHeaderHarness() {
 }
 
 describe('DataTableColumnHeader', () => {
+  it('centers header text by default and supports explicit alignment', () => {
+    const { rerender } = render(<SortableHeaderHarness />);
+
+    expect(screen.getByRole('button', { name: '姓名：升序' })).toHaveClass(
+      'justify-center',
+      'text-center'
+    );
+
+    rerender(<SortableHeaderHarness align='left' />);
+    expect(screen.getByRole('button', { name: '姓名：升序' })).toHaveClass(
+      'justify-start',
+      'text-left'
+    );
+
+    rerender(<SortableHeaderHarness align='right' />);
+    expect(screen.getByRole('button', { name: '姓名：升序' })).toHaveClass(
+      'justify-end',
+      'text-right'
+    );
+  });
+
   it('progresses sorting directly from the header click', async () => {
     const user = userEvent.setup();
     render(<SortableHeaderHarness />);

@@ -7,7 +7,7 @@ import type { DataTableColumnResolvedDefaults } from '@/components/data-table/co
  * 业务列默认可在列面板显示/排序，操作列默认固定尺寸且不参与筛选、隐藏或拖拽。
  */
 export const FIELD_COLUMN_DEFAULTS = {
-  enableSorting: false,
+  enableSorting: true,
   sortDescFirst: false,
   columnPanelVisible: true,
   columnPanelReorder: true
@@ -16,7 +16,7 @@ export const FIELD_COLUMN_DEFAULTS = {
 export const BADGE_COLUMN_DEFAULTS = {
   size: 120,
   minSize: 96,
-  enableSorting: false,
+  enableSorting: true,
   sortDescFirst: false,
   columnPanelVisible: true,
   columnPanelReorder: true
@@ -25,7 +25,7 @@ export const BADGE_COLUMN_DEFAULTS = {
 export const CUSTOM_COLUMN_DEFAULTS = {
   size: 160,
   minSize: 80,
-  enableSorting: false,
+  enableSorting: true,
   sortDescFirst: false,
   columnPanelVisible: true,
   columnPanelReorder: true

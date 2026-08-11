@@ -158,11 +158,13 @@ function getColumns(
     }),
     columnDsl.field('exportBizName', '导出业务', {
       size: 'lg',
+      enableSorting: false,
       filter: 'text',
       filterPlaceholder: '搜索导出业务'
     }),
     columnDsl.field('querySnapshotSummary', '导出摘要', {
       size: 'lg',
+      enableSorting: false,
       cellClassName: 'max-w-[180px]'
     }),
     columnDsl.field('status', '状态', {
@@ -175,11 +177,13 @@ function getColumns(
       }
     }),
     columnDsl.field('fileType', '类型', {
-      size: 100
+      size: 100,
+      enableSorting: false
     }),
     columnDsl.field('fileSize', '大小', {
       type: 'fileSize',
-      size: 100
+      size: 100,
+      enableSorting: false
     }),
     columnDsl.field('downloadCount', '下载次数', {
       size: 'sm',

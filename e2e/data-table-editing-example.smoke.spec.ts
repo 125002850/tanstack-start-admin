@@ -124,6 +124,22 @@ test('@workspace-v2 shows current-page filters without compressing header labels
   await expect(example.locator('tbody tr[data-index]')).not.toHaveCount(1);
 });
 
+test('@workspace-v2 applies header sorting to the mock server data', async ({ page }) => {
+  const example = page.getByTestId('data-table-editing-example');
+  const nameHeader = example.locator(
+    'th[data-column-id="name"] button[data-column-header-drag-surface]'
+  );
+
+  await expect(nameHeader).toHaveAttribute('aria-label', '名称：升序');
+  await nameHeader.click();
+  await expect(nameHeader).toHaveAttribute('aria-label', '名称：降序');
+  await expect(cell(page, 'name')).toContainText('记录 001');
+
+  await nameHeader.click();
+  await expect(nameHeader).toHaveAttribute('aria-label', '名称：重置排序');
+  await expect(cell(page, 'name')).toContainText('记录 10000');
+});
+
 test('@workspace-v2 exposes every editor in a visible examples menu', async ({ page }) => {
   await expect(page.getByText('示例', { exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: '表格编辑' }).first()).toBeVisible();

@@ -107,6 +107,9 @@ describe('DataTableEditableChoiceCell', () => {
     render(<EditableTable />, { wrapper: createWrapper() });
 
     const statusCell = getCell('status');
+    expect(
+      document.querySelectorAll('[data-slot="data-table-choice-editor-ready-trigger"]')
+    ).toHaveLength(0);
     await user.click(statusCell);
 
     expect(statusCell).toHaveAttribute('data-cell-interaction-state', 'selected');
@@ -127,6 +130,9 @@ describe('DataTableEditableChoiceCell', () => {
     expect(readyTrigger).toHaveAttribute('aria-expanded', 'false');
     expect(readyTrigger).toHaveTextContent('草稿');
     expect(readyTrigger).toHaveClass('border-2', 'ring-[3px]', 'ring-primary/25');
+    expect(
+      document.querySelectorAll('[data-slot="data-table-choice-editor-ready-trigger"]')
+    ).toHaveLength(1);
     expect(screen.queryByRole('option', { name: '就绪' })).not.toBeInTheDocument();
 
     await user.click(readyTrigger!);
@@ -142,6 +148,9 @@ describe('DataTableEditableChoiceCell', () => {
     expect(statusCell).not.toHaveAttribute('data-cell-interaction-state');
     expect(statusCell).not.toHaveAttribute('data-cell-edit-ready');
     expect(secondStatusCell).toHaveAttribute('data-cell-interaction-state', 'selected');
+    expect(
+      document.querySelectorAll('[data-slot="data-table-choice-editor-ready-trigger"]')
+    ).toHaveLength(0);
     expect(
       document.querySelectorAll(
         'td[data-cell-interaction-state="selected"], td[data-cell-interaction-state="edit-ready"], td[data-cell-interaction-state="editing"]'
@@ -410,7 +419,7 @@ describe('DataTableEditableChoiceCell', () => {
         expect.objectContaining({ keyword: 'bo', pageNo: 2, pageSize: 1 })
       );
     });
-    expect((await screen.findAllByText('李四')).length).toBeGreaterThan(1);
+    expect(await screen.findByRole('option', { name: '李四' })).toBeInTheDocument();
   });
 
   it('falls back to raw remote values and distinguishes option loading errors', async () => {

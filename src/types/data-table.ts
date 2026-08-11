@@ -753,6 +753,8 @@ export type BuiltInColumnValueType =
 
 export type DataTableColumnValueType = BuiltInColumnValueType | (string & {});
 
+export type DataTableColumnAlign = 'left' | 'center' | 'right';
+
 export interface DataTableColumnTypeDefinition<TData, TValue> {
   /** 将原始字段值转换为展示内容。 */
   formatValue?: (value: TValue, row: TData) => React.ReactNode;
@@ -763,7 +765,9 @@ export interface DataTableColumnTypeDefinition<TData, TValue> {
   size?: number;
   minSize?: number;
   maxSize?: number;
-  align?: 'left' | 'center' | 'right';
+  align?: DataTableColumnAlign;
+  /** 表头文字对齐；未声明时统一居中，不跟随单元格对齐。 */
+  headerAlign?: DataTableColumnAlign;
   cellClassName?: string;
   headerClassName?: string;
 }

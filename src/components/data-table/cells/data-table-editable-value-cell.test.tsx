@@ -85,6 +85,9 @@ describe('DataTable editable input and switch cells', () => {
     render(<EditableValueTable onChange={onChange} />);
 
     const phoneCell = getCell('phone');
+    expect(
+      document.querySelectorAll('[data-slot="data-table-input-editor-ready-trigger"]')
+    ).toHaveLength(0);
     await user.click(phoneCell);
     expect(phoneCell).toHaveAttribute('data-cell-interaction-state', 'selected');
     expect(phoneCell).not.toHaveAttribute('data-cell-edit-ready');
@@ -156,6 +159,9 @@ describe('DataTable editable input and switch cells', () => {
     );
     expect(phoneCell).toHaveTextContent('13800000000');
     expect(phoneCell).toHaveAttribute('data-cell-interaction-state', 'edit-ready');
+    expect(
+      document.querySelectorAll('[data-slot="data-table-input-editor-ready-trigger"]')
+    ).toHaveLength(1);
     expect(onChange).not.toHaveBeenCalled();
 
     fireEvent.keyDown(phoneCell, { key: 'F2' });
@@ -168,6 +174,9 @@ describe('DataTable editable input and switch cells', () => {
     const statusCell = getCell('status');
     expect(statusCell).toHaveFocus();
     expect(statusCell).toHaveAttribute('data-cell-interaction-state', 'selected');
+    expect(
+      document.querySelectorAll('[data-slot="data-table-input-editor-ready-trigger"]')
+    ).toHaveLength(0);
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ reason: 'tab' }));
 
     await user.dblClick(phoneCell);

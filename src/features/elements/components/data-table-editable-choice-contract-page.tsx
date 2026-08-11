@@ -13,7 +13,11 @@ import {
 } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
-import { type DataTableDslPageRequestBase, useDslDataTable } from '@/hooks/use-data-table';
+import {
+  type DataTableDslPageRequestBase,
+  type DataTableDslSortItem,
+  useDslDataTable
+} from '@/hooks/use-data-table';
 import type { DataTableDateValue } from '@/types/data-table';
 
 const MOCK_ROW_COUNT = 10_000;
@@ -22,6 +26,10 @@ const REMOTE_OPTION_COUNT = 120;
 const REMOTE_OPTION_PAGE_SIZE = 20;
 const REMOTE_OPTION_DELAY_MS = 1_000;
 const REMOTE_RESOLVE_DELAY_MS = 30;
+const MOCK_SORT_COLLATOR = new Intl.Collator('zh-CN', {
+  numeric: true,
+  sensitivity: 'base'
+});
 
 type ContractRow = {
   id: number;
@@ -312,6 +320,37 @@ function createRows(): ContractRow[] {
 
 const MOCK_ROWS = createRows();
 
+function compareMockValues(left: unknown, right: unknown) {
+  if (Object.is(left, right)) return 0;
+  if (left === null || left === undefined) return 1;
+  if (right === null || right === undefined) return -1;
+
+  if (typeof left === 'number' && typeof right === 'number') {
+    return left - right;
+  }
+
+  return MOCK_SORT_COLLATOR.compare(String(left), String(right));
+}
+
+/** 模拟服务端排序，确保 useDslDataTable 示例真实消费表头生成的 DSL sort。 */
+function sortMockRows(rows: ContractRow[], sort: DataTableDslSortItem[] | undefined) {
+  if (!sort?.length) return rows;
+
+  return rows.toSorted((left, right) => {
+    for (const item of sort) {
+      const compared = compareMockValues(
+        left[item.field as keyof ContractRow],
+        right[item.field as keyof ContractRow]
+      );
+      if (compared !== 0) {
+        return item.direction === 'DESC' ? -compared : compared;
+      }
+    }
+
+    return 0;
+  });
+}
+
 interface DataTableEditingExampleProps {
   tableId?: string;
   testId?: string;
@@ -332,9 +371,10 @@ export function DataTableEditableChoiceContractPage({
       queryOptions({
         queryKey: [tableId, request],
         queryFn: async () => {
+          const sortedRows = sortMockRows(serverRowsRef.current, request.sort);
           const start = (request.pageNo - 1) * request.pageSize;
           return {
-            list: serverRowsRef.current.slice(start, start + request.pageSize),
+            list: sortedRows.slice(start, start + request.pageSize),
             total: serverRowsRef.current.length
           };
         }
@@ -471,7 +511,11 @@ export function DataTableEditableChoiceContractPage({
         </pre>
         <DataTable
           table={table}
-          virtualization={{ mode: 'on', estimateRowHeight: 44, overscan: 4 }}
+          virtualization={{
+            mode: 'on',
+            estimateRowHeight: 44,
+            overscan: 8
+          }}
           onRefresh={refreshProps?.onRefresh}
           isRefreshing={refreshProps?.isRefreshing}
         />
