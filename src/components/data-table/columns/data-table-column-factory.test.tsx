@@ -178,6 +178,7 @@ describe('data-table-column-factory', () => {
     expect((column as { accessorKey?: unknown }).accessorKey).toBe('name');
     expect(column.enableColumnFilter).toBe(true);
     expect(column.enableSorting).toBe(true);
+    expect(column.sortDescFirst).toBe(false);
     expect(column.meta).toMatchObject({
       label: '名称',
       variant: 'text',

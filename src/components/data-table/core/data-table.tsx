@@ -70,6 +70,8 @@ export type DataTableLoadingSkeletonConfig = Omit<
 
 export interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
+  /** 是否展示列显隐/重排面板按钮；默认 true。 */
+  showViewOptions?: boolean;
   tableActions?: DataTableAction<TData>[];
   actionBar?: React.ReactNode;
   getSelectedRows?: () => TData[];
@@ -133,6 +135,7 @@ function getDataTableLoadingSkeletonProps<TData>({
 
 export function DataTable<TData>({
   table,
+  showViewOptions = true,
   tableActions,
   actionBar,
   children,
@@ -246,9 +249,11 @@ export function DataTable<TData>({
 
     return tableActions ? [refreshAction, ...tableActions] : [refreshAction];
   }, [onRefresh, isRefreshing, tableActions]);
-  const hasViewOptions = table
-    .getAllColumns()
-    .some((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide());
+  const hasViewOptions =
+    showViewOptions &&
+    table
+      .getAllColumns()
+      .some((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide());
   const shouldRenderLoadingSkeleton =
     loadingSkeleton !== undefined && isLoading && rows.length === 0;
   const loadingSkeletonProps = shouldRenderLoadingSkeleton

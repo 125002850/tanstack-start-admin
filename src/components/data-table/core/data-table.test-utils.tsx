@@ -590,18 +590,21 @@ export function ControlsHarness({
   toolbar,
   actions,
   getSelectedRows,
-  actionBar
+  actionBar,
+  showViewOptions
 }: {
   toolbar?: React.ReactNode;
   actions?: DataTableAction<TestRow>[];
   getSelectedRows?: () => TestRow[];
   actionBar?: React.ReactNode;
+  showViewOptions?: boolean;
 }) {
   const table = useHarnessTable(makeRows(5), 5);
 
   return (
     <DataTable
       table={table}
+      showViewOptions={showViewOptions}
       tableActions={actions}
       getSelectedRows={getSelectedRows}
       actionBar={actionBar}

@@ -216,7 +216,8 @@ describe('DataTable body', () => {
     const trigger = screen.getByText(OVERFLOW_COMPONENT_HEADER_LABEL).closest('button');
 
     expect(trigger).not.toHaveClass('hover:bg-accent');
-    expect(trigger).toHaveClass('data-[state=open]:bg-accent');
+    expect(trigger).not.toHaveClass('data-[state=open]:bg-accent');
+    expect(trigger).toHaveClass('focus-visible:ring-1');
     expect(trigger).toHaveClass('hover:[&_svg]:text-foreground');
   });
 
@@ -316,6 +317,19 @@ describe('DataTable body', () => {
 
     expect(document.querySelector('[data-slot="separator"]')).toBeNull();
     expect(screen.getByTestId('view-options-button')).toBeInTheDocument();
+  });
+
+  it('hides the column view options button when explicitly disabled', () => {
+    render(
+      <ControlsHarness
+        toolbar={<div data-testid='table-toolbar'>toolbar</div>}
+        showViewOptions={false}
+      />
+    );
+
+    expect(screen.getByTestId('table-toolbar')).toBeInTheDocument();
+    expect(screen.queryByTestId('view-options-button')).not.toBeInTheDocument();
+    expect(document.querySelector('[data-slot="separator"]')).toBeNull();
   });
 
   it('passes explicit selected-row accessors down to the actions bar', () => {

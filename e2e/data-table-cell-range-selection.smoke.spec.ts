@@ -401,14 +401,14 @@ test('@workspace-v2 auto-scrolls virtual rows and maps RTL horizontal arrows', a
   );
 });
 
-test('@workspace-v2 distinguishes header menu clicks from virtualized column dragging', async ({
+test('@workspace-v2 keeps header filters independent from virtualized column dragging', async ({
   page
 }) => {
   const card = await gotoDictionaryTable(page);
   const table = card.locator('table[data-slot="table"]');
   const sourceHeader = card.locator('th[data-column-id="dictItemCode"]');
   const targetHeader = card.locator('th[data-column-id="dictItemName"]');
-  const sourceMenuTrigger = sourceHeader.locator('[data-slot="dropdown-menu-trigger"]');
+  const sourceDragSurface = sourceHeader.getByText('字典项编码', { exact: true });
   const sourceFilterTrigger = sourceHeader.getByRole('button', {
     name: '筛选当前页：字典项编码'
   });
@@ -416,9 +416,6 @@ test('@workspace-v2 distinguishes header menu clicks from virtualized column dra
   const targetCell = card.locator('td[data-cell-column-id="dictItemName"]').first();
 
   await expect(card.locator('tbody[data-virtual-enabled="true"]')).toBeVisible();
-  await sourceMenuTrigger.click();
-  await expect(page.getByRole('menu', { name: '字典项编码' })).toBeVisible();
-  await page.keyboard.press('Escape');
   await expect(sourceHeader.getByRole('button', { name: /拖拽调整/ })).toHaveCount(0);
 
   const sourceFilterBox = await sourceFilterTrigger.boundingBox();
@@ -434,13 +431,12 @@ test('@workspace-v2 distinguishes header menu clicks from virtualized column dra
   );
   await expect(table).not.toHaveAttribute('data-column-reordering');
   await page.mouse.up();
-  await page.keyboard.press('Escape');
 
   const sourceHeaderBefore = await sourceHeader.boundingBox();
   const targetHeaderBefore = await targetHeader.boundingBox();
   const sourceCellBefore = await sourceCell.boundingBox();
   const targetCellBefore = await targetCell.boundingBox();
-  const sourceSurfaceBox = await sourceMenuTrigger.boundingBox();
+  const sourceSurfaceBox = await sourceDragSurface.boundingBox();
   if (
     !sourceHeaderBefore ||
     !targetHeaderBefore ||
@@ -463,7 +459,6 @@ test('@workspace-v2 distinguishes header menu clicks from virtualized column dra
   );
 
   await expect(table).toHaveAttribute('data-column-reordering', 'true');
-  await expect(page.getByRole('menu', { name: '字典项编码' })).toHaveCount(0);
   await expect(sourceCell).toHaveAttribute('data-column-drag-motion', 'true');
   await expect(targetCell).toHaveAttribute('data-column-drag-motion', 'true');
 
@@ -496,7 +491,6 @@ test('@workspace-v2 distinguishes header menu clicks from virtualized column dra
 
   await page.mouse.up();
   await expect(table).not.toHaveAttribute('data-column-reordering');
-  await expect(page.getByRole('menu', { name: '字典项编码' })).toHaveCount(0);
   await expect
     .poll(async () => {
       const [sourceHeaderAfter, sourceCellAfter, targetHeaderAfter, targetCellAfter] =
