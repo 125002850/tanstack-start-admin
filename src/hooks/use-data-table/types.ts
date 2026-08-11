@@ -13,6 +13,8 @@ import type { RowNumberDisplayMode } from './columns/row-number-column';
 
 export type DataTablePinnedSide = 'left' | 'right';
 
+export type DataTableSortingMode = 'client' | 'server';
+
 export type DataTableRowId<TData> =
   | keyof TData
   | ((row: TData, index: number, parent?: Row<TData>) => string | number);
@@ -106,7 +108,7 @@ export interface UseDataTableProps<TData> extends Pick<
   TableOptions<TData>,
   DataTablePublicPassthroughTableOption
 > {
-  /** 当前页已经加载到浏览器的数据。 */
+  /** 当前加载到浏览器的数据；`sortingMode: 'client'` 时必须是完整可排序数据集。 */
   data: TableOptions<TData>['data'];
   /** 表格列定义；业务页面应优先通过列 DSL 生成。 */
   columns: TableOptions<TData>['columns'];
@@ -159,6 +161,14 @@ export interface UseDataTableProps<TData> extends Pick<
    * - `false` — 禁用持久化
    */
   sortingStorage?: SortingStorageMode;
+  /**
+   * 排序执行位置。
+   * - `'client'`：对传入 `data` 的完整数据集进行前端排序（默认）
+   * - `'server'`：只维护 sorting state，由调用方据此重新请求服务端数据
+   *
+   * 服务端分页场景必须使用 `'server'`，禁止只对当前已加载页做前端排序。
+   */
+  sortingMode?: DataTableSortingMode;
   /** 列宽拖拽结束时的回调，仅在列宽实际变化时触发。 */
   onColumnResizeEnd?: (columnKey: string, width: number) => void;
   /** 是否在表格首列显示行号列。默认 `true`。 */

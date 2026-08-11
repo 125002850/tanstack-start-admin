@@ -49,8 +49,8 @@ import { useDataTableLocalFiltering } from './use-data-table-local-filtering';
  * DataTable 核心状态装配 hook。
  *
  * 它在 TanStack useReactTable 外包一层项目约定：
- * 工具列注入、行号/选择/操作列固定规则、列宽/列顺序/排序持久化、服务端分页、
- * 行展开状态和选中行便捷 API。
+ * 工具列注入、行号/选择/操作列固定规则、列宽/列顺序/排序持久化、排序执行模式、
+ * 分页状态、行展开状态和选中行便捷 API。
  */
 function getPageCount(totalCount: number, pageSize: number) {
   return Math.max(1, Math.ceil(totalCount / pageSize) || 1);
@@ -127,6 +127,7 @@ export function useDataTableRuntime<TData>(
     rowActions,
     expandConfig,
     editing: editingOptions,
+    sortingMode = 'client',
     onColumnOrderChange: externalOnColumnOrderChange,
     ...tableProps
   } = props;
@@ -471,7 +472,7 @@ export function useDataTableRuntime<TData>(
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
     manualPagination: true,
-    manualSorting: true,
+    manualSorting: sortingMode === 'server',
     manualFiltering: true
   } satisfies Pick<TableOptions<TData>, DataTableRuntimeConfiguredTableOption>;
 

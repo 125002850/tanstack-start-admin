@@ -69,6 +69,7 @@ export type UseDslDataTableProps<
   | 'tableId'
   | 'pageSize'
   | 'onPageSizeChange'
+  | 'sortingMode'
 > & {
   tableId: string;
   columns: Array<ColumnDef<TData>>;
@@ -235,6 +236,7 @@ export function useDslDataTable<
       columns,
       data: resolvedData.list ?? [],
       totalCount: total,
+      sortingMode: 'server',
       pageSize,
       onPageSizeChange: setPageSize,
       showSelectColumn: showSelectColumn ?? true,

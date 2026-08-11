@@ -116,6 +116,7 @@ describe('useDslDataTable', () => {
     });
     expect(result.current.total).toBe(33);
     expect(result.current.table.getRowCount()).toBe(33);
+    expect(result.current.table.options.manualSorting).toBe(true);
     expect(result.current.table.options.meta?.enableZebraStriping).toBe(true);
     expect(result.current.table.getRowModel().rows[0]?.id).toBe('1');
     expect(result.current.queryState.isFetching).toBe(false);
