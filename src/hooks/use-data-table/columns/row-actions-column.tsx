@@ -23,7 +23,7 @@ export function createRowActionsColumn<TData>(
 
   return {
     id: DATA_TABLE_ACTIONS_COLUMN_ID,
-    header: '操作',
+    header: () => <span className='block text-center'>操作</span>,
     // 行操作 UI 由 DataTableBody 根据 table meta 渲染，hook 层只负责列状态装配。
     cell: () => null,
     size: actionColumnWidth,

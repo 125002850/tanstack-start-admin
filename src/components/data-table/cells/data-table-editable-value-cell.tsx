@@ -99,8 +99,10 @@ export function DataTableEditableInputCell<TData, TValue>({
 
   const value = context.getValue();
   const activeCell = runtime?.activeCell;
+  const readyCell = runtime?.readyCell;
   const isActive =
     activeCell?.rowId === context.row.id && activeCell.columnId === context.column.id;
+  const isReady = readyCell?.rowId === context.row.id && readyCell.columnId === context.column.id;
 
   if (isActive && runtime) {
     return <InputEditor config={config} runtime={runtime} />;
@@ -111,7 +113,7 @@ export function DataTableEditableInputCell<TData, TValue>({
       <div data-slot='data-table-input-display'>
         {renderDataTableTextCell(formattedValue ?? value, className)}
       </div>
-      {runtime ? (
+      {runtime && isReady ? (
         <div
           data-row-expand-ignore
           data-slot='data-table-input-editor-ready'

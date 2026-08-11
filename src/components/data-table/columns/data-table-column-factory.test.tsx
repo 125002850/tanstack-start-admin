@@ -105,6 +105,7 @@ describe('data-table-column-factory', () => {
     const column = columnDsl.field('name', '名称');
 
     expect((column as { accessorKey?: unknown }).accessorKey).toBe('name');
+    expect(column.enableSorting).toBe(true);
     expect(column.meta?.label).toBe('名称');
     expect(column.meta?.localFilter).toMatchObject({ variant: 'text' });
     expect(renderCellText(column, { name: '' })).toBe('-');
@@ -191,6 +192,26 @@ describe('data-table-column-factory', () => {
         operator: 'EQ'
       }
     });
+  });
+
+  it('enables sorting for business columns by default and preserves explicit opt-out', () => {
+    const columnDsl = createDataTableColumnDsl<Row>();
+    const customOptions = {
+      id: 'summary',
+      title: '摘要',
+      accessorFn: (row: Row) => row.name,
+      cell: ({ getValue }: { getValue: () => unknown }) => String(getValue() ?? '')
+    };
+
+    expect(columnDsl.field('name', '名称').enableSorting).toBe(true);
+    expect(columnDsl.badge('status', '状态').enableSorting).toBe(true);
+    expect(columnDsl.custom(customOptions).enableSorting).toBe(true);
+
+    expect(columnDsl.field('name', '名称', { enableSorting: false }).enableSorting).toBe(false);
+    expect(columnDsl.badge('status', '状态', { enableSorting: false }).enableSorting).toBe(false);
+    expect(
+      columnDsl.custom({ ...customOptions, enableSorting: false }).enableSorting
+    ).toBe(false);
   });
 
   it('compiles filter false without leaking stale filter meta', () => {

@@ -15,6 +15,7 @@ afterEach(() => {
   cleanup();
   resetWorkspacePageOverlays();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 function OverflowTooltipHarness({ value }: { value: string }) {
@@ -57,6 +58,39 @@ function WorkspaceOverlayRootTooltipHarness({ tabId, value }: { tabId: string; v
 }
 
 describe('DataTableCellTooltipProvider', () => {
+  it('checks overflow lazily without creating a ResizeObserver per text cell', async () => {
+    const observedElements: Element[] = [];
+    class ResizeObserverMock {
+      observe(element: Element) {
+        observedElements.push(element);
+      }
+
+      unobserve() {}
+
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    let scrollWidth = 80;
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => scrollWidth);
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(80);
+
+    const user = userEvent.setup();
+    const value = 'TRK-CUSTOMER-INVENTORY-001-EXTRA-LONG-CODE';
+    render(<OverflowTooltipHarness value={value} />);
+    const text = screen.getByText(value);
+
+    expect(observedElements).not.toContain(text);
+    await user.hover(text);
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+    await user.unhover(text);
+    scrollWidth = 260;
+    await user.hover(text);
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(value);
+    expect(observedElements).not.toContain(text);
+  });
+
   it('closes the shared tooltip when a hovered cell value is replaced', async () => {
     vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(260);
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(80);

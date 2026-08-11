@@ -5,6 +5,7 @@ import { Icons } from '@/components/icons';
 import { DataTableOverflowTooltipText } from '@/components/data-table/cells/data-table-overflow-tooltip-text';
 import { DataTableLocalFilter } from '@/components/data-table/filters/data-table-local-filter';
 import { cn } from '@/lib/utils';
+import type { DataTableColumnAlign } from '@/types/data-table';
 
 /**
  * 标准 DataTable 列头。
@@ -27,6 +28,8 @@ interface DataTableColumnHeaderProps<TData, TValue> extends Omit<
   column: Column<TData, TValue>;
   table?: Table<TData>;
   title: string;
+  /** 表头文字对齐方式，默认居中。 */
+  align?: DataTableColumnAlign;
   labels?: DataTableColumnHeaderLabels;
 }
 
@@ -58,10 +61,22 @@ function getNextSortActionText(
   return labels?.ascText ?? '升序';
 }
 
+function getHeaderAlignmentClassName(align: DataTableColumnAlign) {
+  switch (align) {
+    case 'left':
+      return 'justify-start text-left';
+    case 'right':
+      return 'justify-end text-right';
+    case 'center':
+      return 'justify-center text-center';
+  }
+}
+
 export function DataTableColumnHeader<TData, TValue>({
   column,
   table,
   title,
+  align = 'center',
   className,
   labels,
   onClick,
@@ -72,6 +87,7 @@ export function DataTableColumnHeader<TData, TValue>({
   const canFilterCurrentPage = Boolean(localFiltering && column.columnDef.meta?.localFilter);
   const sortDirection = column.getIsSorted();
   const nextSortDirection = column.getNextSortingOrder();
+  const alignmentClassName = getHeaderAlignmentClassName(align);
 
   const handleSortClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
     onClick?.(event);
@@ -85,36 +101,53 @@ export function DataTableColumnHeader<TData, TValue>({
   if (!column.getCanSort()) {
     // 不可排序列保持轻量标题结构；列是否可隐藏不改变表头点击语义。
     return (
-      <div className={cn('flex w-full min-w-0 items-center gap-1', className)}>
-        <DataTableOverflowTooltipText value={title}>{title}</DataTableOverflowTooltipText>
+      <div className='relative flex h-8 w-full min-w-0 items-center'>
+        <div
+          className={cn(
+            'flex h-full w-full min-w-0 items-center px-2',
+            canFilterCurrentPage && 'px-5',
+            alignmentClassName,
+            className
+          )}
+        >
+          <DataTableOverflowTooltipText value={title} className='min-w-0'>
+            {title}
+          </DataTableOverflowTooltipText>
+        </div>
         {canFilterCurrentPage && localFiltering ? (
-          <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
+          <div className='absolute right-0 top-1/2 z-20 -translate-y-1/2'>
+            <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
+          </div>
         ) : null}
       </div>
     );
   }
 
   return (
-    <div className='flex w-full min-w-0 items-center gap-0.5'>
+    <div className='relative flex h-8 w-full min-w-0 items-center'>
       <button
         type='button'
         data-column-header-drag-surface
         aria-label={ariaLabel ?? `${title}：${getNextSortActionText(nextSortDirection, labels)}`}
         className={cn(
-          'focus-visible:ring-ring [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground -ml-1.5 flex h-8 max-w-full min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 focus-visible:ring-1 focus-visible:outline-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:transition-colors',
+          'focus-visible:ring-ring [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground flex h-8 w-full max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 focus-visible:ring-1 focus-visible:outline-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:transition-colors',
+          canFilterCurrentPage && 'px-5',
+          alignmentClassName,
           className
         )}
         {...buttonProps}
         onClick={handleSortClick}
       >
         {/* 表头标题可能很长，始终用统一的溢出 Tooltip 包裹。 */}
-        <DataTableOverflowTooltipText value={title} className='min-w-0 flex-1'>
+        <DataTableOverflowTooltipText value={title} className='min-w-0'>
           {title}
         </DataTableOverflowTooltipText>
         {renderSortIcon(sortDirection)}
       </button>
       {canFilterCurrentPage && localFiltering ? (
-        <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
+        <div className='absolute right-0 top-1/2 z-20 -translate-y-1/2'>
+          <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
+        </div>
       ) : null}
     </div>
   );

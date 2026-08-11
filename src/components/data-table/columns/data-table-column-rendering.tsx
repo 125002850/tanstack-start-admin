@@ -6,6 +6,7 @@ import { nullableText } from '@/lib/formatters/display';
 import type {
   DataTableChoiceOption,
   DataTableChoiceValue,
+  DataTableColumnAlign,
   DataTableColumnFilterOptions
 } from '@/types/data-table';
 
@@ -22,19 +23,27 @@ export function dataTableHeader<TData>(
   column: Column<TData, unknown>,
   title: string,
   className?: string,
-  table?: Table<TData>
+  table?: Table<TData>,
+  align: DataTableColumnAlign = 'center'
 ) {
   return (
-    <DataTableColumnHeader column={column} table={table} title={title} className={className} />
+    <DataTableColumnHeader
+      column={column}
+      table={table}
+      title={title}
+      align={align}
+      className={className}
+    />
   );
 }
 
 /** 返回 TanStack ColumnDef.header 可直接使用的工厂函数。 */
 export function dataTableHeaderFactory<TData>(
   title: string,
-  className?: string
+  className?: string,
+  align: DataTableColumnAlign = 'center'
 ): ColumnHeader<TData> {
-  return ({ column, table }) => dataTableHeader(column, title, className, table);
+  return ({ column, table }) => dataTableHeader(column, title, className, table, align);
 }
 
 /** 渲染普通文本 cell，统一空值占位、截断和 Tooltip。 */
@@ -54,7 +63,7 @@ export function dataTableTextCell(value: unknown, className?: string) {
 }
 
 /** 类型默认值的 align 字段最终转换为 Tailwind 文本对齐 class。 */
-export function getDataTableAlignClassName(align: 'left' | 'center' | 'right' | undefined) {
+export function getDataTableAlignClassName(align: DataTableColumnAlign | undefined) {
   switch (align) {
     case 'center':
       return 'text-center';

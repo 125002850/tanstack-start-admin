@@ -60,6 +60,8 @@
 - 后端 DSL 查询语义只能放在 `dsl`：`filterField`、`sortField`、`filterOperator`、`serializeFilter`。禁止 `dsl.filter`、`serializeFilter: false`、`serializeSort: false`。
 - `type` 负责默认展示组合：`text`、`longText`、`number`、`int`、`decimal`、`money`、`percent`、`date`、`dateTime`、`boolean`、`enum`、`select`、`remoteSelect`、`fileSize`；`type` 不隐式开启筛选。
 - DSL 的通用列宽优先直接传 `size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'`，factory 必须在生成 `ColumnDef` 前解析为数值；特殊布局可继续传精确数字，禁止为了套用预设改变既有视觉宽度。
+- `field` / `badge` / `custom` 业务列默认启用排序；服务端不支持排序的字段必须显式传 `enableSorting: false`，字段名不一致时通过 `dsl.sortField` 映射，禁止向后端发送不存在的排序字段。
+- 标准表头文字默认居中；列级通过 `headerAlign: 'left' | 'center' | 'right'` 覆盖。表头对齐不得复用单元格 `type.align`，筛选按钮必须固定在表头右侧且不参与文字对齐计算。
 - 自定义列类型只能通过 `createDataTableColumnDsl({ customTypes })` 注册，且不得覆盖内置 type key。无 `renderCell` 时统一走 `formatValue + text cell` fallback。
 - `field` / `badge` / `custom` 默认进入列显示面板并允许面板内拖拽；`actions` 默认不进入列显示面板，且默认关闭 hiding / resizing / sorting / filtering。
 - 列面板只额外读取 `columnPanelVisible` 与 `columnPanelReorder`。隐藏能力仍以 TanStack `getCanHide()` / `enableHiding` 为准，禁止新增 `capabilities.hide/sort/filter/resize` 这类重复 TanStack 原生字段。

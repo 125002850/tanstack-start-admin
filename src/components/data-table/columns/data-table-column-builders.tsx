@@ -44,6 +44,7 @@ import { cn } from '@/lib/utils';
 import type { DataTableColumnSize } from '@/config/data-table';
 import type {
   DataTableColumnPanelOptions,
+  DataTableColumnAlign,
   DataTableAuditFields,
   DataTableChoiceOption,
   DataTableChoiceValue,
@@ -115,6 +116,8 @@ interface BaseColumnOptions<TData, TValue = unknown> {
   enableResizing?: boolean;
   meta?: ColumnDef<TData, TValue>['meta'];
   header?: ColumnHeader<TData>;
+  /** 表头文字对齐，默认 center；不影响单元格内容对齐。 */
+  headerAlign?: DataTableColumnAlign;
   cellClassName?: string;
 }
 
@@ -421,6 +424,8 @@ interface ActionsDslColumnOptions<TData> extends DataTableColumnPanelOptions {
   enableResizing?: boolean;
   meta?: ColumnDef<TData>['meta'];
   header?: ColumnHeader<TData>;
+  headerAlign?: DataTableColumnAlign;
+  headerClassName?: string;
 }
 
 /** 自定义列配置：调用方完全接管 accessorFn/cell，但仍复用列面板和筛选 meta 合并。 */
@@ -430,6 +435,8 @@ interface CustomDslColumnOptions<TData, TValue> extends DataTableColumnOptions<T
   accessorFn?: (row: TData) => TValue;
   cell: ColumnDef<TData, TValue>['cell'];
   header?: ColumnHeader<TData>;
+  headerAlign?: DataTableColumnAlign;
+  headerClassName?: string;
 }
 
 /** 抹平 ColumnDef 的 TValue 泛型，方便 DSL 返回统一的 ColumnDef<TData>[]。 */
@@ -477,6 +484,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       renderCell,
       cellClassName,
       headerClassName,
+      headerAlign,
       header,
       ...columnOptions
     } = fieldOptions;
@@ -490,11 +498,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       typeDefaults.cellClassName,
       cellClassName
     );
-    const resolvedHeaderClassName = cn(
-      getDataTableAlignClassName(typeDefaults.align),
-      typeDefaults.headerClassName,
-      headerClassName
-    );
+    const resolvedHeaderClassName = cn(typeDefaults.headerClassName, headerClassName);
     const columnFormatter = format ?? formatValue;
     const resolveFieldFormattedValue = (value: unknown, row: TData) => {
       const typedValue = value as TData[TKey];
@@ -518,7 +522,13 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
 
     return eraseDataTableColumnValue({
       accessorKey: key,
-      header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
+      header:
+        header ??
+        dataTableHeaderFactory<TData>(
+          title,
+          resolvedHeaderClassName,
+          headerAlign ?? typeDefaults.headerAlign
+        ),
       cell: (context) => {
         if (renderCell) {
           // renderCell 优先级最高，调用方完全控制展示。
@@ -617,6 +627,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       formatValue,
       cellClassName,
       headerClassName,
+      headerAlign,
       header,
       ...columnOptions
     } = editableOptions;
@@ -670,11 +681,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       typeDefaults.cellClassName,
       cellClassName
     );
-    const resolvedHeaderClassName = cn(
-      getDataTableAlignClassName(typeDefaults.align),
-      typeDefaults.headerClassName,
-      headerClassName
-    );
+    const resolvedHeaderClassName = cn(typeDefaults.headerClassName, headerClassName);
     const resolvedMeta = {
       ...columnOptions.meta,
       cellOwnsTooltip: true,
@@ -697,7 +704,13 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
 
     return eraseDataTableColumnValue({
       accessorKey: key,
-      header: header ?? dataTableHeaderFactory<TData>(title, resolvedHeaderClassName),
+      header:
+        header ??
+        dataTableHeaderFactory<TData>(
+          title,
+          resolvedHeaderClassName,
+          headerAlign ?? typeDefaults.headerAlign
+        ),
       cell: (context) => {
         const value = context.getValue();
         const row = context.row.original;
@@ -738,6 +751,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       formatValue,
       header,
       headerClassName,
+      headerAlign,
       cellClassName,
       ...columnOptions
     } = badgeOptions;
@@ -754,7 +768,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
 
     return eraseDataTableColumnValue({
       accessorKey: key,
-      header: header ?? dataTableHeaderFactory<TData>(title, headerClassName),
+      header: header ?? dataTableHeaderFactory<TData>(title, headerClassName, headerAlign),
       cell: ({ row }) => {
         const value = row.original[key];
         const label = nullableText(formatter ? formatter(value, row.original) : value);
@@ -778,6 +792,8 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       title = '操作',
       actions: actionOptions,
       header,
+      headerAlign,
+      headerClassName,
       meta,
       ...columnOptions
     } = actionsOptions;
@@ -795,7 +811,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
 
     return {
       id,
-      header: header ?? title,
+      header: header ?? dataTableHeaderFactory<TData>(title, headerClassName, headerAlign),
       cell: ({ row }) => renderDataTableActionsCell(row, resolveActions),
       ...resolvedOptions
     } satisfies ColumnDef<TData>;
@@ -804,7 +820,8 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
   function custom<TValue = unknown>(
     customOptions: CustomDslColumnOptions<TData, TValue>
   ): DataTableColumn<TData> {
-    const { id, title, accessorFn, cell, header, ...columnOptions } = customOptions;
+    const { id, title, accessorFn, cell, header, headerAlign, headerClassName, ...columnOptions } =
+      customOptions;
     const resolvedOptions = resolveDataTableColumnOptions<TData, TValue>({
       // 自定义列使用 CUSTOM defaults，仍可声明 filter/dsl/columnPanel 等统一选项。
       title,
@@ -815,7 +832,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     return eraseDataTableColumnValue({
       id,
       accessorFn,
-      header: header ?? dataTableHeaderFactory<TData>(title),
+      header: header ?? dataTableHeaderFactory<TData>(title, headerClassName, headerAlign),
       cell,
       ...resolvedOptions
     } satisfies ColumnDef<TData, TValue>);

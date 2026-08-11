@@ -10,11 +10,13 @@ export function dictionaryItemColumns(
 ): ColumnDef<DictionaryItemRecord>[] {
   return [
     columnDsl.field('dictItemCode', '字典项编码', {
+      enableSorting: false,
       filter: 'text',
       filterPlaceholder: '搜索字典项编码',
       renderCell: ({ row }) => <span className='font-medium'>{row.original.dictItemCode}</span>
     }),
     columnDsl.field('dictItemName', '字典项名称', {
+      enableSorting: false,
       filter: 'text',
       filterPlaceholder: '搜索字典项名称'
     }),
@@ -30,9 +32,13 @@ export function dictionaryItemColumns(
         />
       )
     }),
-    columnDsl.field('sort', '排序', { type: 'number' }),
+    columnDsl.field('sort', '排序', {
+      type: 'number',
+      dsl: { sortField: 'sortOrder' }
+    }),
     columnDsl.field('remark', '备注', {
       type: 'longText',
+      enableSorting: false,
       renderCell: ({ row }) => (
         <span className='text-muted-foreground max-w-[260px] whitespace-normal'>
           {row.original.remark || '-'}
