@@ -1,16 +1,14 @@
 import {
-  createApiClientCustomInstanceFactory,
-  createTransport,
-  HttpError
+  HttpError,
+  setTransportMiddlewares,
+  type TransportMiddleware
 } from '@oig/react-query-generator/core';
 
 import { handleUnauthorized } from './sso/session';
 import { createAuthHeaders, refreshTokenFromResponse } from './sso/set-headers';
 import { HTTP_STATUS_UNAUTHORIZED } from '../http-status';
 
-const transport = createTransport({ defaultCredentials: 'same-origin' });
-
-transport.registerMiddleware(async (context, next) => {
+const authHeadersMiddleware: TransportMiddleware = async (context, next) => {
   return next({
     ...context,
     options: {
@@ -18,9 +16,9 @@ transport.registerMiddleware(async (context, next) => {
       headers: createAuthHeaders(context.options.headers)
     }
   });
-});
+};
 
-transport.registerMiddleware(async (context, next) => {
+const sessionMiddleware: TransportMiddleware = async (context, next) => {
   try {
     const response = await next(context);
     refreshTokenFromResponse(response);
@@ -31,6 +29,8 @@ transport.registerMiddleware(async (context, next) => {
     }
     throw error;
   }
-});
+};
 
-export const createApiClientCustomInstance = createApiClientCustomInstanceFactory(transport);
+export function configureApiTransport() {
+  setTransportMiddlewares([authHeadersMiddleware, sessionMiddleware]);
+}

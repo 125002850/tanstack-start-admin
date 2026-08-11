@@ -64,8 +64,9 @@ export function useDicts(typeCodes: readonly DictTypes[]) {
 
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) =>
-      systemDictGlobalItemsOptions({ dictTypeCodes: normalizedTypeCodes }, { signal }),
+    queryFn: async ({ signal }) =>
+      (await systemDictGlobalItemsOptions({ dictTypeCodes: normalizedTypeCodes }, { signal })) ??
+      [],
     enabled: normalizedTypeCodes.length > 0,
     staleTime: 5 * 60 * 1000,
     select: buildDictBatch

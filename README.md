@@ -174,7 +174,7 @@ README 只维护项目定位、运行方式和架构入口；可执行的工程�
 ## 快速开始
 
 > [!IMPORTANT]
-> 当前仓库统一使用 `pnpm`，锁文件以 `pnpm-lock.yaml` 为准。Vite 8 要求 Node.js `^20.19.0 || >=22.12.0`。
+> 当前仓库统一使用 `pnpm`，锁文件以 `pnpm-lock.yaml` 为准。项目及 `@oig/react-query-generator` 5.x 要求 Node.js `>=22.18.0`。
 
 ```bash
 corepack enable

@@ -84,7 +84,8 @@ export function isDataTableVirtualizationEnabled(): boolean {
 运行时边界：
 
 - `src/router.tsx`：创建 Router 前调用 `hydrateFromUrl()`，从 SSO 回调 URL 恢复 token 和登录前查询参数。
-- `src/lib/api/transport.ts`：OpenAPI generated client 的唯一共享 transport，注入认证请求头、刷新响应 token，并统一处理业务请求的 401。
+- `src/main.tsx`：创建 Router 前调用 `configureApiTransport()`，作为共享 transport middleware 的唯一启动 owner。
+- `src/lib/api/transport.ts`：定义 OpenAPI generated client 的共享 middleware，通过 `setTransportMiddlewares()` 注入认证请求头、刷新响应 token，并统一处理业务请求的 401。
 - `src/lib/api/sso/set-headers.ts`：组装 SSO 服务头、`Authorization` 与 `X-User-Id`，并从响应头刷新 token。
 - `src/lib/api/sso/session.ts`：维护 token、用户 ID、登出地址、登录前查询参数和登出跳转。
 - `src/lib/api/sso/bootstrap.ts`：`/api/getLoginInfo` 的手写 `fetch` 边界，负责首次登录/过期会话的 401 跳转。
@@ -96,6 +97,7 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 当前仓库允许直接调用 `fetch` 的运行时边界只有 `src/lib/api/sso/bootstrap.ts`；新增例外前必须同步调整 API adoption 契约测试。
 - 首次登录或缺少 token 的 401 由 `bootstrap.ts` 跳转 `loginUrl`；已有 token 失效后的 401 优先跳转 `logoutUrl`。页面层不得复制清 token 或重定向逻辑。
 - `transport.ts` 的 request middleware 必须统一调用 `createAuthHeaders()`；页面和 generated client 不得重复拼装 SSO 头或注册 middleware。
+- 共享 middleware 配置必须使用 `setTransportMiddlewares()` 的替换语义，禁止在启动路径使用 `registerTransportMiddleware()`，避免 HMR 或重复初始化累加执行。
 - SSO 响应返回新的 `Authorization` 时，由 `refreshTokenFromResponse()` 统一更新本地会话。
 - `menuData` 的导航过滤和路由访问控制遵循 `references/routing-and-navigation.md`，不得仅隐藏菜单而绕过 route guard。
 - AI Playwright 的本地 SSO 登录态准备遵循 `oig-sso-skill`，不要把测试凭据或环境地址复制到本 reference。
@@ -103,6 +105,7 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - `pnpm openapi:fetch` 从已运行的后端拉取 OpenAPI；默认地址为 `http://localhost:8080/v3/api-docs`，需要其他地址时设置 `OPENAPI_FETCH_URL`。该命令不负责启动或重启后端。
 - `pnpm api` 按顺序执行 `openapi:fetch` 与 `codegen`；接口契约变化时使用它同步 spec 与 generated client。
 - 字典和枚举页面展示必须通过 generated client 批量调用 `/api/system/dict/global/items/options`；页面级缓存一次，表格 cell 禁止发请求。停用项保留在显示映射中，但不得进入可选 options。
-- 生成后的 `openapi/.generated/*-orval-mutator.ts` 按约定导入 `src/lib/api/transport.ts`，只创建带 `basePath` 的实例。
+- `openapi/clients.ts` 的 `service` client 必须声明 `transportBinding: 'core-singleton'`；单 SPA 共享 package core 单例，如果未来出现 SSR、同页多应用或不同认证管线，再改用独立 transport 或 custom mutator。
+- 生成后的 `openapi/.generated/*-orval-mutator.ts` 只能从 `@oig/react-query-generator/core` 导入 `createDefaultApiClientCustomInstance`，不得反向依赖项目 `transport.ts`。
 - 生成后的 `src/lib/api/clients/*/generated/**/*.ts` 由 `openapi-client` 自动带上 `// @ts-nocheck`。
 - 禁止在 generated 文件中重复注册 middleware。

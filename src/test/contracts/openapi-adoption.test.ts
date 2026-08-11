@@ -45,6 +45,16 @@ afterEach(() => {
 });
 
 describe('OpenAPI package adoption contract', () => {
+  it('pins the generator runtime required by the repository', () => {
+    const packageJson = JSON.parse(readProjectFile('package.json')) as {
+      dependencies?: Record<string, string>;
+      engines?: Record<string, string>;
+    };
+
+    expect(packageJson.dependencies?.['@oig/react-query-generator']).toBe('5.0.0');
+    expect(packageJson.engines?.node).toBe('>=22.18.0');
+  });
+
   it('drives generation through the published openapi-client CLI', () => {
     const packageJson = JSON.parse(readProjectFile('package.json')) as {
       scripts?: Record<string, string>;
@@ -70,6 +80,28 @@ describe('OpenAPI package adoption contract', () => {
     expect(existsSync(resolve(process.cwd(), 'openapi/specs/openapi.json'))).toBe(true);
     expect(existsSync(resolve(process.cwd(), 'openapi/specs/java-demo.json'))).toBe(false);
     expect(readProjectFile('.gitignore')).toContain('openapi/snapshots/');
+  });
+
+  it('binds generated clients to the safely configured core singleton', async () => {
+    vi.resetModules();
+    const manifestModule = await import(
+      `${pathToFileURL(resolve(process.cwd(), 'openapi/clients.ts')).href}?singleton=${Date.now()}`
+    );
+    const shimSource = readProjectFile('openapi/.generated/service-orval-mutator.ts');
+    const transportSource = readProjectFile('src/lib/api/transport.ts');
+    const bootstrapSource = readProjectFile('src/main.tsx');
+
+    expect(manifestModule.default[0]?.transportBinding).toBe('core-singleton');
+    expect(manifestModule.default[0]?.voidEnvelopeSchemas).toEqual(['RVoid']);
+    expect(shimSource).toContain('createDefaultApiClientCustomInstance');
+    expect(shimSource).toContain("from '@oig/react-query-generator/core'");
+    expect(shimSource).not.toContain('src/lib/api/transport');
+    expect(transportSource).toContain('setTransportMiddlewares');
+    expect(transportSource).not.toContain('registerTransportMiddleware');
+    expect(bootstrapSource).toContain('configureApiTransport();');
+    expect(bootstrapSource.indexOf('configureApiTransport();')).toBeLessThan(
+      bootstrapSource.indexOf('createRouter();')
+    );
   });
 
   it('maps APP_GATEWAY into manifest transportProfile.basePath', async () => {

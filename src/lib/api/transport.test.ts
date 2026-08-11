@@ -1,7 +1,12 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTransport, HttpError } from '@oig/react-query-generator/core';
+import {
+  clearTransportMiddlewares,
+  createDefaultApiClientCustomInstance,
+  createTransport,
+  HttpError
+} from '@oig/react-query-generator/core';
 
 const mockSession = {
   getAuthHeader: vi.fn<() => string | null>(),
@@ -193,8 +198,21 @@ describe('transport auth pipeline', () => {
 
 describe('production transport module integration', () => {
   let capturedHeaders: Headers | undefined;
+  let originalFetch: typeof fetch;
 
-  it('exports a working factory that injects token from session', async () => {
+  beforeEach(() => {
+    originalFetch = globalThis.fetch;
+    capturedHeaders = undefined;
+    clearTransportMiddlewares();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    clearTransportMiddlewares();
+    globalThis.fetch = originalFetch;
+  });
+
+  it('configures the singleton without accumulating middleware', async () => {
     mockSession.getAuthHeader.mockReturnValue('jwt-from-production');
     mockSession.getLoginUserId.mockReturnValue('42');
 
@@ -203,13 +221,20 @@ describe('production transport module integration', () => {
       return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
     });
 
-    const { createApiClientCustomInstance } = await import('./transport');
-    const client = createApiClientCustomInstance('/test-base', { credentials: 'same-origin' });
+    const { configureApiTransport } = await import('./transport');
+    const client = createDefaultApiClientCustomInstance('/test-base', {
+      credentials: 'same-origin'
+    });
+
+    configureApiTransport();
+    configureApiTransport();
 
     await client('/api/endpoint');
 
     expect(capturedHeaders?.get('Authorization')).toBe('Bearer jwt-from-production');
     expect(capturedHeaders?.get('X-User-Id')).toBe('42');
+    expect(mockSession.getAuthHeader).toHaveBeenCalledOnce();
+    expect(mockSession.getLoginUserId).toHaveBeenCalledOnce();
   });
 });
 
