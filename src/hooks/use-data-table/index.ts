@@ -8,7 +8,7 @@ export type {
   PaginatedResponse,
   QueryOptionsFactory
 } from './dsl';
-export type { UseDataTableProps } from './types';
+export type { DataTableSortingMode, UseDataTableProps } from './types';
 export type {
   QueryStateSubset,
   RefreshBehavior,

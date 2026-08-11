@@ -277,7 +277,7 @@ test('@workspace-v2 applies an Excel-compatible matrix atomically and rejects in
   const errorToast = page.locator('[data-sonner-toast][data-type="error"]');
   await expect(errorToast).toBeVisible();
   await expect(errorToast).toContainText('不允许使用科学计数法。');
-  await expect(errorToast).toContainText('来源：第 1 行第 3 列 → 目标：第 1 行第 4 列（score）');
+  await expect(errorToast).toContainText('来源：第 1 行第 3 列 → 目标：第 1 行第 4 列（评分）');
   await expect
     .poll(() =>
       Promise.all([
@@ -315,7 +315,7 @@ test('@workspace-v2 starts printable drafts and applies keyboard deletion atomic
   const errorToast = page.locator('[data-sonner-toast][data-type="error"]');
   await expect(errorToast).toBeVisible();
   await expect(errorToast).toContainText('此项为必填项。');
-  await expect(errorToast).toContainText('来源：第 1 行第 2 列 → 目标：第 1 行第 3 列（remark）');
+  await expect(errorToast).toContainText('来源：第 1 行第 2 列 → 目标：第 1 行第 3 列（备注）');
   await expect
     .poll(() => Promise.all([firstPhone.innerText(), firstRemark.innerText()]))
     .toEqual(beforeRejectedDelete);
@@ -373,7 +373,9 @@ test('@workspace-v2 only fills editable ranges and rejects readonly targets atom
   const errorToast = page.locator('[data-sonner-toast][data-type="error"]');
   await expect(errorToast).toBeVisible();
   await expect(errorToast).toContainText('矩阵粘贴的目标列不可编辑。');
-  await expect(errorToast).toContainText('来源：第 1 行第 2 列 → 目标：第 1 行第 1 列（name）');
+  await expect(errorToast).toContainText(
+    '来源：第 1 行第 2 列（手机号） → 目标：第 1 行第 1 列（name）'
+  );
   await expect(firstName).toContainText('记录 001');
   await expect(page.getByTestId('editable-choice-last-reason')).toHaveText('-');
 
