@@ -35,8 +35,8 @@ import {
  * 表头渲染层。
  *
  * 同时支持普通表头、固定列、列虚拟化、列宽拖拽和表头列顺序拖拽。表头负责输出
- * aria-sort、sticky top 和拖拽 overlay 所需的数据属性；排序/显隐菜单由列 header
- * 自身组件处理。
+ * aria-sort、sticky top 和拖拽 overlay 所需的数据属性；排序按钮和本地筛选入口由列
+ * header 自身组件处理，列显隐统一收敛到 DataTableViewOptions。
  */
 export const DATA_TABLE_HEADER_ROW_HEIGHT_PX = 40;
 const HEADER_STICKY_TOP_OFFSET_PX = -1;
@@ -48,7 +48,7 @@ const NON_REORDERABLE_COLUMN_IDS = new Set([
 ]);
 const HEADER_INTERACTIVE_SELECTOR =
   'a,button,input,select,textarea,[role="button"],[role="menuitem"]';
-// 菜单 Trigger 是点击/拖拽共面的主表面，由 DataTableColumnHeader 显式标记。
+// 排序按钮是点击/拖拽共面的主表面，由 DataTableColumnHeader 显式标记。
 const HEADER_DRAG_SURFACE_SELECTOR = '[data-column-header-drag-surface]';
 
 interface DataTableHeaderProps<TData> {
@@ -150,7 +150,7 @@ function getHeaderAriaSort<TData>(header: Header<TData, unknown>) {
   return 'none';
 }
 
-/** 主表面（菜单 Trigger）点击/拖拽共面，放行列拖拽；筛选等其他交互控件保持独立。 */
+/** 主表面（排序按钮）点击/拖拽共面，放行列拖拽；筛选等其他交互控件保持独立。 */
 function shouldIgnoreColumnDragStart(target: EventTarget | null) {
   const node = target as HTMLElement | null;
   if (node?.closest(HEADER_DRAG_SURFACE_SELECTOR)) return false;
@@ -197,7 +197,7 @@ function StaticDataTableHeaderCell<TData>({
   );
 }
 
-/** 可排序拖拽表头：表头内容同时承担菜单点击与拖拽，Sensor 的移动阈值区分两者。 */
+/** 可排序拖拽表头：表头内容同时承担排序点击与拖拽，Sensor 的移动阈值区分两者。 */
 function SortableDataTableHeaderCell<TData>({
   header,
   className,
@@ -259,7 +259,7 @@ function SortableDataTableHeaderCell<TData>({
           'flex w-full min-w-0 items-center',
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         )}
-        // 先于 Radix Trigger 的 pointerdown 运行；后者会 preventDefault 以延迟到 click 开菜单。
+        // capture 阶段先让 dnd-kit 观察 pointerdown，超过阈值后由它抑制尾随 click。
         onPointerDownCapture={(event) => {
           if (!shouldIgnoreColumnDragStart(event.target)) {
             listeners?.onPointerDown?.(event);

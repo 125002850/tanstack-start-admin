@@ -20,7 +20,13 @@ type DataTableColumnQueryMeta<TData, TValue> = DataTableColumnMeta<TData, TValue
 
 type DataTableColumnNativeOptions<TData, TValue> = Pick<
   ColumnDef<TData, TValue>,
-  'size' | 'minSize' | 'maxSize' | 'enableSorting' | 'enableHiding' | 'enableResizing'
+  | 'size'
+  | 'minSize'
+  | 'maxSize'
+  | 'enableSorting'
+  | 'sortDescFirst'
+  | 'enableHiding'
+  | 'enableResizing'
 > & {
   enableColumnFilter?: boolean;
   meta?: ColumnDef<TData, TValue>['meta'];
@@ -38,6 +44,7 @@ export interface DataTableColumnResolvedDefaults {
   minSize?: number;
   maxSize?: number;
   enableSorting?: boolean;
+  sortDescFirst?: boolean;
   enableHiding?: boolean;
   enableResizing?: boolean;
   enableColumnFilter?: boolean;
@@ -239,6 +246,7 @@ export function resolveDataTableColumnOptions<TData, TValue>({
     minSize: options.minSize ?? defaults.minSize,
     maxSize: options.maxSize ?? defaults.maxSize,
     enableSorting: options.enableSorting ?? defaults.enableSorting,
+    sortDescFirst: options.sortDescFirst ?? defaults.sortDescFirst,
     enableHiding: options.enableHiding ?? defaults.enableHiding,
     enableResizing: options.enableResizing ?? defaults.enableResizing,
     enableColumnFilter:

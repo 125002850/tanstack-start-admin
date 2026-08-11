@@ -107,11 +107,13 @@
 - 多列条件使用 AND；计算某列候选项时应用其他列条件但排除本列条件，使级联候选保持可恢复。`undefined` 表示全选/未筛选，空 `selectedKeys` 是有效条件并表示不匹配任何行。
 - 搜索框只收窄候选列表，不直接修改表格数据；勾选立即生效，全选只作用于当前可见候选，搜索后 Enter 使用当前匹配项替换该列选择。
 - 候选值只在 Popover 打开时收集，长列表必须虚拟化。禁止在每次表格 render 或浮层关闭时扫描整列、创建全部 option DOM。
-- 表头漏斗入口必须独立于排序/隐藏菜单，使用固定尺寸且不得挤压标题到不可读；active 状态必须同时提供视觉提示和 `aria-pressed`。
+- 可排序表头的标题区域单击必须直接推进 TanStack sorting state，默认顺序为升序、降序、无排序，并保留 Shift 多列排序；禁止用整个标题区域打开列显隐菜单。列显隐和面板内重排统一由 `DataTableViewOptions` 承担。
+- 表头漏斗入口必须独立于排序按钮和列显示面板，使用固定尺寸且不得挤压标题到不可读；active 状态必须同时提供视觉提示和 `aria-pressed`。
 
 ## 页面组合
 
 - 标准后台表格页面使用 `Card` + `DataTable` + `DataTableToolbar`。
+- `DataTable` 默认展示列显示面板按钮；纯展示表格可传 `showViewOptions={false}` 关闭入口。该开关只控制按钮渲染，不得改写列的 `enableHiding`、显隐状态或持久化契约。
 - 数据层统一由 `useDslDataTable` 驱动。
 - 页面侧至少优先消费 `table`、`queryState` 和 `refreshProps`；只有其他业务展示确实需要总数时才额外消费 `total`。
 - 服务端总数由 `useDslDataTable` 写入 TanStack Table 的 `rowCount`，`DataTable` 统一通过 `table.getRowCount()` 消费；页面禁止重复传递总数。

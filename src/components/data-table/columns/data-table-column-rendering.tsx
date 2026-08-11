@@ -12,12 +12,12 @@ import type {
 /**
  * DataTable 列渲染工具。
  *
- * 这些 helper 是 createDataTableColumnDsl 和业务自定义列之间的共享层：统一表头菜单、
+ * 这些 helper 是 createDataTableColumnDsl 和业务自定义列之间的共享层：统一表头排序、
  * 文本单元格截断、对齐 class 和 enum label 解析。
  */
 export type ColumnHeader<TData> = ColumnDef<TData>['header'];
 
-/** 渲染带排序/隐藏菜单的标准列头。 */
+/** 渲染带直接排序和本地筛选入口的标准列头。 */
 export function dataTableHeader<TData>(
   column: Column<TData, unknown>,
   title: string,

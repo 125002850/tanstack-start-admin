@@ -149,3 +149,38 @@ test('@workspace-v2 renders each page immediately during consecutive menu naviga
   await expect(page.getByRole('textbox', { name: '搜索名称' })).toBeVisible();
   await expect(page.getByRole('textbox', { name: '搜索部门编码或名称' })).toBeHidden();
 });
+
+test('@workspace-v2 sorts on a header click without sorting after a column drag', async ({
+  page
+}) => {
+  await page.goto(STAFF_ROUTE);
+  await expect(page.getByRole('textbox', { name: '搜索工号' })).toBeVisible();
+
+  const table = page.locator('table[data-slot="table"]');
+  const sourceHeader = table.locator('th[data-column-id="staffName"]');
+  const targetHeader = table.locator('th[data-column-id="phone"]');
+  const sortTrigger = sourceHeader.locator('[data-column-header-drag-surface]');
+
+  await expect(sourceHeader).toHaveAttribute('aria-sort', 'none');
+  await sortTrigger.click();
+  await expect(sourceHeader).toHaveAttribute('aria-sort', 'ascending');
+
+  const [sourceBox, targetBox] = await Promise.all([
+    sortTrigger.boundingBox(),
+    targetHeader.boundingBox()
+  ]);
+  if (!sourceBox || !targetBox) {
+    throw new Error('Sortable DataTable header bounding box unavailable');
+  }
+
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(targetBox.x + targetBox.width * 0.8, targetBox.y + targetBox.height / 2, {
+    steps: 12
+  });
+
+  await expect(table).toHaveAttribute('data-column-reordering', 'true');
+  await page.mouse.up();
+  await expect(table).not.toHaveAttribute('data-column-reordering');
+  await expect(sourceHeader).toHaveAttribute('aria-sort', 'ascending');
+});

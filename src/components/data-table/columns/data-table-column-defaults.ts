@@ -8,6 +8,7 @@ import type { DataTableColumnResolvedDefaults } from '@/components/data-table/co
  */
 export const FIELD_COLUMN_DEFAULTS = {
   enableSorting: false,
+  sortDescFirst: false,
   columnPanelVisible: true,
   columnPanelReorder: true
 } satisfies DataTableColumnResolvedDefaults;
@@ -16,6 +17,7 @@ export const BADGE_COLUMN_DEFAULTS = {
   size: 120,
   minSize: 96,
   enableSorting: false,
+  sortDescFirst: false,
   columnPanelVisible: true,
   columnPanelReorder: true
 } satisfies DataTableColumnResolvedDefaults;
@@ -24,6 +26,7 @@ export const CUSTOM_COLUMN_DEFAULTS = {
   size: 160,
   minSize: 80,
   enableSorting: false,
+  sortDescFirst: false,
   columnPanelVisible: true,
   columnPanelReorder: true
 } satisfies DataTableColumnResolvedDefaults;
