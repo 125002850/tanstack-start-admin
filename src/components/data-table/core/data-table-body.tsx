@@ -17,7 +17,7 @@ import type {
   DataTableColumnVirtualWindow,
   DataTableResolvedVirtualizationOptions
 } from '@/types/data-table';
-import { DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
+import { DATA_TABLE_ROW_HEIGHT_PX, DATA_TABLE_VIRTUAL_PRESET } from '@/config/data-table';
 import { emitDataTableVirtualEvent } from '@/components/data-table/virtualization/data-table-virtual-events';
 import { cn } from '@/lib/utils';
 import { DataTableCellContent } from '@/components/data-table/cells/data-table-cell-content';
@@ -72,7 +72,7 @@ const ROW_EXPAND_IGNORE_SELECTOR = [
   '[role="checkbox"]'
 ].join(',');
 const DATA_TABLE_BODY_CELL_CLASS_NAME =
-  'relative px-[15px] py-2 outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out';
+  'relative px-[15px] py-0 outline outline-1 outline-offset-[-1px] outline-transparent transition-[outline-color,box-shadow] duration-150 ease-out';
 
 /** 自动注入的操作列只在渲染层解析组件，避免 useDataTable 反向依赖 React UI。 */
 function renderDataTableCellValue<TData>(cell: Cell<TData, unknown>) {
@@ -706,6 +706,7 @@ export function DataTableBody<TData>({
           onClick={(event) => handleRowClick(event, row)}
           onKeyDown={(event) => handleRowKeyDown(event, row)}
           tabIndex={getExpandableRowTabIndex(row)}
+          style={{ height: DATA_TABLE_ROW_HEIGHT_PX }}
         >
           {columnVirtualWindow?.enabled
             ? renderColumnVirtualCells(row, false)

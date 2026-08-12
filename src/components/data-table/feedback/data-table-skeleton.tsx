@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { DATA_TABLE_ROW_HEIGHT_PX } from '@/config/data-table';
 import { cn } from '@/lib/utils';
 
 /**
@@ -89,7 +90,11 @@ export function DataTableSkeleton({
           </TableHeader>
           <TableBody>
             {Array.from({ length: rowCount }).map((_, i) => (
-              <TableRow key={i} className='hover:bg-transparent'>
+              <TableRow
+                key={i}
+                className='hover:bg-transparent'
+                style={{ height: DATA_TABLE_ROW_HEIGHT_PX }}
+              >
                 {Array.from({ length: columnCount }).map((_, j) => (
                   <TableCell
                     key={j}

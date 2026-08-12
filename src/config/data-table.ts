@@ -37,6 +37,9 @@ export type DataTableColumnSize = number | DataTableColumnSizePreset;
 export const DATA_TABLE_DATE_DISPLAY_FORMAT = 'YYYY-MM-DD';
 export const DATA_TABLE_DATE_TIME_DISPLAY_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
+/** DataTable 标准表体行高；普通渲染、虚拟化、骨架屏和交互 fallback 必须保持一致。 */
+export const DATA_TABLE_ROW_HEIGHT_PX = 48;
+
 /** 将 DSL 的语义列宽转换为 TanStack ColumnDef 接受的数值。 */
 export function resolveDataTableColumnSize(size: DataTableColumnSize | undefined) {
   return typeof size === 'string' ? dataTableColumnSizes[size] : size;
@@ -44,7 +47,7 @@ export function resolveDataTableColumnSize(size: DataTableColumnSize | undefined
 
 /** 行/列虚拟化的共享默认值，调用方可通过 DataTable virtualization prop 局部覆盖。 */
 export const DATA_TABLE_VIRTUAL_PRESET = {
-  estimateRowHeight: 56,
+  estimateRowHeight: DATA_TABLE_ROW_HEIGHT_PX,
   overscan: 8,
   rowCountThreshold: 100,
   columnCountThreshold: 20,

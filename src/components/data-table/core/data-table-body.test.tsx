@@ -72,12 +72,14 @@ describe('DataTable body', () => {
     expect(screen.getByText('Item 10')).toBeInTheDocument();
   });
 
-  it('renders data cells with explicit padding and transparent outline baseline', () => {
+  it('renders normal rows on the 48px baseline with vertically centered cells', () => {
     const { container } = render(<Harness rows={makeRows(1)} />);
+    const firstRow = container.querySelector<HTMLTableRowElement>('tbody tr[data-row-index="0"]');
     const firstCell = container.querySelector('tbody td[data-cell-id]');
 
+    expect(firstRow?.style.height).toBe('48px');
     expect(firstCell?.getAttribute('class')).toContain('px-[15px]');
-    expect(firstCell?.getAttribute('class')).toContain('py-2');
+    expect(firstCell?.getAttribute('class')).toContain('py-0');
     expect(firstCell?.getAttribute('class')).toContain('outline');
     expect(firstCell?.getAttribute('class')).toContain('outline-transparent');
     expect(firstCell?.getAttribute('class')).toContain('transition-[outline-color,box-shadow]');
@@ -122,6 +124,7 @@ describe('DataTable body', () => {
     expect(container.querySelector('[data-slot="data-table-skeleton"]')).not.toBeNull();
     expect(container.querySelectorAll('[data-slot="data-table-skeleton-filter"]')).toHaveLength(2);
     expect(container.querySelector('[data-slot="data-table-skeleton-view-options"]')).toBeNull();
+    expect(container.querySelector<HTMLTableRowElement>('tbody tr')?.style.height).toBe('48px');
     expect(screen.queryByText('暂无数据')).not.toBeInTheDocument();
   });
 
@@ -768,7 +771,7 @@ describe('DataTable body', () => {
     ) as HTMLTableRowElement | null;
     expect(secondVirtualRow).not.toBeNull();
     expect(secondVirtualRow?.dataset.virtualRowPositioning).toBe('top');
-    expect(secondVirtualRow?.style.top).toBe('56px');
+    expect(secondVirtualRow?.style.top).toBe('48px');
     expect(secondVirtualRow?.style.transform).toBe('');
   });
 
@@ -795,7 +798,7 @@ describe('DataTable body', () => {
     expect(secondVirtualRow).not.toBeNull();
     expect(secondVirtualRow?.dataset.virtualRowPositioning).toBe('transform');
     expect(secondVirtualRow?.style.top).toBe('0px');
-    expect(secondVirtualRow?.style.transform).toBe('translateY(56px)');
+    expect(secondVirtualRow?.style.transform).toBe('translateY(48px)');
   });
 
   it('renders all rows when below threshold', () => {
@@ -818,7 +821,27 @@ describe('DataTable body', () => {
       'tbody[data-virtual-enabled="true"] tr[data-index]'
     );
     expect(virtualRows.length).toBeGreaterThan(0);
-    expect((virtualRows[0] as HTMLTableRowElement).style.height).toBe('56px');
+    expect((virtualRows[0] as HTMLTableRowElement).style.height).toBe('48px');
+  });
+
+  it('allows a taller virtual table to override the standard row height', () => {
+    const rows = makeRows(200);
+    const { container } = render(
+      <Harness
+        rows={rows}
+        virtualization={{
+          enabled: true,
+          rowCountThreshold: 10,
+          estimateRowHeight: 56,
+          overscan: 0
+        }}
+      />
+    );
+
+    const firstVirtualRow = container.querySelector<HTMLTableRowElement>(
+      'tbody[data-virtual-enabled="true"] tr[data-index]'
+    );
+    expect(firstVirtualRow?.style.height).toBe('56px');
   });
 
   it('expands the clicked row when clicking normal cell content', async () => {
