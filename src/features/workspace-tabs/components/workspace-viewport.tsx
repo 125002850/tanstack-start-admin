@@ -99,9 +99,11 @@ function PageRenderer({
   const content = React.useMemo(() => render(), [render]);
 
   return (
-    <Activity mode={hidden ? 'hidden' : 'visible'}>
-      <WorkspacePageOverlayRoot tagId={tagId}>{content}</WorkspacePageOverlayRoot>
-    </Activity>
+    // Activity hidden 会清理子树 Effects；Overlay Root 必须位于其外层，确保切换期间
+    // page-overlays 仍能找到上一页的 trigger 与 aria-controls / aria-describedby 关系。
+    <WorkspacePageOverlayRoot tagId={tagId}>
+      <Activity mode={hidden ? 'hidden' : 'visible'}>{content}</Activity>
+    </WorkspacePageOverlayRoot>
   );
 }
 

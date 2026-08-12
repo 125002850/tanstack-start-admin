@@ -3,10 +3,23 @@ import { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { isDashboardHomeHref, resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import type { WorkspaceTab, WorkspaceTabId } from '../types';
-import { dismissWorkspacePageOverlays } from '../utils/page-overlays';
+import {
+  captureWorkspacePageOverlays,
+  dismissWorkspacePageOverlays,
+  type WorkspacePageOverlaySnapshot
+} from '../utils/page-overlays';
 import { useWorkspaceTabStore } from '../utils/store';
 
 const CLOSE_GUARD_TIMEOUT_MS = 1500;
+
+async function dismissWorkspaceTabOverlays(tabIds: WorkspaceTabId[]) {
+  for (const tabId of tabIds) {
+    const dismissResult = dismissWorkspacePageOverlays(tabId);
+    if (dismissResult.hasPendingExit) {
+      await dismissResult.waitForSettled();
+    }
+  }
+}
 
 async function checkCloseGuard(
   tabId: WorkspaceTabId,
@@ -42,15 +55,21 @@ export function useWorkspaceTags() {
     [router]
   );
 
+  const captureActivePageOverlays = useCallback((nextTabId: WorkspaceTabId) => {
+    const currentActiveId = useWorkspaceTabStore.getState().activeId;
+    if (!currentActiveId || currentActiveId === nextTabId) return null;
+    return captureWorkspacePageOverlays(currentActiveId);
+  }, []);
+
   const openOrActivate = useCallback(
-    (tab: WorkspaceTab) => {
+    (tab: WorkspaceTab, overlaySnapshot?: WorkspacePageOverlaySnapshot | null) => {
       const sequence = activationSequenceRef.current + 1;
       activationSequenceRef.current = sequence;
       const currentActiveId = useWorkspaceTabStore.getState().activeId;
       let navigateAfterDismiss = () => navigate(tab.href);
 
       if (currentActiveId && currentActiveId !== tab.id) {
-        const dismissResult = dismissWorkspacePageOverlays(currentActiveId);
+        const dismissResult = dismissWorkspacePageOverlays(currentActiveId, overlaySnapshot);
         if (dismissResult.hasPendingExit) {
           navigateAfterDismiss = () => {
             void dismissResult.waitForSettled().then(() => {
@@ -69,16 +88,19 @@ export function useWorkspaceTags() {
 
   const close = useCallback(
     async (id: WorkspaceTabId) => {
-      const tab = useWorkspaceTabStore.getState().tabs[id];
-      if (!tab || isDashboardHomeHref(tab.href)) return;
+      const requestedTab = useWorkspaceTabStore.getState().tabs[id];
+      if (!requestedTab || isDashboardHomeHref(requestedTab.href)) return;
 
       const ok = await checkCloseGuard(id, 'close-current');
       if (!ok) {
         toast.warning('当前页面有未保存的更改，无法关闭标签');
         return;
       }
+      await dismissWorkspaceTabOverlays([id]);
 
-      useWorkspaceTabStore.getState().close(id);
+      const currentState = useWorkspaceTabStore.getState();
+      if (currentState.tabs[id] !== requestedTab) return;
+      currentState.close(id);
       const nextActive = useWorkspaceTabStore.getState().activeId;
       if (nextActive) {
         const nextTab = useWorkspaceTabStore.getState().tabs[nextActive];
@@ -106,6 +128,7 @@ export function useWorkspaceTags() {
         }
       }
 
+      await dismissWorkspaceTabOverlays(tabIdsToClose);
       useWorkspaceTabStore.getState().closeOther(id);
       const tab = useWorkspaceTabStore.getState().tabs[id];
       if (tab) navigate(tab.href);
@@ -129,6 +152,7 @@ export function useWorkspaceTags() {
       }
     }
 
+    await dismissWorkspaceTabOverlays(tabIdsToClose);
     useWorkspaceTabStore.getState().closeAll();
     navigate(resolveDashboardHomeHref());
   }, [navigate]);
@@ -154,6 +178,7 @@ export function useWorkspaceTags() {
     activeId,
     openedOrder,
     lifecycleSnapshots,
+    captureActivePageOverlays,
     openOrActivate,
     close,
     closeOther,

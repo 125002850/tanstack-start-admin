@@ -11,6 +11,7 @@ import * as ReactDOM from 'react-dom';
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useWorkspaceTags } from '@/features/workspace-tabs/hooks/use-workspace-tags';
 import type { WorkspaceTabId } from '@/features/workspace-tabs/types';
+import type { WorkspacePageOverlaySnapshot } from '@/features/workspace-tabs/utils/page-overlays';
 import { useDndClickDragSensors } from '@/hooks/use-dnd-click-drag-sensors';
 import { cn } from '@/lib/utils';
 import { OverlayTag, PinnedHomeTag, SortableTagItem } from './components';
@@ -37,6 +38,7 @@ export default function TagsBar() {
     activeId,
     openedOrder,
     lifecycleSnapshots,
+    captureActivePageOverlays,
     openOrActivate,
     close,
     closeOther,
@@ -46,6 +48,10 @@ export default function TagsBar() {
   const tabsRef = React.useRef<Map<string, HTMLButtonElement>>(new Map());
   const viewportRef = React.useRef<HTMLDivElement | null>(null);
   const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const activationOverlaySnapshotRef = React.useRef<{
+    targetId: WorkspaceTabId;
+    snapshot: WorkspacePageOverlaySnapshot | null;
+  } | null>(null);
 
   const [visualOrder, setVisualOrder] = React.useState<WorkspaceTabId[]>(() =>
     reconcileVisualOrder(openedOrder, openedOrder)
@@ -170,12 +176,27 @@ export default function TagsBar() {
     [activeId, dragState.snapshot, lifecycleSnapshots, tabs]
   );
 
+  const prepareActivate = React.useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>, id: WorkspaceTabId) => {
+      activationOverlaySnapshotRef.current =
+        event.button === 0 && id !== activeId
+          ? { targetId: id, snapshot: captureActivePageOverlays(id) }
+          : null;
+    },
+    [activeId, captureActivePageOverlays]
+  );
+
   const activate = React.useCallback(
     (event: React.MouseEvent<HTMLButtonElement>, id: WorkspaceTabId) => {
       event.stopPropagation();
+      const preparedActivation = activationOverlaySnapshotRef.current;
+      activationOverlaySnapshotRef.current = null;
       const tab = tabs[id];
       if (tab && id !== activeId) {
-        openOrActivate(tab);
+        openOrActivate(
+          tab,
+          preparedActivation?.targetId === id ? preparedActivation.snapshot : undefined
+        );
       }
       scrollToTab(id);
     },
@@ -184,6 +205,7 @@ export default function TagsBar() {
 
   const handleDragStart = React.useCallback(
     (event: DragStartEvent) => {
+      activationOverlaySnapshotRef.current = null;
       const id = event.active.id as WorkspaceTabId;
       const tab = tabs[id];
       const activeTab = tabsRef.current.get(id);
@@ -252,6 +274,7 @@ export default function TagsBar() {
           break;
         case 'Enter':
           event.preventDefault();
+          activationOverlaySnapshotRef.current = null;
           if (tabs[id] && id !== activeId) {
             openOrActivate(tabs[id]);
           }
@@ -356,6 +379,7 @@ export default function TagsBar() {
                   closable={homeState.closable}
                   isActive={homeState.isActive}
                   registerTabRef={registerTabRef}
+                  prepareActivate={prepareActivate}
                   activate={activate}
                   handleKeyDown={handleKeyDown}
                   handleClose={handleClose}
@@ -384,6 +408,7 @@ export default function TagsBar() {
                         dragState.activeId === id ? dragState.overlayMetrics : null
                       }
                       registerTabRef={registerTabRef}
+                      prepareActivate={prepareActivate}
                       activate={activate}
                       handleKeyDown={handleKeyDown}
                       handleClose={handleClose}

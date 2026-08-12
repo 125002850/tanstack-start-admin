@@ -1,10 +1,24 @@
 import type { WorkspaceTabId } from '../types';
 
 const WORKSPACE_OVERLAY_SETTLE_TIMEOUT_MS = 500;
+const WORKSPACE_OVERLAY_CLOSE_RETRY_MS = 40;
+const WORKSPACE_OVERLAY_MAX_CLOSE_ATTEMPTS = 8;
 
 export type WorkspaceOverlayDismissResult = {
   hasPendingExit: boolean;
   waitForSettled: () => Promise<void>;
+};
+
+export type WorkspacePageOverlaySnapshot = {
+  readonly tabId: WorkspaceTabId;
+};
+
+type WorkspacePageOverlayTargets = {
+  root: HTMLElement | undefined;
+  ownerDocument: Document;
+  triggerTargets: Set<HTMLElement>;
+  contentTargets: Set<HTMLElement>;
+  controlledContentIds: Set<string>;
 };
 
 const settledDismissResult: WorkspaceOverlayDismissResult = {
@@ -13,21 +27,40 @@ const settledDismissResult: WorkspaceOverlayDismissResult = {
 };
 
 const pageOverlayRoots = new Map<WorkspaceTabId, HTMLElement>();
+let pageOverlaySnapshots = new WeakMap<WorkspacePageOverlaySnapshot, WorkspacePageOverlayTargets>();
 
 const OPEN_TRIGGER_SELECTOR = [
-  '[aria-expanded="true"]',
-  '[data-slot$="-trigger"][data-state="open"]',
-  '[data-slot="combobox-trigger"][data-open]',
-  // Radix Tooltip data-state 是 "delayed-open" / "instant-open", 不是 "open"
+  '[data-slot="alert-dialog-trigger"][data-state="open"]',
+  '[data-slot="context-menu-sub-trigger"][data-state="open"]',
+  '[data-slot="dialog-trigger"][data-state="open"]',
+  '[data-slot="drawer-trigger"][data-state="open"]',
+  '[data-slot="dropdown-menu-sub-trigger"][data-state="open"]',
+  '[data-slot="dropdown-menu-trigger"][data-state="open"]',
+  '[data-slot="hover-card-trigger"][data-state="open"]',
+  '[data-slot="menubar-sub-trigger"][data-state="open"]',
+  '[data-slot="menubar-trigger"][data-state="open"]',
+  '[data-slot="popover-trigger"][data-state="open"]',
+  '[data-slot="select-trigger"][data-state="open"]',
+  '[data-slot="sheet-trigger"][data-state="open"]',
+  '[data-slot="combobox-trigger"][aria-expanded="true"]',
+  '[aria-haspopup][aria-expanded="true"]',
+  // Radix Tooltip data-state 是 "delayed-open" / "instant-open"，不是 "open"
   '[data-slot="tooltip-trigger"][data-state]:not([data-state="closed"])'
 ].join(',');
 
 const OPEN_CONTENT_SELECTOR = [
+  '[data-slot="alert-dialog-content"][data-state="open"]',
+  '[data-slot="context-menu-content"][data-state="open"]',
+  '[data-slot="context-menu-sub-content"][data-state="open"]',
   '[data-slot="dialog-content"][data-state="open"]',
+  '[data-slot="drawer-content"][data-state="open"]',
   '[data-slot="sheet-content"][data-state="open"]',
   '[data-slot="popover-content"][data-state="open"]',
+  '[data-slot="hover-card-content"][data-state="open"]',
   '[data-slot="dropdown-menu-content"][data-state="open"]',
   '[data-slot="dropdown-menu-sub-content"][data-state="open"]',
+  '[data-slot="menubar-content"][data-state="open"]',
+  '[data-slot="menubar-sub-content"][data-state="open"]',
   '[data-slot="select-content"][data-state="open"]',
   '[data-slot="tooltip-content"][data-state]:not([data-state="closed"])',
   '[data-slot="data-table-cell-tooltip-content"][data-state]:not([data-state="closed"])',
@@ -38,9 +71,38 @@ const OPEN_CONTENT_SELECTOR = [
   '[role="tooltip"][data-state]:not([data-state="closed"])'
 ].join(',');
 
-const SETTLED_CLOSED_TOOLTIP_SELECTOR = [
+// 真实鼠标切换时，Radix 会在 workspace tab 的 click 之前通过 pointerdown outside
+// 先把非模态 Portal 标为 closed。此时它仍在 Presence 的退出动画中，必须继续等待卸载。
+const EXITING_CONTENT_SELECTOR = [
+  '[data-slot="alert-dialog-content"][data-state="closed"]',
+  '[data-slot="context-menu-content"][data-state="closed"]',
+  '[data-slot="context-menu-sub-content"][data-state="closed"]',
+  '[data-slot="dialog-content"][data-state="closed"]',
+  '[data-slot="drawer-content"][data-state="closed"]',
+  '[data-slot="sheet-content"][data-state="closed"]',
+  '[data-slot="popover-content"][data-state="closed"]',
+  '[data-slot="hover-card-content"][data-state="closed"]',
+  '[data-slot="dropdown-menu-content"][data-state="closed"]',
+  '[data-slot="dropdown-menu-sub-content"][data-state="closed"]',
+  '[data-slot="menubar-content"][data-state="closed"]',
+  '[data-slot="menubar-sub-content"][data-state="closed"]',
+  '[data-slot="select-content"][data-state="closed"]',
+  '[data-slot="combobox-content"][data-closed]'
+].join(',');
+
+const TRACKED_CONTENT_SELECTOR = [OPEN_CONTENT_SELECTOR, EXITING_CONTENT_SELECTOR].join(',');
+
+const SETTLED_CONNECTED_CONTENT_SELECTOR = [
   '[data-slot="tooltip-content"][data-state="closed"]',
   '[data-slot="data-table-cell-tooltip-content"][data-state="closed"]'
+].join(',');
+
+const OVERLAY_CLOSE_SELECTOR = [
+  '[data-workspace-overlay-close]',
+  '[data-slot="alert-dialog-cancel"]',
+  '[data-slot="dialog-close"]',
+  '[data-slot="drawer-close"]',
+  '[data-slot="sheet-close"]'
 ].join(',');
 
 export function registerWorkspacePageOverlayRoot(tabId: WorkspaceTabId, root: HTMLElement) {
@@ -53,64 +115,139 @@ export function registerWorkspacePageOverlayRoot(tabId: WorkspaceTabId, root: HT
   };
 }
 
-export function dismissWorkspacePageOverlays(tabId: WorkspaceTabId | null) {
+export function captureWorkspacePageOverlays(
+  tabId: WorkspaceTabId | null
+): WorkspacePageOverlaySnapshot | null {
+  if (!tabId) return null;
+
+  const targets = collectWorkspacePageOverlayTargets(tabId, OPEN_CONTENT_SELECTOR);
+  if (!targets || overlayTargetsEmpty(targets)) return null;
+
+  const snapshot: WorkspacePageOverlaySnapshot = { tabId };
+  pageOverlaySnapshots.set(snapshot, targets);
+  return snapshot;
+}
+
+export function dismissWorkspacePageOverlays(
+  tabId: WorkspaceTabId | null,
+  snapshot?: WorkspacePageOverlaySnapshot | null
+) {
   if (!tabId) return settledDismissResult;
-  return dismissWorkspacePageDomOverlays(tabId);
+  // null 表示 pointerdown 已完成捕获且当时没有 overlay；undefined 才表示未捕获入口，
+  // 需要保留全局扫描作为键盘、侧栏导航和程序调用的兼容兜底。
+  if (snapshot === null) return settledDismissResult;
+
+  const capturedTargets =
+    snapshot?.tabId === tabId ? pageOverlaySnapshots.get(snapshot) : undefined;
+  if (snapshot) pageOverlaySnapshots.delete(snapshot);
+  return dismissWorkspacePageDomOverlays(tabId, capturedTargets);
 }
 
 export function resetWorkspacePageOverlays() {
   pageOverlayRoots.clear();
+  pageOverlaySnapshots = new WeakMap();
 }
 
-function dismissWorkspacePageDomOverlays(tabId: WorkspaceTabId): WorkspaceOverlayDismissResult {
+function dismissWorkspacePageDomOverlays(
+  tabId: WorkspaceTabId,
+  capturedTargets?: WorkspacePageOverlayTargets
+): WorkspaceOverlayDismissResult {
+  const targets = capturedTargets
+    ? cloneWorkspacePageOverlayTargets(tabId, capturedTargets)
+    : collectWorkspacePageOverlayTargets(tabId, TRACKED_CONTENT_SELECTOR);
+  if (!targets || overlayTargetsEmpty(targets)) return settledDismissResult;
+
+  const { root, ownerDocument, triggerTargets, contentTargets, controlledContentIds } = targets;
+  const discoverOpenTargets = capturedTargets === undefined;
+
+  requestOverlayClose(
+    ownerDocument,
+    root,
+    triggerTargets,
+    contentTargets,
+    controlledContentIds,
+    false,
+    discoverOpenTargets
+  );
+
+  if (overlayTargetsSettled(ownerDocument, triggerTargets, contentTargets, controlledContentIds)) {
+    return settledDismissResult;
+  }
+
+  const settledPromise = waitForOverlayTargetsSettled(
+    ownerDocument,
+    root,
+    triggerTargets,
+    contentTargets,
+    controlledContentIds,
+    discoverOpenTargets
+  );
+
+  return {
+    hasPendingExit: true,
+    waitForSettled: () => settledPromise
+  };
+}
+
+function collectWorkspacePageOverlayTargets(
+  tabId: WorkspaceTabId,
+  contentSelector: string
+): WorkspacePageOverlayTargets | null {
   const root = pageOverlayRoots.get(tabId);
   const ownerDocument = root?.ownerDocument ?? getBrowserDocument();
-  if (!ownerDocument) return settledDismissResult;
+  if (!ownerDocument) return null;
 
-  const pendingTargets = new Set<HTMLElement>();
+  // Trigger 关闭后仍会留在页面里；Portal content 则可能以 closed 状态继续执行退出动画。
+  // 分开跟踪，避免把 data-state=closed 误判成 Portal 已经完成卸载。
+  const triggerTargets = new Set<HTMLElement>();
+  const contentTargets = new Set<HTMLElement>();
   const controlledContentIds = new Set<string>();
 
   if (root?.isConnected) {
     const openTriggers = collectHtmlElements(root, OPEN_TRIGGER_SELECTOR);
     for (const trigger of openTriggers) {
-      collectControlledContent(trigger, ownerDocument, controlledContentIds, pendingTargets);
-      dispatchClosePointerSequence(trigger);
+      triggerTargets.add(trigger);
+      collectControlledContent(trigger, ownerDocument, controlledContentIds, contentTargets);
     }
   }
 
-  const escapeTargets = new Set<EventTarget>();
-  const activeElement = ownerDocument.activeElement;
-  const win = ownerDocument.defaultView;
-  if (win && activeElement instanceof win.HTMLElement) {
-    escapeTargets.add(activeElement);
-  }
-
-  for (const content of collectHtmlElements(ownerDocument, OPEN_CONTENT_SELECTOR)) {
-    pendingTargets.add(content);
+  for (const content of collectHtmlElements(ownerDocument, contentSelector)) {
+    contentTargets.add(content);
     if (content.id) controlledContentIds.add(content.id);
-    escapeTargets.add(content);
-  }
-
-  escapeTargets.add(ownerDocument);
-  escapeTargets.add(ownerDocument.body);
-
-  for (const target of escapeTargets) {
-    dispatchEscape(target, ownerDocument);
   }
 
   for (const contentId of controlledContentIds) {
-    collectControlledContentById(contentId, ownerDocument, pendingTargets);
-  }
-
-  if (pendingTargets.size === 0 && controlledContentIds.size === 0) {
-    return settledDismissResult;
+    collectControlledContentById(contentId, ownerDocument, contentTargets);
   }
 
   return {
-    hasPendingExit: true,
-    waitForSettled: () =>
-      waitForOverlayTargetsSettled(ownerDocument, pendingTargets, controlledContentIds)
+    root,
+    ownerDocument,
+    triggerTargets,
+    contentTargets,
+    controlledContentIds
   };
+}
+
+function cloneWorkspacePageOverlayTargets(
+  tabId: WorkspaceTabId,
+  capturedTargets: WorkspacePageOverlayTargets
+): WorkspacePageOverlayTargets {
+  return {
+    root: pageOverlayRoots.get(tabId) ?? capturedTargets.root,
+    ownerDocument: capturedTargets.ownerDocument,
+    triggerTargets: new Set(capturedTargets.triggerTargets),
+    contentTargets: new Set(capturedTargets.contentTargets),
+    controlledContentIds: new Set(capturedTargets.controlledContentIds)
+  };
+}
+
+function overlayTargetsEmpty(targets: WorkspacePageOverlayTargets) {
+  return (
+    targets.triggerTargets.size === 0 &&
+    targets.contentTargets.size === 0 &&
+    targets.controlledContentIds.size === 0
+  );
 }
 
 function collectHtmlElements(root: ParentNode, selector: string) {
@@ -132,6 +269,12 @@ function dispatchClosePointerSequence(element: HTMLElement) {
   dispatchMouseEvent(element, 'click', ownerDocument, 0);
   // pointerleave 不冒泡，React 事件代理无法捕获，直接派发到 trigger 上
   // 这是关闭 Radix Tooltip / Popover 的关键事件（它们依赖 pointerleave 而非 click）
+  dispatchHoverLeaveEvent(element, 'pointerleave', ownerDocument);
+  dispatchHoverLeaveEvent(element, 'mouseleave', ownerDocument);
+}
+
+function dispatchHoverLeaveSequence(element: HTMLElement) {
+  const ownerDocument = element.ownerDocument;
   dispatchHoverLeaveEvent(element, 'pointerleave', ownerDocument);
   dispatchHoverLeaveEvent(element, 'mouseleave', ownerDocument);
 }
@@ -220,11 +363,13 @@ function collectControlledContent(
   controlledContentIds: Set<string>,
   pendingTargets: Set<HTMLElement>
 ) {
-  const contentId = trigger.getAttribute('aria-controls');
-  if (!contentId) return;
-
-  controlledContentIds.add(contentId);
-  collectControlledContentById(contentId, ownerDocument, pendingTargets);
+  for (const attribute of ['aria-controls', 'aria-describedby']) {
+    const contentIds = trigger.getAttribute(attribute)?.split(/\s+/).filter(Boolean) ?? [];
+    for (const contentId of contentIds) {
+      controlledContentIds.add(contentId);
+      collectControlledContentById(contentId, ownerDocument, pendingTargets);
+    }
+  }
 }
 
 function collectControlledContentById(
@@ -241,42 +386,172 @@ function collectControlledContentById(
 
 function waitForOverlayTargetsSettled(
   ownerDocument: Document,
-  targets: Set<HTMLElement>,
-  controlledContentIds: Set<string>
+  root: HTMLElement | undefined,
+  triggerTargets: Set<HTMLElement>,
+  contentTargets: Set<HTMLElement>,
+  controlledContentIds: Set<string>,
+  discoverOpenTargets: boolean
 ) {
   const startedAt = Date.now();
 
   return new Promise<void>((resolve) => {
+    const win = ownerDocument.defaultView;
+    const Observer = win?.MutationObserver;
+    let attempts = 1;
+    let settled = false;
+    let checkScheduled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const observer = Observer
+      ? new Observer(() => {
+          scheduleCheck();
+        })
+      : null;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      observer?.disconnect();
+      if (retryTimer !== undefined) clearTimeout(retryTimer);
+      resolve();
+    };
+
     const check = () => {
-      if (overlayTargetsSettled(ownerDocument, targets, controlledContentIds)) {
-        resolve();
+      checkScheduled = false;
+      if (settled) return;
+
+      if (
+        overlayTargetsSettled(ownerDocument, triggerTargets, contentTargets, controlledContentIds)
+      ) {
+        finish();
         return;
       }
 
       if (Date.now() - startedAt >= WORKSPACE_OVERLAY_SETTLE_TIMEOUT_MS) {
-        resolve();
+        finish();
         return;
       }
 
-      scheduleNextFrame(ownerDocument, check);
+      if (attempts < WORKSPACE_OVERLAY_MAX_CLOSE_ATTEMPTS) {
+        requestOverlayClose(
+          ownerDocument,
+          root,
+          triggerTargets,
+          contentTargets,
+          controlledContentIds,
+          attempts > 1,
+          discoverOpenTargets
+        );
+        attempts += 1;
+      }
+
+      retryTimer = setTimeout(scheduleCheck, WORKSPACE_OVERLAY_CLOSE_RETRY_MS);
     };
 
-    scheduleNextFrame(ownerDocument, check);
+    function scheduleCheck() {
+      if (settled || checkScheduled) return;
+      checkScheduled = true;
+      scheduleNextFrame(ownerDocument, check);
+    }
+
+    observer?.observe(ownerDocument.documentElement, {
+      attributeFilter: ['aria-expanded', 'data-open', 'data-state'],
+      attributes: true,
+      childList: true,
+      subtree: true
+    });
+    scheduleCheck();
   });
+}
+
+function requestOverlayClose(
+  ownerDocument: Document,
+  root: HTMLElement | undefined,
+  triggerTargets: Set<HTMLElement>,
+  contentTargets: Set<HTMLElement>,
+  controlledContentIds: Set<string>,
+  allowFallback: boolean,
+  discoverOpenTargets: boolean
+) {
+  if (discoverOpenTargets && root?.isConnected) {
+    for (const trigger of collectHtmlElements(root, OPEN_TRIGGER_SELECTOR)) {
+      triggerTargets.add(trigger);
+      collectControlledContent(trigger, ownerDocument, controlledContentIds, contentTargets);
+    }
+  }
+
+  const openTriggers = [...triggerTargets].filter(
+    (target) => target.isConnected && target.matches(OPEN_TRIGGER_SELECTOR)
+  );
+
+  for (const trigger of openTriggers) {
+    dispatchHoverLeaveSequence(trigger);
+    collectControlledContent(trigger, ownerDocument, controlledContentIds, contentTargets);
+  }
+
+  if (discoverOpenTargets) {
+    for (const content of collectHtmlElements(ownerDocument, OPEN_CONTENT_SELECTOR)) {
+      contentTargets.add(content);
+      if (content.id) controlledContentIds.add(content.id);
+    }
+  }
+
+  const openContents = [...contentTargets].filter(
+    (content) => content.isConnected && content.matches(OPEN_CONTENT_SELECTOR)
+  );
+
+  const topContent = openContents.at(-1);
+  const activeElement = ownerDocument.activeElement;
+  const win = ownerDocument.defaultView;
+  const escapeTarget =
+    win && activeElement instanceof win.HTMLElement && topContent?.contains(activeElement)
+      ? activeElement
+      : (topContent ?? ownerDocument);
+
+  dispatchEscape(escapeTarget, ownerDocument);
+
+  if (!allowFallback || !topContent?.matches(OPEN_CONTENT_SELECTOR)) return;
+
+  const closeControl = topContent.querySelector<HTMLElement>(OVERLAY_CLOSE_SELECTOR);
+  if (closeControl) {
+    dispatchClosePointerSequence(closeControl);
+    return;
+  }
+
+  const controlledTrigger = findControlledTrigger(openTriggers, topContent.id);
+  const fallbackTrigger = controlledTrigger ?? openTriggers.at(-1);
+  if (fallbackTrigger?.matches(OPEN_TRIGGER_SELECTOR)) {
+    dispatchClosePointerSequence(fallbackTrigger);
+  }
+}
+
+function findControlledTrigger(openTriggers: HTMLElement[], contentId: string) {
+  if (!contentId) return undefined;
+
+  return openTriggers.find((trigger) =>
+    ['aria-controls', 'aria-describedby'].some((attribute) =>
+      (trigger.getAttribute(attribute)?.split(/\s+/) ?? []).includes(contentId)
+    )
+  );
 }
 
 function overlayTargetsSettled(
   ownerDocument: Document,
-  targets: Set<HTMLElement>,
+  triggerTargets: Set<HTMLElement>,
+  contentTargets: Set<HTMLElement>,
   controlledContentIds: Set<string>
 ) {
-  for (const target of targets) {
-    if (target.isConnected && !target.matches(SETTLED_CLOSED_TOOLTIP_SELECTOR)) return false;
+  for (const trigger of triggerTargets) {
+    if (trigger.isConnected && trigger.matches(OPEN_TRIGGER_SELECTOR)) return false;
+  }
+
+  for (const content of contentTargets) {
+    if (content.isConnected && !content.matches(SETTLED_CONNECTED_CONTENT_SELECTOR)) return false;
   }
 
   for (const id of controlledContentIds) {
     const element = ownerDocument.getElementById(id);
-    if (element?.isConnected) return false;
+    if (element?.isConnected && !element.matches(SETTLED_CONNECTED_CONTENT_SELECTOR)) return false;
   }
 
   return true;
