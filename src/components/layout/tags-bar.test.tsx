@@ -1,13 +1,22 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TagsBar from './tags-bar';
+import type { WorkspaceTab, WorkspaceTabId } from '@/features/workspace-tabs/types';
+import type { WorkspacePageOverlaySnapshot } from '@/features/workspace-tabs/utils/page-overlays';
 import { useWorkspacePageRegistryStore } from '@/features/workspace-tabs/utils/page-registry';
 import { useWorkspaceTabStore } from '@/features/workspace-tabs/utils/store';
 
 const headerSource = readFileSync(join(process.cwd(), 'src/components/layout/header.tsx'), 'utf8');
+const tagInteractionMocks = vi.hoisted(() => ({
+  captureActivePageOverlays:
+    vi.fn<(nextTabId: WorkspaceTabId) => WorkspacePageOverlaySnapshot | null>(),
+  openOrActivate:
+    vi.fn<(tab: WorkspaceTab, snapshot?: WorkspacePageOverlaySnapshot | null) => void>()
+}));
 
 vi.mock('@/components/ui/context-menu', () => ({
   ContextMenu: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -25,7 +34,11 @@ vi.mock('@/features/workspace-tabs/hooks/use-workspace-tags', () => ({
       activeId: store.activeId,
       openedOrder: store.openedOrder,
       lifecycleSnapshots: store.lifecycleSnapshots ?? {},
-      openOrActivate: store.openOrActivate,
+      captureActivePageOverlays: tagInteractionMocks.captureActivePageOverlays,
+      openOrActivate: (tab: WorkspaceTab, snapshot?: WorkspacePageOverlaySnapshot | null) => {
+        tagInteractionMocks.openOrActivate(tab, snapshot);
+        store.openOrActivate(tab);
+      },
       close: (id: string) => {
         const tab = store.tabs[id];
         if (!tab || tab.href === '/dashboard/overview') return;
@@ -112,6 +125,9 @@ describe('TagsBar', () => {
   beforeEach(() => {
     resetStore();
     cleanup();
+    tagInteractionMocks.captureActivePageOverlays.mockReset();
+    tagInteractionMocks.captureActivePageOverlays.mockReturnValue(null);
+    tagInteractionMocks.openOrActivate.mockReset();
     Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
       configurable: true,
       value: vi.fn()
@@ -307,6 +323,30 @@ describe('TagsBar', () => {
     fireEvent.keyDown(overview, { key: 'Enter' });
 
     expect(useWorkspaceTabStore.getState().activeId).toBe('/dashboard/overview');
+  });
+
+  it('captures active page overlays on pointerdown and passes the snapshot to activation', async () => {
+    const user = userEvent.setup();
+    setupHomeAndChat();
+    const snapshot: WorkspacePageOverlaySnapshot = {
+      tabId: '/dashboard/chat'
+    };
+    tagInteractionMocks.captureActivePageOverlays.mockReturnValue(snapshot);
+    render(<TagsBar />);
+
+    const overview = screen.getByRole('tab', { name: /仪表盘/ });
+    await user.click(overview);
+
+    expect(tagInteractionMocks.captureActivePageOverlays).toHaveBeenCalledWith(
+      '/dashboard/overview'
+    );
+    expect(tagInteractionMocks.openOrActivate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '/dashboard/overview' }),
+      snapshot
+    );
+    expect(tagInteractionMocks.captureActivePageOverlays.mock.invocationCallOrder[0]).toBeLessThan(
+      tagInteractionMocks.openOrActivate.mock.invocationCallOrder[0]!
+    );
   });
 
   it('Delete closes closable tabs', () => {

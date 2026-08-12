@@ -376,6 +376,52 @@ function WorkspaceFlagToggleHarness() {
   ]);
 }
 
+function WorkspaceDeferredExitOverlayPage({
+  registerFinishExit
+}: {
+  registerFinishExit: (finishExit: () => void) => void;
+}) {
+  const [state, setState] = React.useState<'closed' | 'open'>('open');
+  const [mounted, setMounted] = React.useState(true);
+
+  React.useEffect(() => {
+    registerFinishExit(() => setMounted(false));
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setState('closed');
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [registerFinishExit]);
+
+  return (
+    <>
+      <button
+        type='button'
+        aria-controls='workspace-deferred-overlay-content'
+        aria-expanded={state === 'open'}
+        data-slot='popover-trigger'
+        data-state={state}
+      >
+        Deferred overlay
+      </button>
+      {mounted
+        ? ReactDOM.createPortal(
+            <div
+              data-slot='popover-content'
+              data-state={state}
+              id='workspace-deferred-overlay-content'
+            >
+              Deferred overlay content
+            </div>,
+            document.body
+          )
+        : null}
+    </>
+  );
+}
+
 function resetStore() {
   useWorkspaceTabStore.setState({
     tabs: {},
@@ -1331,6 +1377,51 @@ describe('Workspace Routing Integration', () => {
       await act(() => actionsRef.current!.close('/dashboard/system-management/dictionaries'));
 
       expect(getState().tabs['/dashboard/system-management/dictionaries']).toBeUndefined();
+    });
+
+    it('does not close a tab reactivated while its overlay exit is pending', async () => {
+      const tabId = '/dashboard/system-management/dictionaries';
+      let finishExit: (() => void) | undefined;
+      const registerFinishExit = (nextFinishExit: () => void) => {
+        finishExit = nextFinishExit;
+      };
+
+      openRegisteredPage(tabId, {
+        title: 'Dictionaries',
+        render: () => <WorkspaceDeferredExitOverlayPage registerFinishExit={registerFinishExit} />
+      });
+
+      const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
+      const view = render(
+        <>
+          <CloseGuardTester actionsRef={actionsRef} />
+          <WorkspaceViewport />
+        </>
+      );
+
+      expect(view.getByText('Deferred overlay content')).toHaveAttribute('data-state', 'open');
+      const requestedTab = getState().tabs[tabId]!;
+      let closeSettled = false;
+      const closePromise = actionsRef.current!.close(tabId).then(() => {
+        closeSettled = true;
+      });
+
+      await waitFor(() => {
+        expect(view.getByText('Deferred overlay content')).toHaveAttribute('data-state', 'closed');
+      });
+      expect(closeSettled).toBe(false);
+
+      act(() => {
+        getState().openOrActivate(requestedTab);
+      });
+      expect(getState().tabs[tabId]).not.toBe(requestedTab);
+
+      act(() => finishExit?.());
+      await act(async () => closePromise);
+
+      expect(getState().tabs[tabId]).toBeDefined();
+      expect(getState().activeId).toBe(tabId);
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('closeOther aborts batch on first guard rejection', async () => {

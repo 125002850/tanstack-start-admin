@@ -55,7 +55,7 @@ test.describe('@workspace-v2 overlay portal cleanup', () => {
     await page.getByRole('button', { name: /任务状态/ }).click();
     await expectRadixPopperOpen(page, '处理中');
 
-    await switchToOverviewTab(page, { dispatchHiddenTabClick: true });
+    await switchToOverviewTab(page);
     await expectNoOpenOverlays(page);
   });
 

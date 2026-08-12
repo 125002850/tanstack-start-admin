@@ -92,6 +92,7 @@ interface InteractiveTagButtonProps {
   dirty: boolean;
   closable: boolean;
   isActive: boolean;
+  onPrepareActivate: (event: React.PointerEvent<HTMLButtonElement>) => void;
   onActivate: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   onClose: (event: React.MouseEvent) => void;
@@ -111,6 +112,7 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
     dirty,
     closable,
     isActive,
+    onPrepareActivate,
     onActivate,
     onKeyDown,
     onClose,
@@ -136,6 +138,7 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
         aria-selected={isActive}
         tabIndex={isActive ? 0 : -1}
         {...listeners}
+        onPointerDownCapture={onPrepareActivate}
         onClick={onActivate}
         onKeyDown={onKeyDown}
         className={cn(
@@ -243,6 +246,7 @@ export function OverlayTag(props: OverlayTagProps) {
 
 interface TagInteractionCallbacks {
   registerTabRef: (id: WorkspaceTabId, node: HTMLButtonElement | null) => void;
+  prepareActivate: (event: React.PointerEvent<HTMLButtonElement>, id: WorkspaceTabId) => void;
   activate: (event: React.MouseEvent<HTMLButtonElement>, id: WorkspaceTabId) => void;
   handleKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>, id: WorkspaceTabId) => void;
   handleClose: (event: React.MouseEvent, id: WorkspaceTabId) => void;
@@ -266,6 +270,7 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
     closable,
     isActive,
     registerTabRef,
+    prepareActivate,
     activate,
     handleKeyDown,
     handleClose,
@@ -294,6 +299,7 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
           isActive={isActive}
           dataPinned='home'
           tabRef={(node) => registerTabRef(id, node)}
+          onPrepareActivate={(event) => prepareActivate(event, id)}
           onActivate={(event) => activate(event, id)}
           onKeyDown={(event) => handleKeyDown(event, id)}
           onClose={(event) => handleClose(event, id)}
@@ -324,6 +330,7 @@ export function SortableTagItem(props: SortableTagItemProps) {
     isActive,
     placeholderMetrics,
     registerTabRef,
+    prepareActivate,
     activate,
     handleKeyDown,
     handleClose,
@@ -383,6 +390,7 @@ export function SortableTagItem(props: SortableTagItemProps) {
             isActive={isActive}
             tabRef={setButtonRef}
             listeners={listeners}
+            onPrepareActivate={(event) => prepareActivate(event, id)}
             onActivate={(event) => activate(event, id)}
             onKeyDown={(event) => handleKeyDown(event, id)}
             onClose={(event) => handleClose(event, id)}
