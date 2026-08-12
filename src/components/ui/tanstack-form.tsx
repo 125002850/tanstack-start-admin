@@ -71,6 +71,7 @@ const AppFileUploadField = withFormItemContext(FileUploadField);
 
 function Form({
   children,
+  className,
   ...props
 }: Omit<React.ComponentPropsWithoutRef<'form'>, 'onSubmit' | 'noValidate'> & {
   children?: React.ReactNode;
@@ -86,10 +87,10 @@ function Form({
   );
   return (
     <form
-      onSubmit={handleSubmit}
-      className={cn('mx-auto flex w-full flex-col gap-2 p-2 md:p-5', props.className)}
-      noValidate
       {...props}
+      onSubmit={handleSubmit}
+      className={cn('mx-auto flex w-full flex-col gap-2 p-2 md:p-5', className)}
+      noValidate
     >
       {children}
     </form>

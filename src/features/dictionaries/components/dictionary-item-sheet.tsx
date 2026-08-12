@@ -104,7 +104,7 @@ export function DictionaryItemSheet({
 
         <div className='min-h-0 flex-1 overflow-auto'>
           <form.AppForm>
-            <form.Form id='dictionary-item-sheet-form' className='space-y-4 px-0'>
+            <form.Form id='dictionary-item-sheet-form' className='gap-4 p-0 md:p-0'>
               <FormTextField
                 name='dictItemCode'
                 label='字典项编码'

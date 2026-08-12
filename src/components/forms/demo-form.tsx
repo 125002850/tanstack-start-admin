@@ -310,7 +310,7 @@ export default function DemoForm() {
         </CardHeader>
         <CardContent>
           <form.AppForm>
-            <form.Form className='space-y-6'>
+            <form.Form className='gap-6 p-0 md:p-0'>
               {/* ─── TEXT INPUTS (flat pattern + field-level onBlur validation) ─── */}
               <SectionTitle>Text Inputs</SectionTitle>
 

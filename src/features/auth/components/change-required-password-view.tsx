@@ -78,7 +78,7 @@ export default function ChangeRequiredPasswordView() {
           </p>
         </div>
         <form.AppForm>
-          <form.Form className='gap-0 p-0'>
+          <form.Form className='gap-0 p-0 md:p-0'>
             <FieldGroup>
               <form.AppField
                 name='oldPassword'

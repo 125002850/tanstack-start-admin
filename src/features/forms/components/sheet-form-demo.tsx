@@ -92,7 +92,7 @@ function SheetFormSection() {
 
             <div className='flex-1 overflow-auto'>
               <form.AppForm>
-                <form.Form id='sheet-form-id' className='space-y-4 p-0 md:p-0'>
+                <form.Form id='sheet-form-id' className='gap-4 p-0 md:p-0'>
                   <FormTextField
                     name='name'
                     label='配置项名称'
@@ -200,7 +200,7 @@ function DialogFormSection() {
             </DialogHeader>
 
             <form.AppForm>
-              <form.Form id='dialog-form-id' className='space-y-4 py-2'>
+              <form.Form id='dialog-form-id' className='gap-4 px-0 py-2 md:px-0 md:py-2'>
                 <FormSliderField
                   name='rating'
                   label='评分'

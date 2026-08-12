@@ -64,7 +64,7 @@ export default function UserAuthForm() {
 
   return (
     <form.AppForm>
-      <form.Form className='w-full gap-0 p-0'>
+      <form.Form className='w-full gap-0 p-0 md:p-0'>
         <FieldGroup>
           <form.AppField
             name='username'
