@@ -30,7 +30,7 @@ export default function UserAuthForm() {
   return (
     <>
       <form.AppForm>
-        <form.Form className='w-full space-y-2'>
+        <form.Form className='w-full gap-0 p-0 md:p-0'>
           <form.AppField
             name='email'
             children={(field) => (

@@ -53,7 +53,31 @@ function SelectFieldForm() {
   );
 }
 
-describe('TanStack form field accessibility', () => {
+function CustomLayoutForm() {
+  const form = useAppForm({
+    defaultValues: {},
+    onSubmit: vi.fn()
+  });
+
+  return (
+    <form.AppForm>
+      <form.Form aria-label='自定义布局表单' className='gap-5 p-0 md:p-0' />
+    </form.AppForm>
+  );
+}
+
+describe('TanStack form', () => {
+  it('keeps the base flex layout when callers override spacing', () => {
+    render(<CustomLayoutForm />);
+
+    const form = screen.getByRole('form', { name: '自定义布局表单' });
+
+    expect(form).toHaveClass('flex', 'flex-col', 'gap-5', 'p-0', 'md:p-0');
+    expect(form).not.toHaveClass('gap-2');
+    expect(form).not.toHaveClass('p-2');
+    expect(form).not.toHaveClass('md:p-5');
+  });
+
   it('associates AppField base controls with their validation message', async () => {
     const user = userEvent.setup();
     render(<BaseFieldForm />);
