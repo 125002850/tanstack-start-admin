@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TagsBar from './tags-bar';
@@ -155,11 +155,49 @@ describe('TagsBar', () => {
     expect(viewport).toHaveClass(
       'overflow-x-auto',
       'overflow-y-hidden',
+      'scroll-px-10',
       '[scrollbar-width:none]',
       '[-ms-overflow-style:none]',
       '[&::-webkit-scrollbar]:hidden'
     );
     expect(scrollArea).toHaveClass('relative', 'min-w-0');
+  });
+
+  it('scrolls the complete active tab shell into view', async () => {
+    setupHomeAndChat();
+    render(<TagsBar />);
+
+    const activeTab = screen.getByRole('tab', { name: /Chat/ });
+    const activeShell = activeTab.closest('[data-slot="workspace-tag-shell"]');
+    const scrollIntoView = vi.mocked(HTMLElement.prototype.scrollIntoView);
+
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest'
+      });
+    });
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(activeShell);
+  });
+
+  it('scrolls a newly opened active tab after its visual item is mounted', async () => {
+    openTab('/dashboard/overview', '仪表盘', { closable: false });
+    render(<TagsBar />);
+
+    const scrollIntoView = vi.mocked(HTMLElement.prototype.scrollIntoView);
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+    scrollIntoView.mockClear();
+
+    act(() => {
+      openTab('/dashboard/chat', 'Chat');
+    });
+
+    const newTab = await screen.findByRole('tab', { name: /Chat/ });
+    const newTabShell = newTab.closest('[data-slot="workspace-tag-shell"]');
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+
+    expect(scrollIntoView.mock.contexts.at(-1)).toBe(newTabShell);
   });
 
   it('shows theme-aware edge hints only when horizontal content is clipped', () => {
