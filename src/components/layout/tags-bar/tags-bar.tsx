@@ -140,15 +140,19 @@ export default function TagsBar() {
     const tabEl = tabsRef.current.get(id);
     if (!tabEl) return;
     requestAnimationFrame(() => {
-      if (typeof tabEl.scrollIntoView !== 'function') return;
-      tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      const tabShell = tabEl.closest<HTMLElement>('[data-slot="workspace-tag-shell"]');
+      const scrollTarget = tabShell ?? tabEl;
+      if (typeof scrollTarget.scrollIntoView !== 'function') return;
+      scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     });
   }, []);
 
+  const activeTabIsRendered = activeId !== null && visualOrder.includes(activeId);
+
   React.useEffect(() => {
-    if (!activeId) return;
+    if (!activeId || !activeTabIsRendered) return;
     scrollToTab(activeId);
-  }, [activeId, scrollToTab]);
+  }, [activeId, activeTabIsRendered, scrollToTab]);
 
   const getTagVisualState = React.useCallback(
     (id: WorkspaceTabId): TagVisualState | null => {
@@ -335,7 +339,7 @@ export default function TagsBar() {
           <div
             ref={viewportRef}
             data-slot='scroll-area-viewport'
-            className='focus-visible:ring-ring/50 size-full rounded-[inherit] min-w-0 overflow-x-auto overflow-y-hidden transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
+            className='focus-visible:ring-ring/50 size-full rounded-[inherit] min-w-0 scroll-px-10 overflow-x-auto overflow-y-hidden transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
           >
             <div
               ref={contentRef}
