@@ -22,8 +22,10 @@ function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
 function FieldLegend({
   className,
   variant = 'legend',
+  required,
+  children,
   ...props
-}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label' }) {
+}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label'; required?: boolean }) {
   return (
     <legend
       data-slot='field-legend'
@@ -35,7 +37,14 @@ function FieldLegend({
         className
       )}
       {...props}
-    />
+    >
+      {children}
+      {required && (
+        <span className='text-destructive' aria-hidden='true'>
+          {' *'}
+        </span>
+      )}
+    </legend>
   );
 }
 
