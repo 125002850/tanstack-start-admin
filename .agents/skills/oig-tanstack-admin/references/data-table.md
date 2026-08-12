@@ -129,6 +129,9 @@
 
 ## 分页、选择与虚拟化
 
+- DataTable 标准表体行高统一为 48px；普通渲染、默认虚拟行、loading skeleton 和单元格选择滚动 fallback 必须复用 `DATA_TABLE_ROW_HEIGHT_PX`，禁止散落重复数值。
+- 48px 是普通表体的标准基线，复杂内容在非虚拟模式下允许自然撑高以避免裁剪。双行审计列可以容纳在 48px 内，不得仅因双行展示覆盖高度。
+- 虚拟表格的单元格内容确实需要超过 48px 时，调用方必须显式传入匹配内容布局的 `virtualization.estimateRowHeight`（例如 56），禁止依赖普通表格的自然撑高语义。
 - 页面层一般不要手写虚拟化 gate。
 - `DataTable` 默认按内部阈值尝试虚拟化；仅在必要时通过 `virtualization={false}` 关闭，或传入配置对象覆盖。
 - 虚拟化内部职责统一收敛在 `useDataTableVirtualization`；页面层只通过 `virtualization` 配置调整阈值、overscan 或显式关闭。

@@ -18,6 +18,7 @@ import {
   DATA_TABLE_ACTIONS_COLUMN_ID,
   DATA_TABLE_ROW_NUMBER_COLUMN_ID
 } from '@/hooks/use-data-table/constants';
+import { DATA_TABLE_ROW_HEIGHT_PX } from '@/config/data-table';
 import { dataTableMessages } from '@/config/data-table-messages';
 import {
   buildDataTableCellRangeTsv,
@@ -579,7 +580,7 @@ export function useDataTableCellSelection<TData>({
       updateAutoScrollPointer({
         clientX: event.clientX,
         clientY: event.clientY,
-        cellSize: cell.getBoundingClientRect().height || 40
+        cellSize: cell.getBoundingClientRect().height || DATA_TABLE_ROW_HEIGHT_PX
       });
     },
     [updateAutoScrollPointer, updateRangeFocusAtPointer]
@@ -594,7 +595,7 @@ export function useDataTableCellSelection<TData>({
       updateAutoScrollPointer({
         clientX: event.clientX,
         clientY: event.clientY,
-        cellSize: cell.getBoundingClientRect().height || 40
+        cellSize: cell.getBoundingClientRect().height || DATA_TABLE_ROW_HEIGHT_PX
       });
     },
     [updateAutoScrollPointer, updateFillPreviewAtPointer]

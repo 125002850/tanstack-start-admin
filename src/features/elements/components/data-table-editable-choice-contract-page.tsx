@@ -513,7 +513,6 @@ export function DataTableEditableChoiceContractPage({
           table={table}
           virtualization={{
             mode: 'on',
-            estimateRowHeight: 44,
             overscan: 8
           }}
           onRefresh={refreshProps?.onRefresh}

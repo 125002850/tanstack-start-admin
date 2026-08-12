@@ -2,6 +2,7 @@ export { env } from './env';
 export {
   DATA_TABLE_DATE_DISPLAY_FORMAT,
   DATA_TABLE_DATE_TIME_DISPLAY_FORMAT,
+  DATA_TABLE_ROW_HEIGHT_PX,
   DATA_TABLE_VIRTUAL_PRESET,
   dataTableColumnSizes,
   dataTableConfig,
