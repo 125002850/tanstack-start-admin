@@ -17,7 +17,7 @@ interface TextFieldProps extends Omit<
   label: string;
   description?: string;
   required?: boolean;
-  type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number' | 'date';
+  type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number' | 'date' | 'time';
 }
 
 export function TextField({
