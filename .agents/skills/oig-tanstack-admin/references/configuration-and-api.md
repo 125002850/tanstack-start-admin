@@ -23,10 +23,18 @@ src/config/
 | --- | --- | --- |
 | 运行环境 | Node.js 构建时或 dev server | 浏览器应用运行时 |
 | 读取方式 | `loadEnv()` | `import.meta.env.VITE_*` 静态替换 |
-| 管辖变量 | `APP_GATEWAY`、`PROXY_URL`、`APP_BASE_PATH`、`ANALYZE` | `VITE_APP_SSO_*`、`VITE_ENABLE_*` |
+| 管辖变量 | `APP_GATEWAY`、`PROXY_URL`、`DEV_MOCK_SSO`、`APP_BASE_PATH`、`ANALYZE` | `VITE_APP_SSO_*`、`VITE_ENABLE_*` |
 | 用途 | 代理、公共路径、构建工具开关 | SSO 请求头与客户端特性开关 |
 
 `vite.config.ts` 属于构建工具配置，不纳入 `src/config/`。
+
+`PROXY_URL` 与 `DEV_MOCK_SSO` 的职责必须分离：
+
+- `PROXY_URL` 是唯一的代理目标配置；是否直连后端或经过网关完全由该地址决定。
+- `DEV_MOCK_SSO=false`：保留 `APP_GATEWAY`，登录信息来自 `PROXY_URL` 指向的真实服务。
+- `DEV_MOCK_SSO=true`：仅在 Vite dev server 中 mock 数字用户和全部已声明的菜单权限；同时为无网关 context path 的后端移除 `APP_GATEWAY`，但不得修改或替换 `PROXY_URL`。
+- mock 必须收敛在 Vite `configureServer` middleware，禁止进入生产构建或修改浏览器端菜单权限的 fail-closed 语义。
+- mock SSO 仅用于本地开发；联调、验收和生产仍必须验证真实 SSO、菜单权限与后端 action entitlement。
 
 ## 环境变量
 

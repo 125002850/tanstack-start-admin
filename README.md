@@ -185,7 +185,9 @@ pnpm dev
 
 开发服务器默认监听 <http://localhost:3000>，不设置额外变量也可以启动；进入需要登录信息的 dashboard 仍依赖可访问的 SSO 后端。接入实际后端与 SSO 时，在 `.env` 中按 `env.example.txt` 配置：
 
-- `APP_GATEWAY`、`PROXY_URL`：Vite 代理前缀与后端地址
+- `APP_GATEWAY`：Vite 代理与 generated transport 的后端网关前缀
+- `PROXY_URL`：Vite dev server 的代理目标；是否经过网关完全由该地址决定
+- `DEV_MOCK_SSO`：设为 `true` 时仅在 Vite dev server mock 数字用户及全部已声明菜单权限；同时为无网关 context path 的后端移除 `APP_GATEWAY`，但不改变 `PROXY_URL`
 - `OPENAPI_FETCH_URL`：可选的 OpenAPI 文档地址，仅供拉取命令使用
 - `APP_BASE_PATH`：非根路径部署时的公共路径
 - `VITE_APP_SSO_CLIENT_ID`、`VITE_APP_SSO_SERVICE_ID`、`VITE_APP_SSO_SERVICE_CODE`：共享 transport 注入的 SSO 服务头
