@@ -490,7 +490,7 @@ describe('DataTable column alignment', () => {
     );
   });
 
-  it('insets the horizontal scrollbar by pinned column widths', () => {
+  it('keeps the horizontal scrollbar full-width when columns are pinned', () => {
     const rows = makeRows(5);
     const { getByTestId } = render(
       React.createElement(() => {
@@ -515,10 +515,9 @@ describe('DataTable column alignment', () => {
 
     const horizontalScrollbar = getByTestId('horizontal-scrollbar');
 
-    expect(horizontalScrollbar.getAttribute('data-left-pinned-width')).toBe('80');
-    expect(horizontalScrollbar.getAttribute('data-right-pinned-width')).toBe('111');
-    expect(horizontalScrollbar.getAttribute('style')).toContain('left: 80px');
-    expect(horizontalScrollbar.getAttribute('style')).toContain('right: 111px');
+    expect(horizontalScrollbar.getAttribute('style')).toBeNull();
+    expect(horizontalScrollbar.getAttribute('data-left-pinned-width')).toBeNull();
+    expect(horizontalScrollbar.getAttribute('data-right-pinned-width')).toBeNull();
   });
 
   it('insets the vertical scrollbar below the sticky header and above the horizontal scrollbar', () => {

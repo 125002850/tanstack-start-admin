@@ -199,13 +199,6 @@ export function DataTable<TData>({
     virtualization,
     scrollViewportRef
   });
-  // 固定列宽度用于定位横向滚动条，让滚动条不覆盖左/右固定列。
-  const pinnedLeftWidth = table
-    .getLeftVisibleLeafColumns()
-    .reduce((total, column) => total + column.getSize(), 0);
-  const pinnedRightWidth = table
-    .getRightVisibleLeafColumns()
-    .reduce((total, column) => total + column.getSize(), 0);
   const pinnedHeaderHeight = table.getHeaderGroups().length * DATA_TABLE_HEADER_ROW_HEIGHT_PX;
   const isFlatLeafHeader = table.getHeaderGroups().length === 1;
   // 只有单层叶子表头才启用表头列拖拽，分组表头会由 header 结构保护而回退为静态表头。
@@ -357,14 +350,6 @@ export function DataTable<TData>({
           style: {
             top: pinnedHeaderHeight ? `${pinnedHeaderHeight}px` : 0,
             bottom: DATA_TABLE_SCROLLBAR_SIZE_PX
-          }
-        }}
-        horizontalScrollbarProps={{
-          'data-left-pinned-width': pinnedLeftWidth || undefined,
-          'data-right-pinned-width': pinnedRightWidth || undefined,
-          style: {
-            left: pinnedLeftWidth ? `${pinnedLeftWidth}px` : 0,
-            right: pinnedRightWidth ? `${pinnedRightWidth}px` : 0
           }
         }}
         viewportRef={scrollViewportRef}
