@@ -537,9 +537,7 @@ describe('DataTable column alignment', () => {
 
     const horizontalScrollbar = getByTestId('horizontal-scrollbar');
 
-    const scrollbarStyle = horizontalScrollbar.getAttribute('style') ?? '';
-    expect(scrollbarStyle).toContain('left: 0px');
-    expect(scrollbarStyle).toContain('right: 0px');
+    expect(horizontalScrollbar.getAttribute('style')).toBeNull();
   });
 
   it('colgroup widths follow the visual leaf-column order after pinning reorders columns', () => {
