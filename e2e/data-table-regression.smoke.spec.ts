@@ -139,6 +139,14 @@ test('@workspace-v2 keeps virtual scrolling, pinned columns, and cell alignment 
 
   const virtualBody = card.locator('tbody[data-virtual-enabled="true"]');
   const viewport = card.locator('[data-slot="scroll-area-viewport"]').last();
+  const scrollArea = viewport.locator('xpath=ancestor::*[@data-slot="scroll-area"][1]');
+  const horizontalScrollbar = scrollArea.locator(
+    '[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"]'
+  );
+  const verticalScrollbar = scrollArea.locator(
+    '[data-slot="scroll-area-scrollbar"][data-orientation="vertical"]'
+  );
+  const horizontalThumb = horizontalScrollbar.locator('[data-slot="scroll-area-thumb"]');
   await expect(virtualBody).toBeVisible();
   await expectHeaderAndBodyAligned(card, 'dictItemCode');
 
@@ -158,6 +166,45 @@ test('@workspace-v2 keeps virtual scrolling, pinned columns, and cell alignment 
   await expect
     .poll(async () => Number(await virtualBody.getAttribute('data-virtual-first-index')))
     .toBeGreaterThan(0);
+
+  // Radix 的 scrollbar 在 ScrollArea hover 后挂载；验证轨道跨过 pinned 区并真实拖动 thumb。
+  await scrollArea.hover();
+  await viewport.evaluate((element) => {
+    element.scrollLeft = 1;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(horizontalScrollbar).toBeVisible();
+
+  const viewportBeforeDragBox = await viewport.boundingBox();
+  const scrollbarBox = await horizontalScrollbar.boundingBox();
+  const verticalScrollbarBox = await verticalScrollbar.boundingBox();
+  const thumbBox = await horizontalThumb.boundingBox();
+  if (!viewportBeforeDragBox || !scrollbarBox || !verticalScrollbarBox || !thumbBox) {
+    throw new Error('DataTable horizontal scrollbar bounding box unavailable');
+  }
+
+  expect(Math.abs(scrollbarBox.x - viewportBeforeDragBox.x)).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(scrollbarBox.width + verticalScrollbarBox.width - viewportBeforeDragBox.width)
+  ).toBeLessThanOrEqual(1);
+  expect(thumbBox.width).toBeLessThan(scrollbarBox.width);
+
+  const pinnedCell = card.locator('td[data-cell-column-id="select"]').first();
+  const pinnedXBefore = (await pinnedCell.boundingBox())?.x;
+  const dragDistance = Math.min(120, (scrollbarBox.width - thumbBox.width) / 2);
+  await page.mouse.move(thumbBox.x + thumbBox.width / 2, thumbBox.y + thumbBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    thumbBox.x + thumbBox.width / 2 + dragDistance,
+    thumbBox.y + thumbBox.height / 2,
+    { steps: 8 }
+  );
+  await page.mouse.up();
+  await expect.poll(() => viewport.evaluate((element) => element.scrollLeft)).toBeGreaterThan(1);
+
+  const pinnedXAfter = (await pinnedCell.boundingBox())?.x;
+  expect(pinnedXBefore).toBeDefined();
+  expect(Math.abs((pinnedXAfter ?? 0) - (pinnedXBefore ?? 0))).toBeLessThanOrEqual(1);
 
   await viewport.evaluate((element) => {
     element.scrollLeft = element.scrollWidth;
