@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   resolveDataTableEditableCell,
   type ResolveDataTableEditableCellContext
-} from '@/components/data-table/columns/data-table-edit-adapters';
+} from '@/components/data-table/editing/data-table-edit-adapters';
 import type { DataTableEditableColumnMeta } from '@/types/data-table';
 
 import { escapeDataTableCellClipboardText } from './data-table-cell-range';

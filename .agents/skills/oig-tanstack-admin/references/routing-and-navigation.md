@@ -92,6 +92,8 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 
 - `defineRouteMeta().title` 只负责浏览器文档标题。
 - `PageContainer` 当前不会自动读取 route `staticData.page`。
+- 后台表格页面默认不展示页面级标题和描述，不要仅为重复侧边栏、breadcrumb、workspace tab 或浏览器标题中的页面名称而传入 `pageTitle` / `pageDescription`；优先把纵向空间留给筛选、操作栏和数据内容。
+- 只有存在用户进入页面后必须先理解的关键上下文、风险提示、Infobar，或无法合理放入表格工具栏的 header action 时，才按需启用页面 header；普通功能说明优先放在空态、字段帮助或对应操作附近。
 - 需要页面内标题、描述或 Infobar 时，显式传入 `PageContainer` 的 `pageTitle`、`pageDescription`、`infoContent`。
 - 禁止依赖未实现的 route metadata → PageContainer 自动回退行为。
 - dashboard route 禁止新增 `page` metadata；workspace keep-alive 页面可能同时挂载多个页面实例，页面内标题必须由对应页面通过 `WorkspacePageRoute.pageContainerProps` 显式声明。

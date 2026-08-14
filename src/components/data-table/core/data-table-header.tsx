@@ -9,7 +9,7 @@ import {
 import * as React from 'react';
 
 import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DataTableColumnResizeHandle } from '@/components/data-table/columns/data-table-column-resize-handle';
+import { DataTableColumnResizeHandle } from '@/components/data-table/columns/header/data-table-column-resize-handle';
 import { DataTableOverflowTooltipText } from '@/components/data-table/cells/data-table-overflow-tooltip-text';
 import {
   DATA_TABLE_ACTIONS_COLUMN_ID,

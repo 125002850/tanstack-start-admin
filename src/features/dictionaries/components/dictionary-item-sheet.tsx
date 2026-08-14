@@ -23,12 +23,13 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { DictStatus, STATUS_OPTIONS } from '@/constants/enums';
+import { emptyStringToUndefined } from '@/lib/api/request-values';
 import type { DictionaryItemMutationPayload, DictionaryItemRecord } from '../api/types';
 
 const dictionaryItemSchema = z.object({
   dictItemCode: z.string().trim().min(1, '请输入字典项编码'),
   dictItemName: z.string().trim().min(1, '请输入字典项名称'),
-  status: z.string().trim().min(1, '请选择状态'),
+  status: z.enum([DictStatus.ENABLE, DictStatus.DISABLE]),
   sort: z.union([z.literal(''), z.number().int().min(0, '排序不能小于 0')]),
   remark: z.string().max(200, '备注不能超过 200 字').optional()
 });
@@ -59,23 +60,23 @@ export function DictionaryItemSheet({
     defaultValues: {
       dictItemCode: item?.dictItemCode ?? '',
       dictItemName: item?.dictItemName ?? '',
-      status: (item?.status ?? DictStatus.ENABLE) as string,
-      sort: item?.sort ?? '',
+      status: item?.status ?? DictStatus.ENABLE,
+      sort: item?.sortOrder ?? '',
       remark: item?.remark ?? ''
     } as DictionaryItemFormValues,
     validators: {
       onSubmit: dictionaryItemSchema
     },
     onSubmit: async ({ value }) => {
-      await onSubmit({
-        id: item?.id,
+      const request = {
         dictTypeCode,
         dictItemCode: value.dictItemCode,
         dictItemName: value.dictItemName,
         status: value.status,
-        sort: value.sort === '' ? undefined : value.sort,
-        remark: value.remark?.trim() || undefined
-      });
+        sortOrder: value.sort === '' ? undefined : value.sort,
+        remark: item ? (value.remark?.trim() ?? '') : emptyStringToUndefined(value.remark?.trim())
+      };
+      await onSubmit(item?.id === undefined ? request : { ...request, id: item.id });
       onOpenChange(false);
     }
   });

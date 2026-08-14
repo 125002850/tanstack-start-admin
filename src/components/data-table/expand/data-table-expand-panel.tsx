@@ -8,8 +8,8 @@ import { Icons } from '@/components/icons';
 /**
  * 行展开详情面板。
  *
- * 面板使用 tabs 承载一行数据的多个详情视图；禁用的 tab 会在当前行上下文中过滤掉，
- * 激活态指示器通过测量当前 trigger 实现，避免 Tabs 默认样式和项目视觉冲突。
+ * 单一可用视图直接渲染内容；多个详情视图才使用 tabs。禁用的 tab 会在当前行上下文中过滤掉，
+ * 多视图激活态指示器通过测量当前 trigger 实现，避免 Tabs 默认样式和项目视觉冲突。
  */
 interface DataTableExpandPanelProps<TData> {
   panelId: string;
@@ -102,6 +102,42 @@ export function DataTableExpandPanel<TData>({
       resizeObserver.disconnect();
     };
   }, [updateTabIndicator]);
+
+  if (availableTabs.length === 1) {
+    const [singleTab] = availableTabs;
+
+    return (
+      <div
+        id={panelId}
+        data-slot='data-table-expand-panel'
+        className='flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border bg-background'
+      >
+        <div className='flex shrink-0 items-center gap-3 border-b px-4 py-2'>
+          <div className='flex min-w-0 items-center gap-2 text-sm font-medium'>
+            {singleTab.icon}
+            <span className='truncate'>{singleTab.label}</span>
+          </div>
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            className='ml-auto size-8'
+            data-slot='data-table-expand-panel-close'
+            onClick={onClose}
+            aria-label='关闭详情面板'
+          >
+            <Icons.close className='size-4' />
+          </Button>
+        </div>
+        <div
+          data-slot='data-table-expand-panel-content'
+          className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 py-4'
+        >
+          {singleTab.render(row)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

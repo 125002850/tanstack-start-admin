@@ -1,17 +1,17 @@
 /**
  * DataTable 列 DSL 的对外聚合入口。
  *
- * 新代码优先从分层路径导入；该文件保留统一入口，方便业务模块一次性拿到
- * createDataTableColumnDsl、内置 formatter 和 header/text cell 工具。
+ * 业务代码统一从本文件导入；DataTable 内部实现再按 dsl、header、editing 分层路径导入，
+ * 避免 feature 穿透到不稳定的实现模块。
  */
-export { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-builders';
-export { percentPoints } from '@/components/data-table/columns/data-table-edit-adapters';
+export { createDataTableColumnDsl } from '@/components/data-table/columns/dsl/data-table-column-builders';
+export { percentPoints } from '@/components/data-table/editing/data-table-edit-adapters';
+export { dataTableTextCell } from '@/components/data-table/cells/data-table-text-cell';
 export {
   dataTableColumnFormatters,
   type DataTableFieldFormatterRule
-} from '@/components/data-table/columns/data-table-column-formatters';
+} from '@/components/data-table/columns/dsl/data-table-column-formatters';
 export {
   dataTableHeader,
-  dataTableHeaderFactory,
-  dataTableTextCell
-} from '@/components/data-table/columns/data-table-column-rendering';
+  dataTableHeaderFactory
+} from '@/components/data-table/columns/dsl/data-table-column-rendering';

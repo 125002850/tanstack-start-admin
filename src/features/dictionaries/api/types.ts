@@ -1,22 +1,19 @@
-import type { GlobalDictTypeRspDTO } from '@/lib/api/clients/service/generated/model/globalDictTypeRspDTO';
-import type { DictItemRspDTO } from '@/lib/api/clients/service/generated/model/dictItemRspDTO';
+import type {
+  DictItemRspDTO,
+  GlobalDictTypeRspDTO,
+  SystemDictGlobalItemCreateRequest,
+  SystemDictGlobalItemUpdateRequest,
+  SystemDictGlobalTypeCreateRequest,
+  SystemDictGlobalTypeUpdateRequest
+} from '@/lib/api/clients/service';
 
 export type DictionaryTypeRecord = GlobalDictTypeRspDTO;
-export type DictionaryItemRecord = DictItemRspDTO & { sort?: number };
+export type DictionaryItemRecord = DictItemRspDTO;
 
-export interface DictionaryTypeMutationPayload {
-  id: number;
-  dictTypeCode: string;
-  dictTypeName: string;
-  status?: string;
-}
+export type DictionaryTypeMutationPayload =
+  | SystemDictGlobalTypeCreateRequest
+  | (SystemDictGlobalTypeUpdateRequest & Pick<GlobalDictTypeRspDTO, 'status'>);
 
-export interface DictionaryItemMutationPayload {
-  id?: number;
-  dictTypeCode: string;
-  dictItemCode: string;
-  dictItemName: string;
-  status?: string;
-  sort?: number;
-  remark?: string;
-}
+export type DictionaryItemMutationPayload =
+  | SystemDictGlobalItemCreateRequest
+  | SystemDictGlobalItemUpdateRequest;

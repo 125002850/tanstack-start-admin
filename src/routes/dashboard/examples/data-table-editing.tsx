@@ -28,13 +28,5 @@ export const Route = createFileRoute('/dashboard/examples/data-table-editing')({
 });
 
 function DataTableEditingRoutePage() {
-  return (
-    <WorkspacePageRoute
-      render={() => <DataTableEditingExamplePage />}
-      pageContainerProps={{
-        pageTitle: '表格编辑',
-        pageDescription: '在大数据虚拟表格中验证 DataTable 支持的全部单元格编辑器。'
-      }}
-    />
-  );
+  return <WorkspacePageRoute render={() => <DataTableEditingExamplePage />} />;
 }

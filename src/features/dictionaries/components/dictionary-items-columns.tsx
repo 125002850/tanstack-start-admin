@@ -32,10 +32,7 @@ export function dictionaryItemColumns(
         />
       )
     }),
-    columnDsl.field('sort', '排序', {
-      type: 'number',
-      dsl: { sortField: 'sortOrder' }
-    }),
+    columnDsl.field('sortOrder', '排序', { type: 'number' }),
     columnDsl.field('remark', '备注', {
       type: 'longText',
       enableSorting: false,

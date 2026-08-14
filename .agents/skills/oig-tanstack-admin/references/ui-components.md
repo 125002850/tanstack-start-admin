@@ -115,7 +115,7 @@ export default function XxxRoutePage() {
 }
 ```
 
-需要页面标题、描述、Infobar 或 header action 时，通过 `pageContainerProps` 传入：
+以下示例仅用于确有页面级标题、描述、Infobar 或 header action 需求时，通过 `pageContainerProps` 传入；后台表格页面默认不传 `pageTitle` / `pageDescription`，详见[路由、导航与 Workspace 规范](routing-and-navigation.md#运行时消费)：
 
 ```tsx
 <WorkspacePageRoute

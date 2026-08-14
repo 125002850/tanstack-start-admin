@@ -1,14 +1,18 @@
 import type { Column, ColumnDef, Table } from '@tanstack/react-table';
 
-import { DataTableOverflowTooltipText } from '@/components/data-table/cells/data-table-overflow-tooltip-text';
-import { DataTableColumnHeader } from '@/components/data-table/columns/data-table-column-header';
-import { nullableText } from '@/lib/formatters/display';
+import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
+import { isDataTableFlatFilterOptions } from '@/types/data-table';
 import type {
   DataTableChoiceOption,
   DataTableChoiceValue,
   DataTableColumnAlign,
   DataTableColumnFilterOptions
 } from '@/types/data-table';
+
+export {
+  dataTableTextCell,
+  renderDataTableTextCell
+} from '@/components/data-table/cells/data-table-text-cell';
 
 /**
  * DataTable 列渲染工具。
@@ -46,22 +50,6 @@ export function dataTableHeaderFactory<TData>(
   return ({ column, table }) => dataTableHeader(column, title, className, table, align);
 }
 
-/** 渲染普通文本 cell，统一空值占位、截断和 Tooltip。 */
-export function renderDataTableTextCell(value: unknown, className?: string) {
-  const text = nullableText(value);
-
-  return (
-    <DataTableOverflowTooltipText value={text} className={className}>
-      {text}
-    </DataTableOverflowTooltipText>
-  );
-}
-
-/** 兼容旧命名的文本 cell helper。 */
-export function dataTableTextCell(value: unknown, className?: string) {
-  return renderDataTableTextCell(value, className);
-}
-
 /** 类型默认值的 align 字段最终转换为 Tailwind 文本对齐 class。 */
 export function getDataTableAlignClassName(align: DataTableColumnAlign | undefined) {
   switch (align) {
@@ -82,7 +70,13 @@ export function resolveDataTableEnumLabel(value: unknown, options: DataTableColu
     return undefined;
   }
 
-  return options.filterOptions?.find((item) => item.value === normalizedValue)?.label;
+  const filterOptions = options.filterOptions;
+  const flatOptions = isDataTableFlatFilterOptions(filterOptions)
+    ? filterOptions
+    : filterOptions?.kind === 'tree'
+      ? filterOptions.options
+      : undefined;
+  return flatOptions?.find((item) => item.value === normalizedValue)?.label;
 }
 
 /** 将选择列的标量/数组值映射为 label；未知值保留原值，多选保持原顺序。 */

@@ -133,6 +133,9 @@ export function useDataTableExpandPanel<TData>({
         setExpandOverheadPx((current) =>
           current === paginationHeight ? current : paginationHeight
         );
+      } else {
+        // 分页/操作栏卸载后必须归零，否则分屏布局会一直为它预留幻影高度。
+        setExpandOverheadPx((current) => (current === 0 ? current : 0));
       }
     };
 

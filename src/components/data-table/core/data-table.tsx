@@ -16,7 +16,7 @@ import { DataTableCellTooltipProvider } from '@/components/data-table/cells/data
 import {
   DataTableRemoteChoiceLabelProvider,
   hasDataTableRemoteChoiceLabelResolvers
-} from '@/components/data-table/cells/data-table-editable-choice-cell';
+} from '@/components/data-table/editing/cells/data-table-editable-choice-cell';
 import { Separator } from '@/components/ui/separator';
 import { DataTableViewOptions } from '@/components/data-table/toolbar/data-table-view-options';
 import { DataTableColGroup } from '@/components/data-table/core/data-table-colgroup';
@@ -72,6 +72,8 @@ export interface DataTableProps<TData> extends React.ComponentProps<'div'> {
   table: TanstackTable<TData>;
   /** 是否展示列显隐/重排面板按钮；默认 true。 */
   showViewOptions?: boolean;
+  /** 是否展示底部分页栏；本地完整数据集等嵌入式表格可关闭，默认 true。 */
+  showPagination?: boolean;
   tableActions?: DataTableAction<TData>[];
   actionBar?: React.ReactNode;
   getSelectedRows?: () => TData[];
@@ -107,10 +109,12 @@ function getBoundedPositiveCount(value: number, max: number) {
 function getDataTableLoadingSkeletonProps<TData>({
   table,
   hasViewOptions,
+  hasPagination,
   loadingSkeleton
 }: {
   table: TanstackTable<TData>;
   hasViewOptions: boolean;
+  hasPagination: boolean;
   loadingSkeleton: DataTableLoadingSkeletonConfig;
 }): DataTableSkeletonProps {
   const { columnCount, filterCount, withViewOptions, withPagination, ...skeletonProps } =
@@ -129,13 +133,14 @@ function getDataTableLoadingSkeletonProps<TData>({
     columnCount: columnCount ?? inferredColumnCount,
     filterCount: filterCount ?? inferredFilterCount,
     withViewOptions: withViewOptions ?? hasViewOptions,
-    withPagination: withPagination ?? true
+    withPagination: withPagination ?? hasPagination
   };
 }
 
 export function DataTable<TData>({
   table,
   showViewOptions = true,
+  showPagination = true,
   tableActions,
   actionBar,
   children,
@@ -250,7 +255,12 @@ export function DataTable<TData>({
   const shouldRenderLoadingSkeleton =
     loadingSkeleton !== undefined && isLoading && rows.length === 0;
   const loadingSkeletonProps = shouldRenderLoadingSkeleton
-    ? getDataTableLoadingSkeletonProps({ table, hasViewOptions, loadingSkeleton })
+    ? getDataTableLoadingSkeletonProps({
+        table,
+        hasViewOptions,
+        hasPagination: showPagination,
+        loadingSkeleton
+      })
     : null;
   const pageRows = rows;
   // 选择统计优先使用外部受控值；未受控时只统计当前已加载页，避免误表达跨页全选。
@@ -459,16 +469,20 @@ export function DataTable<TData>({
             >
               {tableViewport}
             </div>
-            <div ref={paginationRef} className='flex flex-col gap-2.5'>
-              <DataTablePagination
-                table={table}
-                labels={paginationLabels}
-                getSelectedRows={getSelectedRows}
-                selectedRowCount={resolvedSelectedRowCount}
-                selectedTotalRowCount={resolvedSelectedTotalRowCount}
-              />
-              {actionBar && resolvedSelectedRowCount > 0 && actionBar}
-            </div>
+            {showPagination || (actionBar && resolvedSelectedRowCount > 0) ? (
+              <div ref={paginationRef} className='flex flex-col gap-2.5'>
+                {showPagination ? (
+                  <DataTablePagination
+                    table={table}
+                    labels={paginationLabels}
+                    getSelectedRows={getSelectedRows}
+                    selectedRowCount={resolvedSelectedRowCount}
+                    selectedTotalRowCount={resolvedSelectedTotalRowCount}
+                  />
+                ) : null}
+                {actionBar && resolvedSelectedRowCount > 0 && actionBar}
+              </div>
+            ) : null}
             {isExpandLayoutActive &&
             expandSplitLayout &&
             activeExpandTab &&

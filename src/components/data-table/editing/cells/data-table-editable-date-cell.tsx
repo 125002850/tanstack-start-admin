@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { DataTableEditorKeyboardShell } from '@/components/data-table/cells/data-table-editor-keyboard-shell';
-import { DATA_TABLE_TEMPORAL_CALENDAR_CLASS_NAMES } from '@/components/data-table/cells/data-table-temporal-calendar-layout';
+import { DataTableEditorKeyboardShell } from '@/components/data-table/editing/cells/data-table-editor-keyboard-shell';
+import { DATA_TABLE_TEMPORAL_CALENDAR_CLASS_NAMES } from '@/components/data-table/editing/cells/data-table-temporal-calendar-layout';
 import {
   dataTableDateValueToLocalDate,
   localDateToDataTableDateValue,
   parseDataTableDateValue
-} from '@/components/data-table/columns/data-table-edit-codecs';
-import { renderDataTableTextCell } from '@/components/data-table/columns/data-table-column-rendering';
+} from '@/components/data-table/editing/codecs/data-table-date-edit-codec';
+import { renderDataTableTextCell } from '@/components/data-table/cells/data-table-text-cell';
 import { useOverlayPortalContainer } from '@/components/ui/use-overlay-portal-container';
 import type {
   DataTableEditableDateColumnMeta,

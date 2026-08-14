@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "import", "jsx-a11y"],
+  "jsPlugins": ["./tools/oxlint/oig-plugin.mjs"],
   "env": {
     "es6": true,
     "browser": true,
@@ -33,6 +34,8 @@
     "no-unused-expressions": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
     "no-underscore-dangle": ["warn", { "allow": ["__DATA_TABLE_VIRTUAL_EVENTS__"] }],
+    "oig/no-implicit-empty-to-undefined": "error",
+    "oig/no-empty-string-to-undefined-in-update": "error",
 
     "react/react-in-jsx-scope": "off",
     "react/no-unknown-property": "off",

@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
-import { DataTableColumnHeader } from '@/components/data-table/columns/data-table-column-header';
+import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
 import { DataTableHeaderDragOverlay } from '@/components/data-table/core/data-table-header';
 import { useDataTable } from '@/hooks/use-data-table';
 import type {

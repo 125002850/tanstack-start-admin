@@ -10,7 +10,7 @@ import {
 import * as React from 'react';
 
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
-import { DataTableColumnHeader } from '@/components/data-table/columns/data-table-column-header';
+import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
 import { DataTableViewOptions } from '@/components/data-table/toolbar/data-table-view-options';
 
 type TestRow = { id: number; name: string; code?: string; amount?: number };

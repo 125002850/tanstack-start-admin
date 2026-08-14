@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createChoiceEditCodec,
+  createSwitchEditCodec
+} from './codecs/data-table-choice-edit-codecs';
+import {
   createDateEditCodec,
-  createDateTimeEditCodec,
-  createDataTableIdentityEditCodec,
-  createLegacyChoiceEditCodec,
-  createLegacySwitchEditCodec,
-  createLegacyTextEditCodec,
-  createLongTextEditCodec,
-  createNumericEditCodec,
   dataTableDateValueToLocalDate,
   localDateToDataTableDateValue
-} from './data-table-edit-codecs';
+} from './codecs/data-table-date-edit-codec';
+import { createDateTimeEditCodec } from './codecs/data-table-date-time-edit-codec';
+import { createNumericEditCodec } from './codecs/data-table-numeric-edit-codec';
+import {
+  createDataTableIdentityEditCodec,
+  createTextEditCodec,
+  createLongTextEditCodec
+} from './codecs/data-table-text-edit-codecs';
 
 type Row = {
   id: number;
@@ -38,8 +42,8 @@ describe('data-table-edit-codecs', () => {
   });
 
   it('validates legacy text empty values without converting the draft', () => {
-    const optionalCodec = createLegacyTextEditCodec<Row>({ allowEmpty: true });
-    const requiredCodec = createLegacyTextEditCodec<Row>({ allowEmpty: false });
+    const optionalCodec = createTextEditCodec<Row>({ allowEmpty: true });
+    const requiredCodec = createTextEditCodec<Row>({ allowEmpty: false });
 
     expect(optionalCodec.parse('', ROW)).toEqual({ status: 'valid', value: '' });
     expect(optionalCodec.validate('', ROW)).toEqual([]);
@@ -48,7 +52,7 @@ describe('data-table-edit-codecs', () => {
   });
 
   it('keeps numeric-looking legacy text as a string raw candidate', () => {
-    const codec = createLegacyTextEditCodec<Row>({ allowEmpty: true });
+    const codec = createTextEditCodec<Row>({ allowEmpty: true });
 
     const result = codec.parse('123.45', ROW);
 
@@ -376,12 +380,12 @@ describe('data-table-edit-codecs', () => {
   });
 
   it('keeps choice values typed and isolates column-bound validation config', () => {
-    const optionalMultipleCodec = createLegacyChoiceEditCodec<Row>({
+    const optionalMultipleCodec = createChoiceEditCodec<Row>({
       selectionMode: 'multiple',
       allowEmpty: true,
       maxSelected: 2
     });
-    const requiredMultipleCodec = createLegacyChoiceEditCodec<Row>({
+    const requiredMultipleCodec = createChoiceEditCodec<Row>({
       selectionMode: 'multiple',
       allowEmpty: false,
       maxSelected: 1
@@ -398,26 +402,26 @@ describe('data-table-edit-codecs', () => {
   });
 
   it('round-trips static, remote, multiple, and switch choice clipboard drafts', () => {
-    const staticNumeric = createLegacyChoiceEditCodec<Row>({
+    const staticNumeric = createChoiceEditCodec<Row>({
       selectionMode: 'single',
       allowEmpty: true,
       valueOptions: [1, 2]
     });
-    const ambiguousStatic = createLegacyChoiceEditCodec<Row>({
+    const ambiguousStatic = createChoiceEditCodec<Row>({
       selectionMode: 'single',
       allowEmpty: true,
       valueOptions: [1, '1']
     });
-    const remote = createLegacyChoiceEditCodec<Row>({
+    const remote = createChoiceEditCodec<Row>({
       selectionMode: 'single',
       allowEmpty: true,
       parseJson: true
     });
-    const multiple = createLegacyChoiceEditCodec<Row>({
+    const multiple = createChoiceEditCodec<Row>({
       selectionMode: 'multiple',
       allowEmpty: true
     });
-    const numericSwitch = createLegacySwitchEditCodec<Row>({
+    const numericSwitch = createSwitchEditCodec<Row>({
       checkedValue: 1,
       uncheckedValue: 0
     });

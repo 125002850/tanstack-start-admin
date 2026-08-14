@@ -4,11 +4,13 @@ import * as React from 'react';
 import { DataTableDateFilter } from '@/components/data-table/filters/data-table-date-filter';
 import { DataTableFacetedFilter } from '@/components/data-table/filters/data-table-faceted-filter';
 import { DataTableSliderFilter } from '@/components/data-table/filters/data-table-slider-filter';
+import { DataTableTreeFilter } from '@/components/data-table/filters/data-table-tree-filter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { getDataTableColumnLabel } from '@/components/data-table/columns/data-table-column-label';
 import { cn } from '@/lib/utils';
+import { isDataTableFlatFilterOptions } from '@/types/data-table';
 import { useDebouncedInput } from '@/hooks/use-debounced-input';
 import { Icons } from '@/components/icons';
 import type { DataTableFacetedFilterLabels } from '@/components/data-table/filters/data-table-faceted-filter';
@@ -152,16 +154,55 @@ function DataTableToolbarFilter<TData>({
           );
 
         case 'select':
-        case 'multiSelect':
+        case 'multiSelect': {
+          const filterOptions = columnMeta.options;
+          const multiple = columnMeta.variant === 'multiSelect';
+          if (isDataTableFlatFilterOptions(filterOptions)) {
+            return (
+              <DataTableFacetedFilter
+                column={column}
+                title={columnLabel}
+                options={filterOptions}
+                multiple={multiple}
+                labels={labels?.facetedFilter}
+              />
+            );
+          }
+
+          if (filterOptions?.kind === 'tree') {
+            if (multiple) {
+              return (
+                <DataTableTreeFilter
+                  column={column}
+                  title={columnLabel}
+                  options={filterOptions.options}
+                  selectionMode={filterOptions.selectionMode}
+                  labels={labels?.facetedFilter}
+                />
+              );
+            }
+
+            return (
+              <DataTableFacetedFilter
+                column={column}
+                title={columnLabel}
+                options={filterOptions.options}
+                multiple={false}
+                labels={labels?.facetedFilter}
+              />
+            );
+          }
+
           return (
             <DataTableFacetedFilter
               column={column}
               title={columnLabel}
-              options={columnMeta.options ?? []}
-              multiple={columnMeta.variant === 'multiSelect'}
+              options={[]}
+              multiple={multiple}
               labels={labels?.facetedFilter}
             />
           );
+        }
 
         default:
           return null;

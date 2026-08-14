@@ -15,13 +15,7 @@ import {
   systemDictGlobalTypeCreateMutationOptions,
   systemDictGlobalTypeDeleteMutationOptions,
   systemDictGlobalTypeUpdateMutationOptions,
-  type SystemDictGlobalItemCreateRequest,
-  type SystemDictGlobalItemDeleteRequest,
-  type SystemDictGlobalItemUpdateRequest,
-  type SystemDictGlobalTypesListAllRequest,
-  type SystemDictGlobalTypeCreateRequest,
-  type SystemDictGlobalTypeDeleteRequest,
-  type SystemDictGlobalTypeUpdateRequest
+  type SystemDictGlobalTypesListAllRequest
 } from '@/lib/api/clients/service';
 import type {
   DictionaryItemMutationPayload,
@@ -100,16 +94,16 @@ function DictionaryManagementContent() {
   const handleTypeSubmit = React.useCallback(
     async (payload: DictionaryTypeMutationPayload) => {
       try {
-        if (payload.id === 0) {
-          await createTypeMutation.mutateAsync(payload as SystemDictGlobalTypeCreateRequest);
+        if (!('id' in payload)) {
+          await createTypeMutation.mutateAsync(payload);
           toast.success('字典类型已创建');
         } else {
-          await updateTypeMutation.mutateAsync(payload as SystemDictGlobalTypeUpdateRequest);
+          await updateTypeMutation.mutateAsync(payload);
           toast.success('字典类型已更新');
         }
         setSheetState(null);
       } catch {
-        toast.error(payload.id === 0 ? '字典类型创建失败' : '字典类型更新失败');
+        toast.error('id' in payload ? '字典类型更新失败' : '字典类型创建失败');
       }
     },
     [createTypeMutation, updateTypeMutation]
@@ -118,18 +112,18 @@ function DictionaryManagementContent() {
   const handleItemSubmit = React.useCallback(
     async (payload: DictionaryItemMutationPayload) => {
       try {
-        if (payload.id) {
-          await updateItemMutation.mutateAsync(payload as SystemDictGlobalItemUpdateRequest);
+        if ('id' in payload) {
+          await updateItemMutation.mutateAsync(payload);
           await invalidateDictionaryItems();
           toast.success('字典项已更新');
           return;
         }
 
-        await createItemMutation.mutateAsync(payload as SystemDictGlobalItemCreateRequest);
+        await createItemMutation.mutateAsync(payload);
         await invalidateDictionaryItems();
         toast.success('字典项已新增');
       } catch {
-        toast.error(payload.id ? '字典项更新失败' : '字典项新增失败');
+        toast.error('id' in payload ? '字典项更新失败' : '字典项新增失败');
       }
     },
     [createItemMutation, invalidateDictionaryItems, updateItemMutation]
@@ -138,9 +132,8 @@ function DictionaryManagementContent() {
   const handleDelete = React.useCallback(
     async (item: DictionaryItemRecord) => {
       try {
-        await deleteItemMutation.mutateAsync({
-          ids: [item.id]
-        } as SystemDictGlobalItemDeleteRequest);
+        if (item.id === undefined) throw new Error('Missing dictionary item id');
+        await deleteItemMutation.mutateAsync({ ids: [item.id] });
         await invalidateDictionaryItems();
         toast.success('字典项已删除');
       } catch {
@@ -153,7 +146,7 @@ function DictionaryManagementContent() {
   const handleBulkDelete = React.useCallback(
     async (payload: { ids: number[] }) => {
       try {
-        await deleteItemMutation.mutateAsync(payload as SystemDictGlobalItemDeleteRequest);
+        await deleteItemMutation.mutateAsync(payload);
         await invalidateDictionaryItems();
         toast.success('已批量删除字典项');
       } catch (error) {
@@ -180,15 +173,16 @@ function DictionaryManagementContent() {
     run: async (record) => {
       const newStatus =
         record.status === DictStatus.ENABLE ? DictStatus.DISABLE : DictStatus.ENABLE;
+      if (record.id === undefined) throw new Error('Missing dictionary item id');
       await updateItemMutation.mutateAsync({
-        id: record.id!,
+        id: record.id,
         dictTypeCode: record.dictTypeCode!,
         dictItemCode: record.dictItemCode!,
         dictItemName: record.dictItemName!,
         status: newStatus,
-        sortOrder: record.sort,
+        sortOrder: record.sortOrder,
         remark: record.remark
-      } as SystemDictGlobalItemUpdateRequest);
+      });
       await invalidateDictionaryItems();
       toast.success('字典项状态已切换');
     }
@@ -210,9 +204,8 @@ function DictionaryManagementContent() {
       cancelText: '取消',
       run: async () => {
         try {
-          await deleteTypeMutation.mutateAsync({
-            id: selectedType.id
-          } as SystemDictGlobalTypeDeleteRequest);
+          if (selectedType.id === undefined) throw new Error('Missing dictionary type id');
+          await deleteTypeMutation.mutateAsync({ id: selectedType.id });
           toast.success('字典类型已删除');
         } catch (error) {
           toast.error('字典类型删除失败');

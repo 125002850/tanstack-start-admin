@@ -76,10 +76,17 @@ src/
 │   ├── ui/                         # Shadcn UI 基础原语（button、input、table 等）
 │   ├── data-table/                 # DataTable 共享子系统
 │   │   ├── actions/                # 顶层、选择和行操作
-│   │   ├── cells/                  # 展示单元格与 typed editor
-│   │   ├── columns/                # 列 DSL、type registry、codec 与 header
+│   │   ├── cells/                  # 通用单元格展示组件
+│   │   ├── columns/                # 稳定列入口与列定义实现
+│   │   │   ├── dsl/                # 列 builder、options、formatter 与 type registry
+│   │   │   └── header/             # 可排序/筛选列头与 resize handle
 │   │   ├── core/                   # 表格壳、表头/表体、选择、粘贴与填充
+│   │   │   └── fixtures/           # 矩阵粘贴等核心行为的测试输入资产
 │   │   ├── dnd/                    # 列拖拽
+│   │   ├── editing/                # 单元格编辑子域
+│   │   │   ├── adapters/           # 列类型到 editor/codec 的适配
+│   │   │   ├── cells/              # editable cell 与键盘交互
+│   │   │   └── codecs/             # 编辑值解析、校验与格式化
 │   │   ├── expand/                 # 展开分屏
 │   │   ├── export/                 # 导出交互
 │   │   ├── feedback/               # loading、empty、error 状态

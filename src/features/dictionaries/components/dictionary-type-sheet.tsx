@@ -28,7 +28,7 @@ const createSchema = z.object({
 
 const editSchema = z.object({
   dictTypeName: z.string().trim().min(1, '请输入字典类型名称').max(50, '名称不能超过 50 位'),
-  status: z.string().trim().min(1, '请选择状态')
+  status: z.enum([DictStatus.ENABLE, DictStatus.DISABLE])
 });
 
 type CreateFormValues = z.infer<typeof createSchema>;
@@ -59,7 +59,6 @@ export function DictionaryTypeSheet({
     validators: { onSubmit: createSchema },
     onSubmit: async ({ value }) => {
       await onSubmit({
-        id: 0,
         dictTypeCode: value.dictTypeCode,
         dictTypeName: value.dictTypeName
       });
@@ -73,7 +72,7 @@ export function DictionaryTypeSheet({
   const editForm = useAppForm({
     defaultValues: {
       dictTypeName: type?.dictTypeName ?? '',
-      status: (type?.status ?? DictStatus.ENABLE) as string
+      status: type?.status ?? DictStatus.ENABLE
     } as EditFormValues,
     validators: { onSubmit: editSchema },
     onSubmit: async ({ value }) => {

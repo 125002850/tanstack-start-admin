@@ -4,8 +4,8 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { InputGroup, InputGroupTextarea } from '@/components/ui/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DataTableEditorKeyboardShell } from '@/components/data-table/cells/data-table-editor-keyboard-shell';
-import { renderDataTableTextCell } from '@/components/data-table/columns/data-table-column-rendering';
+import { DataTableEditorKeyboardShell } from '@/components/data-table/editing/cells/data-table-editor-keyboard-shell';
+import { renderDataTableTextCell } from '@/components/data-table/cells/data-table-text-cell';
 import { useOverlayPortalContainer } from '@/components/ui/use-overlay-portal-container';
 import { cn } from '@/lib/utils';
 import type {
