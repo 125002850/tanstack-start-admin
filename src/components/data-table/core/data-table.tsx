@@ -173,6 +173,7 @@ export function DataTable<TData>({
   const enableZebraStriping = table.options.meta?.enableZebraStriping ?? false;
   const columnFilters = table.getState().columnFilters;
   const localColumnFilters = table.options.meta?.dataTableLocalFiltering?.filters;
+  const sorting = table.getState().sorting;
   // 只把有实际值的筛选计入状态判断；空字符串、空数组都视为未筛选。
   const hasFilters =
     (localColumnFilters?.length ?? 0) > 0 ||
@@ -182,12 +183,25 @@ export function DataTable<TData>({
       if (Array.isArray(value)) return value.length > 0;
       return true;
     });
-  const resolvedStatus: DataTableStatusConfig | undefined = getStatusConfig?.({
+  const statusConfig = getStatusConfig?.({
     rows,
     totalCount: totalRowCount,
     hasFilters,
     isLoading
   });
+  const resolvedStatus: DataTableStatusConfig | undefined =
+    statusConfig?.type === 'error' && sorting.length > 0
+      ? {
+          ...statusConfig,
+          additionalActions: [
+            ...(statusConfig.additionalActions ?? []),
+            {
+              label: '清除排序并重试',
+              onClick: () => table.resetSorting(true)
+            }
+          ]
+        }
+      : statusConfig;
 
   // 虚拟化 hook 同时返回行虚拟化配置、列虚拟窗口和 Safari 固定列兼容开关。
   const {
