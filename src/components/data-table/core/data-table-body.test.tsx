@@ -20,6 +20,7 @@ import {
   SizedHarness,
   SortableHeaderHarness,
   WideHarness,
+  useOverflowComponentHeaderHarnessTable,
   OVERFLOW_HEADER_LABEL,
   OVERFLOW_COMPONENT_HEADER_LABEL,
   type TestRow
@@ -193,6 +194,43 @@ describe('DataTable body', () => {
     expect(screen.getByText('接口异常')).toBeInTheDocument();
     expect(screen.queryByText('普通空态')).not.toBeInTheDocument();
     expect(document.querySelector('tbody[data-component="data-table-body"] tr td')).not.toBeNull();
+  });
+
+  it('keeps sortable headers and exposes sorting recovery while an error status is visible', async () => {
+    const user = userEvent.setup();
+
+    function ErrorStatusHarness() {
+      const table = useOverflowComponentHeaderHarnessTable([], 10);
+      return (
+        <DataTable
+          table={table}
+          getStatusConfig={() => ({
+            type: 'error',
+            title: '排序请求失败',
+            description: '后端不支持当前排序字段。'
+          })}
+        />
+      );
+    }
+
+    render(<ErrorStatusHarness />);
+
+    const sortButton = screen.getByRole('button', {
+      name: new RegExp(`^${OVERFLOW_COMPONENT_HEADER_LABEL}：`)
+    });
+    const initialSortActionLabel = sortButton.getAttribute('aria-label');
+    expect(sortButton).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '清除排序并重试' })).not.toBeInTheDocument();
+
+    await user.click(sortButton);
+
+    expect(screen.getByText('排序请求失败')).toBeInTheDocument();
+    expect(sortButton).not.toHaveAccessibleName(initialSortActionLabel ?? '');
+
+    await user.click(screen.getByRole('button', { name: '清除排序并重试' }));
+
+    expect(sortButton).toHaveAccessibleName(initialSortActionLabel ?? '');
+    expect(screen.queryByRole('button', { name: '清除排序并重试' })).not.toBeInTheDocument();
   });
 
   it('updates status when table filters change without explicit dependency props', async () => {

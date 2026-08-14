@@ -22,6 +22,8 @@ export interface DataTableStatusConfig {
   description?: string;
   primaryAction?: DataTableStatusAction;
   secondaryAction?: DataTableStatusAction;
+  /** 由 DataTable 运行时追加的上下文恢复动作，不占用业务主次操作位。 */
+  additionalActions?: readonly DataTableStatusAction[];
 }
 
 export interface DataTableStatusContext {
@@ -98,8 +100,8 @@ function StatusCard({ config, className }: DataTableStatusCardProps) {
           <h3 className='text-base font-semibold'>{title}</h3>
           {description && <p className='text-sm text-muted-foreground'>{description}</p>}
         </div>
-        {(config.primaryAction || config.secondaryAction) && (
-          <div className='flex gap-2'>
+        {(config.primaryAction || config.secondaryAction || config.additionalActions?.length) && (
+          <div className='flex flex-wrap justify-center gap-2'>
             {config.primaryAction && (
               <Button size='sm' onClick={config.primaryAction.onClick}>
                 {config.primaryAction.label}
@@ -110,6 +112,11 @@ function StatusCard({ config, className }: DataTableStatusCardProps) {
                 {config.secondaryAction.label}
               </Button>
             )}
+            {config.additionalActions?.map((action) => (
+              <Button key={action.label} variant='outline' size='sm' onClick={action.onClick}>
+                {action.label}
+              </Button>
+            ))}
           </div>
         )}
       </div>
@@ -131,8 +138,10 @@ function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
             <span className='text-muted-foreground/30 mb-4'>{defaults.icon}</span>
             <h3 className='text-sm font-medium'>{title}</h3>
             {description && <p className='text-muted-foreground mt-1 text-sm'>{description}</p>}
-            {(config.primaryAction || config.secondaryAction) && (
-              <div className='mt-4 flex gap-2'>
+            {(config.primaryAction ||
+              config.secondaryAction ||
+              config.additionalActions?.length) && (
+              <div className='mt-4 flex flex-wrap justify-center gap-2'>
                 {config.primaryAction && (
                   <Button variant='outline' size='sm' onClick={config.primaryAction.onClick}>
                     {config.primaryAction.label}
@@ -143,6 +152,11 @@ function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
                     {config.secondaryAction.label}
                   </Button>
                 )}
+                {config.additionalActions?.map((action) => (
+                  <Button key={action.label} variant='outline' size='sm' onClick={action.onClick}>
+                    {action.label}
+                  </Button>
+                ))}
               </div>
             )}
           </div>

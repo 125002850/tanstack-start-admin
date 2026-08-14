@@ -158,7 +158,7 @@ test('@workspace-v2 sorts from the header and keeps the filter action pinned rig
   page
 }) => {
   const card = await gotoDictionaryTable(page);
-  const sortHeader = card.locator('th[data-column-id="sort"]');
+  const sortHeader = card.locator('th[data-column-id="sortOrder"]');
   const codeHeader = card.locator('th[data-column-id="dictItemCode"]');
   const codeTitle = codeHeader.getByText('字典项编码', { exact: true });
   const codeFilter = codeHeader.getByRole('button', {

@@ -127,6 +127,7 @@
 - 刷新能力优先通过 `{...refreshProps}` 透传给 `DataTable`，不要重复包装刷新按钮或 `refetch`。
 - Loading 状态可将 `queryState.isFetching` 传给 `DataTable` 的 `isLoading`。
 - `DataTable` 的 loading / empty / error(status) 必须有稳定 DOM 兜底：普通空数据使用 `emptyMessage`，业务空态或错误态通过 `getStatusConfig` 返回 `DataTableStatus`，不得让表体空白。
+- `error` status 必须保留表头和当前 sorting state；存在活动排序时，DataTable 自动追加“清除排序并重试”恢复动作，通过清空 sorting 重新回落到 `defaultRequestSort`。业务页面不得用整表替换错误态移除该恢复入口。
 - `getStatusConfig` 会收到 `{ rows, totalCount, hasFilters, isLoading }`；页面需要避免 loading 闪烁时，应基于 `isLoading` 延迟返回 empty/onboarding status，而不是在页面层替换表格主体。
 - `DataTable` 会基于当前 table state 自动重新计算 `getStatusConfig`，页面层不需要额外维护状态依赖数组。
 
