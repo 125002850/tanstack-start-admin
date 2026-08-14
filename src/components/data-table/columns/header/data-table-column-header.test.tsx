@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import * as React from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { DataTableColumnHeader } from '@/components/data-table/columns/data-table-column-header';
+import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
 
 interface HeaderTestRow {
   id: number;

@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import type { DeptCreateReqDTO, DeptRspDTO, DeptUpdateReqDTO } from '@/lib/api/clients/service';
+import { emptyStringToUndefined } from '@/lib/api/request-values';
 import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
 import { IAM_STATUS_CODES } from '../lib/constants';
 import { deptSelectOptions } from '../lib/tree';
@@ -115,7 +116,7 @@ export default function DeptFormSheet({
           deptName: values.deptName.trim(),
           sortOrder: Number.isFinite(sortOrder) ? sortOrder : undefined,
           status: values.status,
-          remark: values.remark.trim() || undefined
+          remark: values.remark.trim()
         });
       } else {
         await onSubmit({
@@ -124,7 +125,7 @@ export default function DeptFormSheet({
           deptName: values.deptName.trim(),
           sortOrder: Number.isFinite(sortOrder) ? sortOrder : undefined,
           status: values.status,
-          remark: values.remark.trim() || undefined
+          remark: emptyStringToUndefined(values.remark.trim())
         });
       }
       onOpenChange(false);

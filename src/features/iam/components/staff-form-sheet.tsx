@@ -27,6 +27,7 @@ import type {
   StaffRspDTO,
   StaffUpdateReqDTO
 } from '@/lib/api/clients/service';
+import { emptyStringToUndefined } from '@/lib/api/request-values';
 import { SUPER_ADMIN_ROLE_CODE } from '@/lib/api/iam/permissions';
 import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
 import { IAM_STATUS_CODES } from '../lib/constants';
@@ -149,10 +150,10 @@ function StaffFormSheet({
           staffCode: values.staffCode.trim(),
           staffName: values.staffName.trim(),
           deptId,
-          phone: values.phone.trim() || undefined,
-          email: values.email.trim() || undefined,
+          phone: values.phone.trim(),
+          email: values.email.trim(),
           status: values.status,
-          remark: values.remark.trim() || undefined
+          remark: values.remark.trim()
         });
       } else {
         await onSubmit({
@@ -161,11 +162,11 @@ function StaffFormSheet({
           staffName: values.staffName.trim(),
           deptId,
           password: values.password,
-          phone: values.phone.trim() || undefined,
-          email: values.email.trim() || undefined,
+          phone: emptyStringToUndefined(values.phone.trim()),
+          email: emptyStringToUndefined(values.email.trim()),
           status: values.status,
           roleIds: values.roleIds.map(Number).filter(Number.isFinite),
-          remark: values.remark.trim() || undefined
+          remark: emptyStringToUndefined(values.remark.trim())
         });
       }
       onOpenChange(false);

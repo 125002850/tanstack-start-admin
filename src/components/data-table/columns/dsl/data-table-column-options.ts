@@ -118,7 +118,7 @@ function resolveFilterMeta<TData, TValue>(
   return {
     variant: FILTER_VARIANT_META[filter],
     placeholder: options.filterPlaceholder ?? inferFilterPlaceholder(filter, title),
-    options: options.filterOptions ? [...options.filterOptions] : undefined,
+    options: options.filterOptions,
     range,
     unit: options.filterUnit
   };
@@ -150,7 +150,7 @@ function resolveLocalFilterMeta<TData, TValue>(
       inferFilterPlaceholder(filter, title),
     options: options.localFilterOptions
       ? [...options.localFilterOptions]
-      : options.filterOptions
+      : Array.isArray(options.filterOptions)
         ? [...options.filterOptions]
         : undefined,
     range,

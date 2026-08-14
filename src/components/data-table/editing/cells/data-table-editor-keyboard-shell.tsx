@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { finishEditingAndNavigate } from '@/components/data-table/core/data-table-editor-navigation';
+import { finishEditingAndNavigate } from '@/components/data-table/editing/data-table-editor-navigation';
 import { cn } from '@/lib/utils';
 import type { DataTableFinishEditingResult, DataTableEditingRuntime } from '@/types/data-table';
 

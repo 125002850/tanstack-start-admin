@@ -5,17 +5,19 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { DataTableEditorKeyboardShell } from '@/components/data-table/cells/data-table-editor-keyboard-shell';
-import { DATA_TABLE_TEMPORAL_CALENDAR_CLASS_NAMES } from '@/components/data-table/cells/data-table-temporal-calendar-layout';
+import { DataTableEditorKeyboardShell } from '@/components/data-table/editing/cells/data-table-editor-keyboard-shell';
+import { DATA_TABLE_TEMPORAL_CALENDAR_CLASS_NAMES } from '@/components/data-table/editing/cells/data-table-temporal-calendar-layout';
 import {
   dataTableDateValueToLocalDate,
+  localDateToDataTableDateValue
+} from '@/components/data-table/editing/codecs/data-table-date-edit-codec';
+import {
   formatDataTableDateTimeDraftValue,
   formatDataTableLocalDateTimeValue,
-  localDateToDataTableDateValue,
   parseDataTableDateTimeDraftValue
-} from '@/components/data-table/columns/data-table-edit-codecs';
-import { renderDataTableTextCell } from '@/components/data-table/columns/data-table-column-rendering';
-import { formatDataTableInstantInTimeZone } from '@/components/data-table/columns/data-table-time-zone';
+} from '@/components/data-table/editing/codecs/data-table-date-time-edit-codec';
+import { renderDataTableTextCell } from '@/components/data-table/cells/data-table-text-cell';
+import { formatDataTableInstantInTimeZone } from '@/components/data-table/editing/data-table-time-zone';
 import { useOverlayPortalContainer } from '@/components/ui/use-overlay-portal-container';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type {

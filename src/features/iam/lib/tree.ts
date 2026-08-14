@@ -1,6 +1,6 @@
 import type { MultiSelectComboboxOption } from '@/components/ui/multi-select-combobox';
 import type { DeptRspDTO, MenuRspDTO } from '@/lib/api/clients/service';
-import type { DataTableFilterOption } from '@/types/data-table';
+import type { TreeOption } from '@/types/data-table';
 
 type TreeLike<TNode> = TNode & {
   children?: Array<TreeLike<TNode>>;
@@ -100,7 +100,7 @@ export function deptSelectOptions(
     .filter((option) => option.value);
 }
 
-export function deptMultiSelectOptions(nodes: readonly DeptRspDTO[] = []): DataTableFilterOption[] {
+export function deptMultiSelectOptions(nodes: readonly DeptRspDTO[] = []): TreeOption[] {
   return flattenDeptTree(nodes)
     .filter((dept) => dept.deptId != null)
     .map((dept) => ({

@@ -133,11 +133,7 @@ export function DictionaryItemsPanel({
   const mapQueryData = React.useCallback(
     (data: SystemDictGlobalItemsByTypeResponse | undefined) => ({
       total: data?.total ?? 0,
-      list:
-        data?.list?.map((item) => ({
-          ...item,
-          sort: item.sortOrder
-        })) ?? []
+      list: data?.list ?? []
     }),
     []
   );

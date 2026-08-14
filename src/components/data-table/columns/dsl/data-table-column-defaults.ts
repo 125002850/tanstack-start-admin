@@ -1,4 +1,4 @@
-import type { DataTableColumnResolvedDefaults } from '@/components/data-table/columns/data-table-column-options';
+import type { DataTableColumnResolvedDefaults } from '@/components/data-table/columns/dsl/data-table-column-options';
 
 /**
  * DataTable DSL 各类列的默认行为。

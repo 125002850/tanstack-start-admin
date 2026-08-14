@@ -61,6 +61,47 @@ function isTestFile(path: string) {
 }
 
 describe('project architecture contracts', () => {
+  it('keeps DataTable column internals behind stable feature imports', () => {
+    const columnsRoot = resolve(SRC_ROOT, 'components/data-table/columns');
+    const productionRootFiles = readdirSync(columnsRoot, { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isFile() &&
+          SOURCE_EXTENSIONS.has(extname(entry.name)) &&
+          !entry.name.endsWith('.test.ts') &&
+          !entry.name.endsWith('.test.tsx')
+      )
+      .map((entry) => entry.name)
+      .toSorted();
+    const internalDataTableImportPattern =
+      /@\/components\/data-table\/(?:columns\/(?:dsl|header)|editing)\//;
+    const featureViolations = collectFiles(resolve(SRC_ROOT, 'features'), (path) =>
+      SOURCE_EXTENSIONS.has(extname(path))
+    )
+      .filter((path) => internalDataTableImportPattern.test(readFileSync(path, 'utf8')))
+      .map(toProjectPath);
+    const editingToColumnsViolations = collectFiles(
+      resolve(SRC_ROOT, 'components/data-table/editing'),
+      (path) =>
+        SOURCE_EXTENSIONS.has(extname(path)) &&
+        !path.endsWith('.test.ts') &&
+        !path.endsWith('.test.tsx')
+    )
+      .filter((path) => /@\/components\/data-table\/columns\//.test(readFileSync(path, 'utf8')))
+      .map(toProjectPath);
+
+    expect(productionRootFiles).toEqual([
+      'data-table-column-factory.tsx',
+      'data-table-column-label.tsx'
+    ]);
+    expect(existsSync(resolve(columnsRoot, 'dsl'))).toBe(true);
+    expect(existsSync(resolve(columnsRoot, 'header'))).toBe(true);
+    expect(existsSync(resolve(columnsRoot, 'editing'))).toBe(false);
+    expect(existsSync(resolve(SRC_ROOT, 'components/data-table/editing'))).toBe(true);
+    expect(featureViolations).toEqual([]);
+    expect(editingToColumnsViolations).toEqual([]);
+  });
+
   it('does not keep unused page metadata on dashboard routes', () => {
     const violations = collectFiles(resolve(SRC_ROOT, 'routes/dashboard'), (path) =>
       path.endsWith('.tsx')

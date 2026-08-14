@@ -135,6 +135,37 @@ describe('DataTable body', () => {
     expect(screen.getByText('Item 1')).toBeInTheDocument();
   });
 
+  it('hides pagination for embedded tables while preserving a visible selection action bar', () => {
+    function EmbeddedHarness() {
+      const table = useHarnessTable(makeRows(2), 2);
+      return (
+        <DataTable
+          table={table}
+          showPagination={false}
+          selectedRowCount={1}
+          actionBar={<div>批量操作</div>}
+        />
+      );
+    }
+
+    render(<EmbeddedHarness />);
+
+    expect(screen.queryByText('每页条数')).not.toBeInTheDocument();
+    expect(screen.getByText('批量操作')).toBeInTheDocument();
+  });
+
+  it('keeps the loading skeleton pagination consistent with showPagination', () => {
+    function EmbeddedLoadingHarness() {
+      const table = useHarnessTable([], 10);
+      return <DataTable table={table} showPagination={false} isLoading loadingSkeleton={{}} />;
+    }
+
+    const { container } = render(<EmbeddedLoadingHarness />);
+
+    expect(container.querySelector('[data-slot="data-table-skeleton"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="data-table-skeleton-pagination"]')).toBeNull();
+  });
+
   it('renders empty and error statuses without falling through to the plain empty body', () => {
     function StatusHarness({ type }: { type: 'empty' | 'error' }) {
       const table = useHarnessTable([], 10);
@@ -1009,12 +1040,41 @@ describe('DataTable body', () => {
 
     expect(screen.getByTestId('expanded-row-key').textContent).toBe('1');
     expect(screen.getByText('summary:Item 1')).toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(document.querySelector('[data-slot="data-table-expand-panel"]')).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '关闭详情面板' }));
 
     expect(screen.getByTestId('expanded-row-key').textContent).toBe('null');
     expect(document.querySelector('[data-slot="data-table-expand-panel"]')).toBeNull();
+  });
+
+  it('uses tabs when more than one expand view is available', async () => {
+    const user = userEvent.setup();
+    render(
+      <ExpandHarness
+        rows={makeRows(2)}
+        expandConfigOverride={{
+          rowKey: 'id',
+          tabs: [
+            {
+              id: 'summary',
+              label: '概览',
+              render: (row) => <div>{`summary:${row.name}`}</div>
+            },
+            {
+              id: 'history',
+              label: '历史',
+              render: (row) => <div>{`history:${row.name}`}</div>
+            }
+          ]
+        }}
+      />
+    );
+
+    await user.click(screen.getByText('Item 1'));
+
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
   });
 
   it('uses default table height while keeping the expand panel content-sized', async () => {

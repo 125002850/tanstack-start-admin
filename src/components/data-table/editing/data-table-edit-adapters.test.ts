@@ -419,7 +419,7 @@ describe('data-table-edit-adapters', () => {
       resolveDataTableEditableCell<Row>(context, {
         text: {
           ...enabledEditableTypeAdapters.text,
-          createCodec: () => undefined as never
+          resolve: () => null
         }
       })
     ).toBeNull();

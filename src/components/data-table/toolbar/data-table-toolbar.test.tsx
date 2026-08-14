@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
-import { DataTableColumnHeader } from '@/components/data-table/columns/data-table-column-header';
+import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
 
 // DataTableViewOptions is always rendered by DataTableToolbar — mock it to avoid
 // Radix Popover / Command complexity in jsdom.
@@ -22,6 +22,20 @@ vi.mock('@/components/data-table/filters/data-table-faceted-filter', () => ({
     multiple?: boolean;
   }) => (
     <div data-testid='faceted-filter'>
+      <button>{title}</button>
+    </div>
+  )
+}));
+
+vi.mock('@/components/data-table/filters/data-table-tree-filter', () => ({
+  DataTableTreeFilter: ({
+    title,
+    selectionMode
+  }: {
+    title?: string;
+    selectionMode?: 'cascade' | 'independent';
+  }) => (
+    <div data-testid='tree-filter' data-selection-mode={selectionMode}>
       <button>{title}</button>
     </div>
   )
@@ -150,6 +164,53 @@ describe('DataTableToolbar filter variant dispatch', () => {
 
     expect(screen.getByTestId('faceted-filter')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Category' })).toBeInTheDocument();
+  });
+
+  it('renders tree filter only for an explicit multiSelect tree variant', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'category',
+        header: 'Category',
+        meta: {
+          variant: 'multiSelect' as const,
+          label: 'Department',
+          options: {
+            kind: 'tree',
+            selectionMode: 'independent',
+            options: [
+              { label: 'Headquarters', value: 'root', depth: 0 },
+              { label: 'Research', value: 'research', depth: 1 }
+            ]
+          }
+        }
+      }
+    ];
+
+    render(<ToolbarHarness columns={columns} />);
+
+    expect(screen.getByTestId('tree-filter')).toHaveAttribute('data-selection-mode', 'independent');
+    expect(screen.queryByTestId('faceted-filter')).not.toBeInTheDocument();
+  });
+
+  it('falls back to a flat faceted filter when a single-select column declares tree options', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'category',
+        header: 'Category',
+        meta: {
+          variant: 'select' as const,
+          options: {
+            kind: 'tree',
+            options: [{ label: 'Headquarters', value: 'root', depth: 0 }]
+          }
+        }
+      }
+    ];
+
+    render(<ToolbarHarness columns={columns} />);
+
+    expect(screen.getByTestId('faceted-filter')).toBeInTheDocument();
+    expect(screen.queryByTestId('tree-filter')).not.toBeInTheDocument();
   });
 
   it('renders date filter for columns with variant: "date"', () => {

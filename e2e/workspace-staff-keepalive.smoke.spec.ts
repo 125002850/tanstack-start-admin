@@ -79,7 +79,32 @@ async function mockStaffPage(page: Page) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(apiEnvelope([]))
+      body: JSON.stringify(
+        apiEnvelope([
+          {
+            deptId: 10,
+            deptCode: 'RD',
+            deptName: '研发中心',
+            status: 'ENABLED',
+            children: [
+              {
+                deptId: 11,
+                parentId: 10,
+                deptCode: 'PLATFORM',
+                deptName: '平台组',
+                status: 'ENABLED'
+              },
+              {
+                deptId: 12,
+                parentId: 10,
+                deptCode: 'PRODUCT',
+                deptName: '产品组',
+                status: 'ENABLED'
+              }
+            ]
+          }
+        ])
+      )
     });
   });
   await page.route('**/api/iam/role/page', async (route) => {
@@ -131,6 +156,45 @@ test('@workspace-v2 preserves staff filters when switching through dashboard hom
   expect(
     await returnedInput.evaluate((element) => Reflect.get(window, '__staffFilterProbe') === element)
   ).toBe(true);
+});
+
+test('@workspace-v2 supports keyboard navigation and cascade state in department tree filters', async ({
+  page
+}) => {
+  await page.goto(STAFF_ROUTE);
+
+  await page.getByRole('button', { name: '部门', exact: true }).click();
+  const tree = page.getByRole('tree', { name: '部门筛选树' });
+  await expect(tree).toBeVisible();
+
+  const root = tree.getByRole('treeitem', { name: '研发中心，未选中' });
+  await expect(root).toHaveAttribute('aria-level', '1');
+  await expect(root).toHaveAttribute('aria-expanded', 'true');
+  await root.focus();
+  await root.press('ArrowLeft');
+  await expect(root).toHaveAttribute('aria-expanded', 'false');
+
+  await root.press('ArrowRight');
+  await expect(root).toHaveAttribute('aria-expanded', 'true');
+  await root.press('ArrowRight');
+
+  const child = tree.getByRole('treeitem', { name: '平台组，未选中' });
+  await expect(child).toBeFocused();
+  await expect(child).toHaveAttribute('aria-level', '2');
+  await child.press(' ');
+
+  const activeFilter = page.getByRole('button', { name: /部门.*平台组/ });
+  await expect(activeFilter).toBeVisible();
+  await activeFilter.click();
+
+  await expect(tree.getByRole('treeitem', { name: '平台组，已选中' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  );
+  await expect(tree.getByRole('treeitem', { name: '研发中心，部分选中' })).toHaveAttribute(
+    'aria-checked',
+    'mixed'
+  );
 });
 
 test('@workspace-v2 renders each page immediately during consecutive menu navigation', async ({

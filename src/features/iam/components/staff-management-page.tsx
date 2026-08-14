@@ -118,11 +118,11 @@ function buildStaffUpdateRequest(row: StaffTableRow, deptId: number): StaffUpdat
     staffCode,
     staffName,
     deptId,
-    phone: row.phone?.trim() || undefined,
-    email: row.email?.trim() || undefined,
-    avatar: row.avatar?.trim() || undefined,
+    phone: row.phone?.trim() ?? undefined,
+    email: row.email?.trim() ?? undefined,
+    avatar: row.avatar?.trim() ?? undefined,
     status: row.status ?? undefined,
-    remark: row.remark?.trim() || undefined
+    remark: row.remark?.trim() ?? undefined
   };
 }
 
@@ -262,7 +262,11 @@ export function getStaffColumns(
       edit: { selectionMode: 'single', allowEmpty: false },
       size: 160,
       filter: 'multiSelect',
-      filterOptions: departmentFilterOptions,
+      filterOptions: {
+        kind: 'tree',
+        options: departmentFilterOptions,
+        selectionMode: 'cascade'
+      },
       enableSorting: false
     }),
     columnDsl.editableField('phone', '手机号', {

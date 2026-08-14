@@ -32,8 +32,8 @@ declare module '@tanstack/react-table' {
       sortField?: string;
       serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
     };
-    /** select/multiSelect/enum 列的可选项。 */
-    options?: Option[];
+    /** select/multiSelect/enum 列的可选项；tree 等形态由 DataTableFilterOptions 显式声明。 */
+    options?: DataTableFilterOptions;
     /** editableField 生成的通用编辑器契约。 */
     editableCell?: DataTableEditableColumnMeta<TData>;
     /** 选择编辑器兼容契约；新运行时优先读取 editableCell。 */
@@ -82,10 +82,31 @@ declare module '@tanstack/react-table' {
 export interface Option {
   label: string;
   value: string;
-  /** 树形选项的层级；省略时按普通扁平选项渲染。 */
-  depth?: number;
   count?: number;
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
+}
+
+/** 树形选项：depth 必填，是层级数据而非组件开关。 */
+export interface TreeOption extends Option {
+  depth: number;
+}
+
+export type DataTableTreeSelectionMode = 'cascade' | 'independent';
+
+/** 裸数组表示 flat；带 kind 的对象显式声明树形筛选及其选择语义。 */
+export type DataTableFilterOptions =
+  | readonly Option[]
+  | {
+      kind: 'tree';
+      options: readonly TreeOption[];
+      selectionMode?: DataTableTreeSelectionMode;
+    };
+
+/** Array.isArray 无法收窄 readonly 数组，统一通过此守卫识别 flat 选项。 */
+export function isDataTableFlatFilterOptions(
+  value: DataTableFilterOptions | undefined
+): value is readonly Option[] {
+  return Array.isArray(value);
 }
 
 export type DataTableChoiceValue = string | number;
@@ -706,7 +727,7 @@ export interface DataTableColumnFilterOptions {
   /** false 表示关闭服务端搜索筛选；字符串值表示搜索栏控件类型。 */
   filter?: false | DataTableColumnFilterVariant;
   filterPlaceholder?: string;
-  filterOptions?: readonly DataTableFilterOption[];
+  filterOptions?: DataTableFilterOptions;
   filterMin?: number | Date;
   filterMax?: number | Date;
   filterUnit?: string;

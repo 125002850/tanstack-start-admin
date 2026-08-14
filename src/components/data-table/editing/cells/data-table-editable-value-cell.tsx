@@ -4,8 +4,8 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { DataTableEditorKeyboardShell } from '@/components/data-table/cells/data-table-editor-keyboard-shell';
-import { renderDataTableTextCell } from '@/components/data-table/columns/data-table-column-rendering';
+import { DataTableEditorKeyboardShell } from '@/components/data-table/editing/cells/data-table-editor-keyboard-shell';
+import { renderDataTableTextCell } from '@/components/data-table/cells/data-table-text-cell';
 import { cn } from '@/lib/utils';
 import type {
   DataTableEditableInputColumnMeta,

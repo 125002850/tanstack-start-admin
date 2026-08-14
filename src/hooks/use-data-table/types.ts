@@ -156,9 +156,9 @@ export interface UseDataTableProps<TData> extends Pick<
   columnOrderStorage?: ColumnOrderStorageMode;
   /**
    * 排序持久化存储模式。
-   * - `'localStorage'` — 持久存储（默认）
+   * - `'localStorage'` — 持久存储
    * - `'sessionStorage'` — 会话存储
-   * - `false` — 禁用持久化
+   * - `false` — 禁用持久化（默认）
    */
   sortingStorage?: SortingStorageMode;
   /**

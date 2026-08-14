@@ -21,7 +21,10 @@
 
 - 完整目录图与组件归属规则见 [项目结构与组件归属](project-structure.md)。
 - Shadcn Table 原语固定保留在 `src/components/ui/table.tsx`；完整 DataTable 子系统固定放在 `src/components/data-table/`。
-- DataTable 内部按职责使用 `actions/`、`cells/`、`columns/`、`core/`、`dnd/`、`expand/`、`export/`、`feedback/`、`filters/`、`toolbar/`、`virtualization/`。
+- DataTable 内部按职责使用 `actions/`、`cells/`、`columns/`、`core/`、`dnd/`、`editing/`、`expand/`、`export/`、`feedback/`、`filters/`、`toolbar/`、`virtualization/`。
+- `columns/` 根目录只保留稳定列入口、列标签和对应契约测试；`columns/dsl/` 放列构建、options、formatter 和 type registry，`columns/header/` 放列头与 resize handle。
+- 单元格编辑统一收敛在 `editing/`：adapter、codec、时区、编辑导航和 editable cell 必须在该子域内闭环，禁止重新放回 `columns/` 或通用 `cells/`。
+- `cells/` 只放与列 DSL、编辑器无关的通用 cell 展示组件。业务 feature 只能从 `columns/data-table-column-factory` 消费列能力，禁止直接导入 `columns/dsl/`、`columns/header/` 或 `editing/` 实现。
 - 跨目录引用使用 `@/components/data-table/<layer>/<file>`；同目录实现与测试可以使用相对路径。禁止新增 flat barrel、旧路径 alias、兼容转发或新旧路径双写。
 - 共享状态编排和服务端 DSL 查询组合统一放在 `src/hooks/use-data-table/`，并从 `@/hooks/use-data-table` 公开；跨层类型放在 `src/types/data-table.ts`，特性配置放在 `src/config/data-table*.ts`，无 UI 算法和持久化放在 `src/lib/data-table/`。
 - 禁止 `src/components/data-table/` 反向导入 `src/features/`。只服务单一业务域的 cell、操作或详情组件必须留在对应 feature。

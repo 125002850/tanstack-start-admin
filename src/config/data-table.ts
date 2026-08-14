@@ -251,7 +251,7 @@ export const dataTableConfig = {
   ] as const satisfies readonly FilterOperator[],
   joinOperators: ['and', 'or'] as const,
   columnResizeStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false,
-  // 列顺序和排序默认也持久化到 localStorage；单张表可通过 useDataTable props 覆盖。
+  // 列顺序持久化到 localStorage；排序是临时查询意图，刷新后应回到默认，故默认关闭。
   columnOrderStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false,
-  sortingStorage: 'localStorage' as 'localStorage' | 'sessionStorage' | false
+  sortingStorage: false as 'localStorage' | 'sessionStorage' | false
 };

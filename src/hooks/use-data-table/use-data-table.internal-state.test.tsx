@@ -728,23 +728,10 @@ describe('useDataTable — internal-state mode (default)', () => {
   });
 
   it('persists sorting by tableId across remounts', () => {
-    render(React.createElement(InternalStateTester, { tableId: 'sorting-persisted' }));
-    act(() => {
-      screen.getByTestId('sort-name').click();
-    });
-
-    cleanup();
-    render(React.createElement(InternalStateTester, { tableId: 'sorting-persisted' }));
-    expect(screen.getByTestId('sort').textContent).toBe(
-      JSON.stringify([{ id: 'name', desc: true }])
-    );
-  });
-
-  it('does not persist sorting when sortingStorage is false', () => {
     render(
       React.createElement(InternalStateTester, {
-        tableId: 'sorting-disabled',
-        sortingStorage: false
+        tableId: 'sorting-persisted',
+        sortingStorage: 'localStorage'
       })
     );
     act(() => {
@@ -754,15 +741,41 @@ describe('useDataTable — internal-state mode (default)', () => {
     cleanup();
     render(
       React.createElement(InternalStateTester, {
-        tableId: 'sorting-disabled',
-        sortingStorage: false
+        tableId: 'sorting-persisted',
+        sortingStorage: 'localStorage'
+      })
+    );
+    expect(screen.getByTestId('sort').textContent).toBe(
+      JSON.stringify([{ id: 'name', desc: true }])
+    );
+  });
+
+  it('does not persist sorting by default', () => {
+    render(
+      React.createElement(InternalStateTester, {
+        tableId: 'sorting-disabled'
+      })
+    );
+    act(() => {
+      screen.getByTestId('sort-name').click();
+    });
+
+    cleanup();
+    render(
+      React.createElement(InternalStateTester, {
+        tableId: 'sorting-disabled'
       })
     );
     expect(screen.getByTestId('sort').textContent).toBe('[]');
   });
 
   it('clears persisted sorting when sorting returns to initial state', () => {
-    render(React.createElement(InternalStateTester, { tableId: 'sorting-cleared' }));
+    render(
+      React.createElement(InternalStateTester, {
+        tableId: 'sorting-cleared',
+        sortingStorage: 'localStorage'
+      })
+    );
     act(() => {
       screen.getByTestId('sort-name').click();
     });
@@ -803,6 +816,7 @@ describe('useDataTable — internal-state mode (default)', () => {
     render(
       React.createElement(InternalStateTester, {
         tableId: 'sorting-overrides-initial',
+        sortingStorage: 'localStorage',
         initialSorting: [{ id: 'id', desc: false }]
       })
     );

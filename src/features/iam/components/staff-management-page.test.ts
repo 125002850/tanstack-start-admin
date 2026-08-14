@@ -77,7 +77,7 @@ describe('staff cell editor adapter', () => {
   it('declares phone, department, status and roles with matching cell editors', () => {
     const columns = getStaffColumns(
       () => undefined,
-      [{ value: '10', label: '研发部' }],
+      [{ value: '10', label: '研发部', depth: 0 }],
       [{ value: 10, label: '研发部' }],
       [{ value: 2, label: '审计员' }],
       [
