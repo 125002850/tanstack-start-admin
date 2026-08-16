@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workspace 多标签工作台 — 架构评审与实现思路</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1c2430;
+    --ink-soft: #5a6572;
+    --ink-faint: #8b95a3;
+    --line: #e4e8ee;
+    --accent: #2563eb;
+    --accent-soft: #eff4ff;
+    --green: #15803d;
+    --green-soft: #ecfdf3;
+    --amber: #b45309;
+    --amber-soft: #fffbeb;
+    --red: #b91c1c;
+    --red-soft: #fef2f2;
+    --code-bg: #f1f4f8;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.7;
+    padding: 40px 16px 80px;
+  }
+  .page { max-width: 960px; margin: 0 auto; }
+  header.hero {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 36px 40px;
+    margin-bottom: 24px;
+  }
+  .hero .kicker {
+    font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 8px;
+  }
+  h1 { font-size: 28px; line-height: 1.35; margin-bottom: 10px; }
+  .hero .sub { color: var(--ink-soft); font-size: 15px; }
+  .score-strip {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px;
+  }
+  .score-pill {
+    background: var(--accent-soft); border: 1px solid #d6e3ff;
+    border-radius: 999px; padding: 8px 18px;
+    font-size: 14px; color: var(--accent); font-weight: 600;
+  }
+  .score-pill b { font-size: 17px; }
+  section { margin-bottom: 28px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px 32px;
+  }
+  h2 {
+    font-size: 20px; margin-bottom: 16px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+  h2 .no { color: var(--accent); margin-right: 8px; font-variant-numeric: tabular-nums; }
+  h3 { font-size: 16px; margin: 18px 0 8px; }
+  p { margin-bottom: 10px; }
+  .muted { color: var(--ink-soft); }
+  .small { font-size: 13px; color: var(--ink-faint); }
+  code {
+    font-family: var(--mono); font-size: 13px;
+    background: var(--code-bg); padding: 1px 6px; border-radius: 5px;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--ink-soft); font-weight: 600; font-size: 13px; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .tag {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    border-radius: 6px; padding: 2px 8px; margin-right: 4px;
+  }
+  .tag.good { background: var(--green-soft); color: var(--green); }
+  .tag.warn { background: var(--amber-soft); color: var(--amber); }
+  .tag.bad  { background: var(--red-soft); color: var(--red); }
+  .tag.info { background: var(--accent-soft); color: var(--accent); }
+  /* ── 架构图 ── */
+  .diagram { font-size: 13px; }
+  .layer-label {
+    color: var(--ink-faint); font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 700; margin: 6px 0;
+  }
+  .box-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+  .box {
+    flex: 1 1 180px; min-width: 160px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; position: relative;
+  }
+  .box.core { border-color: #bcd0ff; background: #f7faff; }
+  .box.danger { border-color: #ffd0d0; background: #fffafa; }
+  .box .b-title { font-weight: 700; margin-bottom: 3px; }
+  .box .b-title .ext { color: var(--ink-faint); font-weight: 400; }
+  .box .b-desc { color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+  .arrow-v {
+    text-align: center; color: var(--ink-faint);
+    font-size: 15px; line-height: 1.2; padding: 2px 0;
+  }
+  .flow { counter-reset: step; list-style: none; }
+  .flow li {
+    counter-increment: step; position: relative;
+    padding: 0 0 18px 40px; font-size: 14px;
+  }
+  .flow li::before {
+    content: counter(step);
+    position: absolute; left: 0; top: 1px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flow li:not(:last-child)::after {
+    content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px;
+    width: 1px; background: var(--line);
+  }
+  .flow li b { display: block; margin-bottom: 2px; }
+  .flow li .muted { font-size: 13.5px; }
+  .quote {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 12px 16px; border-radius: 0 8px 8px 0;
+    font-size: 14px; color: var(--ink); margin: 14px 0;
+  }
+  .quote.warn { border-color: #f59e0b; background: var(--amber-soft); }
+  ul.plain { padding-left: 20px; margin-bottom: 10px; }
+  ul.plain li { margin-bottom: 6px; }
+  @media (max-width: 640px) {
+    .card { padding: 20px; }
+    header.hero { padding: 26px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="hero">
+  <div class="kicker">Code Review · 2026-08-16</div>
+  <h1>Workspace 多标签工作台实现评审</h1>
+  <p class="sub">
+    <code>src/features/workspace-tabs</code> 约 4,460 行实现 + 2,830 行单元测试 + 478 行 E2E 冒烟。
+    本页汇总代码架构,并用直白的话解释实现思路。
+  </p>
+  <div class="score-strip">
+    <span class="score-pill">综合评分 <b>8.2 / 10</b></span>
+    <span class="score-pill">架构设计 <b>9 / 10</b></span>
+    <span class="score-pill">健壮性 <b>8.5 / 10</b></span>
+    <span class="score-pill">测试保障 <b>8.5 / 10</b></span>
+    <span class="score-pill">可维护性 <b>7.5 / 10</b></span>
+  </div>
+</header>
+
+<!-- ═══════════════ 一句话总结 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">00</span>一句话总结</h2>
+  <p>
+    这套实现把后台系统做成了<b>浏览器式多标签工作台</b>:URL 是唯一真相,
+    标签栏只是"遥控器";页面实例统一托管在一个 ActivityHost 里做 keep-alive;
+    最难的活是<b>切标签前驱逐上一页的弹窗/下拉等浮层</b>,为此专门造了一台
+    "浮层驱逐机"。整体是一个防御性很强、测试密度很高、注释在解释"为什么"的工程级实现,
+    主要扣分点在于浮层驱逐依赖 DOM 选择器契约、手写路由匹配器这两处"走钢丝"的设计,
+    —— 好消息是作者自己在性能评审文档里也承认了,并排好了整改路线。
+  </p>
+</section>
+
+<!-- ═══════════════ 评分 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">01</span>评分明细</h2>
+  <table>
+    <thead>
+      <tr><th>维度</th><th>得分</th><th>评价</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>架构设计</b></td><td><span class="tag good">9.0</span></td>
+        <td>URL 单一真相源 + 双 store 分离(元数据 / 渲染描述符)+ 集中式 ActivityHost,分层干净、职责清晰。错误边界、特性开关、降级路径齐全。</td>
+      </tr>
+      <tr>
+        <td><b>健壮性与边界处理</b></td><td><span class="tag good">8.5</span></td>
+        <td>竞态处理非常用心:序列号防抖、pointerdown 时机快照、LRU 原子驱逐、多层兜底关闭。但对 Activity 生命周期的隐式约束没有测试强制。</td>
+      </tr>
+      <tr>
+        <td><b>测试与契约保障</b></td><td><span class="tag good">8.5</span></td>
+        <td>约 6,000 行测试(含 store 778 行、overlay 405 行),外加路由清单架构契约测试、浮层契约页面、3 个 E2E 冒烟。缺 StrictMode 与 Activity 契约测试(已列入 P1)。</td>
+      </tr>
+      <tr>
+        <td><b>可维护性</b></td><td><span class="tag warn">7.5</span></td>
+        <td>注释质量极高(解释为什么)。但浮层驱逐靠 DOM 选择器 + 合成事件模拟,依赖 Radix 内部契约;手写 <code>$param</code> 路由匹配器重造轮子;双 openOrActivate 流程有重复逻辑。</td>
+      </tr>
+      <tr>
+        <td><b>性能意识</b></td><td><span class="tag good">8.0</span></td>
+        <td>render 闭包缓存、Context 拆分、renderKey 增量更新、LRU 上限 15。思路正确,但尚未建立实测基线(作者自己在 review 里也声明"不声明未经测量的提升")。</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:12px">
+    参照:2026-08-12 的内部性能评审结论为 <code>APPROVE_WITH_FOLLOW_UPS</code>,与本次独立评审结论一致。
+  </p>
+</section>
+
+<!-- ═══════════════ 架构图 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">02</span>架构总览</h2>
+  <p class="muted">数据永远单向流动:路由变化 → 同步器开/激活标签 → Store 更新 → 标签栏和 Viewport 各自消费。没有任何一处"标签栏直接改内容、路由再跟着改"的双向同步。</p>
+
+  <div class="diagram">
+    <div class="layer-label">第 1 层 · 真相源</div>
+    <div class="box-row">
+      <div class="box">
+        <div class="b-title">URL / TanStack Router</div>
+        <div class="b-desc">每个业务路由挂 <code>staticData.workspace</code> 元数据(标题 / keepAlive / closable)。点标签 = <code>router.navigate(href)</code>,导航 = 激活标签。</div>
+      </div>
+      <div class="box">
+        <div class="b-title">WorkspacePageBoundary <span class="ext">(每个路由里)</span></div>
+        <div class="b-desc">路由组件不渲染自己,只把 render 闭包注册进 registry;workspace 开关关闭时直接 <code>renderWhenDisabled()</code> 渲染,零成本降级。</div>
+      </div>
+    </div>
+
+    <div class="arrow-v">▼</div>
+
+    <div class="layer-label">第 2 层 · 同步与状态</div>
+    <div class="box-row">
+      <div class="box">
+        <div class="b-title">useDashboardRouteTagSync</div>
+        <div class="b-desc">监听 location → 匹配最深路由 → 解析配置 → 调用 <code>openOrActivate</code>。非 dashboard 路径清空 activeId。</div>
+      </div>
+      <div class="box core">
+        <div class="b-title">useWorkspaceTabStore <span class="ext">(zustand)</span></div>
+        <div class="b-desc">标签元数据:tabs / activeId / openedOrder / lifecycle(脏标记、closeGuard)。开、关、关其他、全关、LRU 驱逐(≤15 个保活)。</div>
+      </div>
+      <div class="box core">
+        <div class="b-title">useWorkspacePageRegistryStore</div>
+        <div class="b-desc">标签渲染描述符:tabId → { render, keepAlive, renderKey, errorFallback }。ReactNode 与元数据分离,store 保持可序列化。</div>
+      </div>
+    </div>
+
+    <div class="arrow-v">▼</div>
+
+    <div class="layer-label">第 3 层 · 渲染与交互</div>
+    <div class="box-row">
+      <div class="box">
+        <div class="b-title">TagsBar <span class="ext">(标签栏 UI)</span></div>
+        <div class="b-desc">dnd-kit 拖拽排序、键盘左右/Enter/Delete、滚动渐变提示。通过 useWorkspaceTags 遥控 store,自己零状态逻辑。</div>
+      </div>
+      <div class="box">
+        <div class="b-title">useWorkspaceTags <span class="ext">(操作入口)</span></div>
+        <div class="b-desc">关标签前先跑 closeGuard(1.5s 超时)→ 驱逐浮层 → 再导航/关闭。pointerdown 时先对浮层做快照。</div>
+      </div>
+      <div class="box core">
+        <div class="b-title">WorkspaceViewport <span class="ext">(ActivityHost)</span></div>
+        <div class="b-desc">唯一渲染页面实例的地方:active 页可见,保活页用 React 19 <code>&lt;Activity&gt;</code> 隐藏(保留 DOM/state)。每槽一个错误边界 + Suspense。</div>
+      </div>
+    </div>
+
+    <div class="arrow-v">▼</div>
+
+    <div class="layer-label">横切 · 切标签时</div>
+    <div class="box-row">
+      <div class="box danger">
+        <div class="b-title">page-overlays <span class="ext">(浮层驱逐机)</span></div>
+        <div class="b-desc">弹窗/下拉/抽屉 portal 在 body 上,切走页面它们会"穿越"到新页面上。负责:快照 → 合成 Escape/click/pointerleave 关闭 → MutationObserver 等退出动画 → 500ms 超时兜底。</div>
+      </div>
+      <div class="box">
+        <div class="b-title">WorkspaceSlotErrorBoundary</div>
+        <div class="b-desc">单页崩溃 → 渲染兜底 UI + 禁用该标签 keepAlive,下次切走真实卸载、切回全新挂载,自愈。</div>
+      </div>
+      <div class="box">
+        <div class="b-title">workspace-devtools</div>
+        <div class="b-desc">仅 DEV:store 变更日志 + <code>window.__WORKSPACE_DEVTOOLS__</code> 手动检查桥。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ 实现思路 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">03</span>实现思路,用大白话讲</h2>
+
+  <h3>① 为什么 URL 是唯一真相?</h3>
+  <p>
+    传统的标签页方案是"标签栏自己管一份页面列表,路由再管一份",两处状态互相追赶,极其容易出 bug。
+    这里反过来:<b>标签栏里根本没有自己的页面列表逻辑</b>——点一个标签就是 <code>navigate(那个标签的 href)</code>,
+    路由变化后 <code>useDashboardRouteTagSync</code> 用 <code>openOrActivate</code> 把它激活。
+    副作用是:刷新页面后标签自然重建、URL 与标签永远一致、浏览器前进后退也自动正确。
+  </p>
+
+  <h3>② 页面实例为什么托管在 Viewport?</h3>
+  <p>
+    每个业务路由组件(如 <code>dept.tsx</code>)只做一件事:把"怎么渲染我"告诉注册中心,然后自己不渲染任何内容。
+    <code>WorkspaceViewport</code> 是唯一的"页面对外出租窗口":当前页正常展示,勾选了保活的旧页面用
+    <code>&lt;Activity mode="hidden"&gt;</code> 藏起来——DOM 和组件 state(表格筛选、表单草稿)都留着,
+    只是 Effect 被卸载。切回去就是显示回来,不用重新加载。
+    路由组件里那段 <code>if (!isCurrentRouteInstance) return null</code> 保证同一时刻只有一个路由在做注册,不会抢。
+  </p>
+
+  <h3>③ 最难的问题:切标签时,上一页的浮层怎么办?</h3>
+  <p>
+    Radix 的弹窗、下拉、抽屉都是 portal 到 <code>document.body</code> 的。你把页面 A 藏起来切到页面 B,
+    A 打开着的下拉菜单不会跟着消失——它会<b>悬浮在页面 B 之上</b>。这就是 <code>page-overlays.ts</code> 存在的全部意义,
+    它做的事分四步:
+  </p>
+  <ul class="plain">
+    <li><b>快照(timing 是关键):</b>在标签的 <code>pointerdown</code> 时刻扫描"当前有哪些浮层开着"并存下来。
+      必须在 pointerdown 而不是 click 做——因为 Radix 会在 click 之前、通过"点击外部"的 pointerdown
+      先把非模态浮层标记为 closed(只剩退出动画),click 时再扫就晚了。</li>
+    <li><b>关闭:</b>对存下来的浮层派发<b>合成的</b> Esc 键;如果 Esc 不管用,按优先级逐级升级:
+      找浮层里的显式关闭按钮点它 → 找控制它的 trigger 再点一次。
+      对 hover 型浮层(tooltip/popover)派发 <code>pointerleave</code>/<code>mouseleave</code>
+      (不冒泡的事件 React 代理收不到,所以直接派发到元素上——代码注释里写明了这个坑)。</li>
+    <li><b>等退出动画:</b>挂一个 MutationObserver 盯 <code>aria-expanded / data-state / data-open</code> 的变化,
+      每帧检查"全关干净没有",没干净就每 40ms 重试一轮关闭,最多 8 次。</li>
+    <li><b>超时兜底:</b>500ms 还没干净就当它干净了,直接切换——用户永远不用等一个弹窗慢慢退场。</li>
+  </ul>
+  <div class="quote">
+    竞态防护:用户狂点标签怎么办?每次操作领一个递增的"号码牌"(sequence)。
+    等浮层退场完成后,发现自己手里的号码牌已经不是最新的,就放弃提交——最后一次点击说了算。
+  </div>
+
+  <h3>④ 保活页太多会吃光内存,怎么办?</h3>
+  <p>
+    保活标签有上限(<code>MAX_KEEPALIVE_TABS = 15</code>),超了按<b>最久没访问的</b>驱逐。
+    两个细节很讲究:驱逐逻辑放在和"打开标签"<b>同一个原子 set()</b> 里执行
+    (注释记载:以前是 set 外补刀,引发了订阅顺序 bug);并且<b>绝不驱逐脏页面</b>和<b>刚打开的页面</b>
+    (刚打开的页面生命周期快照还没注册,可能被误判为可驱逐)。
+  </p>
+
+  <h3>⑤ 脏标记与关不掉的门</h3>
+  <p>
+    每个页面可以通过 <code>useWorkspacePage()</code> 拿到一个生命周期通道,报告"我有未保存的更改"和
+    "关我之前先问我"(closeGuard)。关标签、关其他、关全部之前都会先过这道门,
+    1.5 秒不回答就当拒绝处理并 toast 提示。脏标签在标签栏上显示一个小圆点。
+    —— 目前这部分是"先铺好管道",生产页面还没接入。
+  </p>
+
+  <h3>⑥ 一个页面崩溃了会怎样?</h3>
+  <p>
+    每个标签槽有自己的错误边界:崩溃时显示兜底卡片(DEV 环境还会提示先跑 <code>pnpm api &amp;&amp; pnpm typecheck</code>),
+    同时自动禁用该标签的 keep-alive。效果是:切走时它被真正卸载,切回来重新挂载——崩溃的页面自愈了。
+  </p>
+
+  <h3>⑦ 性能上的小心思</h3>
+  <ul class="plain">
+    <li><b>render 闭包缓存:</b>切换可见性只改 <code>activeId</code>,Viewport 不会重新执行所有保活页的 <code>render()</code>。</li>
+    <li><b>Context 拆分:</b><code>active</code> 和 <code>{ tabId, updateLifecycle }</code> 分成两个 Context,
+      只关心生命周期的页面不会因为显隐而整页重渲染。</li>
+    <li><b>renderKey:</b>同页 URL 查询参数变化时(如 <code>?page=2</code>),以路径+search 为 key 刷新 descriptor,
+      组件树原地更新、局部 state 保留。</li>
+  </ul>
+</section>
+
+<!-- ═══════════════ 一次切换的完整旅程 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">04</span>点击一个标签,背后发生了什么</h2>
+  <ol class="flow">
+    <li>
+      <b>pointerdown(比 click 更早)</b>
+      <span class="muted">TagsBar 的 <code>prepareActivate</code> 抢在 Radix 把非模态浮层标为 closed 之前,扫描当前页面的浮层并快照。</span>
+    </li>
+    <li>
+      <b>click → <code>openOrActivate(tab, snapshot)</code></b>
+      <span class="muted">拿快照派发合成事件关掉上一页所有浮层。没有浮层?跳过等待,直接走第 4 步。</span>
+    </li>
+    <li>
+      <b>等浮层退场</b>
+      <span class="muted">MutationObserver + 40ms 重试 + 500ms 超时。期间用户又点了别的标签?号码牌作废,本次操作放弃。</span>
+    </li>
+    <li>
+      <b>navigate(tab.href)</b>
+      <span class="muted">改 URL。此刻标签栏状态还没动。</span>
+    </li>
+    <li>
+      <b>路由变化 → <code>useDashboardRouteTagSync</code> 苏醒</b>
+      <span class="muted">匹配最深路由,解析标题/keepAlive/closable,调用 store 的 <code>openOrActivate</code>(已存在 → 只更新激活与最近访问时间)。</span>
+    </li>
+    <li>
+      <b>store 原子提交</b>
+      <span class="muted">activeId 切换 + lastVisitedAt 刷新 + 超限时同帧 LRU 驱逐。store 内再补一刀:对上一个 activeId 兜底驱逐浮层(双保险)。</span>
+    </li>
+    <li>
+      <b>两个消费者各自响应</b>
+      <span class="muted">TagsBar 重新着色高亮;Viewport 把新页面的 Activity 切 visible、旧页面切 hidden(保活)或卸载(不保活)。</span>
+    </li>
+    <li>
+      <b>新页面的 Boundary 注册 descriptor</b>
+      <span class="muted">layout effect 里把 render 闭包写进 registry——下一次切换时它才渲染。若 renderKey 变了(URL 参数不同),刷新 descriptor。</span>
+    </li>
+  </ol>
+  <div class="quote warn">
+    为什么要在 store 和 Viewport 两处都驱逐浮层?因为切标签有两个入口:点标签(hook 路线,有快照)
+    和直接导航/键盘/侧栏(store 路线,无快照,退化为全局扫描)。两处互为兜底,宁可多关不可漏关。
+  </div>
+</section>
+
+<!-- ═══════════════ 亮点 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">05</span>做得好的地方</h2>
+  <ul class="plain">
+    <li><span class="tag good">设计</span><b>单一真相源 + 单向数据流</b>:路由驱动一切,没有双向同步这个万恶之源。</li>
+    <li><span class="tag good">设计</span><b>降级路径真实存在且被测试</b>:workspace 开关一关,每个路由直接渲染(<code>renderWhenDisabled</code>),特性可随时回滚。</li>
+    <li><span class="tag good">健壮性</span><b>竞态处理有完整故事</b>:号码牌序列、pointerdown 快照时机、原子 LRU、双入口兜底——每处都有注释说明当年踩过的坑。</li>
+    <li><span class="tag good">测试</span><b>测试密度高且打在要害上</b>:store 778 行、浮层驱逐 405 行;E2E 专打三个最脆的点(浮层穿越、keep-alive、标签切换)。</li>
+    <li><span class="tag good">契约</span><b>浮层契约页面</b>(<code>workspace-overlay-contract-page.tsx</code>):把 Select/Dropdown/Dialog/Sheet/嵌套 Sheet/Combobox 全部做成活靶子,新增 overlay 类型必须在这里过一遍。</li>
+    <li><span class="tag good">契约</span><b>路由清单架构测试</b>(<code>dashboard-route-inventory.test.ts</code>):用 <code>import.meta.glob</code> 扫描全部 dashboard 路由,强制每个路由声明 workspace 元数据——架构约束由测试机器执法。</li>
+    <li><span class="tag good">工程</span><b>注释质量</b>:通篇解释"为什么"(pointerleave 不冒泡、tooltip 的 <code>delayed-open</code>、Activity 会清 Effect、set 外驱逐引发订阅 bug),而不是复述代码。</li>
+    <li><span class="tag good">工程</span><b>自省文化</b>:有自己的性能评审文档,风险按 P1/P2 排序,且明确声明"不吹未经测量的性能数字"。</li>
+  </ul>
+</section>
+
+<!-- ═══════════════ 风险 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">06</span>风险与扣分点</h2>
+  <table>
+    <thead>
+      <tr><th style="width:150px">级别</th><th>问题</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag bad">P1 结构债</span></td>
+        <td><b>浮层驱逐靠 DOM 契约</b></td>
+        <td>几十个 <code>[data-slot][data-state]</code> 选择器 + 合成事件模拟,依赖 Radix 内部实现。<b>Radix/Base UI 一升级就可能全盘失效</b>;document 级扫描还可能误伤不属于当前页面的全局浮层;退出动画只能靠轮询+超时,无法表达真实完成时机。作者的整改方向(显式 overlay registry + Portal 容器)是对的。</td>
+      </tr>
+      <tr>
+        <td><span class="tag warn">P2</span></td>
+        <td><b>手写路由匹配器</b></td>
+        <td><code>compileRoutePattern</code> 手写 <code>$param → [^/]+</code> 的正则编译器,加 <code>routesByPath as unknown as Record&lt;string, unknown&gt;</code> 的类型逃逸,重造了 TanStack Router 的匹配轮子。路由语法演进时这里不会跟着走。</td>
+      </tr>
+      <tr>
+        <td><span class="tag warn">P1</span></td>
+        <td><b>Activity 生命周期契约未强制</b></td>
+        <td>hidden 状态下页面 Effect 会被清理,业务页必须容忍反复 mount/cleanup;但没有任何契约测试或 StrictMode 覆盖来抓"假设 Effect 隐藏时还在跑"的页面(定时器、轮询、WebSocket、音频)。</td>
+      </tr>
+      <tr>
+        <td><span class="tag warn">P2</span></td>
+        <td><b>lifecycle 通道暂无消费者</b></td>
+        <td>dirty / closeGuard / updateLifecycle 全线铺好但生产页面未接入;"未保存拦截"目前是纸面能力。<code>evictInactive</code> 无调用方,且不检查 dirty/closeGuard——未来一旦有人调用,可能静默丢掉有未保存更改的标签。</td>
+      </tr>
+      <tr>
+        <td><span class="tag warn">P2</span></td>
+        <td><b>openOrActivate 双实现</b></td>
+        <td>store 版(立即提交)与 hook 版(等浮层退场再导航)逻辑相似,各自维护一套 sequence。目前注释清晰、测试覆盖,但两处要同步理解。</td>
+      </tr>
+      <tr>
+        <td><span class="tag info">备忘</span></td>
+        <td><b>性能无实测基线</b></td>
+        <td>render 缓存、Context 拆分等优化思路正确,但切换耗时/内存基线还没建。拖拽排序也只改视觉顺序,不持久化——属于产品取舍,不算缺陷。</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════════ 文件清单 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">07</span>文件清单(实现代码)</h2>
+  <table>
+    <thead>
+      <tr><th>文件</th><th style="width:100px">行数</th><th>职责(一句话)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>types.ts</code></td><td>91</td><td>全部类型契约。</td></tr>
+      <tr><td><code>utils/store.ts</code></td><td>447</td><td>标签元数据仓库:开/关/激活/LRU 驱逐/生命周期快照。</td></tr>
+      <tr><td><code>utils/page-registry.ts</code></td><td>68</td><td>渲染描述符仓库,ReactNode 与元数据分离。</td></tr>
+      <tr><td><code>utils/page-overlays.ts</code></td><td>582</td><td>浮层驱逐机:快照、合成事件关闭、退场等待、超时兜底。</td></tr>
+      <tr><td><code>components/workspace-viewport.tsx</code></td><td>190</td><td>ActivityHost:可见/隐藏页面 + 槽级错误边界。</td></tr>
+      <tr><td><code>components/workspace-page-boundary.tsx</code></td><td>120</td><td>路由内注册 descriptor,含 disabled 降级路径。</td></tr>
+      <tr><td><code>components/workspace-page-route.tsx</code></td><td>31</td><td>Boundary 的便捷封装,自动包 PageContainer。</td></tr>
+      <tr><td><code>components/workspace-slot-error-boundary.tsx</code></td><td>56</td><td>单槽崩溃 → 禁用 keep-alive 自愈。</td></tr>
+      <tr><td><code>components/activity.tsx</code></td><td>10</td><td>React 19 Activity 的带契约注释封装。</td></tr>
+      <tr><td><code>components/workspace-overlay-contract-page.tsx</code></td><td>222</td><td>浮层契约页面:全部 overlay 类型的活靶子。</td></tr>
+      <tr><td><code>hooks/use-workspace-tags.ts</code></td><td>191</td><td>标签栏操作入口:closeGuard、浮层驱逐后导航。</td></tr>
+      <tr><td><code>hooks/use-workspace-page.ts</code></td><td>39</td><td>页面生命周期通道 Context(active / updateLifecycle)。</td></tr>
+      <tr><td><code>hooks/use-dashboard-route-tag-sync.ts</code></td><td>202</td><td>路由 → store 同步器 + 手写路由匹配器。</td></tr>
+      <tr><td><code>lib/route-workspace.ts</code></td><td>53</td><td>路由 workspace 配置解析与优先级。</td></tr>
+      <tr><td><code>lib/workspace-devtools.ts</code></td><td>109</td><td>DEV 专用调试桥与变更日志。</td></tr>
+      <tr><td><code>config/workspace-tabs.ts</code></td><td>12</td><td>特性开关 + 保活上限 15。</td></tr>
+      <tr><td><code>components/layout/tags-bar/*</code></td><td>—</td><td>标签栏 UI(dnd-kit 拖拽、键盘导航、滚动提示)。</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:12px">
+    测试配套:<code>store.test.ts</code> 778 行、<code>page-overlays.test.tsx</code> 405 行、
+    <code>workspace-viewport.test.tsx</code> 415 行、<code>dashboard-route-inventory.test.ts</code> 450 行、
+    <code>use-dashboard-route-tag-sync.test.ts</code> 290 行、<code>workspace-page-boundary.test.tsx</code> 288 行、
+    <code>use-workspace-page.test.tsx</code> 200 行、<code>route-workspace.test.ts</code> 200 行;
+    E2E:<code>workspace-tabs-smoke</code> / <code>workspace-staff-keepalive</code> / <code>workspace-overlay-portal</code>。
+  </p>
+</section>
+
+<!-- ═══════════════ 结论 ═══════════════ -->
+<section class="card">
+  <h2><span class="no">08</span>结论</h2>
+  <p>
+    <b>8.2 / 10 —— 这是一套"工程级"而不是"demo 级"的实现。</b>
+    它把一个看似简单的多标签功能里的真正难题(浮层穿越、keep-alive 生命周期、竞态、内存上限)
+    全部正面解决,并用测试和契约页面把最脆的部分钉死。扣掉的 1.8 分不在实现功力,而在两处
+    "用 DOM 契约 / 重造轮子"的架构性取舍——这些风险作者自己已如实记录并排期整改。
+  </p>
+  <p class="muted">
+    建议的下一步(与 2026-08-12 内部评审一致):① 显式 overlay registry 替代 DOM 兜底;
+    ② Activity + StrictMode 生命周期契约测试;③ 建立切换耗时与内存基线;④ 让生产页面接入 dirty/closeGuard。
+  </p>
+</section>
+
+<p class="small" style="text-align:center; margin-top:28px">
+  Generated by Claude Code · 2026-08-16 · tanstack-start-admin
+</p>
+
+</div>
+</body>
+</html>
