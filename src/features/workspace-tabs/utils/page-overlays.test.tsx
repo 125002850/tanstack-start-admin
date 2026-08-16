@@ -2,7 +2,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   captureWorkspacePageOverlays,
@@ -12,9 +12,16 @@ import {
 } from './page-overlays';
 
 describe('workspace page overlays', () => {
+  beforeEach(() => {
+    // 本文件的用例都没有注册浮层，DOM 兜底会触发 DEV 未注册告警；
+    // 统一静音，由专门的用例断言告警行为。
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
   afterEach(() => {
     cleanup();
     resetWorkspacePageOverlays();
+    vi.restoreAllMocks();
   });
 
   it('closes an open tooltip before switching workspace pages', async () => {
@@ -401,5 +408,60 @@ describe('workspace page overlays', () => {
     });
 
     expect(screen.queryByRole('button', { name: 'Close dialog' })).not.toBeInTheDocument();
+  });
+
+  it('warns once in dev when the DOM fallback closes an unregistered overlay', async () => {
+    const warnMock = vi.mocked(console.warn);
+    const tabId = '/dashboard/unregistered-popover';
+    let reopenPopover: (() => void) | undefined;
+
+    function UnregisteredPopover() {
+      const [open, setOpen] = React.useState(true);
+      reopenPopover = () => setOpen(true);
+
+      React.useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+          if (event.key === 'Escape') setOpen(false);
+        };
+
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+      }, []);
+
+      return (
+        <div
+          ref={(root) => {
+            if (root) registerWorkspacePageOverlayRoot(tabId, root);
+          }}
+        >
+          {open ? (
+            <div data-slot='popover-content' data-state='open'>
+              Unregistered popover content
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    render(<UnregisteredPopover />);
+
+    const firstDismiss = dismissWorkspacePageOverlays(tabId);
+    await act(async () => {
+      await firstDismiss.waitForSettled();
+    });
+
+    expect(screen.queryByText('Unregistered popover content')).not.toBeInTheDocument();
+    expect(warnMock).toHaveBeenCalledTimes(1);
+    expect(warnMock.mock.calls[0]?.[0]).toContain(tabId);
+
+    // 同一 tab 会话内重复出现只提醒一次，避免切换流程中刷屏
+    act(() => reopenPopover?.());
+    const secondDismiss = dismissWorkspacePageOverlays(tabId);
+    await act(async () => {
+      await secondDismiss.waitForSettled();
+    });
+
+    expect(screen.queryByText('Unregistered popover content')).not.toBeInTheDocument();
+    expect(warnMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -14,6 +14,7 @@ import {
   ComboboxValue
 } from '@/components/ui/combobox';
 import { cn } from '@/lib/utils';
+import { useWorkspaceOverlay } from '@/features/workspace-tabs/hooks/use-workspace-overlay';
 
 import { useOverlayPortalContainer } from './use-overlay-portal-container';
 
@@ -95,6 +96,12 @@ export function SearchCombobox<TItem>({
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { container, getContainer, setTriggerNode, triggerRef } =
     useOverlayPortalContainer<HTMLButtonElement>();
+  // 切 workspace 标签时由注册表同步关闭；非 workspace 页面中 tabId 为空串，注册即 no-op
+  const closeWorkspaceOverlay = React.useCallback(
+    () => onOpenChange(false),
+    [onOpenChange]
+  );
+  useWorkspaceOverlay(open, closeWorkspaceOverlay);
   const selectedLabel = itemToStringLabel(value);
   const showClear = allowClear && !!selectedLabel && !disabled;
   const portalContainer = open ? (container ?? getContainer()) : container;
