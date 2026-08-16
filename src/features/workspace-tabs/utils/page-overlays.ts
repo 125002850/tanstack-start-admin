@@ -1,4 +1,8 @@
 import type { WorkspaceTabId } from '../types';
+import {
+  closeRegisteredWorkspaceOverlays,
+  resetWorkspaceOverlayRegistry
+} from './workspace-overlay-registry';
 
 const WORKSPACE_OVERLAY_SETTLE_TIMEOUT_MS = 500;
 const WORKSPACE_OVERLAY_CLOSE_RETRY_MS = 40;
@@ -133,6 +137,12 @@ export function dismissWorkspacePageOverlays(
   snapshot?: WorkspacePageOverlaySnapshot | null
 ) {
   if (!tabId) return settledDismissResult;
+
+  // 第一层：显式注册的浮层同步关闭（不依赖 DOM 契约，不等待动画）。
+  // 必须放在 snapshot === null 提前返回之前——注册表覆盖自定义浮层，
+  // 它们可能不在 DOM 扫描的选择器里。
+  const registeredCount = closeRegisteredWorkspaceOverlays(tabId);
+
   // null 表示 pointerdown 已完成捕获且当时没有 overlay；undefined 才表示未捕获入口，
   // 需要保留全局扫描作为键盘、侧栏导航和程序调用的兼容兜底。
   if (snapshot === null) return settledDismissResult;
@@ -140,22 +150,46 @@ export function dismissWorkspacePageOverlays(
   const capturedTargets =
     snapshot?.tabId === tabId ? pageOverlaySnapshots.get(snapshot) : undefined;
   if (snapshot) pageOverlaySnapshots.delete(snapshot);
-  return dismissWorkspacePageDomOverlays(tabId, capturedTargets);
+  return dismissWorkspacePageDomOverlays(tabId, capturedTargets, registeredCount === 0);
 }
 
 export function resetWorkspacePageOverlays() {
   pageOverlayRoots.clear();
   pageOverlaySnapshots = new WeakMap();
+  warnedUnregisteredOverlayTabs.clear();
+  resetWorkspaceOverlayRegistry();
 }
+
+const warnedUnregisteredOverlayTabs = new Set<WorkspaceTabId>();
 
 function dismissWorkspacePageDomOverlays(
   tabId: WorkspaceTabId,
-  capturedTargets?: WorkspacePageOverlayTargets
+  capturedTargets?: WorkspacePageOverlayTargets,
+  warnUnregistered = false
 ): WorkspaceOverlayDismissResult {
   const targets = capturedTargets
     ? cloneWorkspacePageOverlayTargets(tabId, capturedTargets)
     : collectWorkspacePageOverlayTargets(tabId, TRACKED_CONTENT_SELECTOR);
   if (!targets || overlayTargetsEmpty(targets)) return settledDismissResult;
+
+  if (warnUnregistered && isDev() && !warnedUnregisteredOverlayTabs.has(tabId)) {
+    // 该 tab 一个浮层都没注册，DOM 里却有开着的浮层 → 有浮层漏接入 useWorkspaceOverlay。
+    // 只警告当前仍处于 open 状态的目标，避免退出动画中的 closed 内容误报；
+    // 每个 tab 每次会话只提醒一次，防止切换流程中重复刷屏。
+    const hasOpenTargets = [...targets.triggerTargets, ...targets.contentTargets].some(
+      (target) =>
+        target.isConnected &&
+        (target.matches(OPEN_TRIGGER_SELECTOR) || target.matches(OPEN_CONTENT_SELECTOR))
+    );
+    if (hasOpenTargets) {
+      warnedUnregisteredOverlayTabs.add(tabId);
+      // oxlint-disable-next-line no-console -- dev-only diagnostic
+      console.warn(
+        `[workspace] tab "${tabId}" 存在未通过 useWorkspaceOverlay 注册的浮层，` +
+          '已由 DOM 兜底关闭。建议为对应浮层接入 useWorkspaceOverlay(open, close)。'
+      );
+    }
+  }
 
   const { root, ownerDocument, triggerTargets, contentTargets, controlledContentIds } = targets;
   const discoverOpenTargets = capturedTargets === undefined;
@@ -569,6 +603,17 @@ function scheduleNextFrame(ownerDocument: Document, callback: () => void) {
 
 function getBrowserDocument() {
   return typeof document === 'undefined' ? null : document;
+}
+
+function isDev(): boolean {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      return (import.meta.env as Record<string, unknown>).DEV === true;
+    }
+  } catch {
+    // import.meta unavailable
+  }
+  return false;
 }
 
 function getOwnerDocument(root: ParentNode) {

@@ -1,6 +1,8 @@
 import * as React from 'react';
 import type { Column } from '@tanstack/react-table';
 
+import { useWorkspaceOverlay } from '../hooks/use-workspace-overlay';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTableFacetedFilter } from '@/components/data-table/filters/data-table-faceted-filter';
@@ -113,6 +115,13 @@ export function WorkspaceOverlayContractPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [nestedSheetOpen, setNestedSheetOpen] = React.useState(false);
+
+  // 受控浮层显式认领：切标签时由注册表同步关闭。
+  // Select / Dropdown / FacetedFilter 为非受控浮层，保持由 DOM 兜底关闭，
+  // 用于持续验证两条关闭路径并存。
+  useWorkspaceOverlay(dialogOpen, React.useCallback(() => setDialogOpen(false), []));
+  useWorkspaceOverlay(sheetOpen, React.useCallback(() => setSheetOpen(false), []));
+  useWorkspaceOverlay(nestedSheetOpen, React.useCallback(() => setNestedSheetOpen(false), []));
 
   return (
     <div data-testid='workspace-overlay-contract-page' className='grid gap-4 lg:grid-cols-2'>
