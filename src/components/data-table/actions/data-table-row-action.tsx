@@ -109,7 +109,7 @@ export function DataTableRowActions<TData>({
       <TooltipProvider>
         <div className='flex items-center gap-0.5' data-row-expand-ignore>
           {visibleActions.map((action) => (
-            <TooltipPrimitive.Root key={action.label}>
+            <TooltipPrimitive.Root key={action.id ?? action.label}>
               <TooltipTrigger asChild>
                 <Button
                   variant='ghost'
@@ -147,7 +147,7 @@ export function DataTableRowActions<TData>({
               <DropdownMenuContent align='end'>
                 {moreActions.map((action) => (
                   <DropdownMenuItem
-                    key={action.label}
+                    key={action.id ?? action.label}
                     data-row-expand-ignore
                     disabled={resolveRowActionValue(action.disabled ?? false, row)}
                     onClick={(event) => {

@@ -24,7 +24,7 @@ import type {
   DataTableMoneyEditOptions,
   DataTableNumericEditOptions,
   DataTableRemoteOptions,
-  DataTableRowActionOption,
+  DataTableRowAction,
   DataTableTextareaEditOptions,
   PlannedEditableType
 } from '@/types/data-table';
@@ -408,7 +408,7 @@ export interface BadgeDslColumnOptions<TData, TKey extends DataTableColumnKey<TD
 export interface ActionsDslColumnOptions<TData> extends DataTableColumnPanelOptions {
   id?: string;
   title?: string;
-  actions: Array<DataTableRowActionOption<TData>>;
+  actions: Array<DataTableRowAction<TData>>;
   size?: DataTableColumnSize;
   minSize?: number;
   maxSize?: number;

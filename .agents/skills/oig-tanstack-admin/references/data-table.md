@@ -69,6 +69,8 @@
 - 标准表头文字默认居中；列级通过 `headerAlign: 'left' | 'center' | 'right'` 覆盖。表头对齐不得复用单元格 `type.align`，筛选按钮必须固定在表头右侧且不参与文字对齐计算。
 - 自定义列类型只能通过 `createDataTableColumnDsl({ customTypes })` 注册，且不得覆盖内置 type key。无 `renderCell` 时统一走 `formatValue + text cell` fallback。
 - `field` / `badge` / `custom` 默认进入列显示面板并允许面板内拖拽；`actions` 默认不进入列显示面板，且默认关闭 hiding / resizing / sorting / filtering。
+- `columnDsl.actions` 与 `useDataTable` / `useDslDataTable` 的 `rowActions` 必须统一消费 `DataTableRowAction<TData>`：使用 `onClick(row)`，并共享 `disabled`、`hidden`、`confirmDelete` 与 `Sheet` 能力；禁止恢复 `DataTableRowActionOption`、`onSelect` 或两套并行行操作契约。
+- 行操作不支持 `danger` 布尔开关。确需危险操作视觉语义时，应先在共享渲染层设计显式 `variant` 并补齐 Button、菜单和可访问性测试，禁止业务页面单独透传无效字段。
 - 列面板只额外读取 `columnPanelVisible` 与 `columnPanelReorder`。隐藏能力仍以 TanStack `getCanHide()` / `enableHiding` 为准，禁止新增 `capabilities.hide/sort/filter/resize` 这类重复 TanStack 原生字段。
 - 预留但未实现的入口包括 `columnDsl.group`、`columnDsl.link`；需要新增时必须先补共享契约和测试。
 

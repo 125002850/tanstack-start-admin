@@ -3,7 +3,6 @@ import type {
   Column,
   ColumnSort,
   PaginationState,
-  Row,
   RowData,
   Table
 } from '@tanstack/react-table';
@@ -793,20 +792,6 @@ export interface DataTableColumnTypeDefinition<TData, TValue> {
   headerClassName?: string;
 }
 
-export interface DataTableRowActionSelectContext<TData> {
-  row: TData;
-  tableRow: Row<TData>;
-}
-
-export interface DataTableRowActionOption<TData> {
-  id: string;
-  label: string;
-  icon?: React.ReactNode | React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  disabled?: boolean | ((row: TData) => boolean);
-  hidden?: boolean | ((row: TData) => boolean);
-  onSelect?: (context: DataTableRowActionSelectContext<TData>) => void | Promise<void>;
-}
-
 /** 每个表格操作回调收到的上下文；selectedRows 默认只代表当前已加载页。 */
 export interface DataTableActionContext<TData> {
   table: Table<TData>;
@@ -844,11 +829,13 @@ export type DataTableAction<TData> =
 
 /** 行操作的纯语义契约；Sheet 由内部行操作渲染器负责挂载。 */
 export interface DataTableRowAction<TData> {
+  id?: string;
   label: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   disabled?: boolean | ((row: TData) => boolean);
   hidden?: boolean | ((row: TData) => boolean);
-  onClick?: (row: TData) => void | Promise<void>;
+  /** 事件返回值由表格忽略；异步处理器也可直接传入。 */
+  onClick?: (row: TData) => void;
   confirmDelete?: {
     title?: string;
     description?: (row: TData) => string;

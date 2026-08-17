@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import type { UseDataTableProps } from '@/hooks/use-data-table';
+import type { DataTableRowAction } from '@/types/data-table';
+
 import { createDataTableColumnDsl } from './data-table-column-factory';
 
 interface Row {
@@ -28,6 +31,37 @@ function expectColumnDslTypeErrors() {
   const choiceColumnDsl = createDataTableColumnDsl<ChoiceRow>();
   const filterObjectApi = { variant: 'text' };
   const disabledSerializeFilter = false;
+  const sharedRowActions: Array<DataTableRowAction<Row>> = [
+    {
+      id: 'delete',
+      label: '删除',
+      confirmDelete: {
+        title: '确认删除',
+        description: (row) => `确认删除 ${row.name ?? ''}`
+      },
+      onClick: () => undefined,
+      Sheet: () => null
+    }
+  ];
+  const sharedActionsColumn = columnDsl.actions({ actions: sharedRowActions });
+  const tableProps = {
+    tableId: 'shared-row-action-contract',
+    data: [],
+    columns: [sharedActionsColumn],
+    rowActions: sharedRowActions
+  } satisfies UseDataTableProps<Row>;
+
+  void tableProps;
+
+  columnDsl.actions({
+    actions: [
+      {
+        label: '无效危险操作',
+        // @ts-expect-error danger is not part of the shared row-action contract
+        danger: true
+      }
+    ]
+  });
 
   // @ts-expect-error filter object API is forbidden
   columnDsl.field('name', '名称', { filter: filterObjectApi });
