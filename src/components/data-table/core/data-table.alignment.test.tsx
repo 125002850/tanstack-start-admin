@@ -8,7 +8,12 @@ import {
 } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { useDataTable } from '@/hooks/use-data-table';
-import { DATA_TABLE_PINNED_SHADOWS } from './data-table-pinning';
+import {
+  DATA_TABLE_PINNED_CELL_Z_INDEX,
+  DATA_TABLE_PINNED_SHADOWS,
+  DATA_TABLE_PINNED_STICKY_HEADER_Z_INDEX,
+  DATA_TABLE_SCROLLBAR_Z_INDEX
+} from './data-table-pinning';
 import * as React from 'react';
 import { vi } from 'vitest';
 
@@ -65,11 +70,13 @@ vi.mock('@/components/ui/scroll-area', () => ({
   ScrollArea: ({
     children,
     horizontalScrollbarProps,
+    verticalScrollbarProps,
     viewportRef,
     viewportProps
   }: {
     children: React.ReactNode;
     horizontalScrollbarProps?: React.HTMLAttributes<HTMLDivElement>;
+    verticalScrollbarProps?: React.HTMLAttributes<HTMLDivElement>;
     viewportRef?: React.Ref<HTMLDivElement>;
     viewportProps?: Record<string, unknown>;
   }) => {
@@ -79,6 +86,7 @@ vi.mock('@/components/ui/scroll-area', () => ({
         <div ref={viewportRef} data-scroll-target-id={id} data-testid='scroll-viewport'>
           {children}
         </div>
+        <div data-testid='vertical-scrollbar' {...verticalScrollbarProps} />
         <div data-testid='horizontal-scrollbar' {...horizontalScrollbarProps} />
       </div>
     );
@@ -512,9 +520,42 @@ describe('DataTable column alignment', () => {
 
     const horizontalScrollbar = getByTestId('horizontal-scrollbar');
 
-    expect(horizontalScrollbar.getAttribute('style')).toBeNull();
+    expect(horizontalScrollbar.getAttribute('style')).not.toContain('left:');
+    expect(horizontalScrollbar.getAttribute('style')).not.toContain('right:');
     expect(horizontalScrollbar.getAttribute('data-left-pinned-width')).toBeNull();
     expect(horizontalScrollbar.getAttribute('data-right-pinned-width')).toBeNull();
+  });
+
+  it('keeps scrollbars above pinned columns and pinned columns above table content', () => {
+    const rows = makeRows(5);
+    const { container, getByTestId } = render(
+      React.createElement(() => {
+        const table = useReactTable({
+          data: rows,
+          columns: COLUMNS_WITH_SIZING,
+          getCoreRowModel: getCoreRowModel(),
+          getPaginationRowModel: getPaginationRowModel(),
+          initialState: {
+            pagination: { pageSize: 5, pageIndex: 0 },
+            columnPinning: { left: ['id'], right: ['price'] }
+          }
+        });
+
+        return <DataTable table={table} />;
+      })
+    );
+
+    const pinnedHeader = container.querySelector('thead th[data-column-id="id"]');
+    const pinnedCell = container.querySelector('tbody td[data-column-id="id"]');
+    const horizontalScrollbar = getByTestId('horizontal-scrollbar');
+    const verticalScrollbar = getByTestId('vertical-scrollbar');
+
+    expect(pinnedHeader).toHaveStyle({ zIndex: DATA_TABLE_PINNED_STICKY_HEADER_Z_INDEX });
+    expect(pinnedCell).toHaveStyle({ zIndex: DATA_TABLE_PINNED_CELL_Z_INDEX });
+    expect(horizontalScrollbar).toHaveStyle({ zIndex: DATA_TABLE_SCROLLBAR_Z_INDEX });
+    expect(verticalScrollbar).toHaveStyle({ zIndex: DATA_TABLE_SCROLLBAR_Z_INDEX });
+    expect(DATA_TABLE_SCROLLBAR_Z_INDEX).toBeGreaterThan(DATA_TABLE_PINNED_STICKY_HEADER_Z_INDEX);
+    expect(DATA_TABLE_PINNED_CELL_Z_INDEX).toBeGreaterThan(20);
   });
 
   it('colgroup widths follow the visual leaf-column order after pinning reorders columns', () => {
