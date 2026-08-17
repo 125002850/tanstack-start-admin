@@ -186,7 +186,8 @@ function dismissWorkspacePageDomOverlays(
       // oxlint-disable-next-line no-console -- dev-only diagnostic
       console.warn(
         `[workspace] tab "${tabId}" 存在未通过 useWorkspaceOverlay 注册的浮层，` +
-          '已由 DOM 兜底关闭。建议为对应浮层接入 useWorkspaceOverlay(open, close)。'
+          '已由 DOM 兜底关闭。建议页面浮层接入 useWorkspaceOverlay，' +
+          '通用 UI 接入 useOverlayLifecycle。'
       );
     }
   }

@@ -6,6 +6,7 @@ import {
   dismissWorkspacePageOverlays,
   registerWorkspacePageOverlayRoot
 } from '../utils/page-overlays';
+import { registerWorkspaceOverlay } from '../utils/workspace-overlay-registry';
 import {
   WorkspacePageActiveContext,
   WorkspacePageLifecycleContext
@@ -15,6 +16,7 @@ import { WorkspaceSlotErrorBoundary } from './workspace-slot-error-boundary';
 import { Icons } from '@/components/icons';
 import { RouterSuspenseProgressSignal } from '@/components/layout/router-progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { OverlayLifecycleProvider } from '@/components/ui/overlay-lifecycle';
 
 /**
  * WorkspaceViewport is the ActivityHost — the single owner of all page instances
@@ -152,11 +154,17 @@ function PageContextProvider({
     () => ({ tabId: tagId, updateLifecycle }),
     [tagId, updateLifecycle]
   );
+  const registerOverlay = React.useCallback(
+    (close: () => void) => registerWorkspaceOverlay(tagId, close),
+    [tagId]
+  );
 
   return (
     <WorkspacePageActiveContext.Provider value={active}>
       <WorkspacePageLifecycleContext.Provider value={lifecycleValue}>
-        {children}
+        <OverlayLifecycleProvider registerOverlay={registerOverlay}>
+          {children}
+        </OverlayLifecycleProvider>
       </WorkspacePageLifecycleContext.Provider>
     </WorkspacePageActiveContext.Provider>
   );

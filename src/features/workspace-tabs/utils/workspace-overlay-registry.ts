@@ -5,7 +5,8 @@ type CloseOverlay = () => void;
 /**
  * 显式浮层注册表 —— "浮层驱逐机"的第一层。
  *
- * 页面/组件在浮层打开时通过 useWorkspaceOverlay 注册"如何关闭自己"，
+ * 页面浮层通过 useWorkspaceOverlay、通用组件通过 OverlayLifecycleProvider
+ * 最终在浮层打开时注册"如何关闭自己"，
  * 切标签时 dismissWorkspacePageOverlays 先同步调用这些 close()，
  * 剩下的再交给 DOM 扫描兜底（page-overlays.ts）。
  *
@@ -14,10 +15,7 @@ type CloseOverlay = () => void;
  */
 const registry = new Map<WorkspaceTabId, Map<symbol, CloseOverlay>>();
 
-export function registerWorkspaceOverlay(
-  tabId: WorkspaceTabId,
-  close: CloseOverlay
-): () => void {
+export function registerWorkspaceOverlay(tabId: WorkspaceTabId, close: CloseOverlay): () => void {
   // workspace 关闭或不在 workspace 页面中时 tabId 为空串（use-workspace-page 的 fallback），
   // 注册即 no-op
   if (!tabId) return () => {};

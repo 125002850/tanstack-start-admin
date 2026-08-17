@@ -1,9 +1,12 @@
 import { cleanup, render } from '@testing-library/react';
 import * as React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { closeRegisteredWorkspaceOverlays } from '../utils/workspace-overlay-registry';
+import { OverlayLifecycleProvider } from '@/components/ui/overlay-lifecycle';
 import { resetWorkspacePageOverlays } from '../utils/page-overlays';
-import { WorkspacePageLifecycleContext } from './use-workspace-page';
+import {
+  closeRegisteredWorkspaceOverlays,
+  registerWorkspaceOverlay
+} from '../utils/workspace-overlay-registry';
 import { useWorkspaceOverlay } from './use-workspace-overlay';
 
 function Probe({ open, close }: { open: boolean; close: () => void }) {
@@ -11,13 +14,11 @@ function Probe({ open, close }: { open: boolean; close: () => void }) {
   return null;
 }
 
-const lifecycleChannel = { tabId: '/dashboard/a', updateLifecycle: () => {} };
+const registerOverlay = (close: () => void) => registerWorkspaceOverlay('/dashboard/a', close);
 
 function renderInWorkspace(ui: React.ReactNode) {
   return render(
-    <WorkspacePageLifecycleContext.Provider value={lifecycleChannel}>
-      {ui}
-    </WorkspacePageLifecycleContext.Provider>
+    <OverlayLifecycleProvider registerOverlay={registerOverlay}>{ui}</OverlayLifecycleProvider>
   );
 }
 
@@ -41,9 +42,9 @@ describe('useWorkspaceOverlay', () => {
     const { rerender } = renderInWorkspace(<Probe open close={close} />);
 
     rerender(
-      <WorkspacePageLifecycleContext.Provider value={lifecycleChannel}>
+      <OverlayLifecycleProvider registerOverlay={registerOverlay}>
         <Probe open={false} close={close} />
-      </WorkspacePageLifecycleContext.Provider>
+      </OverlayLifecycleProvider>
     );
 
     expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
@@ -59,12 +60,12 @@ describe('useWorkspaceOverlay', () => {
     expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
   });
 
-  it('no-ops outside a workspace page', () => {
+  it('no-ops without an overlay lifecycle provider', () => {
     const close = vi.fn();
 
     render(<Probe open close={close} />);
 
-    expect(closeRegisteredWorkspaceOverlays('')).toBe(0);
+    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
     expect(close).not.toHaveBeenCalled();
   });
 });

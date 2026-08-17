@@ -1,6 +1,4 @@
-import * as React from 'react';
-import { registerWorkspaceOverlay } from '../utils/workspace-overlay-registry';
-import { useWorkspacePageLifecycle } from './use-workspace-page';
+import { useOverlayLifecycle } from '@/components/ui/overlay-lifecycle';
 
 /**
  * 声明式浮层认领：浮层打开时向 workspace 注册"如何关闭自己"，
@@ -8,14 +6,9 @@ import { useWorkspacePageLifecycle } from './use-workspace-page';
  *
  * 用法：
  * - 页面受控浮层：useWorkspaceOverlay(dialogOpen, () => setDialogOpen(false))
- * - 共享组件：在组件内部调用，所有使用方自动生效
- * - workspace 关闭或不在 workspace 页面中时 tabId 为空串，注册即 no-op
+ * - workspace 页面由 WorkspaceViewport 提供注册实现
+ * - 通用 UI 应直接使用 useOverlayLifecycle，避免反向依赖 workspace feature
  */
 export function useWorkspaceOverlay(isOpen: boolean, close: () => void) {
-  const { tabId } = useWorkspacePageLifecycle();
-
-  React.useEffect(() => {
-    if (!isOpen) return;
-    return registerWorkspaceOverlay(tabId, close);
-  }, [isOpen, close, tabId]);
+  useOverlayLifecycle(isOpen, close);
 }

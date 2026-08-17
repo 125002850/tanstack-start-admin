@@ -64,8 +64,8 @@
 
 ### Workspace 与表单联动
 
-- 位于 workspace keep-alive 页面中的业务选择器应使用自身受控 `open` / `onOpenChange` 状态；页面失活或标签关闭前的浮层同步关闭由 `WorkspaceViewport` 与 `page-overlays` 的 DOM fallback 统一负责。
-- 基础 UI 组件禁止引用 workspace 业务模块或 workspace 专用 hook；workspace 生命周期处理必须留在 `features/workspace-tabs` 边界内。
+- 位于 workspace keep-alive 页面中的业务选择器应使用自身受控 `open` / `onOpenChange` 状态；`WorkspaceViewport` 通过通用 `OverlayLifecycleProvider` 注入显式关闭注册，`page-overlays` 的 DOM fallback 继续覆盖未注册浮层和退出动画。
+- 基础 UI 组件可依赖 `components/ui/overlay-lifecycle` 的通用接口，但禁止引用 workspace 业务模块或 workspace 专用 hook；tabId 与注册表绑定必须留在 `features/workspace-tabs` 边界内。
 - 关闭选择器时必须重置搜索词；选中值后必须同步表单字段，并在自定义 TanStack Form 字段中正确触发 touched/blur 语义。
 - 不得在业务组件中查询 `[role="combobox"]`、手动调用 `requestAnimationFrame` 聚焦或注册 document 级 pointer/keyboard 监听；这些职责属于基础组件。
 
