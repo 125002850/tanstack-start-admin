@@ -596,6 +596,77 @@ test('@workspace-v2 constrains column view option dragging to the scrollable lis
   await page.mouse.up();
 });
 
+test('@workspace-v2 spans the horizontal scrollbar across pinned columns', async ({ page }) => {
+  const card = await gotoDictionaryTable(page);
+  const tableViewport = card.locator('[data-slot="scroll-area-viewport"]');
+  const horizontalScrollbar = card.locator(
+    '[data-slot="scroll-area-scrollbar"][data-orientation="horizontal"]'
+  );
+  const verticalScrollbar = card.locator(
+    '[data-slot="scroll-area-scrollbar"][data-orientation="vertical"]'
+  );
+  const horizontalThumb = horizontalScrollbar.locator('[data-slot="scroll-area-thumb"]');
+  const pinnedSurface = card
+    .locator('tbody tr[data-row-index] [data-slot="data-table-pinned-cell-base"]')
+    .first();
+  const pinnedCell = pinnedSurface.locator('..');
+
+  const tableMetrics = await tableViewport.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth
+  }));
+  expect(tableMetrics.scrollWidth).toBeGreaterThan(tableMetrics.clientWidth);
+
+  // Radix 的 scrollbar 在 ScrollArea hover 后挂载；随后直接拖动真实 thumb。
+  await card.locator('[data-slot="scroll-area"]').hover();
+  await tableViewport.evaluate((element) => {
+    element.scrollLeft = 1;
+    element.dispatchEvent(new Event('scroll'));
+  });
+  await expect(horizontalScrollbar).toBeVisible();
+
+  const viewportBox = await tableViewport.boundingBox();
+  const scrollbarBox = await horizontalScrollbar.boundingBox();
+  const verticalScrollbarBox = await verticalScrollbar.boundingBox();
+  const thumbBox = await horizontalThumb.boundingBox();
+  if (!viewportBox || !scrollbarBox || !verticalScrollbarBox || !thumbBox) {
+    throw new Error('DataTable horizontal scrollbar bounding box unavailable');
+  }
+
+  expect(Math.abs(scrollbarBox.x - viewportBox.x)).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(scrollbarBox.width + verticalScrollbarBox.width - viewportBox.width)
+  ).toBeLessThanOrEqual(1);
+  expect(thumbBox.width).toBeLessThan(scrollbarBox.width);
+
+  const [horizontalScrollbarZIndex, verticalScrollbarZIndex, pinnedCellZIndex] = await Promise.all([
+    horizontalScrollbar.evaluate((element) => Number(getComputedStyle(element).zIndex)),
+    verticalScrollbar.evaluate((element) => Number(getComputedStyle(element).zIndex)),
+    pinnedCell.evaluate((element) => Number(getComputedStyle(element).zIndex))
+  ]);
+  expect(horizontalScrollbarZIndex).toBeGreaterThan(pinnedCellZIndex);
+  expect(verticalScrollbarZIndex).toBeGreaterThan(pinnedCellZIndex);
+
+  const pinnedXBefore = (await pinnedSurface.boundingBox())?.x;
+  const dragDistance = Math.min(120, (scrollbarBox.width - thumbBox.width) / 2);
+  await page.mouse.move(thumbBox.x + thumbBox.width / 2, thumbBox.y + thumbBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    thumbBox.x + thumbBox.width / 2 + dragDistance,
+    thumbBox.y + thumbBox.height / 2,
+    { steps: 8 }
+  );
+  await page.mouse.up();
+
+  await expect
+    .poll(() => tableViewport.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(1);
+
+  const pinnedXAfter = (await pinnedSurface.boundingBox())?.x;
+  expect(pinnedXBefore).toBeDefined();
+  expect(Math.abs((pinnedXAfter ?? 0) - (pinnedXBefore ?? 0))).toBeLessThanOrEqual(1);
+});
+
 test('@workspace-v2 keeps themed row surfaces opaque and aligned with pinned cells', async ({
   page
 }) => {

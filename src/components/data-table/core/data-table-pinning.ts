@@ -10,9 +10,11 @@ const DATA_TABLE_PINNED_SHADOW_GRADIENT_COLOR =
 const DATA_TABLE_PINNED_SHADOW_LAYER_WIDTH = 18;
 
 // globals.css 中选区边框的层级为 20；fixed 表体必须覆盖选区，sticky 表头再依次覆盖表体。
+// 滚动条是唯一允许覆盖 fixed 列的表格内元素，避免固定列拦住滚动条的可见区域和交互。
 export const DATA_TABLE_PINNED_CELL_Z_INDEX = 21;
 export const DATA_TABLE_STICKY_HEADER_Z_INDEX = 22;
 export const DATA_TABLE_PINNED_STICKY_HEADER_Z_INDEX = 23;
+export const DATA_TABLE_SCROLLBAR_Z_INDEX = 24;
 
 export const DATA_TABLE_PINNED_SHADOWS = {
   left: `8px 0 16px -15px ${DATA_TABLE_PINNED_SHADOW_COLOR}, 18px 0 28px -26px ${DATA_TABLE_PINNED_SHADOW_SOFT_COLOR}`,

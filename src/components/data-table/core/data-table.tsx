@@ -43,6 +43,7 @@ import {
   type DataTableSkeletonProps
 } from '@/components/data-table/feedback/data-table-skeleton';
 import { getSelectedPageRowCount } from '@/lib/data-table/selection';
+import { DATA_TABLE_SCROLLBAR_Z_INDEX } from './data-table-pinning';
 import { useDataTableColumnDnd } from '@/components/data-table/dnd/use-data-table-column-dnd';
 import { useDataTableExpandPanel } from '@/components/data-table/expand/use-data-table-expand-panel';
 import { useDataTableVirtualization } from '@/components/data-table/virtualization/use-data-table-virtualization';
@@ -369,11 +370,15 @@ export function DataTable<TData>({
       {/* 表格本体始终放在 ScrollArea 内，列宽预览、虚拟化和固定列阴影都以它为坐标系。 */}
       <ScrollArea
         className='h-full w-full'
+        horizontalScrollbarProps={{
+          style: { zIndex: DATA_TABLE_SCROLLBAR_Z_INDEX }
+        }}
         verticalScrollbarProps={{
           className: 'h-auto',
           style: {
             top: pinnedHeaderHeight ? `${pinnedHeaderHeight}px` : 0,
-            bottom: DATA_TABLE_SCROLLBAR_SIZE_PX
+            bottom: DATA_TABLE_SCROLLBAR_SIZE_PX,
+            zIndex: DATA_TABLE_SCROLLBAR_Z_INDEX
           }
         }}
         viewportRef={scrollViewportRef}
