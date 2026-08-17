@@ -327,6 +327,21 @@ describe('project architecture contracts', () => {
     ).toEqual([]);
   });
 
+  it('keeps low-level UI components independent from feature modules', () => {
+    const violations = collectSourceFiles(resolve(SRC_ROOT, 'components/ui'))
+      .filter((path) => !isTestFile(toProjectPath(path)))
+      .flatMap((path) =>
+        collectModuleSpecifiers(readFileSync(path, 'utf8'))
+          .filter(
+            (specifier) =>
+              specifier.startsWith('@/features/') || /^(?:\.\.\/)+features\//.test(specifier)
+          )
+          .map((specifier) => ({ path: toProjectPath(path), specifier }))
+      );
+
+    expect(violations).toEqual([]);
+  });
+
   it('does not restore removed DataTable compatibility surfaces', () => {
     const productionBusinessFiles = collectSourceFiles()
       .map((path) => ({ path, projectPath: toProjectPath(path) }))

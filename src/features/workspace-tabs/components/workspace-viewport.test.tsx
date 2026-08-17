@@ -1,8 +1,10 @@
 import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
+import { useOverlayLifecycle } from '@/components/ui/overlay-lifecycle';
 import { useWorkspaceTabStore } from '../utils/store';
 import { useWorkspacePageRegistryStore } from '../utils/page-registry';
+import { dismissWorkspacePageOverlays, resetWorkspacePageOverlays } from '../utils/page-overlays';
 import { WorkspaceViewport } from './workspace-viewport';
 import type { WorkspacePageDescriptor, WorkspacePageLifecycle, WorkspaceTab } from '../types';
 
@@ -47,6 +49,7 @@ function makePageDescriptor(
 }
 
 function resetStore() {
+  resetWorkspacePageOverlays();
   useWorkspaceTabStore.setState({
     tabs: {},
     activeId: null,
@@ -55,6 +58,11 @@ function resetStore() {
     lifecycleSnapshots: {}
   });
   useWorkspacePageRegistryStore.getState().resetDescriptors();
+}
+
+function OverlayLifecycleProbe({ close }: { close: () => void }) {
+  useOverlayLifecycle(true, close);
+  return null;
 }
 
 describe('WorkspaceViewport', () => {
@@ -95,6 +103,34 @@ describe('WorkspaceViewport', () => {
       expect(el).toBeDefined();
       // Active content should NOT have display:none (it's visible)
       expect(el.style.display).not.toBe('none');
+    });
+
+    it('provides overlay lifecycle registration for each workspace page', () => {
+      const tabId = '/dashboard/overlay';
+      const close = vi.fn();
+      const desc = makePageDescriptor({
+        tabId,
+        render: () => <OverlayLifecycleProbe close={close} />
+      });
+      setStoreState(
+        {
+          [tabId]: {
+            id: tabId,
+            keepAlive: true,
+            href: tabId,
+            title: 'Overlay',
+            closable: true
+          }
+        },
+        tabId,
+        [],
+        { pageDescriptors: { [tabId]: desc } }
+      );
+
+      render(<WorkspaceViewport />);
+
+      dismissWorkspacePageOverlays(tabId, null);
+      expect(close).toHaveBeenCalledTimes(1);
     });
 
     it('reuses page content when only the active workspace tab changes', () => {
