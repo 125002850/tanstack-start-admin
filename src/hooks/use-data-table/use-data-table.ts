@@ -161,6 +161,7 @@ export function useDataTableRuntime<TData>(
     () => baseColumns.some((column) => column.id === DATA_TABLE_SELECT_COLUMN_ID),
     [baseColumns]
   );
+  const rowNumberCount = totalCount ?? tableProps.data.length;
 
   const resolvedColumns = React.useMemo<Array<ColumnDef<TData>>>(() => {
     const columnsWithSelection =
@@ -173,16 +174,16 @@ export function useDataTableRuntime<TData>(
 
     // 展开态只通过行点击和背景高亮表达，不再额外插入展开图标列。
     return showRowNumberColumn
-      ? [createRowNumberColumn<TData>(totalCount), ...columnsWithActions]
+      ? [createRowNumberColumn<TData>(rowNumberCount), ...columnsWithActions]
       : columnsWithActions;
   }, [
     baseColumns,
     hasGeneratedRowActionsColumn,
     hasManualSelectColumn,
     rowActions,
+    rowNumberCount,
     showRowNumberColumn,
-    showSelectColumn,
-    totalCount
+    showSelectColumn
   ]);
 
   const fixedWidthColumnSizing = React.useMemo(
