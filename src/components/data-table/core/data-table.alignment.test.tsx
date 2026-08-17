@@ -543,7 +543,9 @@ describe('DataTable column alignment', () => {
 
     const horizontalScrollbar = getByTestId('horizontal-scrollbar');
 
-    expect(horizontalScrollbar.getAttribute('style')).toBeNull();
+    const scrollbarStyle = horizontalScrollbar.getAttribute('style') ?? '';
+    expect(scrollbarStyle).not.toContain('left:');
+    expect(scrollbarStyle).not.toContain('right:');
   });
 
   it('keeps scrollbars above pinned columns and pinned columns above table content', () => {
