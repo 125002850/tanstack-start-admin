@@ -8,10 +8,7 @@ import {
   type DataTableColumn,
   type DataTableColumnDslOptions
 } from '@/components/data-table/columns/dsl/data-table-column-builder-types';
-import {
-  createDataTableRowActionsResolver,
-  renderDataTableActionsCell
-} from '@/components/data-table/columns/dsl/data-table-column-actions';
+import { renderDataTableActionsCell } from '@/components/data-table/columns/dsl/data-table-column-actions';
 import {
   ACTIONS_COLUMN_DEFAULTS,
   BADGE_COLUMN_DEFAULTS,
@@ -90,14 +87,13 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     const {
       id = 'actions',
       title = '操作',
-      actions: actionOptions,
+      actions: rowActions,
       header,
       headerAlign,
       headerClassName,
       meta,
       ...columnOptions
     } = actionsOptions;
-    const resolveActions = createDataTableRowActionsResolver(actionOptions);
     // 操作列默认不参与筛选/隐藏/重排，但仍允许调用方覆盖宽度范围和 meta。
     const resolvedOptions = resolveDataTableColumnOptions<TData, unknown>({
       title,
@@ -112,7 +108,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     return {
       id,
       header: header ?? dataTableHeaderFactory<TData>(title, headerClassName, headerAlign),
-      cell: ({ row }) => renderDataTableActionsCell(row, resolveActions),
+      cell: ({ row }) => renderDataTableActionsCell(row, rowActions),
       ...resolvedOptions
     } satisfies ColumnDef<TData>;
   }

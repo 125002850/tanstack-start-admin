@@ -2,6 +2,8 @@ import * as React from 'react';
 import type { Row as TanStackRow } from '@tanstack/react-table';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { DataTableRowAction } from '@/types/data-table';
+
 import {
   createDataTableColumnDsl,
   dataTableColumnFormatters,
@@ -64,11 +66,7 @@ function renderCellWithTableRow(column: { cell?: unknown }, tableRow: TanStackRo
 function getRenderedRowActions(node: unknown) {
   expect(React.isValidElement(node)).toBe(true);
 
-  return (
-    node as React.ReactElement<{
-      actions: Array<{ label: string; onClick?: (row: Row) => void | Promise<void> }>;
-    }>
-  ).props.actions;
+  return (node as React.ReactElement<{ actions: Array<DataTableRowAction<Row>> }>).props.actions;
 }
 
 function getNodeText(node: unknown): string | undefined {
@@ -209,9 +207,7 @@ describe('data-table-column-factory', () => {
 
     expect(columnDsl.field('name', '名称', { enableSorting: false }).enableSorting).toBe(false);
     expect(columnDsl.badge('status', '状态', { enableSorting: false }).enableSorting).toBe(false);
-    expect(
-      columnDsl.custom({ ...customOptions, enableSorting: false }).enableSorting
-    ).toBe(false);
+    expect(columnDsl.custom({ ...customOptions, enableSorting: false }).enableSorting).toBe(false);
   });
 
   it('compiles filter false without leaking stale filter meta', () => {
@@ -328,7 +324,7 @@ describe('data-table-column-factory', () => {
   });
 
   it('creates badge, actions, custom, and custom type columns', () => {
-    const onSelect = vi.fn();
+    const onClick = vi.fn();
     const columnDsl = createDataTableColumnDsl<Row>({
       customTypes: {
         phone: {
@@ -340,7 +336,7 @@ describe('data-table-column-factory', () => {
     });
     const badgeColumn = columnDsl.badge('status', '状态');
     const actionsColumn = columnDsl.actions({
-      actions: [{ id: 'view', label: '查看', onSelect }]
+      actions: [{ id: 'view', label: '查看', onClick }]
     });
     const customColumn = columnDsl.custom({
       id: 'score',
@@ -399,21 +395,28 @@ describe('data-table-column-factory', () => {
     expect(columns.map((column) => column.size)).toEqual([150, 110, 90, 220, 137]);
   });
 
-  it('keeps adapted row actions stable for the same TanStack row', () => {
-    const onSelect = vi.fn();
+  it('shares the same row action objects without adapting callbacks', () => {
+    const onClick = vi.fn();
+    const confirmDelete: NonNullable<DataTableRowAction<Row>['confirmDelete']> = {
+      title: '确认删除',
+      description: (row) => `确认删除 ${row.name ?? ''}`
+    };
+    const actions: Array<DataTableRowAction<Row>> = [
+      { id: 'view', label: '查看', onClick, confirmDelete }
+    ];
     const columnDsl = createDataTableColumnDsl<Row>();
-    const actionsColumn = columnDsl.actions({
-      actions: [{ id: 'view', label: '查看', onSelect }]
-    });
+    const actionsColumn = columnDsl.actions({ actions });
     const tableRow = { original: { id: 1, name: '云禾' } } as TanStackRow<Row>;
 
     const firstActions = getRenderedRowActions(renderCellWithTableRow(actionsColumn, tableRow));
     const secondActions = getRenderedRowActions(renderCellWithTableRow(actionsColumn, tableRow));
 
-    expect(secondActions).toBe(firstActions);
+    expect(firstActions).toBe(actions);
+    expect(secondActions).toBe(actions);
+    expect(firstActions[0]?.confirmDelete).toBe(confirmDelete);
 
     firstActions[0]?.onClick?.(tableRow.original);
-    expect(onSelect).toHaveBeenCalledWith({ row: tableRow.original, tableRow });
+    expect(onClick).toHaveBeenCalledWith(tableRow.original);
   });
 
   it('rejects custom column types that override built-in types', () => {
