@@ -9,7 +9,7 @@ import type {
   DataTableDateTimeGranularity,
   DataTableDateTimeValueKind,
   DataTableEditCodec
-} from '@/types/data-table';
+} from '../types';
 
 const { validation: validationMessages } = dataTableMessages;
 

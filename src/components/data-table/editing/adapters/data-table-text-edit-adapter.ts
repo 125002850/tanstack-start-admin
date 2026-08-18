@@ -9,15 +9,12 @@ import type {
   EditableRuntimeEditOptions,
   EnabledEditableTypeAdapter,
   ResolveDataTableEditableCellContext
-} from '@/components/data-table/editing/data-table-edit-contracts';
+} from '@/components/data-table/editing/contracts';
 import {
   createLongTextEditCodec,
   createTextEditCodec
 } from '@/components/data-table/editing/codecs/data-table-text-edit-codecs';
-import type {
-  DataTableEditableColumnMeta,
-  DataTableEditableTextareaColumnMeta
-} from '@/types/data-table';
+import type { DataTableEditableColumnMeta, DataTableEditableTextareaColumnMeta } from '../types';
 
 function resolveFormattedValue<TData>({
   value,

@@ -74,7 +74,7 @@ describe('project architecture contracts', () => {
       .map((entry) => entry.name)
       .toSorted();
     const internalDataTableImportPattern =
-      /@\/components\/data-table\/(?:columns\/(?:dsl|header)|editing)\//;
+      /@\/components\/data-table\/(?:columns\/(?:dsl|header)|editing|selection)\//;
     const featureViolations = collectFiles(resolve(SRC_ROOT, 'features'), (path) =>
       SOURCE_EXTENSIONS.has(extname(path))
     )
@@ -96,10 +96,97 @@ describe('project architecture contracts', () => {
     ]);
     expect(existsSync(resolve(columnsRoot, 'dsl'))).toBe(true);
     expect(existsSync(resolve(columnsRoot, 'header'))).toBe(true);
+    expect(existsSync(resolve(columnsRoot, 'dsl/types.ts'))).toBe(true);
+    expect(existsSync(resolve(columnsRoot, 'dsl/type-registry.ts'))).toBe(true);
     expect(existsSync(resolve(columnsRoot, 'editing'))).toBe(false);
     expect(existsSync(resolve(SRC_ROOT, 'components/data-table/editing'))).toBe(true);
     expect(featureViolations).toEqual([]);
     expect(editingToColumnsViolations).toEqual([]);
+  });
+
+  it('keeps DataTable cell selection in its first-class internal domain', () => {
+    const dataTableRoot = resolve(SRC_ROOT, 'components/data-table');
+    const selectionRoot = resolve(dataTableRoot, 'selection');
+    const misplacedSelectionPattern = /(?:use-)?data-table-cell-(?:selection|auto-scroll|range)/;
+    const misplacedFiles = [resolve(dataTableRoot, 'core'), resolve(dataTableRoot, 'cells')]
+      .flatMap((root) => collectFiles(root, (path) => SOURCE_EXTENSIONS.has(extname(path))))
+      .filter((path) => misplacedSelectionPattern.test(toProjectPath(path)))
+      .map(toProjectPath);
+
+    expect(existsSync(resolve(selectionRoot, 'use-data-table-cell-selection.ts'))).toBe(true);
+    expect(existsSync(resolve(selectionRoot, 'use-data-table-cell-pointer.ts'))).toBe(true);
+    expect(existsSync(resolve(selectionRoot, 'data-table-cell-range.ts'))).toBe(true);
+    expect(existsSync(resolve(selectionRoot, 'use-data-table-cell-auto-scroll.ts'))).toBe(true);
+    expect(existsSync(resolve(selectionRoot, 'types.ts'))).toBe(true);
+    expect(existsSync(resolve(selectionRoot, 'model.ts'))).toBe(true);
+    expect(misplacedFiles).toEqual([]);
+  });
+
+  it('co-locates DataTable types with their owning domains', () => {
+    const dataTableRoot = resolve(SRC_ROOT, 'components/data-table');
+    const compatibilityFacade = readProjectFile('src/types/data-table.ts');
+    const productionFiles = collectFiles(dataTableRoot, (path) =>
+      SOURCE_EXTENSIONS.has(extname(path))
+    ).filter((path) => !path.endsWith('.test.ts') && !path.endsWith('.test.tsx'));
+    const compatibilityImportViolations = productionFiles
+      .filter((path) => /from ['"]@\/types\/data-table['"]/.test(readFileSync(path, 'utf8')))
+      .map(toProjectPath);
+    const redundantTypeModelNames = productionFiles
+      .filter((path) => /data-table-.*-(?:types|model)\.(?:ts|tsx)$/.test(path))
+      .map(toProjectPath);
+
+    expect(existsSync(resolve(dataTableRoot, 'actions/types.ts'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'core/types.ts'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'editing/types.ts'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'editing/choice/types.ts'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'expand/types.ts'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'filters/types.ts'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'virtualization/types.ts'))).toBe(true);
+    expect(compatibilityFacade).toContain("export * from '@/components/data-table/editing/types'");
+    expect(compatibilityFacade).not.toMatch(/\b(?:interface|type)\s+DataTable/);
+    expect(compatibilityImportViolations).toEqual([]);
+    expect(redundantTypeModelNames).toEqual([]);
+  });
+
+  it('keeps DataTable body rendering behind a small core facade', () => {
+    const dataTableRoot = resolve(SRC_ROOT, 'components/data-table');
+    const bodyRoot = resolve(dataTableRoot, 'core/body');
+    const bodyFacade = readProjectFile('src/components/data-table/core/data-table-body.tsx');
+
+    expect(existsSync(resolve(bodyRoot, 'cell.tsx'))).toBe(true);
+    expect(existsSync(resolve(bodyRoot, 'standard.tsx'))).toBe(true);
+    expect(existsSync(resolve(bodyRoot, 'virtual.tsx'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'virtualization/use-header-widths.ts'))).toBe(true);
+    expect(existsSync(resolve(dataTableRoot, 'virtualization/use-row-virtualizer.ts'))).toBe(true);
+    expect(bodyFacade).not.toContain('useVirtualizer');
+    expect(bodyFacade).not.toContain('getCommonPinningStyles');
+  });
+
+  it('keeps the DataTable editing engine in its first-class internal domain', () => {
+    const runtimeRoot = resolve(SRC_ROOT, 'components/data-table/editing/runtime');
+    const choiceRoot = resolve(SRC_ROOT, 'components/data-table/editing/choice');
+    const legacyHook = readProjectFile('src/hooks/use-data-table/use-data-table-editing.ts');
+    const choiceCell = readProjectFile(
+      'src/components/data-table/editing/cells/data-table-editable-choice-cell.tsx'
+    );
+
+    expect(existsSync(resolve(runtimeRoot, 'use-data-table-editing.ts'))).toBe(true);
+    expect(existsSync(resolve(runtimeRoot, 'use-data-table-editing-store.ts'))).toBe(true);
+    expect(existsSync(resolve(runtimeRoot, 'use-data-table-editing-errors.ts'))).toBe(true);
+    expect(existsSync(resolve(runtimeRoot, 'use-data-table-editing-rows.ts'))).toBe(true);
+    expect(existsSync(resolve(runtimeRoot, 'use-data-table-editing-commits.ts'))).toBe(true);
+    expect(existsSync(resolve(runtimeRoot, 'use-data-table-editing-session.ts'))).toBe(true);
+    expect(existsSync(resolve(runtimeRoot, 'types.ts'))).toBe(true);
+    expect(existsSync(resolve(choiceRoot, 'types.ts'))).toBe(true);
+    expect(existsSync(resolve(choiceRoot, 'model.ts'))).toBe(true);
+    expect(existsSync(resolve(choiceRoot, 'display.tsx'))).toBe(true);
+    expect(existsSync(resolve(choiceRoot, 'editors.tsx'))).toBe(true);
+    expect(existsSync(resolve(choiceRoot, 'use-options.ts'))).toBe(true);
+    expect(existsSync(resolve(choiceRoot, 'label-provider.tsx'))).toBe(true);
+    expect(choiceCell).not.toContain('useQueries');
+    expect(choiceCell).not.toContain('useRemoteComboboxState');
+    expect(legacyHook).toContain('@/components/data-table/editing/runtime/use-data-table-editing');
+    expect(legacyHook).not.toContain("from 'react'");
   });
 
   it('does not keep unused page metadata on dashboard routes', () => {
@@ -326,21 +413,43 @@ describe('project architecture contracts', () => {
           )
           .map((specifier) => ({ path: toProjectPath(path), specifier }))
       );
+    const allowedHookDataTableImports = new Set([
+      'src/hooks/use-data-table/use-data-table-editing.ts::@/components/data-table/editing/runtime/use-data-table-editing'
+    ]);
     const hookViolations = collectSourceFiles(resolve(SRC_ROOT, 'hooks/use-data-table'))
       .filter((path) => !isTestFile(toProjectPath(path)))
-      .flatMap((path) =>
-        collectModuleSpecifiers(readFileSync(path, 'utf8'))
-          .filter((specifier) => specifier.startsWith('@/components/data-table/'))
-          .map((specifier) => ({ path: toProjectPath(path), specifier }))
-      );
+      .flatMap((path) => {
+        const projectPath = toProjectPath(path);
+        return collectModuleSpecifiers(readFileSync(path, 'utf8'))
+          .filter(
+            (specifier) =>
+              specifier.startsWith('@/components/data-table/') &&
+              !allowedHookDataTableImports.has(`${projectPath}::${specifier}`)
+          )
+          .map((specifier) => ({ path: projectPath, specifier }));
+      });
     const sharedTypeImports = collectModuleSpecifiers(readProjectFile('src/types/data-table.ts'));
+    const allowedSharedTypeImports = new Set([
+      '@/components/data-table/actions/types',
+      '@/components/data-table/columns/dsl/contracts',
+      '@/components/data-table/core/types',
+      '@/components/data-table/editing/choice/types',
+      '@/components/data-table/editing/types',
+      '@/components/data-table/expand/model',
+      '@/components/data-table/expand/types',
+      '@/components/data-table/filters/model',
+      '@/components/data-table/filters/types',
+      '@/components/data-table/virtualization/types'
+    ]);
 
     expect(componentViolations).toEqual([]);
     expect(libViolations).toEqual([]);
     expect(hookViolations).toEqual([]);
     expect(
       sharedTypeImports.filter(
-        (specifier) => specifier.startsWith('@/config/') || specifier.startsWith('@/components/')
+        (specifier) =>
+          specifier.startsWith('@/config/') ||
+          (specifier.startsWith('@/components/') && !allowedSharedTypeImports.has(specifier))
       )
     ).toEqual([]);
   });

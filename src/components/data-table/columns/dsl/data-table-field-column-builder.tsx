@@ -6,7 +6,7 @@ import type {
   DataTableColumnDslOptions,
   DataTableFieldBuilder,
   FieldColumnOptions
-} from '@/components/data-table/columns/dsl/data-table-column-builder-types';
+} from '@/components/data-table/columns/dsl/types';
 import {
   hasFormatterKey,
   type DataTableColumnKey,
@@ -26,10 +26,10 @@ import {
   resolveDataTableColumnTypeDefaults,
   validateDataTableColumnTypeRegistry,
   type DataTableColumnTypeRegistry
-} from '@/components/data-table/columns/dsl/data-table-column-types';
+} from '@/components/data-table/columns/dsl/type-registry';
 import { nullableText } from '@/lib/formatters/display';
 import { cn } from '@/lib/utils';
-import type { DataTableColumnValueType } from '@/types/data-table';
+import type { DataTableColumnValueType } from './contracts';
 
 export interface DataTableColumnBuilderContext<TData> {
   resolvedCustomTypes: DataTableColumnTypeRegistry<TData>;

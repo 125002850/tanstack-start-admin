@@ -11,7 +11,7 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import * as React from 'react';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE } from '@/lib/data-table/row-actions';
-import type { DataTableRowAction } from '@/types/data-table';
+import type { DataTableRowAction } from './types';
 
 /**
  * 行级操作渲染组件。

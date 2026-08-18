@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { getDataTableColumnLabel } from '@/components/data-table/columns/data-table-column-label';
 import { cn } from '@/lib/utils';
-import { isDataTableFlatFilterOptions } from '@/types/data-table';
+import { isDataTableFlatFilterOptions } from '../filters/model';
 import { useDebouncedInput } from '@/hooks/use-debounced-input';
 import { Icons } from '@/components/icons';
 import type { DataTableFacetedFilterLabels } from '@/components/data-table/filters/data-table-faceted-filter';

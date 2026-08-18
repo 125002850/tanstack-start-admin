@@ -1,13 +1,13 @@
 import type { Column, ColumnDef, Table } from '@tanstack/react-table';
 
 import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
-import { isDataTableFlatFilterOptions } from '@/types/data-table';
+import { isDataTableFlatFilterOptions } from '@/components/data-table/filters/model';
+import type { DataTableColumnFilterOptions } from '@/components/data-table/filters/types';
 import type {
   DataTableChoiceOption,
-  DataTableChoiceValue,
-  DataTableColumnAlign,
-  DataTableColumnFilterOptions
-} from '@/types/data-table';
+  DataTableChoiceValue
+} from '@/components/data-table/editing/choice/types';
+import type { DataTableColumnAlign } from './contracts';
 
 export {
   dataTableTextCell,

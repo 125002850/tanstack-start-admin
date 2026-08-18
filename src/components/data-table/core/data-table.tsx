@@ -16,7 +16,7 @@ import { DataTableCellTooltipProvider } from '@/components/data-table/cells/data
 import {
   DataTableRemoteChoiceLabelProvider,
   hasDataTableRemoteChoiceLabelResolvers
-} from '@/components/data-table/editing/cells/data-table-editable-choice-cell';
+} from '@/components/data-table/editing/choice/label-provider';
 import { Separator } from '@/components/ui/separator';
 import { DataTableViewOptions } from '@/components/data-table/toolbar/data-table-view-options';
 import { DataTableColGroup } from '@/components/data-table/core/data-table-colgroup';
@@ -25,11 +25,9 @@ import {
   DataTableHeader,
   DataTableHeaderDragOverlay
 } from '@/components/data-table/core/data-table-header';
-import type {
-  DataTableAction,
-  DataTableVirtualizationProp,
-  ExpandConfigEdge
-} from '@/types/data-table';
+import type { DataTableAction } from '../actions/types';
+import type { ExpandConfigEdge } from '../expand/types';
+import type { DataTableVirtualizationProp } from '../virtualization/types';
 import { DataTableActionsBar } from '@/components/data-table/actions/data-table-actions-bar';
 import { DataTableExpandPanel } from '@/components/data-table/expand/data-table-expand-panel';
 import { DataTableExpandResizeHandle } from '@/components/data-table/expand/data-table-expand-trigger';

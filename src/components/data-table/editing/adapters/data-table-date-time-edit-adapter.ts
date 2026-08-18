@@ -7,7 +7,7 @@ import type {
   EditableDisplayFormatterContext,
   EnabledEditableTypeAdapter,
   ResolveDataTableEditableCellContext
-} from '@/components/data-table/editing/data-table-edit-contracts';
+} from '@/components/data-table/editing/contracts';
 import { createDateTimeEditCodec } from '@/components/data-table/editing/codecs/data-table-date-time-edit-codec';
 import { resolveDataTableTimeZone } from '@/components/data-table/editing/data-table-time-zone';
 import type {
@@ -16,7 +16,7 @@ import type {
   DataTableEditableDateTimeColumnMeta,
   DataTableInvalidEditBehavior,
   DataTableTimeZoneSource
-} from '@/types/data-table';
+} from '../types';
 
 type ResolvedDateTimeEditOptions = {
   valueKind: DataTableDateTimeValueKind;

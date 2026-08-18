@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { useDataTable } from '@/hooks/use-data-table';
-import type { DataTableEditChangeEvent } from '@/types/data-table';
+import type { DataTableEditChangeEvent } from '../types';
 
 type Row = {
   id: number;

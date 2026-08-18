@@ -5,7 +5,7 @@ import { Icons } from '@/components/icons';
 import { DataTableOverflowTooltipText } from '@/components/data-table/cells/data-table-overflow-tooltip-text';
 import { DataTableLocalFilter } from '@/components/data-table/filters/data-table-local-filter';
 import { cn } from '@/lib/utils';
-import type { DataTableColumnAlign } from '@/types/data-table';
+import type { DataTableColumnAlign } from '../dsl/contracts';
 
 /**
  * 标准 DataTable 列头。

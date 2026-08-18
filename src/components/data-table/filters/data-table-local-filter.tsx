@@ -10,10 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { createDataTableLocalSetFilterValue } from '@/hooks/use-data-table/use-data-table-local-filtering';
 import { cn } from '@/lib/utils';
-import type {
-  DataTableLocalFilterOption,
-  DataTableLocalFilteringRuntime
-} from '@/types/data-table';
+import type { DataTableLocalFilterOption, DataTableLocalFilteringRuntime } from './types';
 
 interface DataTableLocalFilterProps<TData, TValue> {
   column: Column<TData, TValue>;

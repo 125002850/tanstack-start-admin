@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { DataTableFinishEditingResult, DataTableEditingRuntime } from '@/types/data-table';
+import type { DataTableFinishEditingResult, DataTableEditingRuntime } from './types';
 
 import { finishEditingAndNavigate } from './data-table-editor-navigation';
 

@@ -1,4 +1,4 @@
-import type { Option } from '@/types/data-table';
+import type { Option } from './types';
 import type { Column } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
 

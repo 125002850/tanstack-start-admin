@@ -1,7 +1,7 @@
 import type { Row } from '@tanstack/react-table';
 
 import { DataTableRowActions } from '@/components/data-table/actions/data-table-row-action';
-import type { DataTableRowAction } from '@/types/data-table';
+import type { DataTableRowAction } from '@/components/data-table/actions/types';
 
 /**
  * 使用统一的 DataTableRowAction 契约渲染 DSL 操作列。

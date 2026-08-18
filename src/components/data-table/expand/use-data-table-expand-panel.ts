@@ -6,7 +6,7 @@ import {
   DATA_TABLE_EXPAND_KEYBOARD_STEP_PX,
   resolveExpandSplitLayout
 } from '@/lib/data-table/expand-split';
-import type { ExpandConfigEdge } from '@/types/data-table';
+import type { ExpandConfigEdge } from './types';
 
 /**
  * 行展开面板的布局与交互状态 hook。

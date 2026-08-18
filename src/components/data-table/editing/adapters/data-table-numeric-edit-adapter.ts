@@ -8,12 +8,9 @@ import type {
   EditableRuntimeEditOptions,
   EnabledEditableTypeAdapter,
   ResolveDataTableEditableCellContext
-} from '@/components/data-table/editing/data-table-edit-contracts';
+} from '@/components/data-table/editing/contracts';
 import { createNumericEditCodec } from '@/components/data-table/editing/codecs/data-table-numeric-edit-codec';
-import type {
-  DataTableEditableNumberColumnMeta,
-  DataTableEditableNumericType
-} from '@/types/data-table';
+import type { DataTableEditableNumberColumnMeta, DataTableEditableNumericType } from '../types';
 
 function assertFiniteNumericOption(name: string, value: number | undefined) {
   if (value !== undefined && !Number.isFinite(value)) {

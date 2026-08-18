@@ -1,4 +1,4 @@
-import type { DataTableResolvedTimeZone, DataTableTimeZoneSource } from '@/types/data-table';
+import type { DataTableResolvedTimeZone, DataTableTimeZoneSource } from './types';
 
 const TIME_ZONE_FALLBACK_CHAIN = 'column → table → app';
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

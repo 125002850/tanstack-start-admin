@@ -10,24 +10,28 @@ import type {
 } from '@/components/data-table/columns/dsl/data-table-column-formatters';
 import type { ColumnHeader } from '@/components/data-table/columns/dsl/data-table-column-rendering';
 import type { DataTableColumnOptions } from '@/components/data-table/columns/dsl/data-table-column-options';
-import type { DataTableColumnTypeRegistry } from '@/components/data-table/columns/dsl/data-table-column-types';
+import type { DataTableColumnTypeRegistry } from '@/components/data-table/columns/dsl/type-registry';
 import type { DataTableColumnSize } from '@/config/data-table';
 import type {
   DataTableChoiceOption,
   DataTableChoiceValue,
-  DataTableColumnAlign,
-  DataTableColumnPanelOptions,
-  DataTableColumnValueType,
+  DataTableRemoteOptions
+} from '@/components/data-table/editing/choice/types';
+import type {
   DataTableDateEditOptions,
   DataTableDateTimeEditOptions,
   DataTableEditableNumericType,
   DataTableMoneyEditOptions,
   DataTableNumericEditOptions,
-  DataTableRemoteOptions,
-  DataTableRowAction,
   DataTableTextareaEditOptions,
   PlannedEditableType
-} from '@/types/data-table';
+} from '@/components/data-table/editing/types';
+import type { DataTableRowAction } from '@/components/data-table/actions/types';
+import type {
+  DataTableColumnAlign,
+  DataTableColumnPanelOptions,
+  DataTableColumnValueType
+} from './contracts';
 
 type BadgeVariant = ComponentProps<typeof Badge>['variant'];
 

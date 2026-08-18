@@ -11,7 +11,7 @@ import type {
   DataTableEditableInputColumnMeta,
   DataTableEditableSwitchColumnMeta,
   DataTableEditingRuntime
-} from '@/types/data-table';
+} from '../types';
 
 const DATA_TABLE_INPUT_CLASS_NAME =
   'h-full min-h-10 rounded-[2px] border-2 border-primary bg-background px-[15px] shadow-none ring-[3px] ring-primary/25 focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/25';

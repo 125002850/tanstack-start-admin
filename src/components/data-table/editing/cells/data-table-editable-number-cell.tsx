@@ -16,7 +16,7 @@ import type {
   DataTableActiveEditingCell,
   DataTableEditableNumberColumnMeta,
   DataTableEditingRuntime
-} from '@/types/data-table';
+} from '../types';
 
 function getDecimalPlaces(value: number) {
   const text = String(value).toLowerCase();

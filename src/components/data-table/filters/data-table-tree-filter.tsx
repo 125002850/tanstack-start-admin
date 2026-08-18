@@ -8,7 +8,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Tree, type TreeItem, type TreeSelection } from '@/components/ui/tree';
-import type { DataTableTreeSelectionMode, TreeOption } from '@/types/data-table';
+import type { DataTableTreeSelectionMode, TreeOption } from './types';
 
 import type { DataTableFacetedFilterLabels } from './data-table-faceted-filter';
 

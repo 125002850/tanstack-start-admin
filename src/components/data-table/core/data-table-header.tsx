@@ -23,7 +23,10 @@ import {
 } from '@/components/data-table/core/data-table-pinning';
 import { getDataTableColumnLabel } from '@/components/data-table/columns/data-table-column-label';
 import { cn } from '@/lib/utils';
-import type { DataTableColumnRenderItem, DataTableColumnVirtualWindow } from '@/types/data-table';
+import type {
+  DataTableColumnRenderItem,
+  DataTableColumnVirtualWindow
+} from '../virtualization/types';
 import {
   clearDataTableColumnDragMotion,
   publishDataTableColumnDragMotion,

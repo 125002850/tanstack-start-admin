@@ -8,7 +8,7 @@ import type {
   EditableDisplayFormatterContext,
   EnabledEditableTypeAdapter,
   ResolveDataTableEditableCellContext
-} from '@/components/data-table/editing/data-table-edit-contracts';
+} from '@/components/data-table/editing/contracts';
 import {
   createChoiceEditCodec,
   createSwitchEditCodec
@@ -17,7 +17,7 @@ import type {
   DataTableChoiceValue,
   DataTableEditableChoiceColumnMeta,
   DataTableEditableColumnMeta
-} from '@/types/data-table';
+} from '../types';
 
 function resolveChoiceEditOptions<TData>(context: ResolveDataTableEditableCellContext<TData>) {
   const selectionMode = context.edit?.selectionMode ?? 'single';
