@@ -15,7 +15,7 @@ import {
   dragCellRange,
   getBodyCell,
   type EditableRow
-} from './data-table.test-utils';
+} from '../core/data-table.test-utils';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

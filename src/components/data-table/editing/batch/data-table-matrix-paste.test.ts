@@ -4,9 +4,9 @@ import {
   resolveDataTableEditableCell,
   type ResolveDataTableEditableCellContext
 } from '@/components/data-table/editing/data-table-edit-adapters';
-import type { DataTableEditableColumnMeta } from '@/types/data-table';
+import type { DataTableEditableColumnMeta } from '../types';
 
-import { escapeDataTableCellClipboardText } from './data-table-cell-range';
+import { escapeDataTableCellClipboardText } from '../../selection/data-table-cell-range';
 import syntheticExcelFixture from './fixtures/phase-6-synthetic-excel-clipboard.json';
 import {
   parseDataTableClipboardMatrix,
