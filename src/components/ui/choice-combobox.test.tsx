@@ -73,6 +73,31 @@ describe('ChoiceCombobox', () => {
     });
   });
 
+  it('renders an optional option description without adding it to the trigger label', async () => {
+    const user = userEvent.setup();
+    render(
+      <SingleChoiceCombobox
+        options={[
+          { value: 1, label: '管理员', description: '系统角色' },
+          { value: 2, label: '审计员' }
+        ]}
+        value={1}
+        triggerLabel='角色'
+        placeholder='请选择角色'
+        onValueChange={() => undefined}
+      />
+    );
+
+    const trigger = screen.getByRole('button', { name: '角色' });
+    expect(trigger).toHaveTextContent('管理员');
+    expect(trigger).not.toHaveTextContent('系统角色');
+
+    await user.click(trigger);
+
+    expect(screen.getByRole('option', { name: '管理员 系统角色' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '审计员' })).toBeInTheDocument();
+  });
+
   it('places the single-selection clear action in the command footer', async () => {
     const user = userEvent.setup();
     render(<SingleHarness searchMode='none' />);

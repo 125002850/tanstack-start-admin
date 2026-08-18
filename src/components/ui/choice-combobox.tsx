@@ -24,6 +24,7 @@ export type ChoiceComboboxValue = string | number;
 export type ChoiceComboboxOption<TValue extends ChoiceComboboxValue = string> = {
   value: TValue;
   label: string;
+  description?: string;
   disabled?: boolean;
 };
 
@@ -150,6 +151,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
     return uniqueOptions.filter(
       (option) =>
         option.label.toLowerCase().includes(normalizedSearch) ||
+        option.description?.toLowerCase().includes(normalizedSearch) ||
         String(option.value).toLowerCase().includes(normalizedSearch)
     );
   }, [normalizedSearch, searchMode, uniqueOptions]);
@@ -344,7 +346,14 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                         <Icons.check className='size-4 text-primary' />
                       </span>
                     )}
-                    <span className='truncate'>{option.label}</span>
+                    <span className='flex min-w-0 flex-1 flex-col'>
+                      <span className='truncate'>{option.label}</span>
+                      {option.description ? (
+                        <span className='truncate text-xs text-muted-foreground'>
+                          {option.description}
+                        </span>
+                      ) : null}
+                    </span>
                   </CommandItem>
                 );
               })}
