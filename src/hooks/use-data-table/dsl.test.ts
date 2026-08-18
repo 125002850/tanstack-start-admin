@@ -157,6 +157,53 @@ describe('use-dsl-data-table.dsl', () => {
     });
   });
 
+  it('serializes declared strong enum filters as enum condition nodes', () => {
+    const request = buildDataTableDslRequest({
+      columns: [
+        {
+          accessorKey: 'status',
+          header: '状态',
+          enableColumnFilter: true,
+          meta: {
+            variant: 'select',
+            label: '状态',
+            query: { filterNodeType: 'enum' }
+          }
+        },
+        {
+          accessorKey: 'channel',
+          header: '渠道',
+          enableColumnFilter: true,
+          meta: {
+            variant: 'multiSelect',
+            label: '渠道',
+            query: { filterNodeType: 'enum' }
+          }
+        }
+      ],
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [],
+      columnFilters: [
+        { id: 'status', value: ['enable'] },
+        { id: 'channel', value: ['FEISHU', 'WECOM'] }
+      ]
+    });
+
+    expect(request.condition).toEqual({
+      nodeType: 'compose',
+      logic: 'AND',
+      children: [
+        { nodeType: 'enum', field: 'status', op: 'EQ', value: 'enable' },
+        {
+          nodeType: 'enum',
+          field: 'channel',
+          op: 'IN',
+          values: ['FEISHU', 'WECOM']
+        }
+      ]
+    });
+  });
+
   it('serializes semicolon-separated CONTAINS text values as an IN text node', () => {
     const request = buildDataTableDslRequest({
       columns: [

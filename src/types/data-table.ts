@@ -27,6 +27,8 @@ declare module '@tanstack/react-table' {
     /** useDslDataTable 读取的后端查询序列化配置。 */
     query?: {
       operator?: DataTableDslOperator;
+      /** 后端条件节点类型；强类型枚举字段必须显式使用 enum。 */
+      filterNodeType?: DataTableDslFilterNodeType;
       filterField?: string;
       sortField?: string;
       serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
@@ -672,6 +674,8 @@ export type DataTableDslOperator =
   | 'LTE'
   | 'BETWEEN';
 
+export type DataTableDslFilterNodeType = 'text' | 'enum';
+
 export type DataTableColumnFilterVariant =
   | 'text'
   | 'select'
@@ -749,8 +753,9 @@ export interface DataTableColumnFilterOptions<TData = unknown, TValue = unknown>
 }
 
 export interface DataTableColumnDslQueryOptions<TData, TValue> {
-  /** 后端 DSL 查询字段、排序字段、操作符和自定义序列化函数。 */
+  /** 后端 DSL 查询节点、字段、排序字段、操作符和自定义序列化函数。 */
   dsl?: {
+    filterNodeType?: DataTableDslFilterNodeType;
     filterField?: string;
     sortField?: string;
     filterOperator?: DataTableDslOperator;
