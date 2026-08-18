@@ -2,7 +2,7 @@ import type {
   DataTableCellEditableContext,
   DataTableEditCodec,
   DataTableEditableColumnMeta
-} from '@/types/data-table';
+} from '../types';
 import { dataTableMessages } from '@/config/data-table-messages';
 
 const DEFAULT_MAX_MATRIX_PASTE_CELLS = 10_000;

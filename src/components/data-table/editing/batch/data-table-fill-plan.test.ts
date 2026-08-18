@@ -4,7 +4,7 @@ import {
   resolveDataTableEditableCell,
   type ResolveDataTableEditableCellContext
 } from '@/components/data-table/editing/data-table-edit-adapters';
-import type { DataTableEditableColumnMeta } from '@/types/data-table';
+import type { DataTableEditableColumnMeta } from '../types';
 
 import {
   prepareDataTableFillPlan,

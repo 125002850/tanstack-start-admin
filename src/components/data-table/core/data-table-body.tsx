@@ -26,7 +26,7 @@ import {
   DataTableStatus,
   type DataTableStatusConfig
 } from '@/components/data-table/feedback/data-table-status';
-import { useDataTableCellSelection } from '@/components/data-table/core/use-data-table-cell-selection';
+import { useDataTableCellSelection } from '@/components/data-table/selection/use-data-table-cell-selection';
 import {
   resolveDataTableColumnDragCellMotion,
   type DataTableColumnDragMotionMap

@@ -1,4 +1,4 @@
-import { escapeDataTableCellClipboardText } from './data-table-cell-range';
+import { escapeDataTableCellClipboardText } from '../../selection/data-table-cell-range';
 import {
   prepareDataTableMatrixPaste,
   type DataTableMatrixPasteColumn,
@@ -14,7 +14,7 @@ import type {
   DataTableCellEditableContext,
   DataTableEditCodec,
   DataTableEditableColumnMeta
-} from '@/types/data-table';
+} from '../types';
 import { dataTableMessages } from '@/config/data-table-messages';
 
 export type DataTableFillDirection =
