@@ -104,8 +104,9 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 - dashboard 业务页面默认接入 workspace tabs。
 - workspace tab 主表面的点击/拖拽区分、关闭按钮边界和排序验证必须遵循 [拖拽与 Pointer 交互规范](drag-and-pointer-interactions.md)。
 - 除重定向页、纯容器页或明确说明的不托管页面外，不要设置 `workspace.tagEnabled: false`。
-- 新增标准实际内容页默认使用 `WorkspacePageRoute` 托管页面实例；该组件在 workspace 启用时自动套 `PageContainer`，禁用时直接渲染页面主体。
+- 新增标准实际内容页默认使用 `WorkspacePageRoute` 托管页面实例；该组件在 workspace 启用时自动套 `PageContainer`，禁用时通过共享 `PageContent` 渲染页面主体。
 - `WorkspacePageRoute.render` 必须传入不包含 `PageContainer` 的 Management/page body 组件；需要标题、描述、Infobar 或 header action 时，通过 `pageContainerProps` 传给内部 `PageContainer`。
+- 默认内容高度使用 `contentSizing='flow'`；需要锁定剩余高度并让内部区域滚动时，显式使用 `contentSizing='contained'`。
 - `WorkspacePageBoundary` 只用于非标准布局或底层 workspace 集成；其 `render` 表示 workspace 启用时注册给 `ActivityHost` 的页面树，`renderWhenDisabled` 表示 workspace 禁用时由 route 直接渲染的页面树。
 - `keepAlive`、`closable` 的新页面控制权统一写在 route metadata 的 `workspace` 字段中；`WorkspacePageBoundary` 同名 props 仅作为历史兼容 fallback，禁止新增业务路由依赖这些 props。
 - `Activity mode="hidden"` 会保留页面 state，但会清理子树 Effects；workspace 页面中的 Effects 必须能被反复 cleanup / mount，不得依赖“隐藏但 effect 持续运行”的假设。

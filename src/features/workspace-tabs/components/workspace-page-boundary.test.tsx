@@ -328,7 +328,25 @@ describe('WorkspacePageBoundary', () => {
     expect(descriptorView.getByText('Route Body')).toBeTruthy();
   });
 
-  it('WorkspacePageRoute renders direct body without PageContainer when workspace tabs are disabled', () => {
+  it('WorkspacePageRoute constrains registered content when requested', () => {
+    render(
+      <WorkspacePageRoute
+        contentSizing='contained'
+        render={() => <div>Contained Route Body</div>}
+      />
+    );
+
+    const descriptor = getDescriptors()['/dashboard/users'];
+    const descriptorView = render(<>{descriptor.render()}</>);
+
+    expect(descriptorView.container.firstElementChild).toHaveClass('min-h-0', 'overflow-hidden');
+    expect(descriptorView.container.querySelector('[data-slot="page-content"]')).toHaveClass(
+      'min-h-0',
+      'overflow-hidden'
+    );
+  });
+
+  it('WorkspacePageRoute renders the shared page content without PageContainer when tabs are disabled', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(false);
 
     const { getByText, queryByText } = render(
@@ -340,6 +358,21 @@ describe('WorkspacePageBoundary', () => {
 
     expect(getByText('Route Body')).toBeTruthy();
     expect(queryByText('Route Title')).toBeNull();
+    expect(getDescriptors()).toEqual({});
+  });
+
+  it('WorkspacePageRoute keeps contained sizing when workspace tabs are disabled', () => {
+    vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(false);
+
+    const { container } = render(
+      <WorkspacePageRoute
+        contentSizing='contained'
+        render={() => <div>Contained Route Body</div>}
+      />
+    );
+
+    expect(container.firstElementChild).toHaveAttribute('data-slot', 'page-content');
+    expect(container.firstElementChild).toHaveClass('min-h-0', 'overflow-hidden');
     expect(getDescriptors()).toEqual({});
   });
 });
