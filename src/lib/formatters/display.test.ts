@@ -27,6 +27,7 @@ describe('display formatters', () => {
 
   it('formats common nullable values', () => {
     expect(nullableDateTime('2026-06-29T08:09:10Z')).toMatch(/^2026-06-29/);
+    expect(nullableDateTime('2026-08-18 09:10:11')).toBe('2026-08-18 09:10:11');
     expect(nullableFileSize(undefined)).toBe('-');
     expect(nullableFileSize(2048)).toBe('2 KB');
     expect(nullableDecimal(12.34567)).toBe('12.346');
