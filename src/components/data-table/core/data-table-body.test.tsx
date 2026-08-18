@@ -1078,6 +1078,8 @@ describe('DataTable body', () => {
 
     expect(screen.getByTestId('expanded-row-key').textContent).toBe('1');
     expect(screen.getByText('summary:Item 1')).toBeInTheDocument();
+    const tableViewportHost = document.querySelector('[data-table-resize-overlay-root]');
+    expect(tableViewportHost).toHaveClass('absolute', 'inset-0');
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(document.querySelector('[data-slot="data-table-expand-panel"]')).not.toBeNull();
 

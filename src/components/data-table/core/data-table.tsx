@@ -363,10 +363,8 @@ export function DataTable<TData>({
   );
 
   const tableViewport = (
-    <div
-      data-table-resize-overlay-root
-      className={isExpandLayoutActive ? 'h-full rounded-lg' : 'absolute inset-0 rounded-lg'}
-    >
+    // 展开态也必须脱离正常流，否则固定表宽会通过 min-content 把分屏和 Card 整体撑宽。
+    <div data-table-resize-overlay-root className='absolute inset-0 rounded-lg'>
       {/* 表格本体始终放在 ScrollArea 内，列宽预览、虚拟化和固定列阴影都以它为坐标系。 */}
       <ScrollArea
         className='h-full w-full'
