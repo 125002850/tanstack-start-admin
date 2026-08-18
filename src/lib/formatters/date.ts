@@ -1,4 +1,5 @@
 const pad = (value: number) => value.toString().padStart(2, '0');
+const LOCAL_DATE_TIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
 function resolveDate(value: Date | string | number | undefined): Date | null {
   if (!value) return null;
@@ -8,6 +9,8 @@ function resolveDate(value: Date | string | number | undefined): Date | null {
 }
 
 export function formatDateTime(value: Date | string | number | undefined) {
+  if (typeof value === 'string' && LOCAL_DATE_TIME_PATTERN.test(value)) return value;
+
   const date = resolveDate(value);
   if (!date) return '';
 
