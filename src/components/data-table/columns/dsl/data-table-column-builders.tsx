@@ -1,8 +1,12 @@
 import type { ColumnDef } from '@tanstack/react-table';
 
+import { DataTableBadgeListCell } from '@/components/data-table/cells/data-table-badge-list-cell';
 import { Badge } from '@/components/ui/badge';
 import {
   type ActionsDslColumnOptions,
+  type BadgeListDslColumnOptions,
+  type BadgeListFieldKey,
+  type BadgeListItemValue,
   type BadgeDslColumnOptions,
   type CustomDslColumnOptions,
   type DataTableColumn,
@@ -11,6 +15,7 @@ import {
 import { renderDataTableActionsCell } from '@/components/data-table/columns/dsl/data-table-column-actions';
 import {
   ACTIONS_COLUMN_DEFAULTS,
+  BADGE_LIST_COLUMN_DEFAULTS,
   BADGE_COLUMN_DEFAULTS,
   CUSTOM_COLUMN_DEFAULTS
 } from '@/components/data-table/columns/dsl/data-table-column-defaults';
@@ -59,7 +64,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
       options: {
         ...columnOptions,
         localFilterFormatValue: (value, row) =>
-          formatter ? formatter(value as TData[TKey], row) : value
+          formatter && !Array.isArray(row[key]) ? formatter(value as TData[TKey], row) : value
       }
     });
 
@@ -77,6 +82,67 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
           <Badge variant={resolvedVariant} className={cellClassName}>
             {label}
           </Badge>
+        );
+      },
+      ...resolvedOptions
+    } satisfies ColumnDef<TData, TData[TKey]>);
+  }
+
+  function badgeList<TKey extends BadgeListFieldKey<TData>>(
+    key: TKey,
+    title: string,
+    badgeListOptions: BadgeListDslColumnOptions<TData, TKey> = {}
+  ): DataTableColumn<TData> {
+    const {
+      formatItem,
+      variant = 'secondary',
+      maxVisible = 2,
+      header,
+      headerClassName,
+      headerAlign,
+      cellClassName,
+      meta,
+      ...columnOptions
+    } = badgeListOptions;
+    type ItemValue = BadgeListItemValue<TData, TKey>;
+    const formatItemValue = (value: ItemValue, row: TData) => {
+      // 空数组会在 Set Filter 中产生一个空白候选，不能把 undefined 传给业务 formatter。
+      if (value == null || value === '') return value;
+      return formatItem ? formatItem(value, row) : value;
+    };
+    const resolvedOptions = resolveDataTableColumnOptions<TData, TData[TKey]>({
+      title,
+      defaults: { ...BADGE_LIST_COLUMN_DEFAULTS, localFilter: 'multiSelect' },
+      options: {
+        ...columnOptions,
+        meta: { ...meta, cellOwnsTooltip: true },
+        localFilterFormatValue: (value, row) => formatItemValue(value as ItemValue, row)
+      }
+    });
+
+    return eraseDataTableColumnValue({
+      accessorKey: key,
+      header: header ?? dataTableHeaderFactory<TData>(title, headerClassName, headerAlign),
+      cell: ({ row }) => {
+        const rawValue = row.original[key];
+        const values = Array.isArray(rawValue) ? (rawValue as ItemValue[]) : [];
+        const items = values.flatMap((value, index) => {
+          if (value == null || value === '') return [];
+
+          const formattedValue = formatItemValue(value, row.original);
+          if (formattedValue == null || formattedValue === '') return [];
+
+          return [
+            {
+              key: `${typeof value}:${String(value)}:${index}`,
+              label: String(formattedValue),
+              variant: typeof variant === 'function' ? variant(value, row.original) : variant
+            }
+          ];
+        });
+
+        return (
+          <DataTableBadgeListCell items={items} maxVisible={maxVisible} className={cellClassName} />
         );
       },
       ...resolvedOptions
@@ -180,6 +246,7 @@ export function createDataTableColumnDsl<TData>(options: DataTableColumnDslOptio
     field,
     editableField,
     badge,
+    badgeList,
     actions,
     custom,
     audit

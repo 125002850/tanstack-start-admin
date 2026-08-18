@@ -22,6 +22,15 @@ export const BADGE_COLUMN_DEFAULTS = {
   columnPanelReorder: true
 } satisfies DataTableColumnResolvedDefaults;
 
+export const BADGE_LIST_COLUMN_DEFAULTS = {
+  size: 240,
+  minSize: 130,
+  enableSorting: false,
+  sortDescFirst: false,
+  columnPanelVisible: true,
+  columnPanelReorder: true
+} satisfies DataTableColumnResolvedDefaults;
+
 export const CUSTOM_COLUMN_DEFAULTS = {
   size: 160,
   minSize: 80,

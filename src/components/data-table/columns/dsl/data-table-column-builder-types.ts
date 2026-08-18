@@ -31,6 +31,16 @@ import type {
 
 type BadgeVariant = ComponentProps<typeof Badge>['variant'];
 
+export type BadgeListFieldKey<TData> = Extract<
+  {
+    [K in keyof TData]-?: NonNullable<TData[K]> extends readonly unknown[] ? K : never;
+  }[keyof TData],
+  string
+>;
+
+export type BadgeListItemValue<TData, TKey extends keyof TData> =
+  NonNullable<TData[TKey]> extends readonly (infer TItem)[] ? TItem : never;
+
 export type DataTableColumn<TData> = ColumnDef<TData>;
 
 /** createDataTableColumnDsl 的全局选项。 */
@@ -401,6 +411,16 @@ export interface BadgeDslColumnOptions<TData, TKey extends DataTableColumnKey<TD
   format?: (value: TData[TKey], row: TData) => unknown;
   formatValue?: (value: TData[TKey], row: TData) => unknown;
   variant?: BadgeVariant | ((value: TData[TKey], row: TData) => BadgeVariant);
+  headerClassName?: string;
+}
+
+/** badgeList 列配置：把数组字段逐项格式化并渲染为紧凑的 shadcn Badge 列表。 */
+export interface BadgeListDslColumnOptions<TData, TKey extends BadgeListFieldKey<TData>>
+  extends BaseColumnOptions<TData, TData[TKey]>, DataTableColumnOptions<TData, TData[TKey]> {
+  formatItem?: (value: BadgeListItemValue<TData, TKey>, row: TData) => unknown;
+  variant?: BadgeVariant | ((value: BadgeListItemValue<TData, TKey>, row: TData) => BadgeVariant);
+  /** 单元格直接展示的 Badge 数量，默认 2；其余项折叠为 +N。 */
+  maxVisible?: number;
   headerClassName?: string;
 }
 

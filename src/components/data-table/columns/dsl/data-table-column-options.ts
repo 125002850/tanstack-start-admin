@@ -4,6 +4,7 @@ import { resolveDataTableColumnSize, type DataTableColumnSize } from '@/config/d
 import type {
   DataTableColumnDslQueryOptions,
   DataTableColumnFilterOptions,
+  DataTableLocalFilterCandidateValue,
   DataTableColumnFilterVariant,
   DataTableColumnPanelOptions,
   FilterVariant
@@ -55,7 +56,7 @@ export interface DataTableColumnResolvedDefaults {
 }
 
 export type DataTableColumnOptions<TData, TValue> = DataTableColumnInputOptions<TData, TValue> &
-  DataTableColumnFilterOptions &
+  DataTableColumnFilterOptions<TData, TValue> &
   DataTableColumnDslQueryOptions<TData, TValue> &
   DataTableColumnPanelOptions & {
     /** DSL builder 注入的候选项展示格式；业务通常通过 format/formatValue 间接配置。 */
@@ -155,7 +156,10 @@ function resolveLocalFilterMeta<TData, TValue>(
         : undefined,
     range,
     unit: options.localFilterUnit ?? options.filterUnit,
-    formatValue: options.localFilterFormatValue ?? options.meta?.localFilter?.formatValue
+    formatValue: options.localFilterFormat
+      ? (value, row) =>
+          options.localFilterFormat?.(value as DataTableLocalFilterCandidateValue<TValue>, row)
+      : (options.localFilterFormatValue ?? options.meta?.localFilter?.formatValue)
   };
 }
 

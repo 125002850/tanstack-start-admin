@@ -15,6 +15,7 @@ interface Row {
   name?: string;
   amount?: number;
   status?: string;
+  roles?: string[];
   createdAt?: string;
   active?: boolean;
   kind?: string;
@@ -125,6 +126,36 @@ describe('data-table-column-factory', () => {
     });
 
     expect(renderCellText(column, { status: 'DONE' })).toBe('已完成');
+  });
+
+  it('creates badge-list columns with per-item formatting and multi-select filtering', () => {
+    const columnDsl = createDataTableColumnDsl<Row>();
+    const formatItem = vi.fn((value: string) => {
+      if (value === 'A1') return '车队';
+      if (value === 'A2') return '报关行';
+      return value;
+    });
+    const column = columnDsl.badgeList('roles', '角色', {
+      formatItem
+    });
+    const row = { roles: ['A1', 'A2'] };
+    const rendered = renderCell(column, row);
+
+    expect(React.isValidElement(rendered)).toBe(true);
+    expect(
+      (
+        rendered as React.ReactElement<{
+          items: Array<{ key: string; label: string }>;
+        }>
+      ).props.items
+    ).toEqual([
+      { key: 'string:A1:0', label: '车队', variant: 'secondary' },
+      { key: 'string:A2:1', label: '报关行', variant: 'secondary' }
+    ]);
+    expect(column.meta?.localFilter).toMatchObject({ variant: 'multiSelect' });
+    expect(column.meta?.cellOwnsTooltip).toBe(true);
+    expect(column.meta?.localFilter?.formatValue?.('A1', row)).toBe('车队');
+    expect(formatItem).toHaveBeenCalledWith('A1', row);
   });
 
   it('creates badge columns without rendering empty badges', () => {
