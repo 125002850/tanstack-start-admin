@@ -68,7 +68,7 @@
 - `field` / `badge` / `custom` 业务列默认启用排序；服务端不支持排序的字段必须显式传 `enableSorting: false`，字段名不一致时通过 `dsl.sortField` 映射，禁止向后端发送不存在的排序字段。
 - `badgeList` 默认不排序；只有后端明确支持数组字段排序时才可显式开启并通过 `dsl.sortField` 映射。
 - 数组字段需要逐项表达标签语义时使用 `badgeList`：`formatItem` 格式化单个元素，`variant` 可按元素返回 Badge 样式，`maxVisible` 控制直接展示数量（默认 2）。超出项统一折叠为 `+N`，完整内容由 DataTable 单例 Tooltip 展示；业务页面禁止重复手写逗号拼接或每个 Badge 一个 Tooltip。
-- 标准表头文字默认居中；列级通过 `headerAlign: 'left' | 'center' | 'right'` 覆盖。表头对齐不得复用单元格 `type.align`，筛选按钮必须固定在表头右侧且不参与文字对齐计算。
+- 标准表头文字默认居中；列级通过 `headerAlign: 'left' | 'center' | 'right'` 覆盖。表头对齐不得复用单元格 `type.align`；筛选按钮必须使用表头右侧的独立固定槽位，文字在剩余空间内按 `headerAlign` 对齐。
 - 自定义列类型只能通过 `createDataTableColumnDsl({ customTypes })` 注册，且不得覆盖内置 type key。无 `renderCell` 时统一走 `formatValue + text cell` fallback。
 - `field` / `badge` / `custom` 默认进入列显示面板并允许面板内拖拽；`actions` 默认不进入列显示面板，且默认关闭 hiding / resizing / sorting / filtering。
 - `columnDsl.actions` 与 `useDataTable` / `useDslDataTable` 的 `rowActions` 必须统一消费 `DataTableRowAction<TData>`：使用 `onClick(row)`，并共享 `disabled`、`hidden`、`confirmDelete` 与 `Sheet` 能力；禁止恢复 `DataTableRowActionOption`、`onSelect` 或两套并行行操作契约。
