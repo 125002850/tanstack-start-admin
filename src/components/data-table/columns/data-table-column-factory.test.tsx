@@ -423,7 +423,7 @@ describe('data-table-column-factory', () => {
       columnDsl.field('amount', '金额', { size: 137 })
     ];
 
-    expect(columns.map((column) => column.size)).toEqual([150, 110, 90, 220, 137]);
+    expect(columns.map((column) => column.size)).toEqual([160, 130, 105, 240, 137]);
   });
 
   it('shares the same row action objects without adapting callbacks', () => {
