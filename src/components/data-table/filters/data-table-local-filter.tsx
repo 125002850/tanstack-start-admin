@@ -191,7 +191,7 @@ export function DataTableLocalFilter<TData, TValue>({
           variant='ghost'
           size='icon'
           className={cn(
-            'relative z-20 size-7 shrink-0',
+            'relative z-20 size-6 shrink-0',
             active && 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
           )}
           aria-label={`筛选当前页：${title}`}

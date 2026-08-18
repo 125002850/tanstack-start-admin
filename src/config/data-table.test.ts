@@ -11,12 +11,12 @@ import {
 describe('dataTableColumnSizes', () => {
   it('provides stable semantic column width presets', () => {
     expect(dataTableColumnSizes).toEqual({
-      xs: 90,
-      sm: 110,
-      md: 150,
-      lg: 180,
-      xl: 220,
-      xxl: 240
+      xs: 105,
+      sm: 130,
+      md: 160,
+      lg: 200,
+      xl: 240,
+      xxl: 320
     });
   });
 });

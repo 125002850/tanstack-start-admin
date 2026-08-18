@@ -158,7 +158,7 @@ describe('DataTableColumnHeader', () => {
     const filterButton = screen.getByRole('button', { name: '筛选当前页：姓名' });
 
     expect(sortButton).toHaveClass('min-w-0', 'flex-1', 'justify-center');
-    expect(filterButton).toHaveClass('size-7', 'shrink-0');
+    expect(filterButton).toHaveClass('size-6', 'shrink-0');
     expect(sortButton.parentElement).toBe(filterButton.parentElement);
     expect(filterButton.parentElement).not.toHaveClass('relative', 'absolute');
   });

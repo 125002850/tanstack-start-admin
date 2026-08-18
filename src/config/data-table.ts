@@ -22,12 +22,12 @@ export type DataTableConfig = typeof dataTableConfig;
  * DSL 可直接传入预设 key，生成 ColumnDef 前会解析为数值；非标准宽度仍可直接传 number。
  */
 export const dataTableColumnSizes = {
-  xs: 90,
-  sm: 110,
-  md: 150,
-  lg: 180,
-  xl: 220,
-  xxl: 240
+  xs: 105,
+  sm: 130,
+  md: 160,
+  lg: 200,
+  xl: 240,
+  xxl: 320
 } as const;
 
 export type DataTableColumnSizePreset = keyof typeof dataTableColumnSizes;
