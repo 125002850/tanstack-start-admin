@@ -169,6 +169,7 @@ function hasQueryOptions<TData, TValue>(options: DataTableColumnOptions<TData, T
     options.dsl?.filterField ||
     options.dsl?.sortField ||
     options.dsl?.filterOperator ||
+    options.dsl?.filterNodeType ||
     options.dsl?.serializeFilter ||
     options.meta?.query
   );
@@ -185,6 +186,7 @@ function resolveQueryMeta<TData, TValue>(
   return {
     ...options.meta?.query,
     operator: options.dsl?.filterOperator ?? options.meta?.query?.operator,
+    filterNodeType: options.dsl?.filterNodeType ?? options.meta?.query?.filterNodeType,
     filterField: options.dsl?.filterField ?? options.meta?.query?.filterField,
     sortField: options.dsl?.sortField ?? options.meta?.query?.sortField,
     serializeFilter: options.dsl?.serializeFilter ?? options.meta?.query?.serializeFilter

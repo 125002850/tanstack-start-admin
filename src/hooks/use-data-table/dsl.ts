@@ -34,6 +34,14 @@ export interface DataTableDslTextCondition<TField extends string = string> {
   values?: string[];
 }
 
+export interface DataTableDslEnumCondition<TField extends string = string> {
+  nodeType: 'enum';
+  field: TField;
+  op: Extract<DataTableDslOperator, 'EQ' | 'IN'>;
+  value?: string;
+  values?: string[];
+}
+
 export interface DataTableDslDateTimeCondition<TField extends string = string> {
   nodeType: 'dateTime';
   field: TField;
@@ -46,6 +54,7 @@ export interface DataTableDslDateTimeCondition<TField extends string = string> {
 export type DataTableDslCondition<TField extends string = string> =
   | DataTableDslComposeCondition<TField>
   | DataTableDslTextCondition<TField>
+  | DataTableDslEnumCondition<TField>
   | DataTableDslDateTimeCondition<TField>;
 
 export interface DataTableDslSortItem<TField extends string = string> {
@@ -345,6 +354,10 @@ function buildFilterCondition<TData>(
       return { nodeType: 'text', field, op: 'IN', values };
     }
 
+    if (variant === 'select' && meta?.query?.filterNodeType === 'enum') {
+      return { nodeType: 'enum', field, op: op as DataTableDslEnumCondition['op'], value };
+    }
+
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], value };
   }
 
@@ -355,6 +368,10 @@ function buildFilterCondition<TData>(
     }
 
     const op = resolveOperator(variant, meta?.query?.operator, field);
+    if (meta?.query?.filterNodeType === 'enum') {
+      return { nodeType: 'enum', field, op: op as DataTableDslEnumCondition['op'], values };
+    }
+
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], values };
   }
 
