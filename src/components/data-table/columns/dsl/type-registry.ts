@@ -12,7 +12,7 @@ import type {
   BuiltInColumnValueType,
   DataTableColumnTypeDefinition,
   DataTableColumnValueType
-} from '@/types/data-table';
+} from './contracts';
 import { dataTableColumnSizes } from '@/config/data-table';
 
 /**

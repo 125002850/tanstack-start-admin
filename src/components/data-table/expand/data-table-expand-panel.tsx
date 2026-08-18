@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { ExpandConfigEdge, ExpandTabEdge } from '@/types/data-table';
+import type { ExpandConfigEdge, ExpandTabEdge } from './types';
 import { Icons } from '@/components/icons';
 
 /**

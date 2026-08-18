@@ -13,11 +13,7 @@ import {
 import { Icons } from '@/components/icons';
 import { getSelectedPageRows } from '@/lib/data-table/selection';
 import { cn } from '@/lib/utils';
-import type {
-  DataTableAction,
-  DataTableActionContext,
-  DataTableActionResolver
-} from '@/types/data-table';
+import type { DataTableAction, DataTableActionContext, DataTableActionResolver } from './types';
 
 /**
  * 表格顶部/底部批量操作栏。

@@ -14,12 +14,9 @@ import { createDataTableColumnDsl } from '@/components/data-table/columns/data-t
 import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
 import { DataTableHeaderDragOverlay } from '@/components/data-table/core/data-table-header';
 import { useDataTable } from '@/hooks/use-data-table';
-import type {
-  DataTableAction,
-  DataTableEditingController,
-  DataTableRowAction,
-  DataTableVirtualizationOptions
-} from '@/types/data-table';
+import type { DataTableAction, DataTableRowAction } from '@/components/data-table/actions/types';
+import type { DataTableEditingController } from '@/components/data-table/editing/types';
+import type { DataTableVirtualizationOptions } from '@/components/data-table/virtualization/types';
 import * as React from 'react';
 
 import { env } from '@/config';

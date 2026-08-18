@@ -12,7 +12,7 @@ import type {
   DataTableColumnVirtualWindow,
   DataTableResolvedVirtualizationOptions,
   DataTableVirtualizationProp
-} from '@/types/data-table';
+} from './types';
 
 /**
  * 解析 DataTable 的行/列虚拟化运行态。

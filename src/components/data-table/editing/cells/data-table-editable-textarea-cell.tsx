@@ -12,7 +12,7 @@ import type {
   DataTableEditableTextareaColumnMeta,
   DataTableEditingRuntime,
   DataTableFinishEditingResult
-} from '@/types/data-table';
+} from '../types';
 
 function shouldRestoreTextareaCellFocus(result: DataTableFinishEditingResult) {
   return (

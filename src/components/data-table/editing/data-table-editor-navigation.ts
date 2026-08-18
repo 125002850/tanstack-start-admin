@@ -1,4 +1,4 @@
-import type { DataTableFinishEditingResult, DataTableEditingRuntime } from '@/types/data-table';
+import type { DataTableFinishEditingResult, DataTableEditingRuntime } from './types';
 
 export type DataTableEditorNavigationDirection = 'next' | 'previous';
 

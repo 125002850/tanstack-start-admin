@@ -8,12 +8,12 @@ import type {
   EditableRuntimeEditOptions,
   EnabledEditableTypeAdapter,
   ResolveDataTableEditableCellContext
-} from '@/components/data-table/editing/data-table-edit-contracts';
+} from '@/components/data-table/editing/contracts';
 import {
   createDateEditCodec,
   parseDataTableDateValue
 } from '@/components/data-table/editing/codecs/data-table-date-edit-codec';
-import type { DataTableDateValue, DataTableEditableDateColumnMeta } from '@/types/data-table';
+import type { DataTableDateValue, DataTableEditableDateColumnMeta } from '../types';
 
 function resolveDateEditOptions<TData>(edit?: Readonly<EditableRuntimeEditOptions<TData>>) {
   const min = edit?.min === undefined ? undefined : parseDataTableDateValue(edit.min)?.value;

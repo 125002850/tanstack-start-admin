@@ -111,17 +111,21 @@ src/
 │   │   ├── columns/               # 稳定列入口与列定义实现
 │   │   │   ├── dsl/               # 列 builder、options、formatter 与 type registry
 │   │   │   └── header/            # 可排序/筛选列头与 resize handle
-│   │   ├── core/                  # 表格壳、表头/表体、选择、粘贴与填充
-│   │   │   └── fixtures/          # 矩阵粘贴等核心行为的测试输入资产
+│   │   ├── core/                  # 表格壳、表头/表体与能力装配
+│   │   │   └── body/              # 普通/虚拟表体与共享 cell 渲染
 │   │   ├── dnd/                   # 列拖拽
 │   │   ├── editing/               # 单元格编辑子域
 │   │   │   ├── adapters/          # 列类型到 editor/codec 的适配
+│   │   │   ├── batch/             # 粘贴、填充等批量编辑计划
 │   │   │   ├── cells/             # editable cell 与键盘交互
-│   │   │   └── codecs/            # 编辑值解析、校验与格式化
+│   │   │   ├── choice/            # 选项值模型、展示、编辑器与远程查询
+│   │   │   ├── codecs/            # 编辑值解析、校验与格式化
+│   │   │   └── runtime/           # 跨页草稿、错误、提交与编辑 session 引擎
 │   │   ├── expand/                # 展开分屏
 │   │   ├── export/                # 导出交互
 │   │   ├── feedback/              # loading、empty、error 状态
 │   │   ├── filters/               # 工具栏筛选与表头本地 Set Filter
+│   │   ├── selection/             # 单元格区域选择、剪贴板、填充与交互编排
 │   │   ├── toolbar/               # 工具栏与列面板
 │   │   └── virtualization/        # 行列虚拟化
 │   ├── forms/                     # 共享表单组合

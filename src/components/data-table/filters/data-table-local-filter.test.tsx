@@ -8,7 +8,7 @@ import type {
   DataTableLocalColumnFilter,
   DataTableLocalFilterOption,
   DataTableLocalFilteringRuntime
-} from '@/types/data-table';
+} from './types';
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: ({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({

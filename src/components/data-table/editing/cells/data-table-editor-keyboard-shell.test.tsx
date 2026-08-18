@@ -3,7 +3,7 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { DataTableFinishEditingResult, DataTableEditingRuntime } from '@/types/data-table';
+import type { DataTableFinishEditingResult, DataTableEditingRuntime } from '../types';
 
 import { DataTableEditorKeyboardShell } from './data-table-editor-keyboard-shell';
 

@@ -11,13 +11,13 @@ import type {
   ResolveDataTableEditableCellContext,
   ResolvedEditableCellMeta,
   ResolvedDataTableEditableCell
-} from '@/components/data-table/editing/data-table-edit-contracts';
-import type { DataTableEditCodec, PlannedEditableType } from '@/types/data-table';
+} from '@/components/data-table/editing/contracts';
+import type { DataTableEditCodec, PlannedEditableType } from './types';
 
 export type {
   ResolveDataTableEditableCellContext,
   ResolvedDataTableEditableCell
-} from '@/components/data-table/editing/data-table-edit-contracts';
+} from '@/components/data-table/editing/contracts';
 export { percentPoints } from '@/components/data-table/editing/codecs/data-table-numeric-edit-codec';
 
 export const enabledEditableTypeAdapters = {

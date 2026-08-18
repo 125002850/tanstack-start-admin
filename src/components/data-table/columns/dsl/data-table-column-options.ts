@@ -6,9 +6,9 @@ import type {
   DataTableColumnFilterOptions,
   DataTableLocalFilterCandidateValue,
   DataTableColumnFilterVariant,
-  DataTableColumnPanelOptions,
   FilterVariant
-} from '@/types/data-table';
+} from '@/components/data-table/filters/types';
+import type { DataTableColumnPanelOptions } from './contracts';
 
 /**
  * DataTable ColumnDef 选项合并器。

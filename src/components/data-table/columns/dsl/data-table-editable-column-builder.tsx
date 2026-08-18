@@ -6,7 +6,7 @@ import type {
   DataTableFieldBuilder,
   EditableRuntimeOptions,
   FieldColumnOptions
-} from '@/components/data-table/columns/dsl/data-table-column-builder-types';
+} from '@/components/data-table/columns/dsl/types';
 import { FIELD_COLUMN_DEFAULTS } from '@/components/data-table/columns/dsl/data-table-column-defaults';
 import { resolveDataTableEditableCell } from '@/components/data-table/editing/data-table-edit-adapters';
 import type { DataTableColumnKey } from '@/components/data-table/columns/dsl/data-table-column-formatters';
@@ -20,7 +20,7 @@ import {
   dataTableHeaderFactory,
   getDataTableAlignClassName
 } from '@/components/data-table/columns/dsl/data-table-column-rendering';
-import { resolveDataTableColumnTypeDefaults } from '@/components/data-table/columns/dsl/data-table-column-types';
+import { resolveDataTableColumnTypeDefaults } from '@/components/data-table/columns/dsl/type-registry';
 import { cn } from '@/lib/utils';
 
 /** 创建 editableField builder，并把只读降级交还给普通 field builder。 */

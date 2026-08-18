@@ -12,7 +12,7 @@ import type {
   DataTableInvalidEditBehavior,
   DataTableRemoteOptions,
   PlannedEditableType
-} from '@/types/data-table';
+} from './types';
 
 export type EditableRuntimeEditOptions<TData = unknown> = {
   control?: 'input' | 'combobox' | 'switch' | 'textarea';

@@ -1,5 +1,5 @@
 import { dataTableMessages } from '@/config/data-table-messages';
-import type { DataTableDateValue, DataTableEditCodec } from '@/types/data-table';
+import type { DataTableDateValue, DataTableEditCodec } from '../types';
 
 const { validation: validationMessages } = dataTableMessages;
 

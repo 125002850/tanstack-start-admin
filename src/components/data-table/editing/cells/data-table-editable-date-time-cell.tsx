@@ -24,7 +24,7 @@ import type {
   DataTableEditableDateTimeColumnMeta,
   DataTableEditingRuntime,
   DataTableFinishEditingResult
-} from '@/types/data-table';
+} from '../types';
 
 function shouldRestoreDateTimeCellFocus(result: DataTableFinishEditingResult) {
   return (

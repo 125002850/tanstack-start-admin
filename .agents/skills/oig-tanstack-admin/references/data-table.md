@@ -21,12 +21,15 @@
 
 - 完整目录图与组件归属规则见 [项目结构与组件归属](project-structure.md)。
 - Shadcn Table 原语固定保留在 `src/components/ui/table.tsx`；完整 DataTable 子系统固定放在 `src/components/data-table/`。
-- DataTable 内部按职责使用 `actions/`、`cells/`、`columns/`、`core/`、`dnd/`、`editing/`、`expand/`、`export/`、`feedback/`、`filters/`、`toolbar/`、`virtualization/`。
+- DataTable 内部按职责使用 `actions/`、`cells/`、`columns/`、`core/`、`dnd/`、`editing/`、`expand/`、`export/`、`feedback/`、`filters/`、`selection/`、`toolbar/`、`virtualization/`。
+- DataTable 内部类型归属到对应领域的 `types.ts`，纯判断、归一化和类型 helper 放同领域 `model.ts`；`src/types/data-table.ts` 只保留业务调用方兼容导出，内部实现禁止继续把它当作类型仓库。
 - `columns/` 根目录只保留稳定列入口、列标签和对应契约测试；`columns/dsl/` 放列构建、options、formatter 和 type registry，`columns/header/` 放列头与 resize handle。
-- 单元格编辑统一收敛在 `editing/`：adapter、codec、时区、编辑导航和 editable cell 必须在该子域内闭环，禁止重新放回 `columns/` 或通用 `cells/`。
+- 单元格编辑统一收敛在 `editing/`：adapter、codec、时区、编辑导航和 editable cell 必须在该子域内闭环；choice 值模型、展示、编辑器、远程 label 与 option 查询统一收敛在 `editing/choice/`，cell 文件只保留三态路由门面；跨页草稿、错误、提交与 session 状态机统一收敛在 `editing/runtime/`，并共享同一个 revision store；禁止重新放回 `columns/`、通用 `cells/` 或共享 hooks 实现。
+- 单元格区域选择统一收敛在 `selection/`：range model、owner 仲裁、pointer/keyboard、剪贴板、填充和自动滚动必须在该子域内闭环；`core/` 只负责装配。
+- `core/data-table-body.tsx` 只负责 status、empty、普通表体和虚拟表体路由；共享 cell、普通/虚拟 body 放 `core/body/`，行虚拟化和 header 测量统一放 `virtualization/`。
 - `cells/` 只放与列 DSL、编辑器无关的通用 cell 展示组件。业务 feature 只能从 `columns/data-table-column-factory` 消费列能力，禁止直接导入 `columns/dsl/`、`columns/header/` 或 `editing/` 实现。
 - 跨目录引用使用 `@/components/data-table/<layer>/<file>`；同目录实现与测试可以使用相对路径。禁止新增 flat barrel、旧路径 alias、兼容转发或新旧路径双写。
-- 共享状态编排和服务端 DSL 查询组合统一放在 `src/hooks/use-data-table/`，并从 `@/hooks/use-data-table` 公开；跨层类型放在 `src/types/data-table.ts`，特性配置放在 `src/config/data-table*.ts`，无 UI 算法和持久化放在 `src/lib/data-table/`。
+- 共享状态编排和服务端 DSL 查询组合统一放在 `src/hooks/use-data-table/`，并从 `@/hooks/use-data-table` 公开；对外兼容类型由 `src/types/data-table.ts` 聚合，特性配置放在 `src/config/data-table*.ts`，无 UI 算法和持久化放在 `src/lib/data-table/`。
 - 禁止 `src/components/data-table/` 反向导入 `src/features/`。只服务单一业务域的 cell、操作或详情组件必须留在对应 feature。
 - `src/features/` 和 `src/routes/` 中的业务表格必须统一组合共享 `DataTable`，禁止直接导入 `@/components/ui/table`、调用 `useReactTable()` 或渲染原生 `<table>` / 自建 `<Table>`。
 - 允许创建 `XxxDataTable` 这类 feature 业务包装组件，但内部必须通过列 DSL、`useDataTable()` / `useDslDataTable()` 和共享 `DataTable` 完成装配；禁止复制表头、表体、分页、选择、状态或虚拟化运行时形成平行实现。
@@ -143,7 +146,7 @@
 - 虚拟表格的单元格内容确实需要超过 48px 时，调用方必须显式传入匹配内容布局的 `virtualization.estimateRowHeight`（例如 56），禁止依赖普通表格的自然撑高语义。
 - 页面层一般不要手写虚拟化 gate。
 - `DataTable` 默认按内部阈值尝试虚拟化；仅在必要时通过 `virtualization={false}` 关闭，或传入配置对象覆盖。
-- 虚拟化内部职责统一收敛在 `useDataTableVirtualization`；页面层只通过 `virtualization` 配置调整阈值、overscan 或显式关闭。
+- 虚拟化公共解析入口统一收敛在 `useDataTableVirtualization`，表体内部的行 virtualizer、测量和运行时回退可拆为 `virtualization/` 下的私有 hook；页面层只通过 `virtualization` 配置调整阈值、overscan 或显式关闭。
 - 浏览器级虚拟化回归必须覆盖 `e2e/data-table-regression.smoke.spec.ts --grep @workspace-v2`，验证首屏非空、横向/纵向滚动、固定列可见和 header/body 基础对齐。
 - 分页响应、总数字段映射等差异必须收敛在 `mapQueryData`。
 - 非 DSL 场景直接使用 `useDataTable` 接入服务端分页时，优先传 `totalCount`，不要手算 `pageCount`。

@@ -11,7 +11,7 @@ import {
   type CustomDslColumnOptions,
   type DataTableColumn,
   type DataTableColumnDslOptions
-} from '@/components/data-table/columns/dsl/data-table-column-builder-types';
+} from '@/components/data-table/columns/dsl/types';
 import { renderDataTableActionsCell } from '@/components/data-table/columns/dsl/data-table-column-actions';
 import {
   ACTIONS_COLUMN_DEFAULTS,
@@ -29,7 +29,7 @@ import {
 import { resolveDataTableColumnOptions } from '@/components/data-table/columns/dsl/data-table-column-options';
 import { dataTableHeaderFactory } from '@/components/data-table/columns/dsl/data-table-column-rendering';
 import { nullableText } from '@/lib/formatters/display';
-import type { DataTableAuditFields } from '@/types/data-table';
+import type { DataTableAuditFields } from './contracts';
 
 /**
  * 创建 DataTable 列声明 DSL。
