@@ -41,8 +41,8 @@ import { createRowNumberColumn } from './columns/row-number-column';
 import { createSelectColumn } from './columns/select-column';
 import { resolveDataTableRowId, stringifyDataTableRowId } from './row-id';
 import { useColumnSizingPersistence } from './use-column-sizing-persistence';
-import { useTableState } from './use-table-state';
 import { useDataTableEditing } from './use-data-table-editing';
+import { useTableState } from './use-table-state';
 import { useDataTableLocalFiltering } from './use-data-table-local-filtering';
 
 /**
