@@ -11,7 +11,7 @@ import type { DataTableColumnAlign } from '@/types/data-table';
  * 标准 DataTable 列头。
  *
  * 可排序列的标题区域直接推进 TanStack sorting state；列显隐统一由 DataTableViewOptions
- * 承担。本地列值筛选保留为独立按钮，避免排序、筛选和列管理共享同一点击目标。
+ * 承担。本地列值筛选使用独立固定槽位，避免排序、筛选和列管理共享同一点击目标。
  */
 export interface DataTableColumnHeaderLabels {
   ascText?: string;
@@ -101,11 +101,11 @@ export function DataTableColumnHeader<TData, TValue>({
   if (!column.getCanSort()) {
     // 不可排序列保持轻量标题结构；列是否可隐藏不改变表头点击语义。
     return (
-      <div className='relative flex h-8 w-full min-w-0 items-center'>
+      <div data-slot='data-table-column-header' className='flex h-8 w-full min-w-0 items-center'>
         <div
+          data-slot='data-table-column-header-content'
           className={cn(
-            'flex h-full w-full min-w-0 items-center px-2',
-            canFilterCurrentPage && 'px-5',
+            'flex h-full min-w-0 flex-1 items-center px-2',
             alignmentClassName,
             className
           )}
@@ -115,23 +115,21 @@ export function DataTableColumnHeader<TData, TValue>({
           </DataTableOverflowTooltipText>
         </div>
         {canFilterCurrentPage && localFiltering ? (
-          <div className='absolute right-0 top-1/2 z-20 -translate-y-1/2'>
-            <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
-          </div>
+          <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
         ) : null}
       </div>
     );
   }
 
   return (
-    <div className='relative flex h-8 w-full min-w-0 items-center'>
+    <div data-slot='data-table-column-header' className='flex h-8 w-full min-w-0 items-center'>
       <button
         type='button'
+        data-slot='data-table-column-header-content'
         data-column-header-drag-surface
         aria-label={ariaLabel ?? `${title}：${getNextSortActionText(nextSortDirection, labels)}`}
         className={cn(
-          'focus-visible:ring-ring [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground flex h-8 w-full max-w-full min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 focus-visible:ring-1 focus-visible:outline-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:transition-colors',
-          canFilterCurrentPage && 'px-5',
+          'focus-visible:ring-ring [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground flex h-8 max-w-full min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 py-1.5 focus-visible:ring-1 focus-visible:outline-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:transition-colors',
           alignmentClassName,
           className
         )}
@@ -145,9 +143,7 @@ export function DataTableColumnHeader<TData, TValue>({
         {renderSortIcon(sortDirection)}
       </button>
       {canFilterCurrentPage && localFiltering ? (
-        <div className='absolute right-0 top-1/2 z-20 -translate-y-1/2'>
-          <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
-        </div>
+        <DataTableLocalFilter column={column} runtime={localFiltering} title={title} />
       ) : null}
     </div>
   );
