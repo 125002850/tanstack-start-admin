@@ -149,7 +149,7 @@ src/
 │   ├── formatters/                # 日期、数字和展示格式化
 │   ├── router/                    # 路由元数据、守卫与导航算法
 │   ├── query-client.ts            # React Query 客户端配置
-│   └── utils.ts                   # 仅保留通用 cn() 类名合并
+│   └── utils.ts                   # 通用 cn() 类名合并与浏览器 UUID 生成
 ├── hooks/                         # 跨 feature 状态编排
 │   └── use-data-table/            # 表格状态、服务端 DSL、编辑和本地筛选运行时
 ├── config/                        # infobar、data table 等配置
