@@ -682,6 +682,13 @@ export type DataTableColumnFilterVariant =
   | 'numberRange'
   | 'boolean';
 
+/** Set Filter 处理单个候选值；数组字段的候选值是数组元素，而不是整个数组。 */
+export type DataTableLocalFilterCandidateValue<TValue> = [NonNullable<TValue>] extends [
+  readonly (infer TElement)[]
+]
+  ? TElement
+  : TValue;
+
 /** 表头本地筛选控件配置；与服务端搜索栏使用的扁平 meta 字段完全隔离。 */
 export interface DataTableLocalFilterMeta<TData = unknown> {
   variant: FilterVariant;
@@ -689,7 +696,7 @@ export interface DataTableLocalFilterMeta<TData = unknown> {
   options?: Option[];
   range?: [number, number];
   unit?: string;
-  /** 将原始字段值转换成 Set Filter 候选项文案。 */
+  /** 将单个候选值转换成 Set Filter 文案；数组字段传入数组元素。 */
   formatValue?: (value: unknown, row: TData) => unknown;
 }
 
@@ -722,7 +729,7 @@ export interface DataTableLocalFilteringRuntime {
 
 export type DataTableFilterOption = Option;
 
-export interface DataTableColumnFilterOptions {
+export interface DataTableColumnFilterOptions<TData = unknown, TValue = unknown> {
   /** false 表示关闭服务端搜索筛选；字符串值表示搜索栏控件类型。 */
   filter?: false | DataTableColumnFilterVariant;
   filterPlaceholder?: string;
@@ -734,6 +741,8 @@ export interface DataTableColumnFilterOptions {
   localFilter?: false | DataTableColumnFilterVariant;
   localFilterPlaceholder?: string;
   localFilterOptions?: readonly DataTableFilterOption[];
+  /** 只格式化单个 Set Filter 候选；数组字段接收数组元素，独立于整单元格 format。 */
+  localFilterFormat?: (value: DataTableLocalFilterCandidateValue<TValue>, row: TData) => unknown;
   localFilterMin?: number;
   localFilterMax?: number;
   localFilterUnit?: string;

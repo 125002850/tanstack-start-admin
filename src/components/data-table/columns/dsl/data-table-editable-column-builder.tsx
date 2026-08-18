@@ -118,6 +118,8 @@ export function createDataTableEditableFieldBuilder<TData>(
         typeFormatter,
         fallbackFormatter: () => context.formatField(key, row)
       });
+    const resolveEditableLocalFilterFormattedValue = (value: unknown, row: TData) =>
+      Array.isArray(row[key]) ? value : resolveEditableFormattedValue(value, row);
 
     return eraseDataTableColumnValue({
       accessorKey: key,
@@ -150,7 +152,7 @@ export function createDataTableEditableFieldBuilder<TData>(
           ...columnOptions,
           filterOptions: derivedFilterOptions,
           localFilterOptions: derivedLocalFilterOptions,
-          localFilterFormatValue: resolveEditableFormattedValue,
+          localFilterFormatValue: resolveEditableLocalFilterFormattedValue,
           meta: resolvedMeta
         }
       })

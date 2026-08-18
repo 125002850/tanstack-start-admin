@@ -125,6 +125,53 @@ describe('filterDataTableRows', () => {
 });
 
 describe('useDataTableLocalFiltering', () => {
+  it('builds formatted candidates from array members and matches selected members with OR semantics', () => {
+    interface RoleRow {
+      id: number;
+      roles: string[];
+    }
+    const roleRows: RoleRow[] = [
+      { id: 1, roles: ['A1'] },
+      { id: 2, roles: ['A2'] },
+      { id: 3, roles: ['UNMAPPED'] },
+      { id: 4, roles: [] }
+    ];
+    const roleColumns: ColumnDef<RoleRow>[] = [
+      {
+        accessorKey: 'roles',
+        meta: {
+          localFilter: {
+            variant: 'multiSelect',
+            formatValue: (value) =>
+              ({ A1: '车队', A2: '报关行' })[String(value) as 'A1' | 'A2'] ?? String(value)
+          }
+        }
+      }
+    ];
+    const { result } = renderHook(() =>
+      useDataTableLocalFiltering({
+        data: roleRows,
+        columns: roleColumns,
+        resetScope: 'page=1'
+      })
+    );
+
+    expect(result.current.runtime.getFilterOptions('roles')).toEqual(
+      expect.arrayContaining([
+        { key: getDataTableLocalFilterValueKey('A1'), label: '车队' },
+        { key: getDataTableLocalFilterValueKey('A2'), label: '报关行' },
+        { key: getDataTableLocalFilterValueKey('UNMAPPED'), label: 'UNMAPPED' },
+        { key: getDataTableLocalFilterValueKey(undefined), label: '（空白）' }
+      ])
+    );
+
+    act(() => {
+      result.current.runtime.setFilterValue('roles', setFilterValues('A1', 'A2'));
+    });
+
+    expect(result.current.data).toEqual(roleRows.slice(0, 2));
+  });
+
   it('builds distinct formatted options and facets them by other columns only', () => {
     const { result } = renderHook(() =>
       useDataTableLocalFiltering({

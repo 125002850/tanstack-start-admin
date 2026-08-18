@@ -147,6 +147,8 @@ export function createDataTableFieldBuilder<TData>(
         context.formatField(key, row)
       );
     };
+    const resolveLocalFilterFormattedValue = (value: unknown, row: TData) =>
+      Array.isArray(row[key]) ? value : resolveFieldFormattedValue(value, row);
     const resolvedMeta = typeDefaults.copyValue
       ? {
           // copyValue 放进 meta，单元格复制逻辑会优先读取它。
@@ -193,7 +195,7 @@ export function createDataTableFieldBuilder<TData>(
         },
         options: {
           ...columnOptions,
-          localFilterFormatValue: resolveFieldFormattedValue,
+          localFilterFormatValue: resolveLocalFilterFormattedValue,
           meta: resolvedMeta
         }
       })

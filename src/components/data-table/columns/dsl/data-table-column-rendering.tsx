@@ -64,7 +64,10 @@ export function getDataTableAlignClassName(align: DataTableColumnAlign | undefin
 }
 
 /** enum 类型字段优先从 filterOptions 找 label，避免展示值和筛选项文案不一致。 */
-export function resolveDataTableEnumLabel(value: unknown, options: DataTableColumnFilterOptions) {
+export function resolveDataTableEnumLabel(
+  value: unknown,
+  options: Pick<DataTableColumnFilterOptions, 'filterOptions'>
+) {
   const normalizedValue = value == null ? undefined : String(value);
   if (!normalizedValue) {
     return undefined;

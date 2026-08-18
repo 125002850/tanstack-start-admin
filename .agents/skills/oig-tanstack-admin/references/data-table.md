@@ -56,9 +56,9 @@
 
 ## 列定义 DSL
 
-- 业务页面列定义统一使用 `createDataTableColumnDsl<T>()` 生成 `ColumnDef<T>`；页面层只直接使用 `columnDsl.field`、`columnDsl.editableField`、`columnDsl.badge`、`columnDsl.actions`、`columnDsl.custom`。
+- 业务页面列定义统一使用 `createDataTableColumnDsl<T>()` 生成 `ColumnDef<T>`；页面层只直接使用 `columnDsl.field`、`columnDsl.editableField`、`columnDsl.badge`、`columnDsl.badgeList`、`columnDsl.actions`、`columnDsl.custom`。
 - 旧入口 `dataTableColumns.*`、`columnDsl.text`、`columnDsl.longText`、`columnDsl.filterableText` 已删除，禁止恢复 alias、兼容 adapter 或新旧双写。
-- 普通字段列使用 `columnDsl.field('fieldName', '列标题', options)`；徽标语义使用 `columnDsl.badge`；行操作列使用 `columnDsl.actions`；一次性业务 cell 或复合 accessor 使用 `columnDsl.custom`。
+- 普通字段列使用 `columnDsl.field('fieldName', '列标题', options)`；单值徽标使用 `columnDsl.badge`；后端数组字段的多徽标使用 `columnDsl.badgeList`；行操作列使用 `columnDsl.actions`；一次性业务 cell 或复合 accessor 使用 `columnDsl.custom`。
 - 多处复用的展示行为必须优先进入 `type` registry 或新增稳定 DSL 方法；`custom` 只用于一次性、交互特化、复合搜索或尚未证明可复用的 cell。
 - `filter` 必须是扁平字段：`false | 'text' | 'select' | 'multiSelect' | 'date' | 'dateRange' | 'number' | 'numberRange' | 'boolean'`。禁止 `filter: { variant: 'text' }` 对象 API。
 - `filterPlaceholder`、`filterOptions`、`filterMin`、`filterMax`、`filterUnit` 必须作为列 option 的扁平字段传入；后端字段名、operator、序列化函数不得塞进 filter option。
@@ -66,6 +66,8 @@
 - `type` 负责默认展示组合：`text`、`longText`、`number`、`int`、`decimal`、`money`、`percent`、`date`、`dateTime`、`boolean`、`enum`、`select`、`remoteSelect`、`fileSize`；`type` 不隐式开启筛选。
 - DSL 的通用列宽优先直接传 `size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'`，factory 必须在生成 `ColumnDef` 前解析为数值；特殊布局可继续传精确数字，禁止为了套用预设改变既有视觉宽度。
 - `field` / `badge` / `custom` 业务列默认启用排序；服务端不支持排序的字段必须显式传 `enableSorting: false`，字段名不一致时通过 `dsl.sortField` 映射，禁止向后端发送不存在的排序字段。
+- `badgeList` 默认不排序；只有后端明确支持数组字段排序时才可显式开启并通过 `dsl.sortField` 映射。
+- 数组字段需要逐项表达标签语义时使用 `badgeList`：`formatItem` 格式化单个元素，`variant` 可按元素返回 Badge 样式，`maxVisible` 控制直接展示数量（默认 2）。超出项统一折叠为 `+N`，完整内容由 DataTable 单例 Tooltip 展示；业务页面禁止重复手写逗号拼接或每个 Badge 一个 Tooltip。
 - 标准表头文字默认居中；列级通过 `headerAlign: 'left' | 'center' | 'right'` 覆盖。表头对齐不得复用单元格 `type.align`，筛选按钮必须固定在表头右侧且不参与文字对齐计算。
 - 自定义列类型只能通过 `createDataTableColumnDsl({ customTypes })` 注册，且不得覆盖内置 type key。无 `renderCell` 时统一走 `formatValue + text cell` fallback。
 - `field` / `badge` / `custom` 默认进入列显示面板并允许面板内拖拽；`actions` 默认不进入列显示面板，且默认关闭 hiding / resizing / sorting / filtering。
@@ -110,9 +112,10 @@
 ## 表头本地列值筛选
 
 - `filter*` 只描述 DataTableToolbar / 服务端 DSL 筛选；`localFilter*` 只描述表头对当前已加载数据的 Set Filter。两套状态必须隔离，表头筛选不得写入 TanStack `columnFilters` 或后端 request。
-- `field`、`editableField` 和 `badge` 由 column type 推导默认 `localFilter`；业务只在需要覆盖候选项或单独关闭时传 `localFilterOptions` 或 `localFilter: false`，禁止直接手写 `meta.localFilter`。
+- `field`、`editableField` 和 `badge` 由 column type 推导默认 `localFilter`；`badgeList` 固定默认为 `multiSelect`，并复用 `formatItem` 格式化候选文案。业务只在需要覆盖候选项、候选文案或单独关闭时传 `localFilterOptions`、`localFilterFormat` 或 `localFilter: false`，禁止直接手写 `meta.localFilter`。
 - 本地筛选只消费当前浏览器已加载且已合并编辑草稿的数据；pagination、sorting、服务端 `columnFilters` 或 editing scope 改变时必须清空本地条件，禁止让旧页选择静默污染新 scope。
 - 候选项必须按原始类型生成 typed key；字符串 `"1"`、数字 `1`、boolean、Date 和空白值不得合并。数组 cell 按任一元素命中，空数组按空白处理。
+- 数组 cell 的 `format` 负责格式化整个单元格，`localFilterFormat` 只格式化单个数组元素；两者必须保持独立。Set Filter 应将数组元素展开为去重候选，同列选中多个候选时按 OR 匹配，禁止把整数组 formatter 复用于单个候选值。
 - 多列条件使用 AND；计算某列候选项时应用其他列条件但排除本列条件，使级联候选保持可恢复。`undefined` 表示全选/未筛选，空 `selectedKeys` 是有效条件并表示不匹配任何行。
 - 搜索框只收窄候选列表，不直接修改表格数据；勾选立即生效，全选只作用于当前可见候选，搜索后 Enter 使用当前匹配项替换该列选择。
 - 候选值只在 Popover 打开时收集，长列表必须虚拟化。禁止在每次表格 render 或浮层关闭时扫描整列、创建全部 option DOM。
