@@ -10,6 +10,13 @@
 
 外层 Card 统一管理盒子级 padding；子组件只负责自身内部布局。全宽表格等特殊需求由子组件通过 `className` 覆盖。
 
+### 高度职责
+
+- `Card` 与 `CardContent` 默认不声明 `h-full`，卡片高度由所在页面布局决定。
+- 页面内容默认使用 `flow` 模式：最小高度填满剩余空间，内容增加时页面继续增长，并由 dashboard 内容区滚动。
+- 需要把高度锁定在页面剩余空间、由卡片内部区域滚动时，通过 `WorkspacePageRoute contentSizing='contained'` 声明。
+- `contained` 页面中的多栏根容器必须传递 `h-full min-h-0`；实际滚动区域使用 `min-h-0 flex-1 overflow-auto`，禁止使用硬编码 `calc(100vh - ...)` 或 `max-h-svh` 推算页面高度。
+
 ### 正确用法
 
 ```tsx
@@ -101,7 +108,8 @@ route.tsx
   └─ <WorkspacePageRoute render={() => <XXXManagementPage />} />
        └─ workspace on: <PageContainer>
             └─ <XXXManagementPage />
-       └─ workspace off: <XXXManagementPage />
+       └─ workspace off: <PageContent>
+            └─ <XXXManagementPage />
 ```
 
 标准页面不再单独创建只承载 `PageContainer` 的 Screen 组件：
@@ -127,7 +135,7 @@ export default function XxxRoutePage() {
 约束：
 
 - `PageContainer` 提供 `flex flex-1`，负责 workspace viewport 内的拉伸和统一 padding。
-- tabs 禁用时，页面通过 `<Outlet />` 渲染在 `SidebarInset` flex 列中，不额外套 `PageContainer`。
+- tabs 禁用时，页面通过 `<Outlet />` 渲染在 `SidebarInset` flex 列中，只保留共享 `PageContent` 高度语义，不额外套 `PageContainer`。
 - 非标准布局页面（例如不应套 `PageContainer` 的全屏工具页）可以直接使用 `WorkspacePageBoundary`，但必须显式说明原因。
 - Management 层禁止通过 `flex-1 w-full` 等样式补救外层布局。
 - Management 层禁止导入或渲染 `PageContainer`；需要标题、描述、Infobar 时，在 `WorkspacePageRoute.pageContainerProps` 上显式传入 props。

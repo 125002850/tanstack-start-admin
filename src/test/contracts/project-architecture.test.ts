@@ -153,6 +153,26 @@ describe('project architecture contracts', () => {
     expect(violations).toEqual([]);
   });
 
+  it('keeps the dashboard shell viewport-bound with an explicit page scroll area', () => {
+    const sidebarSource = readProjectFile('src/components/ui/sidebar.tsx');
+    const infobarSource = readProjectFile('src/components/ui/infobar.tsx');
+    const pageContainerSource = readProjectFile('src/components/layout/page-container.tsx');
+
+    expect(sidebarSource).toContain(
+      'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex h-screen h-svh min-h-0 w-full overflow-hidden'
+    );
+    expect(sidebarSource).toContain(
+      'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex'
+    );
+    expect(sidebarSource).toContain(
+      'bg-background relative flex min-h-0 w-full flex-1 flex-col min-w-0 overflow-hidden'
+    );
+    expect(infobarSource).toContain(
+      'group/infobar-wrapper flex min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto'
+    );
+    expect(pageContainerSource).toContain('flex flex-1 flex-col min-w-0');
+  });
+
   it('requires feature and route tables to use the shared DataTable runtime', () => {
     const businessSourcePrefixes = ['src/features/', 'src/routes/'];
     const forbiddenTablePatterns = [

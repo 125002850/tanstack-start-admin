@@ -1,9 +1,30 @@
 import React from 'react';
 import { Heading } from '../ui/heading';
 import type { InfobarContent } from '@/components/ui/infobar';
+import { cn } from '@/lib/utils';
 
 const PAGE_CONTAINER_PADDING_CLASSES =
   'p-4 md:px-6 [--page-container-padding-x:1rem] md:[--page-container-padding-x:1.5rem]';
+
+export type PageContentSizing = 'flow' | 'contained';
+
+interface PageContentProps extends React.ComponentProps<'div'> {
+  contentSizing?: PageContentSizing;
+}
+
+export function PageContent({ contentSizing = 'flow', className, ...props }: PageContentProps) {
+  return (
+    <div
+      data-slot='page-content'
+      className={cn(
+        'grid min-w-0 flex-1',
+        contentSizing === 'contained' && 'min-h-0 overflow-hidden',
+        className
+      )}
+      {...props}
+    />
+  );
+}
 
 function PageSkeleton() {
   return (
@@ -22,6 +43,7 @@ function PageSkeleton() {
 
 export default function PageContainer({
   children,
+  contentSizing = 'flow',
   isLoading = false,
   access = true,
   accessFallback,
@@ -31,6 +53,7 @@ export default function PageContainer({
   pageHeaderAction
 }: {
   children: React.ReactNode;
+  contentSizing?: PageContentSizing;
   isLoading?: boolean;
   access?: boolean;
   accessFallback?: React.ReactNode;
@@ -53,7 +76,13 @@ export default function PageContainer({
   const hasHeader = pageTitle || pageHeaderAction;
 
   return (
-    <div className={`flex flex-1 flex-col min-w-0 ${PAGE_CONTAINER_PADDING_CLASSES}`}>
+    <div
+      className={cn(
+        'flex flex-1 flex-col min-w-0',
+        contentSizing === 'contained' && 'min-h-0 overflow-hidden',
+        PAGE_CONTAINER_PADDING_CLASSES
+      )}
+    >
       {hasHeader && (
         <div className='mb-4 flex items-start justify-between gap-4'>
           <Heading
@@ -64,7 +93,7 @@ export default function PageContainer({
           {pageHeaderAction && <div className='shrink-0'>{pageHeaderAction}</div>}
         </div>
       )}
-      {content}
+      <PageContent contentSizing={contentSizing}>{content}</PageContent>
     </div>
   );
 }
