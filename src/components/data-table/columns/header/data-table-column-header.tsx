@@ -129,7 +129,7 @@ export function DataTableColumnHeader<TData, TValue>({
         data-column-header-drag-surface
         aria-label={ariaLabel ?? `${title}：${getNextSortActionText(nextSortDirection, labels)}`}
         className={cn(
-          'focus-visible:ring-ring [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground flex h-8 max-w-full min-w-0 flex-1 items-center gap-1 rounded-md px-1 py-1.5 focus-visible:ring-1 focus-visible:outline-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:transition-colors',
+          'focus-visible:ring-ring [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground flex h-8 max-w-full min-w-0 flex-1 items-center rounded-md py-1.5 focus-visible:ring-1 focus-visible:outline-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:transition-colors',
           alignmentClassName,
           className
         )}
