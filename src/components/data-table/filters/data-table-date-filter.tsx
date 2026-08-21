@@ -4,11 +4,11 @@ import { Icons } from '@/components/icons';
 import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
 
-import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
 import { formatDateOnly } from '@/lib/formatters/date';
+
+import { DataTableFilterTrigger } from './data-table-filter-trigger';
 
 /**
  * 日期/日期范围筛选控件。
@@ -132,70 +132,31 @@ export function DataTableDateFilter<TData>({
     return formatDateOnly(range.from ?? range.to);
   }, []);
 
-  const label = React.useMemo(() => {
+  const valueLabel = React.useMemo(() => {
     if (multiple) {
-      if (!getIsDateRange(selectedDates)) return null;
-
-      const hasSelectedDates = selectedDates.from || selectedDates.to;
-      const dateText = hasSelectedDates ? formatDateOnlyRange(selectedDates) : '选择日期范围';
-
-      return (
-        <span className='flex items-center gap-2'>
-          <span>{title}</span>
-          {hasSelectedDates && (
-            <>
-              <Separator
-                orientation='vertical'
-                className='mx-0.5 data-[orientation=vertical]:h-4'
-              />
-              <span>{dateText}</span>
-            </>
-          )}
-        </span>
-      );
+      if (!getIsDateRange(selectedDates)) return '';
+      return selectedDates.from || selectedDates.to ? formatDateOnlyRange(selectedDates) : '';
     }
 
-    if (getIsDateRange(selectedDates)) return null;
-
-    const hasSelectedDate = selectedDates.length > 0;
-    const dateText = hasSelectedDate ? formatDateOnly(selectedDates[0]) : '选择日期';
-
-    return (
-      <span className='flex items-center gap-2'>
-        <span>{title}</span>
-        {hasSelectedDate && (
-          <>
-            <Separator orientation='vertical' className='mx-0.5 data-[orientation=vertical]:h-4' />
-            <span>{dateText}</span>
-          </>
-        )}
-      </span>
-    );
-  }, [selectedDates, multiple, formatDateOnlyRange, title]);
+    if (getIsDateRange(selectedDates)) return '';
+    return selectedDates.length > 0 ? formatDateOnly(selectedDates[0]) : '';
+  }, [selectedDates, multiple, formatDateOnlyRange]);
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant='outline'
-          size='sm'
-          className='data-table-filter-control border-dashed'
-          data-active={hasValue ? 'true' : undefined}
-        >
-          {hasValue ? (
-            <span
-              aria-hidden='true'
-              data-filter-clear=''
-              onClick={onReset}
-              className='rounded-sm opacity-70 transition-opacity hover:opacity-100'
-            >
-              <Icons.xCircle />
-            </span>
-          ) : (
-            <Icons.calendar />
-          )}
-          {label}
-        </Button>
+        <DataTableFilterTrigger
+          title={title}
+          state={
+            hasValue
+              ? {
+                  status: 'active',
+                  onClear: onReset,
+                  selection: { kind: 'value', content: valueLabel }
+                }
+              : { status: 'idle', icon: <Icons.calendar /> }
+          }
+        />
       </PopoverTrigger>
       <PopoverContent className='data-table-filter-popover w-auto p-0' align='start'>
         {multiple ? (

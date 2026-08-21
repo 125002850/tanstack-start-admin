@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
-import { Icons } from '@/components/icons';
+
+import { DataTableFilterTrigger } from './data-table-filter-trigger';
 
 /**
  * 数值范围筛选控件。
@@ -137,36 +137,26 @@ export function DataTableSliderFilter<TData>({ column, title }: DataTableSliderF
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant='outline'
-          size='sm'
-          className='data-table-filter-control border-dashed'
-          data-active={columnFilterValue !== undefined ? 'true' : undefined}
-        >
-          {columnFilterValue ? (
-            <span
-              aria-hidden='true'
-              data-filter-clear=''
-              className='rounded-sm opacity-70 transition-opacity hover:opacity-100'
-              onClick={onReset}
-            >
-              <Icons.xCircle />
-            </span>
-          ) : (
-            <Icons.plusCircle />
-          )}
-          <span>{title}</span>
-          {columnFilterValue ? (
-            <>
-              <Separator
-                orientation='vertical'
-                className='mx-0.5 data-[orientation=vertical]:h-4'
-              />
-              {formatValue(columnFilterValue[0])} - {formatValue(columnFilterValue[1])}
-              {unit ? ` ${unit}` : ''}
-            </>
-          ) : null}
-        </Button>
+        <DataTableFilterTrigger
+          title={title}
+          state={
+            columnFilterValue
+              ? {
+                  status: 'active',
+                  onClear: onReset,
+                  selection: {
+                    kind: 'value',
+                    content: (
+                      <>
+                        {formatValue(columnFilterValue[0])} - {formatValue(columnFilterValue[1])}
+                        {unit ? ` ${unit}` : ''}
+                      </>
+                    )
+                  }
+                }
+              : { status: 'idle' }
+          }
+        />
       </PopoverTrigger>
       <PopoverContent
         align='start'

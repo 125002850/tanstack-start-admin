@@ -9,6 +9,7 @@
 - [可编辑单元格](#可编辑单元格)
 - [跨页草稿与持久化](#跨页草稿与持久化)
 - [DSL 筛选契约](#dsl-筛选契约)
+- [Toolbar 筛选视觉契约](#toolbar-筛选视觉契约)
 - [表头本地列值筛选](#表头本地列值筛选)
 - [页面组合](#页面组合)
 - [分页、选择与虚拟化](#分页选择与虚拟化)
@@ -111,6 +112,13 @@
 - `number`、`range`、`boolean` 仍可用于非 DSL / 本地 `useDataTable` 表格 UI，但不得被 `buildDataTableDslRequest()` 静默序列化为后端 DSL 请求。
 - 标准 DSL 表格列使用不支持的 filter variant 时，开发环境必须按 `tableId + columnId + variant` 去重 warning，提示该 variant 不支持自动 DSL 序列化。
 - 页面层禁止分散编写 DSL variant 兼容补丁；新增后端筛选能力必须先扩展共享 DSL 序列化测试。
+
+## Toolbar 筛选视觉契约
+
+- Toolbar 内所有筛选控件的外层触发器统一使用 `DataTableFilterTrigger`，由共享组件固定管理高度、虚线边框、默认图标、激活态、清除入口、分隔线和选择摘要。
+- feature 只负责筛选内容、数据加载和文案，不得给 `DataTableFilterTrigger` 透传 `className` 或重新组合 Button、Badge、Separator。
+- 表单型 Combobox、页面局部 Popover 和表头筛选不属于 Toolbar 筛选触发器，不得为了视觉相似复用 `DataTableFilterTrigger`。
+- `DataTableToolbarFilterConfig.renderFilter` 自定义筛选器的 trigger 仍必须复用 `DataTableFilterTrigger`；仅 Popover 内容允许由 feature 自定义。
 
 ## 表头本地列值筛选
 

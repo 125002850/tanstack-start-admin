@@ -2,8 +2,6 @@ import type { Option } from './types';
 import type { Column } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
@@ -14,9 +12,10 @@ import {
   CommandSeparator
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import * as React from 'react';
+
+import { DataTableFilterTrigger } from './data-table-filter-trigger';
 
 /**
  * 枚举/多选筛选控件。
@@ -91,57 +90,25 @@ export function DataTableFacetedFilter<TData, TValue>({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant='outline'
-          size='sm'
-          className='data-table-filter-control border-dashed'
-          data-active={selectedValues.size > 0 ? 'true' : undefined}
-        >
-          {selectedValues?.size > 0 ? (
-            <span
-              aria-hidden='true'
-              data-filter-clear=''
-              onClick={onReset}
-              className='rounded-sm opacity-70 transition-opacity hover:opacity-100'
-            >
-              <Icons.xCircle />
-            </span>
-          ) : (
-            <Icons.plusCircle />
-          )}
-          {title}
-          {selectedValues?.size > 0 && (
-            <>
-              <Separator
-                orientation='vertical'
-                className='mx-0.5 data-[orientation=vertical]:h-4'
-              />
-              <Badge variant='secondary' className='rounded-sm px-1 font-normal lg:hidden'>
-                {selectedValues.size}
-              </Badge>
-              <div className='hidden items-center gap-1 lg:flex'>
-                {selectedValues.size > 2 ? (
-                  <Badge variant='secondary' className='rounded-sm px-1 font-normal'>
-                    {labels?.selectedSummaryText?.(selectedValues.size) ??
-                      `已选 ${selectedValues.size} 项`}
-                  </Badge>
-                ) : (
-                  options
-                    .filter((option) => selectedValues.has(option.value))
-                    .map((option) => (
-                      <Badge
-                        variant='secondary'
-                        key={option.value}
-                        className='rounded-sm px-1 font-normal'
-                      >
-                        {option.label}
-                      </Badge>
-                    ))
-                )}
-              </div>
-            </>
-          )}
-        </Button>
+        <DataTableFilterTrigger
+          title={title}
+          state={
+            selectedValues.size > 0
+              ? {
+                  status: 'active',
+                  onClear: onReset,
+                  selection: {
+                    kind: 'labels',
+                    count: selectedValues.size,
+                    items: options
+                      .filter((option) => selectedValues.has(option.value))
+                      .map((option) => ({ key: option.value, label: option.label })),
+                    summaryText: labels?.selectedSummaryText?.(selectedValues.size)
+                  }
+                }
+              : { status: 'idle' }
+          }
+        />
       </PopoverTrigger>
       <PopoverContent className='data-table-filter-popover w-[12.5rem] p-0' align='start'>
         <Command>
