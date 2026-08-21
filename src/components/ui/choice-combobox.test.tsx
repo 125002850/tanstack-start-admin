@@ -98,6 +98,27 @@ describe('ChoiceCombobox', () => {
     expect(screen.getByRole('option', { name: '审计员' })).toBeInTheDocument();
   });
 
+  it('keeps popover behavior when a consumer supplies the trigger structure', async () => {
+    const user = userEvent.setup();
+    render(
+      <SingleChoiceCombobox
+        options={OPTIONS}
+        value={null}
+        triggerLabel='角色'
+        placeholder='请选择角色'
+        onValueChange={() => undefined}
+        renderTrigger={(props) => <button {...props}>自定义角色触发器</button>}
+      />
+    );
+
+    const trigger = screen.getByRole('button', { name: '角色' });
+    expect(trigger).toHaveTextContent('自定义角色触发器');
+    await user.click(trigger);
+
+    expect(screen.getByPlaceholderText('搜索角色')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '管理员' })).toBeInTheDocument();
+  });
+
   it('places the single-selection clear action in the command footer', async () => {
     const user = userEvent.setup();
     render(<SingleHarness searchMode='none' />);

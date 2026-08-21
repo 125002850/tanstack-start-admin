@@ -11,6 +11,32 @@ export interface DataTableFilterOption {
   icon?: FC<SVGProps<SVGSVGElement>>;
 }
 
+export interface DataTableRemoteFilterPage {
+  items: DataTableFilterOption[];
+  total?: number;
+}
+
+export interface DataTableRemoteFilterLabels {
+  searchPlaceholder?: string;
+  emptyText?: string;
+  loadingText?: string;
+  errorText?: string;
+  clearLabel?: string;
+  loadMoreLabel?: string;
+}
+
+export interface DataTableRemoteFilterOptions {
+  loadOptions: (params: {
+    keyword: string;
+    pageNo: number;
+    pageSize: number;
+    signal: AbortSignal;
+  }) => Promise<DataTableRemoteFilterPage>;
+  debounceMs?: number;
+  pageSize?: number;
+  labels?: DataTableRemoteFilterLabels;
+}
+
 /** @deprecated 使用 DataTableFilterOption。 */
 export type Option = DataTableFilterOption;
 
@@ -74,6 +100,7 @@ export type DataTableDslFilterNodeType = 'text' | 'enum';
 export type DataTableColumnFilterVariant =
   | 'text'
   | 'select'
+  | 'remoteSelect'
   | 'multiSelect'
   | 'date'
   | 'dateRange'
@@ -123,6 +150,8 @@ export interface DataTableColumnFilterOptions<TData = unknown, TValue = unknown>
   filter?: false | DataTableColumnFilterVariant;
   filterPlaceholder?: string;
   filterOptions?: DataTableFilterOptions;
+  /** filter='remoteSelect' 时必填；Toolbar 负责统一渲染，业务只提供远程数据源。 */
+  filterRemoteOptions?: DataTableRemoteFilterOptions;
   filterMin?: number | Date;
   filterMax?: number | Date;
   filterUnit?: string;

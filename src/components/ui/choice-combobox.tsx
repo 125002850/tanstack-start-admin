@@ -38,6 +38,11 @@ export type ChoiceComboboxLoadMoreProps = {
 
 export type ChoiceComboboxSearchMode = 'none' | 'local' | 'remote';
 
+export type ChoiceComboboxTriggerProps = Pick<
+  React.ComponentProps<typeof Button>,
+  'ref' | 'id' | 'type' | 'disabled' | 'aria-describedby' | 'aria-invalid' | 'aria-label'
+>;
+
 type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
   options: readonly ChoiceComboboxOption<TValue>[];
   triggerLabel: string;
@@ -58,6 +63,7 @@ type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
   id?: string;
   className?: string;
   contentClassName?: string;
+  renderTrigger?: (props: ChoiceComboboxTriggerProps) => React.ReactElement;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -117,6 +123,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   id,
   className,
   contentClassName,
+  renderTrigger,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
   onOpenChange,
@@ -163,6 +170,15 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
     () => normalizedValues.map((value) => optionByValue.get(value)?.label ?? String(value)),
     [normalizedValues, optionByValue]
   );
+  const triggerProps: ChoiceComboboxTriggerProps = {
+    ref: setTriggerNode,
+    id,
+    type: 'button',
+    disabled,
+    'aria-describedby': ariaDescribedBy,
+    'aria-invalid': ariaInvalid,
+    'aria-label': triggerLabel
+  };
 
   const setSearch = React.useCallback(
     (nextSearch: string) => {
@@ -255,27 +271,25 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          ref={setTriggerNode}
-          id={id}
-          data-slot='choice-combobox-trigger'
-          type='button'
-          variant='outline'
-          disabled={disabled}
-          aria-describedby={ariaDescribedBy}
-          aria-invalid={ariaInvalid}
-          aria-label={triggerLabel}
-          className={cn(
-            'min-w-0 w-full justify-between gap-2 font-normal',
-            selectedLabels.length === 0 && 'text-muted-foreground',
-            className
-          )}
-        >
-          <span className='min-w-0 flex-1 truncate text-left'>
-            {selectedLabels.length > 0 ? selectedLabels.join(',') : placeholder}
-          </span>
-          <Icons.chevronsUpDown className='size-4 shrink-0 text-muted-foreground' />
-        </Button>
+        {renderTrigger ? (
+          renderTrigger(triggerProps)
+        ) : (
+          <Button
+            {...triggerProps}
+            data-slot='choice-combobox-trigger'
+            variant='outline'
+            className={cn(
+              'min-w-0 w-full justify-between gap-2 font-normal',
+              selectedLabels.length === 0 && 'text-muted-foreground',
+              className
+            )}
+          >
+            <span className='min-w-0 flex-1 truncate text-left'>
+              {selectedLabels.length > 0 ? selectedLabels.join(',') : placeholder}
+            </span>
+            <Icons.chevronsUpDown className='size-4 shrink-0 text-muted-foreground' />
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         className={cn('w-[var(--radix-popover-trigger-width)] p-0', contentClassName)}

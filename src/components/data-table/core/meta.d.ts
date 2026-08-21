@@ -12,6 +12,7 @@ import type {
   DataTableDslFilterNodeType,
   DataTableDslOperator,
   DataTableFilterOptions,
+  DataTableRemoteFilterOptions,
   DataTableLocalFilteringRuntime,
   DataTableLocalFilterMeta,
   FilterVariant
@@ -32,6 +33,7 @@ declare module '@tanstack/react-table' {
       serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
     };
     options?: DataTableFilterOptions;
+    remoteFilter?: DataTableRemoteFilterOptions;
     editableCell?: DataTableEditableColumnMeta<TData>;
     editableChoice?: DataTableEditableChoiceColumnMeta<TData>;
     range?: [number, number];

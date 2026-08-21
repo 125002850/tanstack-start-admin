@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { DataTableDateFilter } from '@/components/data-table/filters/data-table-date-filter';
 import { DataTableFacetedFilter } from '@/components/data-table/filters/data-table-faceted-filter';
+import { DataTableRemoteSelectFilter } from '@/components/data-table/filters/data-table-remote-select-filter';
 import { DataTableSliderFilter } from '@/components/data-table/filters/data-table-slider-filter';
 import { DataTableTreeFilter } from '@/components/data-table/filters/data-table-tree-filter';
 import { Button } from '@/components/ui/button';
@@ -103,6 +104,7 @@ function DataTableToolbarFilter<TData>({
   {
     const columnMeta = column.columnDef.meta;
     const columnLabel = getDataTableColumnLabel(column, table);
+    const tableId = table.options.meta?.dataTableId ?? 'data-table';
 
     const onFilterRender = React.useCallback(() => {
       if (!columnMeta?.variant) return null;
@@ -157,6 +159,16 @@ function DataTableToolbarFilter<TData>({
         case 'multiSelect': {
           const filterOptions = columnMeta.options;
           const multiple = columnMeta.variant === 'multiSelect';
+          if (!multiple && columnMeta.remoteFilter) {
+            return (
+              <DataTableRemoteSelectFilter
+                column={column}
+                title={columnLabel}
+                remoteOptions={columnMeta.remoteFilter}
+                tableId={tableId}
+              />
+            );
+          }
           if (isDataTableFlatFilterOptions(filterOptions)) {
             return (
               <DataTableFacetedFilter
@@ -207,7 +219,7 @@ function DataTableToolbarFilter<TData>({
         default:
           return null;
       }
-    }, [column, columnLabel, columnMeta, labels?.facetedFilter]);
+    }, [column, columnLabel, columnMeta, labels?.facetedFilter, tableId]);
 
     return onFilterRender();
   }

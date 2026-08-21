@@ -64,8 +64,8 @@
 - 旧入口 `dataTableColumns.*`、`columnDsl.text`、`columnDsl.longText`、`columnDsl.filterableText` 已删除，禁止恢复 alias、兼容 adapter 或新旧双写。
 - 普通字段列使用 `columnDsl.field('fieldName', '列标题', options)`；单值徽标使用 `columnDsl.badge`；后端数组字段的多徽标使用 `columnDsl.badgeList`；行操作列使用 `columnDsl.actions`；一次性业务 cell 或复合 accessor 使用 `columnDsl.custom`。
 - 多处复用的展示行为必须优先进入 `type` registry 或新增稳定 DSL 方法；`custom` 只用于一次性、交互特化、复合搜索或尚未证明可复用的 cell。
-- `filter` 必须是扁平字段：`false | 'text' | 'select' | 'multiSelect' | 'date' | 'dateRange' | 'number' | 'numberRange' | 'boolean'`。禁止 `filter: { variant: 'text' }` 对象 API。
-- `filterPlaceholder`、`filterOptions`、`filterMin`、`filterMax`、`filterUnit` 必须作为列 option 的扁平字段传入；后端字段名、operator、序列化函数不得塞进 filter option。
+- `filter` 必须是扁平字段：`false | 'text' | 'select' | 'remoteSelect' | 'multiSelect' | 'date' | 'dateRange' | 'number' | 'numberRange' | 'boolean'`。禁止 `filter: { variant: 'text' }` 对象 API。
+- `filterPlaceholder`、`filterOptions`、`filterRemoteOptions`、`filterMin`、`filterMax`、`filterUnit` 必须作为列 option 的扁平字段传入；后端字段名、operator、序列化函数不得塞进 filter option。
 - 后端 DSL 查询语义只能放在 `dsl`：`filterNodeType`、`filterField`、`sortField`、`filterOperator`、`serializeFilter`。强类型枚举字段使用 `filterNodeType: 'enum'`，字符串 code 字段继续使用默认 `text`；禁止 `dsl.filter`、`serializeFilter: false`、`serializeSort: false`。
 - `type` 负责默认展示组合：`text`、`longText`、`number`、`int`、`decimal`、`money`、`percent`、`date`、`dateTime`、`boolean`、`enum`、`select`、`remoteSelect`、`fileSize`；`type` 不隐式开启筛选。
 - DSL 的通用列宽优先直接传 `size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'`，factory 必须在生成 `ColumnDef` 前解析为数值；特殊布局可继续传精确数字，禁止为了套用预设改变既有视觉宽度。
@@ -116,6 +116,9 @@
 ## Toolbar 筛选视觉契约
 
 - Toolbar 内所有筛选控件的外层触发器统一使用 `DataTableFilterTrigger`，由共享组件固定管理高度、虚线边框、默认图标、激活态、清除入口、分隔线和选择摘要。
+- 服务端远程单选使用 `filter: 'remoteSelect'` + `filterRemoteOptions`。业务只提供分页 `loadOptions` 和可选文案；Toolbar 统一选择 `DataTableRemoteSelectFilter`，并按标准 `select` 值协议和 DSL 语义序列化。
+- 远程筛选的 `loadOptions` 必须消费 `AbortSignal`，query key 必须包含 `tableId + columnId + keyword + pageNo + pageSize`。远程筛选默认不生成当前页 `localFilter`。
+- `remoteSelect` 只用于产品或后端明确限制为单值的远程候选；远程多选需要先设计共享 variant 与序列化契约，禁止用业务私有控件绕开。
 - feature 只负责筛选内容、数据加载和文案，不得给 `DataTableFilterTrigger` 透传 `className` 或重新组合 Button、Badge、Separator。
 - 表单型 Combobox、页面局部 Popover 和表头筛选不属于 Toolbar 筛选触发器，不得为了视觉相似复用 `DataTableFilterTrigger`。
 - `DataTableToolbarFilterConfig.renderFilter` 自定义筛选器的 trigger 仍必须复用 `DataTableFilterTrigger`；仅 Popover 内容允许由 feature 自定义。
