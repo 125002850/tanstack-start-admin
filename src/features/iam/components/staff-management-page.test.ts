@@ -29,6 +29,21 @@ describe('staff table query adapter', () => {
       statuses: ['ENABLED', 'DISABLED']
     });
   });
+
+  it('limits an organization-tree selection to direct employees', () => {
+    const queryOptions = staffTableQueryOptions(
+      {
+        pageNo: 1,
+        pageSize: 20
+      },
+      { departmentId: 10 }
+    );
+
+    expect(queryOptions.queryKey.at(-1)).toMatchObject({
+      deptIds: [10],
+      includeDescendants: false
+    });
+  });
 });
 
 describe('staff cell editor adapter', () => {
@@ -77,7 +92,6 @@ describe('staff cell editor adapter', () => {
   it('declares phone, department, status and roles with matching cell editors', () => {
     const columns = getStaffColumns(
       () => undefined,
-      [{ value: '10', label: '研发部', depth: 0 }],
       [{ value: 10, label: '研发部' }],
       [{ value: 2, label: '审计员' }],
       [

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
@@ -44,7 +44,7 @@ import {
 import { nullableText } from '@/lib/formatters/display';
 import { iamDeptTreeQueryOptions, iamRoleOptionsQueryOptions } from '../api/query-options';
 import { IAM_PERMISSIONS, IAM_STATUS_CODES } from '../lib/constants';
-import { deptMultiSelectOptions, deptSelectOptions, flattenDeptTree } from '../lib/tree';
+import { deptSelectOptions, flattenDeptTree } from '../lib/tree';
 import { resolveStaffOperationAccess } from '../lib/staff-operation-access';
 import {
   dslConditionNumbers,
@@ -54,6 +54,7 @@ import {
 } from '../lib/table';
 
 import StaffFormSheet, { roleOptions } from './staff-form-sheet';
+import { DepartmentTreeBrowser } from './department-tree-browser';
 import ResetPasswordSheet from './reset-password-sheet';
 import StaffDetailSheet from './staff-detail-sheet';
 
@@ -207,14 +208,26 @@ function invalidateStaffQueries(queryClient: ReturnType<typeof useQueryClient>) 
   ]);
 }
 
-export function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
+interface StaffTableQueryScope {
+  departmentId?: number | null;
+}
+
+export function staffTableQueryOptions(
+  request: DataTableDslPageRequestBase,
+  scope: StaffTableQueryScope = {}
+) {
   const condition = request.condition;
   const keyword = dslConditionValue(condition, 'phone');
+  const scopedDepartmentId = scope.departmentId;
 
   return iamStaffPageQueryOptions({
     ...pageRequestFromDsl(request),
     keyword,
-    deptIds: dslConditionNumbers(condition, 'deptId'),
+    deptIds:
+      typeof scopedDepartmentId === 'number'
+        ? [scopedDepartmentId]
+        : dslConditionNumbers(condition, 'deptId'),
+    includeDescendants: typeof scopedDepartmentId === 'number' ? false : undefined,
     statuses: dslConditionValues(condition, 'status') as IamStaffPageRequest['statuses'],
     staffCode: dslConditionValue(condition, 'staffCode'),
     username: dslConditionValue(condition, 'username'),
@@ -224,7 +237,6 @@ export function staffTableQueryOptions(request: DataTableDslPageRequestBase) {
 
 export function getStaffColumns(
   onOpenDetail: (staff: StaffTableRow) => void,
-  departmentFilterOptions: ReturnType<typeof deptMultiSelectOptions>,
   departmentEditorOptions: readonly DataTableChoiceOption<number>[],
   roleEditorOptions: readonly DataTableChoiceOption<number>[],
   statusOptions: readonly DataTableChoiceOption<StaffStatus>[]
@@ -261,12 +273,7 @@ export function getStaffColumns(
       valueOptions: departmentEditorOptions,
       edit: { selectionMode: 'single', allowEmpty: false },
       size: 160,
-      filter: 'multiSelect',
-      filterOptions: {
-        kind: 'tree',
-        options: departmentFilterOptions,
-        selectionMode: 'cascade'
-      },
+      filter: false,
       enableSorting: false
     }),
     columnDsl.editableField('phone', '手机号', {
@@ -321,10 +328,6 @@ export default function StaffManagementPage() {
     () => deptSelectOptions(deptQuery.data ?? [], { enabledOnly: true }),
     [deptQuery.data]
   );
-  const departmentFilterOptions = React.useMemo(
-    () => deptMultiSelectOptions(deptQuery.data ?? []),
-    [deptQuery.data]
-  );
   const roles = React.useMemo(() => roleOptions(roleQuery.data ?? []), [roleQuery.data]);
   const departmentEditorOptions = React.useMemo(() => {
     const departmentsById = new Map(
@@ -355,17 +358,31 @@ export default function StaffManagementPage() {
   const [editingStaff, setEditingStaff] = React.useState<StaffRspDTO | null>(null);
   const [detailStaff, setDetailStaff] = React.useState<StaffRspDTO | null>(null);
   const [resetStaff, setResetStaff] = React.useState<StaffRspDTO | null>(null);
+  const [selectedDepartmentId, setSelectedDepartmentId] = React.useState<number | null>(null);
+  const selectedDepartment = React.useMemo(
+    () =>
+      selectedDepartmentId == null
+        ? null
+        : (flattenDeptTree(deptQuery.data ?? []).find(
+            (department) => department.deptId === selectedDepartmentId
+          ) ?? null),
+    [deptQuery.data, selectedDepartmentId]
+  );
 
   const columns = React.useMemo(
     () =>
       getStaffColumns(
         (staff) => setDetailStaff(toStaffRspDTO(staff)),
-        departmentFilterOptions,
         departmentEditorOptions,
         roleEditorOptions,
         statusOptions
       ),
-    [departmentEditorOptions, departmentFilterOptions, roleEditorOptions, statusOptions]
+    [departmentEditorOptions, roleEditorOptions, statusOptions]
+  );
+  const scopedStaffTableQueryOptions = React.useCallback(
+    (request: DataTableDslPageRequestBase) =>
+      staffTableQueryOptions(request, { departmentId: selectedDepartmentId }),
+    [selectedDepartmentId]
   );
 
   const createMutation = useMutation({
@@ -543,7 +560,7 @@ export default function StaffManagementPage() {
   >({
     tableId: TABLE_ID,
     columns,
-    queryOptions: staffTableQueryOptions,
+    queryOptions: scopedStaffTableQueryOptions,
     mapQueryData: mapStaffTableData,
     rowActions,
     rowId: 'staffId',
@@ -566,22 +583,63 @@ export default function StaffManagementPage() {
     };
   }, [editing]);
 
+  const handleDepartmentChange = React.useCallback(
+    (departmentId: number | null) => {
+      setSelectedDepartmentId(departmentId);
+      table.setPageIndex(0);
+    },
+    [table]
+  );
+
   return (
     <>
-      <Card>
-        <CardContent className='px-0'>
-          <DataTable<StaffTableRow>
-            table={table}
-            tableActions={tableActions}
-            isLoading={queryState.isFetching}
-            loadingSkeleton={{ columnCount: 8, filterCount: 5 }}
-            onRefresh={refreshProps?.onRefresh}
-            isRefreshing={refreshProps?.isRefreshing}
-          >
-            <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
-          </DataTable>
-        </CardContent>
-      </Card>
+      <div className='grid h-full min-h-0 min-w-0 gap-4 overflow-auto xl:grid-cols-[18rem_minmax(0,1fr)] xl:overflow-hidden'>
+        <Card className='min-h-64 overflow-hidden p-4 xl:min-h-0'>
+          <CardHeader className='gap-1 border-b pb-3'>
+            <CardTitle className='flex items-center gap-2 text-base'>
+              <span className='flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground'>
+                <Icons.department className='size-4' />
+              </span>
+              组织架构
+            </CardTitle>
+            <CardDescription>选择部门查看直属员工</CardDescription>
+          </CardHeader>
+          <CardContent className='min-h-0 flex-1 pt-3'>
+            <DepartmentTreeBrowser
+              departments={deptQuery.data ?? []}
+              value={selectedDepartmentId}
+              onValueChange={handleDepartmentChange}
+              isLoading={deptQuery.isLoading}
+              isError={deptQuery.isError}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className='min-h-[32rem] min-w-0 overflow-hidden xl:min-h-0'>
+          <CardHeader>
+            <CardTitle className='text-base'>
+              {selectedDepartment?.deptName ?? '全部员工'}
+            </CardTitle>
+            <CardDescription>
+              {selectedDepartment
+                ? '仅展示该部门直属员工，不包含下级部门'
+                : '展示当前权限范围内的全部员工'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='min-h-0 flex-1 px-0'>
+            <DataTable<StaffTableRow>
+              table={table}
+              tableActions={tableActions}
+              isLoading={queryState.isFetching}
+              loadingSkeleton={{ columnCount: 8, filterCount: 5 }}
+              onRefresh={refreshProps?.onRefresh}
+              isRefreshing={refreshProps?.isRefreshing}
+            >
+              <DataTableToolbar table={table} isQuerying={queryState.isFetching} />
+            </DataTable>
+          </CardContent>
+        </Card>
+      </div>
 
       <StaffFormSheet
         open={formOpen}

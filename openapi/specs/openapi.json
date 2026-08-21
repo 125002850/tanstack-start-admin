@@ -3747,13 +3747,19 @@
           },
           "deptIds": {
             "type": "array",
-            "description": "部门ID集合，筛选时包含各部门及全部子部门；非空时优先于 deptId",
+            "description": "部门ID集合，是否包含子部门由 includeDescendants 控制；非空时优先于 deptId",
             "example": [1, 2],
             "items": {
               "type": "integer",
-              "description": "部门ID集合，筛选时包含各部门及全部子部门；非空时优先于 deptId",
+              "description": "部门ID集合，是否包含子部门由 includeDescendants 控制；非空时优先于 deptId",
               "format": "int64"
             }
+          },
+          "includeDescendants": {
+            "type": "boolean",
+            "description": "是否包含子部门；默认 true，false 时仅筛选指定部门",
+            "default": true,
+            "example": true
           },
           "status": {
             "type": "string",

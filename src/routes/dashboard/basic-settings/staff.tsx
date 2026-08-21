@@ -26,5 +26,5 @@ export const Route = createFileRoute('/dashboard/basic-settings/staff')({
 });
 
 function StaffPage() {
-  return <WorkspacePageRoute render={() => <StaffManagementPage />} />;
+  return <WorkspacePageRoute contentSizing='contained' render={() => <StaffManagementPage />} />;
 }
