@@ -5,6 +5,8 @@ import type { FC, SVGProps } from 'react';
 export interface DataTableFilterOption {
   label: string;
   value: string;
+  /** 参与筛选搜索但不展示的领域编码、别名等关键词。 */
+  keywords?: readonly string[];
   count?: number;
   icon?: FC<SVGProps<SVGSVGElement>>;
 }

@@ -120,7 +120,11 @@ export function DataTableFacetedFilter<TData, TValue>({
                 const isSelected = selectedValues.has(option.value);
 
                 return (
-                  <CommandItem key={option.value} onSelect={() => onItemSelect(option, isSelected)}>
+                  <CommandItem
+                    key={option.value}
+                    keywords={option.keywords ? [...option.keywords] : undefined}
+                    onSelect={() => onItemSelect(option, isSelected)}
+                  >
                     <div
                       className={cn(
                         'border-primary flex size-4 items-center justify-center rounded-sm border',
