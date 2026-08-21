@@ -1,9 +1,10 @@
-import { Option } from '@/types';
+import { DictItemRspDTOStatus } from '@/lib/api/clients/service/generated/model';
+import type { Option } from '@/types';
 
-export enum DictStatus {
-  ENABLE = 'enable',
-  DISABLE = 'disable'
-}
+export const DictStatus = {
+  ENABLE: DictItemRspDTOStatus.enable,
+  DISABLE: DictItemRspDTOStatus.disable
+} as const;
 
 export const STATUS_OPTIONS: Option[] = [
   { value: DictStatus.ENABLE, label: '启用' },

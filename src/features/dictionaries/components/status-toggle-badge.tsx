@@ -11,7 +11,7 @@ interface StatusToggleBadgeProps {
 }
 
 function isEnabledStatus(status?: string): boolean {
-  return status === DictStatus.ENABLE || status === 'enable' || status === 'ENABLE';
+  return status?.toLowerCase() === DictStatus.ENABLE;
 }
 
 export function StatusToggleBadge({ status, onClick, getVariant }: StatusToggleBadgeProps) {
