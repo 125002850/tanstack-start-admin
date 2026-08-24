@@ -6,7 +6,14 @@ import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
@@ -25,6 +32,7 @@ import { IAM_QUERY_KEYS } from '@/lib/api/iam/constants';
 import { getIamMeQueryOptions } from '@/lib/api/iam/queries';
 import { hasIamPermission } from '@/lib/api/iam/permissions';
 import {
+  iamDeptCreate,
   iamStaffCreate,
   iamStaffDelete,
   iamStaffPageQueryOptions,
@@ -33,6 +41,8 @@ import {
   iamStaffRolesAssign,
   iamStaffStatusUpdate,
   iamStaffUpdate,
+  type DeptCreateReqDTO,
+  type DeptRspDTO,
   type IamStaffPageRequest,
   type IamStaffPageResponse,
   type StaffCreateReqDTO,
@@ -54,6 +64,7 @@ import {
 } from '../lib/table';
 
 import StaffFormSheet, { roleOptions } from './staff-form-sheet';
+import DeptFormSheet from './dept-form-sheet';
 import { DepartmentTreeBrowser } from './department-tree-browser';
 import ResetPasswordSheet from './reset-password-sheet';
 import StaffDetailSheet from './staff-detail-sheet';
@@ -73,6 +84,65 @@ export type StaffCellEditRequest =
   | { kind: 'staff'; request: StaffUpdateReqDTO }
   | { kind: 'status'; request: StaffStatusUpdateReqDTO }
   | { kind: 'roles'; request: StaffRolesAssignReqDTO };
+
+interface OrganizationTreeCardProps {
+  departments: readonly DeptRspDTO[];
+  selectedDepartment: DeptRspDTO | null;
+  selectedDepartmentId: number | null;
+  canManageDept: boolean;
+  isCreatingDept: boolean;
+  onDepartmentChange: (departmentId: number | null) => void;
+  onAddDepartment: (parent: DeptRspDTO | null) => void;
+  isLoading?: boolean;
+  isError?: boolean;
+}
+
+export function OrganizationTreeCard({
+  departments,
+  selectedDepartment,
+  selectedDepartmentId,
+  canManageDept,
+  isCreatingDept,
+  onDepartmentChange,
+  onAddDepartment,
+  isLoading = false,
+  isError = false
+}: OrganizationTreeCardProps) {
+  const addLabel = selectedDepartment ? '新增下级部门' : '新增部门';
+
+  return (
+    <Card className='min-h-64 overflow-hidden p-4 xl:min-h-0'>
+      <CardHeader className='gap-1 border-b pb-3'>
+        <CardTitle className='text-base'>组织架构</CardTitle>
+        <CardDescription>选择部门查看直属员工</CardDescription>
+        {canManageDept ? (
+          <CardAction>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              className='size-8'
+              disabled={isCreatingDept}
+              onClick={() => onAddDepartment(selectedDepartment)}
+            >
+              <Icons.add className='size-4' />
+              <span className='sr-only'>{addLabel}</span>
+            </Button>
+          </CardAction>
+        ) : null}
+      </CardHeader>
+      <CardContent className='min-h-0 flex-1 pt-3'>
+        <DepartmentTreeBrowser
+          departments={departments}
+          value={selectedDepartmentId}
+          onValueChange={onDepartmentChange}
+          isLoading={isLoading}
+          isError={isError}
+        />
+      </CardContent>
+    </Card>
+  );
+}
 
 const columnDsl = createDataTableColumnDsl<StaffTableRow>();
 
@@ -355,6 +425,8 @@ export default function StaffManagementPage() {
   );
 
   const [formOpen, setFormOpen] = React.useState(false);
+  const [deptFormOpen, setDeptFormOpen] = React.useState(false);
+  const [parentDepartment, setParentDepartment] = React.useState<DeptRspDTO | null>(null);
   const [editingStaff, setEditingStaff] = React.useState<StaffRspDTO | null>(null);
   const [detailStaff, setDetailStaff] = React.useState<StaffRspDTO | null>(null);
   const [resetStaff, setResetStaff] = React.useState<StaffRspDTO | null>(null);
@@ -392,6 +464,16 @@ export default function StaffManagementPage() {
       toast.success('员工已创建');
     }
   });
+  const createDeptMutation = useMutation({
+    mutationFn: (request: DeptCreateReqDTO) => iamDeptCreate(request),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['service', 'iam-dept'],
+        exact: false
+      });
+      toast.success('部门已创建');
+    }
+  });
   const updateMutation = useMutation({
     mutationFn: (request: StaffUpdateReqDTO) => iamStaffUpdate(request),
     onSuccess: async () => {
@@ -416,6 +498,7 @@ export default function StaffManagementPage() {
   });
 
   const canCreate = hasIamPermission(me, IAM_PERMISSIONS.staff.create);
+  const canManageDept = hasIamPermission(me, IAM_PERMISSIONS.dept.manage);
   const canUpdate = hasIamPermission(me, IAM_PERMISSIONS.staff.update);
   const canDelete = hasIamPermission(me, IAM_PERMISSIONS.staff.delete);
   const canResetPassword = hasIamPermission(me, IAM_PERMISSIONS.staff.resetPassword);
@@ -590,30 +673,25 @@ export default function StaffManagementPage() {
     },
     [table]
   );
+  const handleAddDepartment = React.useCallback((parent: DeptRspDTO | null) => {
+    setParentDepartment(parent);
+    setDeptFormOpen(true);
+  }, []);
 
   return (
     <>
       <div className='grid h-full min-h-0 min-w-0 gap-4 overflow-auto xl:grid-cols-[18rem_minmax(0,1fr)] xl:overflow-hidden'>
-        <Card className='min-h-64 overflow-hidden p-4 xl:min-h-0'>
-          <CardHeader className='gap-1 border-b pb-3'>
-            <CardTitle className='flex items-center gap-2 text-base'>
-              <span className='flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground'>
-                <Icons.department className='size-4' />
-              </span>
-              组织架构
-            </CardTitle>
-            <CardDescription>选择部门查看直属员工</CardDescription>
-          </CardHeader>
-          <CardContent className='min-h-0 flex-1 pt-3'>
-            <DepartmentTreeBrowser
-              departments={deptQuery.data ?? []}
-              value={selectedDepartmentId}
-              onValueChange={handleDepartmentChange}
-              isLoading={deptQuery.isLoading}
-              isError={deptQuery.isError}
-            />
-          </CardContent>
-        </Card>
+        <OrganizationTreeCard
+          departments={deptQuery.data ?? []}
+          selectedDepartment={selectedDepartment}
+          selectedDepartmentId={selectedDepartmentId}
+          canManageDept={canManageDept}
+          isCreatingDept={createDeptMutation.isPending}
+          onDepartmentChange={handleDepartmentChange}
+          onAddDepartment={handleAddDepartment}
+          isLoading={deptQuery.isLoading}
+          isError={deptQuery.isError}
+        />
 
         <Card className='min-h-[32rem] min-w-0 overflow-hidden xl:min-h-0'>
           <CardHeader>
@@ -640,6 +718,18 @@ export default function StaffManagementPage() {
           </CardContent>
         </Card>
       </div>
+
+      <DeptFormSheet
+        open={deptFormOpen}
+        onOpenChange={setDeptFormOpen}
+        dept={null}
+        parent={parentDepartment}
+        tree={deptQuery.data ?? []}
+        onSubmit={async (payload) => {
+          if ('deptId' in payload) return;
+          await createDeptMutation.mutateAsync(payload);
+        }}
+      />
 
       <StaffFormSheet
         open={formOpen}

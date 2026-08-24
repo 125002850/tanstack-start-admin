@@ -116,6 +116,50 @@ describe('route nav', () => {
     expect(buildNavGroupsFromRoutes(routes, staleMenuTree)[0]?.label).toBe('基础设置');
   });
 
+  it('uses an explicit route label instead of the backend menu name', () => {
+    const routes = {
+      staff: {
+        id: '/dashboard/basic-settings/staff',
+        fullPath: '/dashboard/basic-settings/staff',
+        options: {
+          staticData: {
+            label: '组织架构',
+            nav: { group: 'basicSettings', menuKey: 'iam_staff' }
+          }
+        }
+      }
+    };
+    const menuTree = buildMenuTreeLookup([
+      {
+        menuId: 1,
+        menuCode: 'basic_settings',
+        menuKey: 'basic_settings',
+        menuName: '基础设置',
+        menuType: 'DIR',
+        sortOrder: 10,
+        hidden: false,
+        cached: true,
+        status: 'ENABLED',
+        children: [
+          {
+            menuId: 2,
+            parentId: 1,
+            menuCode: 'iam_staff',
+            menuKey: 'iam_staff',
+            menuName: '员工管理',
+            menuType: 'MENU',
+            sortOrder: 10,
+            hidden: false,
+            cached: true,
+            status: 'ENABLED'
+          }
+        ]
+      }
+    ]);
+
+    expect(buildNavGroupsFromRoutes(routes, menuTree)[0]?.items[0]?.title).toBe('组织架构');
+  });
+
   it('carries route menuKey into nav items', () => {
     const groups = buildNavGroupsFromRoutes({
       dictionaries: {

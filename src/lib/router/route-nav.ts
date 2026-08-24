@@ -107,10 +107,11 @@ function resolveItemLabel(
   meta: RouteEntry['meta'],
   treeLookup?: Map<string, ResolvedMenuNode>
 ): string {
+  if (meta.label) return meta.label;
   if (meta.nav?.menuKey && treeLookup) {
-    return resolveTreeLabel(treeLookup, meta.nav.menuKey) ?? meta.label ?? '';
+    return resolveTreeLabel(treeLookup, meta.nav.menuKey) ?? '';
   }
-  return meta.label ?? '';
+  return '';
 }
 
 function isItemVisible(

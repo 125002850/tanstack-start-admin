@@ -12,6 +12,7 @@ function apiEnvelope<T>(data: T) {
 
 async function mockStaffPage(page: Page) {
   await mockIamSession(page, {
+    permissions: ['iam:dept:manage'],
     menus: [
       {
         menuId: 'basic-settings',
@@ -121,6 +122,23 @@ async function mockStaffPage(page: Page) {
       body: JSON.stringify(apiEnvelope([]))
     });
   });
+  await page.route('**/api/system/dict/global/items/options', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        apiEnvelope([
+          {
+            dictTypeCode: 'IAM_STATUS',
+            items: [
+              { code: 'ENABLED', name: '启用', status: 'enable', sortOrder: 1 },
+              { code: 'DISABLED', name: '停用', status: 'enable', sortOrder: 2 }
+            ]
+          }
+        ])
+      )
+    });
+  });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -148,7 +166,7 @@ test('@workspace-v2 preserves staff filters when switching through dashboard hom
   await expect(preservedInput).toHaveCount(1);
   await expect(preservedInput).toBeHidden();
 
-  await page.getByRole('tab', { name: /^员工管理/ }).click();
+  await page.getByRole('tab', { name: /^组织架构/ }).click();
   await expect(page).toHaveURL(new RegExp(`${STAFF_ROUTE}$`));
   const returnedInput = page.getByRole('textbox', { name: '搜索工号' });
   await expect(returnedInput).toBeVisible();
@@ -158,17 +176,35 @@ test('@workspace-v2 preserves staff filters when switching through dashboard hom
   ).toBe(true);
 });
 
-test('@workspace-v2 supports keyboard navigation and cascade state in department tree filters', async ({
+test('@workspace-v2 opens the child department sheet from the organization tree', async ({
   page
 }) => {
   await page.goto(STAFF_ROUTE);
 
-  await page.getByRole('button', { name: '部门', exact: true }).click();
-  const tree = page.getByRole('tree', { name: '部门筛选树' });
+  await expect(page.getByRole('link', { name: '组织架构', exact: true })).toBeVisible();
+  await page.getByRole('treeitem', { name: '研发中心' }).click();
+  await page.getByRole('button', { name: '新增下级部门' }).click();
+
+  const sheet = page.getByRole('dialog', { name: '新增部门' });
+  await expect(sheet).toBeVisible();
+  const parentDepartment = sheet.getByRole('combobox', { name: '上级部门' });
+  await expect(parentDepartment).toContainText('研发中心');
+
+  await parentDepartment.click();
+  await sheet.getByRole('treeitem', { name: '平台组' }).click();
+  await expect(parentDepartment).toContainText('平台组');
+});
+
+test('@workspace-v2 supports keyboard navigation and selection in the organization tree', async ({
+  page
+}) => {
+  await page.goto(STAFF_ROUTE);
+
+  const tree = page.getByRole('tree');
   await expect(tree).toBeVisible();
 
-  const root = tree.getByRole('treeitem', { name: '研发中心，未选中' });
-  await expect(root).toHaveAttribute('aria-level', '1');
+  const root = tree.getByRole('treeitem', { name: '研发中心' });
+  await expect(root).toHaveAttribute('aria-level', '2');
   await expect(root).toHaveAttribute('aria-expanded', 'true');
   await root.focus();
   await root.press('ArrowLeft');
@@ -178,23 +214,13 @@ test('@workspace-v2 supports keyboard navigation and cascade state in department
   await expect(root).toHaveAttribute('aria-expanded', 'true');
   await root.press('ArrowRight');
 
-  const child = tree.getByRole('treeitem', { name: '平台组，未选中' });
+  const child = tree.getByRole('treeitem', { name: '平台组' });
   await expect(child).toBeFocused();
-  await expect(child).toHaveAttribute('aria-level', '2');
+  await expect(child).toHaveAttribute('aria-level', '3');
   await child.press(' ');
 
-  const activeFilter = page.getByRole('button', { name: /部门.*平台组/ });
-  await expect(activeFilter).toBeVisible();
-  await activeFilter.click();
-
-  await expect(tree.getByRole('treeitem', { name: '平台组，已选中' })).toHaveAttribute(
-    'aria-checked',
-    'true'
-  );
-  await expect(tree.getByRole('treeitem', { name: '研发中心，部分选中' })).toHaveAttribute(
-    'aria-checked',
-    'mixed'
-  );
+  await expect(child).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('button', { name: '新增下级部门' })).toBeVisible();
 });
 
 test('@workspace-v2 renders each page immediately during consecutive menu navigation', async ({

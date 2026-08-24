@@ -7,8 +7,10 @@ import {
   InputGroupButton,
   InputGroupInput
 } from '@/components/ui/input-group';
-import { Tree, type TreeItem } from '@/components/ui/tree';
+import type { TreeItem } from '@/components/ui/tree';
 import type { DeptRspDTO } from '@/lib/api/clients/service';
+
+import { buildDepartmentTreeItems, DepartmentTree } from './department-tree';
 
 const ALL_DEPARTMENTS_VALUE = 'all';
 
@@ -20,34 +22,17 @@ interface DepartmentTreeBrowserProps {
   isError?: boolean;
 }
 
-function departmentTreeItem(department: DeptRspDTO): TreeItem | null {
-  if (department.deptId == null) return null;
-  const fallbackLabel = department.deptCode ?? String(department.deptId);
-  return {
-    value: String(department.deptId),
-    label: department.deptName ?? fallbackLabel,
-    searchText: [department.deptName, department.deptCode, department.fullPath]
-      .filter(Boolean)
-      .join(' '),
-    icon: Icons.department,
-    children: (department.children ?? []).flatMap((child) => {
-      const item = departmentTreeItem(child);
-      return item ? [item] : [];
-    })
-  };
-}
+const ALL_EMPLOYEES_ROOT = {
+  value: ALL_DEPARTMENTS_VALUE,
+  label: '全部员工',
+  searchText: '全部员工 全部部门'
+} as const;
 
 export function buildDepartmentBrowserItems(departments: readonly DeptRspDTO[]): TreeItem[] {
   return [
     {
-      value: ALL_DEPARTMENTS_VALUE,
-      label: '全部员工',
-      searchText: '全部员工 全部部门',
-      icon: Icons.teams,
-      children: departments.flatMap((department) => {
-        const item = departmentTreeItem(department);
-        return item ? [item] : [];
-      })
+      ...ALL_EMPLOYEES_ROOT,
+      children: buildDepartmentTreeItems(departments)
     }
   ];
 }
@@ -61,7 +46,6 @@ export function DepartmentTreeBrowser({
 }: DepartmentTreeBrowserProps) {
   const [searchQuery, setSearchQuery] = React.useState('');
   const deferredSearchQuery = React.useDeferredValue(searchQuery);
-  const items = React.useMemo(() => buildDepartmentBrowserItems(departments), [departments]);
   const selectedValue = value == null ? ALL_DEPARTMENTS_VALUE : String(value);
 
   return (
@@ -103,18 +87,15 @@ export function DepartmentTreeBrowser({
             组织架构加载失败，请刷新重试
           </div>
         ) : (
-          <Tree
-            items={items}
+          <DepartmentTree
+            departments={departments}
+            rootItem={ALL_EMPLOYEES_ROOT}
             searchQuery={deferredSearchQuery}
-            searchEmptyText='未找到匹配部门'
-            selection={{
-              mode: 'single',
-              value: selectedValue,
-              onValueChange: (nextValue) => {
-                onValueChange(
-                  nextValue === ALL_DEPARTMENTS_VALUE ? null : Number.parseInt(nextValue, 10)
-                );
-              }
+            selectedDepartmentId={selectedValue}
+            onSelect={(nextValue) => {
+              onValueChange(
+                nextValue === ALL_DEPARTMENTS_VALUE ? null : Number.parseInt(nextValue, 10)
+              );
             }}
           />
         )}

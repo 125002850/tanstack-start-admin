@@ -7,7 +7,8 @@ const StaffManagementPage = lazyRouteComponent(
 );
 
 const meta = defineRouteMeta({
-  title: '基础设置：员工管理',
+  label: '组织架构',
+  title: '基础设置：组织架构',
   nav: {
     group: 'basicSettings',
     menuKey: 'iam_staff',

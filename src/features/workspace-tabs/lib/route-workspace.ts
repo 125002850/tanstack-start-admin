@@ -43,10 +43,11 @@ export function resolveRouteTagTitle(
   routeId?: string,
   treeLookup?: Map<string, ResolvedMenuNode>
 ): string {
+  if (staticData?.label) return staticData.label;
   const menuKey = staticData?.nav?.menuKey;
   if (menuKey && treeLookup) {
     const treeLabel = resolveTreeLabel(treeLookup, menuKey);
     if (treeLabel) return treeLabel;
   }
-  return staticData?.label ?? staticData?.title ?? routeId ?? '';
+  return staticData?.title ?? routeId ?? '';
 }

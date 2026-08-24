@@ -300,7 +300,7 @@ describe('dashboard route inventory', () => {
     const expectations = [
       [
         '/src/routes/dashboard/basic-settings/staff.tsx',
-        '基础设置：员工管理',
+        '基础设置：组织架构',
         'basicSettings',
         'iam_staff'
       ],

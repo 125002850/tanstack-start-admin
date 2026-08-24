@@ -194,6 +194,17 @@ describe('resolveRouteTagTitle', () => {
     expect(resolveRouteTagTitle(staticData)).toBe('Nav Label');
   });
 
+  it('prioritizes an explicit route label over the backend menu name', () => {
+    const staticData: AppRouteStaticData = {
+      label: '组织架构',
+      nav: { menuKey: 'managed' }
+    };
+
+    expect(resolveRouteTagTitle(staticData, '/dashboard/test', createMenuTreeLookup(true))).toBe(
+      '组织架构'
+    );
+  });
+
   it('handles undefined staticData with a routeId', () => {
     expect(resolveRouteTagTitle(undefined, '/fallback')).toBe('/fallback');
   });

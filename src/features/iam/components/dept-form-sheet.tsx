@@ -24,7 +24,8 @@ import type { DeptCreateReqDTO, DeptRspDTO, DeptUpdateReqDTO } from '@/lib/api/c
 import { emptyStringToUndefined } from '@/lib/api/request-values';
 import { dictionaryOptionsWithCodeFallback, useDict } from '@/hooks/use-dict';
 import { IAM_STATUS_CODES } from '../lib/constants';
-import { deptSelectOptions } from '../lib/tree';
+
+import { DepartmentTreeSelect } from './department-tree-select';
 
 type DeptFormValues = {
   parentId: string;
@@ -43,6 +44,11 @@ const emptyValues: DeptFormValues = {
   status: 'ENABLED',
   remark: ''
 };
+
+const ROOT_DEPARTMENT_ITEM = {
+  value: 'ROOT',
+  label: '根部门'
+} as const;
 
 function FieldShell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -75,7 +81,6 @@ export default function DeptFormSheet({
     [statusDict.options]
   );
   const [values, setValues] = React.useState<DeptFormValues>(emptyValues);
-  const parentOptions = React.useMemo(() => deptSelectOptions(tree), [tree]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -146,25 +151,14 @@ export default function DeptFormSheet({
           onSubmit={handleSubmit}
         >
           <FieldShell label='上级部门'>
-            <Select value={values.parentId} onValueChange={(parentId) => update({ parentId })}>
-              <SelectTrigger className='w-full'>
-                <SelectValue placeholder='根部门' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='ROOT'>根部门</SelectItem>
-                {parentOptions.map((option) => (
-                  <SelectItem
-                    key={option.value}
-                    value={option.value}
-                    disabled={Number(option.value) === dept?.deptId}
-                  >
-                    <span style={{ paddingInlineStart: `${option.depth}rem` }}>
-                      {option.label.trimStart()}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DepartmentTreeSelect
+              departments={tree}
+              excludedDepartmentId={dept?.deptId}
+              onValueChange={(parentId) => update({ parentId })}
+              rootItem={ROOT_DEPARTMENT_ITEM}
+              triggerLabel='上级部门'
+              value={values.parentId}
+            />
           </FieldShell>
           <div className='grid gap-4 sm:grid-cols-2'>
             <FieldShell label='部门编码'>

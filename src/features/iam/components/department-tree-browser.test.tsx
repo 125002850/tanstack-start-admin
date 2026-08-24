@@ -32,6 +32,9 @@ describe('DepartmentTreeBrowser', () => {
         ]
       }
     ]);
+    expect(items[0]?.icon).toBeUndefined();
+    expect(items[0]?.children?.[0]?.icon).toBeUndefined();
+    expect(items[0]?.children?.[0]?.children?.[0]?.icon).toBeUndefined();
   });
 
   it('searches departments and reports the selected department id', async () => {
@@ -42,7 +45,9 @@ describe('DepartmentTreeBrowser', () => {
     );
 
     await user.type(screen.getByRole('textbox', { name: '搜索部门' }), '平台');
-    await user.click(await screen.findByRole('treeitem', { name: '平台组' }));
+    const platformDepartment = await screen.findByRole('treeitem', { name: '平台组' });
+    expect(platformDepartment.querySelector('svg')).toBeNull();
+    await user.click(platformDepartment);
 
     expect(onValueChange).toHaveBeenCalledWith(2);
   });
