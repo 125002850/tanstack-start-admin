@@ -89,18 +89,27 @@
 
 ```plaintext
 src/
+├── assets/                        # 由模块导入的静态资源
 ├── routes/                        # TanStack Router 的文件路由
 │   ├── __root.tsx                 # 根布局（providers、theme、HTML 文档壳）
 │   ├── index.tsx                  # 首页（认证跳转）
-│   ├── auth/                      # 认证页面（登录、注册）
+│   ├── about.tsx                  # 公开关于页
+│   ├── privacy-policy.tsx         # 隐私政策
+│   ├── terms-of-service.tsx       # 服务条款
+│   ├── auth.tsx                   # 认证布局
+│   ├── auth/                      # 认证页面（登录、注册、密码流程）
 │   ├── dashboard.tsx              # 控制台布局（侧边栏、头部、KBar）
 │   └── dashboard/                 # 控制台页面
 │       ├── overview.tsx           # 概览页，使用 Suspense 做分区加载
 │       ├── kanban.tsx             # 任务看板页
 │       ├── chat.tsx               # 聊天页面
 │       ├── notifications.tsx      # 通知页面
+│       ├── account/               # 账号设置
+│       ├── basic-settings/        # IAM 基础设置
+│       ├── elements/              # UI 能力示例
+│       ├── examples/              # DataTable 等综合示例
 │       ├── forms/                 # 表单示例
-│       ├── elements/              # UI 展示页
+│       ├── log-management/        # 登录与操作日志
 │       └── system-management/     # 系统管理（字典管理、导出中心）
 │
 ├── components/                    # 共享组件
@@ -117,6 +126,7 @@ src/
 │   │   ├── editing/               # 单元格编辑子域
 │   │   │   ├── adapters/          # 列类型到 editor/codec 的适配
 │   │   │   ├── batch/             # 粘贴、填充等批量编辑计划
+│   │   │   │   └── fixtures/      # 批量编辑测试输入
 │   │   │   ├── cells/             # editable cell 与键盘交互
 │   │   │   ├── choice/            # 选项值模型、展示、编辑器与远程查询
 │   │   │   ├── codecs/            # 编辑值解析、校验与格式化
@@ -128,6 +138,7 @@ src/
 │   │   ├── selection/             # 单元格区域选择、剪贴板、填充与交互编排
 │   │   ├── toolbar/               # 工具栏与列面板
 │   │   └── virtualization/        # 行列虚拟化
+│   ├── dictionary/                # 字典 scope 与内存映射基础设施
 │   ├── forms/                     # 共享表单组合
 │   ├── layout/                    # 布局组件（header、sidebar 等）
 │   ├── modal/                     # 共享 modal 组合
@@ -142,6 +153,7 @@ src/
 │   ├── chat/                      # 聊天模块（会话、气泡、输入框）
 │   ├── notifications/             # 通知中心与状态存储
 │   ├── dictionaries/              # 字典管理（类型 + 字典项 CRUD）
+│   ├── elements/                  # UI 能力示例
 │   ├── export-center/             # 导出中心（任务列表、下载、重试）
 │   ├── workspace-tabs/            # 工作区页签系统（注册表、LRU 淘汰、拖拽排序）
 │   ├── auth/                      # 认证相关组件
@@ -149,6 +161,7 @@ src/
 │
 ├── lib/                           # 无 UI 的跨 feature 共享运行时与纯算法
 │   ├── api/                       # API transport、IAM 运行时与生成客户端适配
+│   ├── browser/                   # 浏览器 DOM 与 runtime helper
 │   ├── data-table/                # DataTable 纯算法与状态持久化
 │   ├── formatters/                # 日期、数字和展示格式化
 │   ├── router/                    # 路由元数据、守卫与导航算法
@@ -161,9 +174,14 @@ src/
 ├── styles/                        # 全局样式与主题文件
 │   └── themes/                    # 各主题独立 CSS（OKLCH）
 ├── test/                          # 跨子系统测试基础设施与项目级契约
-│   └── contracts/                 # 架构、OpenAPI adoption 等项目级契约测试
+│   ├── contracts/                 # 架构、OpenAPI adoption 等项目级契约测试
+│   ├── fixtures/                  # 项目级共享测试输入
+│   ├── lint/                      # lint 自测试输入
+│   └── smoke/                     # 跨模块 smoke 测试
 └── types/                         # 跨层 TypeScript 类型定义（含 data-table.ts）
 ```
+
+完整的目录归属与 DataTable 子系统边界见 [oig-tanstack-admin 项目结构规范](.agents/skills/oig-tanstack-admin/references/project-structure.md)。
 
 ## 字典与枚举展示
 
