@@ -66,14 +66,23 @@
 
 ```text
 src/
-├── routes/                         # TanStack Router 文件路由
+├── assets/                         # 由模块导入的静态资源
+├── routes/                         # TanStack Router 文件路由与 route metadata
 │   ├── __root.tsx                  # 根布局与全局 Provider
 │   ├── index.tsx                   # 首页重定向
-│   ├── auth/                       # 兼容认证入口
+│   ├── about.tsx                   # 公开关于页
+│   ├── privacy-policy.tsx          # 隐私政策
+│   ├── terms-of-service.tsx        # 服务条款
+│   ├── auth.tsx                    # 认证布局
+│   ├── auth/                       # 登录、注册兼容入口
 │   ├── dashboard.tsx               # SSO 登录信息 loader 与控制台布局
 │   └── dashboard/                  # 控制台内容页
-├── components/
-│   ├── ui/                         # Shadcn UI 基础原语（button、input、table 等）
+│       ├── elements/               # UI 能力示例
+│       ├── examples/               # DataTable 综合示例
+│       ├── forms/                  # 表单示例
+│       └── system-management/      # 字典管理、导出中心
+├── components/                     # 跨 feature 共享组件
+│   ├── ui/                         # Shadcn UI 基础原语
 │   ├── data-table/                 # DataTable 共享子系统
 │   │   ├── actions/                # 顶层、选择和行操作
 │   │   ├── cells/                  # 通用单元格展示组件
@@ -86,6 +95,7 @@ src/
 │   │   ├── editing/                # 单元格编辑子域
 │   │   │   ├── adapters/           # 列类型到 editor/codec 的适配
 │   │   │   ├── batch/              # 粘贴、填充等批量编辑计划
+│   │   │   │   └── fixtures/       # 批量编辑测试输入
 │   │   │   ├── cells/              # editable cell 与键盘交互
 │   │   │   ├── choice/             # 选项值模型、展示、编辑器与远程查询
 │   │   │   ├── codecs/             # 编辑值解析、校验与格式化
@@ -94,43 +104,53 @@ src/
 │   │   ├── export/                 # 导出交互
 │   │   ├── feedback/               # loading、empty、error 状态
 │   │   ├── filters/                # 工具栏筛选与表头本地 Set Filter
-│   │   ├── selection/              # 单元格区域选择、剪贴板、填充与交互编排
+│   │   ├── selection/              # 区域选择、剪贴板、填充与交互编排
 │   │   ├── toolbar/                # 工具栏与列面板
 │   │   └── virtualization/         # 行列虚拟化
-│   ├── forms/                      # 共享表单组合
-│   ├── layout/                     # Header、Sidebar、PageContainer
+│   ├── dictionary/                 # 字典 scope 与内存映射基础设施
+│   ├── forms/                      # 共享表单组合与字段组件
+│   ├── layout/                     # Header、Sidebar、PageContainer 与 tags bar
 │   ├── modal/                      # 共享 modal 组合
 │   ├── themes/                     # 主题系统
 │   └── kbar/                       # Command+K 命令面板
-├── features/
-│   ├── auth/                       # SSO 禁止访问与路由无权限状态页
-│   ├── workspace-tabs/             # 工作区页签、页面注册与保活
+├── features/                       # 按业务能力组织的页面、组件与状态
+│   ├── auth/                       # SSO 禁止访问与认证页面组合
+│   ├── chat/                       # 聊天演示
 │   ├── dictionaries/               # 字典管理
+│   ├── elements/                   # UI 能力示例
 │   ├── export-center/              # 导出中心
-│   ├── overview/                   # 数据概览
 │   ├── forms/                      # 表单示例
-│   ├── kanban/                     # 看板
-│   ├── chat/                       # 聊天
-│   └── notifications/              # 通知中心
-├── lib/                           # 无 UI 的跨 feature 共享运行时与纯算法
-│   ├── api/                       # API transport、SSO 会话与生成客户端适配
-│   │   ├── sso/                   # SSO bootstrap、session、headers、queries
-│   │   ├── transport.ts           # OpenAPI generated client 共享 transport
-│   │   └── clients/               # OpenAPI 生成客户端
-│   ├── data-table/                # DataTable 纯算法与状态持久化
-│   ├── formatters/                # 日期、数字和展示格式化
-│   ├── router/                    # 路由元数据、守卫与导航算法
-│   ├── query-client.ts            # React Query 客户端配置
-│   └── utils.ts                   # 通用 cn() 类名合并与浏览器 UUID 生成
-├── config/                        # 环境变量与特性配置
-├── hooks/                         # 跨 feature 状态编排
-│   └── use-data-table/            # 表格状态、服务端 DSL、编辑和本地筛选运行时
-├── styles/                        # 全局样式与主题
-├── test/                          # 跨子系统测试基础设施与项目级契约
-│   ├── contracts/                 # 架构、OpenAPI adoption 等项目级契约测试
-│   └── smoke/                     # 冒烟测试
-└── types/                         # TypeScript 类型
+│   ├── kanban/                     # 看板演示
+│   ├── notifications/              # 通知中心
+│   ├── overview/                   # 数据概览
+│   └── workspace-tabs/             # 工作区页签、页面注册与保活
+├── hooks/                          # 跨 feature 状态编排
+│   └── use-data-table/             # 表格状态、DSL、编辑和本地筛选运行时
+├── config/                         # 环境变量与特性配置
+├── constants/                      # 静态示例数据与常量
+├── lib/                            # 无 UI 的跨 feature 共享运行时与纯算法
+│   ├── api/                        # API transport、SSO 会话与 generated client 适配
+│   │   ├── clients/service/        # OpenAPI 生成客户端与 adapter
+│   │   ├── sso/                    # SSO bootstrap、session、headers、queries
+│   │   ├── request-values.ts       # 请求值归一化
+│   │   └── transport.ts            # generated client 共享 transport
+│   ├── browser/                    # 浏览器 DOM 与 runtime helper
+│   ├── data-table/                 # DataTable 纯算法与状态持久化
+│   ├── formatters/                 # 日期、数字和展示格式化
+│   ├── router/                     # 路由元数据、守卫与导航算法
+│   ├── query-client.ts             # React Query 客户端配置
+│   └── utils.ts                    # 通用 cn() 与浏览器 UUID 生成
+├── styles/                         # 全局样式与主题
+│   └── themes/                     # 主题变量
+├── test/                           # 跨子系统测试基础设施
+│   ├── contracts/                  # 架构与 OpenAPI adoption 契约
+│   ├── fixtures/                   # 项目级共享测试输入
+│   ├── lint/                       # lint 自测试输入
+│   └── smoke/                      # 冒烟测试
+└── types/                          # 跨层 TypeScript 类型
 ```
+
+完整的目录归属和 DataTable 子系统边界见 [oig-tanstack-admin 项目结构规范](.agents/skills/oig-tanstack-admin/references/project-structure.md)。
 
 ## SSO 运行时
 
