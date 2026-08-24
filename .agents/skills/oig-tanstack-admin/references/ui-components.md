@@ -13,9 +13,12 @@
 ### 高度职责
 
 - `Card` 与 `CardContent` 默认不声明 `h-full`，卡片高度由所在页面布局决定。
+- 标准单卡片表格页必须使用 `<CardContent className='min-h-0 flex-1 px-0'>` 包裹 `DataTable`。`Card` 是 flex 列容器，`DataTable` 自身的 `flex-1` 只有在直接父级 `CardContent` 也参与剩余高度分配时才能生效；仅传 `px-0` 只能实现全宽，会在 Card 底部留下空白。
+- `CardContent` 的 `min-h-0` 用于允许表格区域在 flex 布局中收缩，溢出内容继续由 `DataTable` 内部滚动容器处理；加载骨架与正常表格必须使用同一高度链。
 - 页面内容默认使用 `flow` 模式：最小高度填满剩余空间，内容增加时页面继续增长，并由 dashboard 内容区滚动。
 - 需要把高度锁定在页面剩余空间、由卡片内部区域滚动时，通过 `WorkspacePageRoute contentSizing='contained'` 声明。
 - `contained` 页面中的多栏根容器必须传递 `h-full min-h-0`；实际滚动区域使用 `min-h-0 flex-1 overflow-auto`，禁止使用硬编码 `calc(100vh - ...)` 或 `max-h-svh` 推算页面高度。
+- 单卡片表格仅需填满 Card 剩余高度时，不得用 `<Card className='h-full'>`、页面级 `contentSizing='contained'` 或固定视口高度替代上述 `CardContent` 高度传递。`contained` 只用于确实需要锁定页面高度的布局。
 
 ### 正确用法
 
@@ -29,13 +32,13 @@
   <CardContent>{/* 内容 */}</CardContent>
 </Card>
 
-// 全宽内容
+// 全宽 DataTable，并占满 Card 剩余高度
 <Card>
   <CardHeader>
     <CardTitle>标题</CardTitle>
   </CardHeader>
   <Separator />
-  <CardContent className='px-0'>
+  <CardContent className='min-h-0 flex-1 px-0'>
     <DataTable table={table} />
   </CardContent>
 </Card>

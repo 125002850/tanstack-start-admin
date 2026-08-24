@@ -199,13 +199,13 @@ pnpm codegen
 
 - **`<Card>`** 负责 **外层统一 padding**（`p-6`），所有四边间距一律由 Card 自身控制
 - **`<CardHeader>`**、**`<CardContent>`**、**`<CardFooter>`** 不再自带 `px-6`，不负责横向 padding
-- 子元素间距由 Card 的 **`flex flex-col gap-6`** 控制，通过 `gap` 实现 header/content/footer 之间的间距
+- 子元素间距由 Card 的 **`flex flex-col gap-4`** 控制，通过 `gap` 实现 header/content/footer 之间的间距
 
 **设计原则：**
 
 - 盒子级的外 padding 统一收敛到最外层 `<Card>`，避免 padding 在多层级组件间分散导致视觉不一致
 - 子组件只负责自身内部布局（如 CardHeader 的 `@container` grid 布局），不介入 Card 级别的间距
-- 特殊需求（如全宽表格需要 `px-0`）通过子组件自身的 className 覆盖处理
+- 特殊需求通过子组件自身的 className 处理；标准单卡片 DataTable 使用 `min-h-0 flex-1 px-0` 同时传递剩余高度并保持全宽
 
 **正确用法：**
 
@@ -221,13 +221,13 @@ pnpm codegen
   </CardContent>
 </Card>
 
-// 全宽内容（如 DataTable）
+// 全宽 DataTable，并占满 Card 剩余高度
 <Card>
   <CardHeader>
     <CardTitle>标题</CardTitle>
   </CardHeader>
   <Separator />
-  <CardContent className='px-0'>
+  <CardContent className='min-h-0 flex-1 px-0'>
     <DataTable table={table} />
   </CardContent>
 </Card>
@@ -247,6 +247,8 @@ pnpm codegen
   </CardFooter>
 </Card>
 ```
+
+`min-h-0` 允许表格区域在 flex 布局中收缩，`flex-1` 把 Card 剩余高度传给 `DataTable`。是否需要页面级 `contentSizing='contained'` 以及多栏布局的完整约束，见 [oig-tanstack-admin UI 组件规范](.agents/skills/oig-tanstack-admin/references/ui-components.md#高度职责)。
 
 **反例（不应出现）：**
 
