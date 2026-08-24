@@ -279,7 +279,7 @@ export default function RoleManagementPage() {
   return (
     <>
       <Card>
-        <CardContent className='px-0'>
+        <CardContent className='min-h-0 flex-1 px-0'>
           <DataTable
             table={table}
             tableActions={tableActions}

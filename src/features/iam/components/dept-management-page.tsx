@@ -97,7 +97,7 @@ export default function DeptManagementPage() {
   return (
     <>
       <Card>
-        <CardContent className='px-0'>
+        <CardContent className='min-h-0 flex-1 px-0'>
           <DeptDataTable
             rows={rows}
             totalCount={totalCount}
