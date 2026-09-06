@@ -53,6 +53,7 @@ export const env = {
 - 常规应用消费者从 `@/config` 导入；低层基础设施若现有实现直接依赖 `@/config/env`，不要在无关任务中顺带迁移。
 - `env.ts` 只负责读取与默认值，不包含业务逻辑。
 - 纯 SPA 中 `VITE_*` 在构建时静态替换，运行时不可变。
+- `VITE_ENABLE_DATA_TABLE_VIRTUALIZATION` 是通用 DataTable 虚拟滚动开关；仅在未设置新变量时，历史变量 `VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION` 才作为兼容 fallback。
 
 ## 特性配置
 
@@ -100,3 +101,10 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 生成后的 `openapi/.generated/*-orval-mutator.ts` 只能从 `@oig/react-query-generator/core` 导入 `createDefaultApiClientCustomInstance`，不得反向依赖项目 `transport.ts`。
 - 生成后的 `src/lib/api/clients/*/generated/**/*.ts` 由 `openapi-client` 自动带上 `// @ts-nocheck`。
 - 禁止在 generated 文件中重复注册 middleware。
+
+## IAM 超级管理员约束
+
+- 系统内置超级管理员角色编码固定为 `SUPER_ADMIN`，全系统有且只有一个内置超级管理员账号。
+- `SUPER_ADMIN` 不得出现在新增员工、编辑员工或分配员工角色的可选角色中，也不得通过普通员工管理流程授予其他账号。
+- 内置超级管理员禁止编辑基础资料、重新分配角色、切换状态或删除；仅允许本人按既有权限重置自己的密码。
+- 前端限制只负责交互防护，后端必须继续校验上述唯一性和不可变约束，禁止把安全边界仅建立在 UI 隐藏上。

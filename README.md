@@ -209,323 +209,21 @@ pnpm codegen
 
 页面禁止绕过 generated client 直接 `fetch('/...')`。
 
-## UI 组件开发规范
-
-### Card 组件设计规范
-
-**padding 职责分配：**
-
-- **`<Card>`** 负责 **外层统一 padding**（`p-6`），所有四边间距一律由 Card 自身控制
-- **`<CardHeader>`**、**`<CardContent>`**、**`<CardFooter>`** 不再自带 `px-6`，不负责横向 padding
-- 子元素间距由 Card 的 **`flex flex-col gap-4`** 控制，通过 `gap` 实现 header/content/footer 之间的间距
-
-**设计原则：**
-
-- 盒子级的外 padding 统一收敛到最外层 `<Card>`，避免 padding 在多层级组件间分散导致视觉不一致
-- 子组件只负责自身内部布局（如 CardHeader 的 `@container` grid 布局），不介入 Card 级别的间距
-- 特殊需求通过子组件自身的 className 处理；标准单卡片 DataTable 使用 `min-h-0 flex-1 px-0` 同时传递剩余高度并保持全宽
-
-**正确用法：**
-
-```tsx
-// 标准卡片
-<Card>
-  <CardHeader>
-    <CardTitle>标题</CardTitle>
-    <CardDescription>描述文本</CardDescription>
-  </CardHeader>
-  <CardContent>
-    {/* 内容 */}
-  </CardContent>
-</Card>
-
-// 全宽 DataTable，并占满 Card 剩余高度
-<Card>
-  <CardHeader>
-    <CardTitle>标题</CardTitle>
-  </CardHeader>
-  <Separator />
-  <CardContent className='min-h-0 flex-1 px-0'>
-    <DataTable table={table} />
-  </CardContent>
-</Card>
-
-// 统计卡片（只用 Header + Footer）
-<Card className='@container/card'>
-  <CardHeader>
-    <CardDescription>总收入</CardDescription>
-    <CardTitle>$1,250.00</CardTitle>
-    <CardAction>
-      <Badge>+12.5%</Badge>
-    </CardAction>
-  </CardHeader>
-  <CardFooter className='flex-col items-start gap-1.5 text-sm'>
-    <div className='font-medium'>本月持续增长</div>
-    <div className='text-muted-foreground'>过去 6 个月访客趋势</div>
-  </CardFooter>
-</Card>
-```
-
-`min-h-0` 允许表格区域在 flex 布局中收缩，`flex-1` 把 Card 剩余高度传给 `DataTable`。是否需要页面级 `contentSizing='contained'` 以及多栏布局的完整约束，见 [oig-tanstack-admin UI 组件规范](.agents/skills/oig-tanstack-admin/references/ui-components.md#高度职责)。
-
-**反例（不应出现）：**
-
-```tsx
-// ❌ 不用 Card 包裹，直接渲染 Header/Content 为兄弟节点
-<>
-  <CardHeader className='px-4 py-4'>...</CardHeader>
-  <CardContent className='px-4'>...</CardContent>
-</>
-
-// ❌ 手动 div 模拟 Card 样式
-<div className='rounded-xl border bg-card'>
-  <CardHeader>...</CardHeader>
-  <CardContent>...</CardContent>
-</div>
-
-// ❌ 在 Header/Content 上写 px/py 覆盖 padding
-<CardHeader className='px-4 py-4'>...</CardHeader>
-<CardContent className='px-4 py-4'>...</CardContent>
-```
-
-### 图标使用规范
-
-- 统一使用 `@/components/icons` 中的 `Icons` 对象引用图标
-- 图标尺寸必须显式声明 `className='size-4'` 等尺寸类
-- 禁止在组件内部直接 import 或使用其他图标库
-
-### 布局容器规范
-
-- 页面必须使用 `PageContainer` 作为最外层容器；通过 `WorkspacePageRoute` 接入的 dashboard 页面由路由层统一包装，页面主体组件不要重复包裹
-- Dashboard 页面内嵌子区域尽量使用 `Card` 组件包裹，保持视觉一致性
-- 表格页面使用 `DataTable` + `Card`，表头和内容由 Card 统一管理间距
-
-### DataTable 开发规范
-
-- `src/components/ui/table.tsx` 只提供 Shadcn Table 原语；完整 DataTable 固定放在 `src/components/data-table/`。
-- 页面通过 `createDataTableColumnDsl()`、`useDataTable()` 或 `useDslDataTable()` 接入，禁止直接拼装共享运行时内部状态。
-- 服务端工具栏筛选与表头当前已加载数据的本地 Set Filter 是两套独立状态，业务代码不得混用。
-- DataTable 内部按 `core/`、`columns/`、`cells/`、`filters/` 等职责使用分层导入，不新增 flat 入口、兼容转发或新旧路径双写。
-- 完整团队规范以 [oig-tanstack-admin DataTable 开发规范](.agents/skills/oig-tanstack-admin/references/data-table.md) 为准。
-
-## 路由元数据规范
-
-当前项目采用“**route 文件本地定义元数据，运行时统一派生导航与页面头部**”的模式。每个 dashboard 路由应通过 `defineRouteMeta()` 同时声明：
-
-- 文档标题（浏览器标签页）
-- 页面头部标题、描述、`infoContent`
-- 侧边栏 / KBar 导航信息
-- breadcrumb 标签
-
-### 标准写法
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router';
-import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
-import { defineRouteMeta } from '@/lib/router/app-route-meta';
-
-const meta = defineRouteMeta({
-  label: '字典管理',
-  title: '系统管理：字典管理',
-  nav: {
-    visible: true,
-    group: 'systemManagement',
-    order: 10,
-    menuKey: 'dict-management',
-    icon: 'databaseCog',
-    shortcut: ['d', 'm']
-  },
-  workspace: {
-    refreshPolicy: 'query-invalidate'
-  }
-});
-
-export const Route = createFileRoute('/dashboard/system-management/dictionaries')({
-  ...meta,
-  component: DictionariesPage
-});
-
-function DictionariesPage() {
-  return <WorkspacePageRoute render={() => <DictionariesManagementPage />} />;
-}
-```
-
-### 字段职责
-
-#### 顶层字段
-
-- `label`
-  路由的人类可读名称。默认用于侧边栏标题、KBar 名称，以及 `PageContainer` 在未声明 `page.title` 时的回退标题。
-- `title`
-  文档标题。`defineRouteMeta()` 会自动生成 `head()`，将它写入浏览器标签页；未提供时回退到 `label`。
-- `breadcrumb`
-  面包屑元数据。当前支持：
-  - `label`: 面包屑文案
-  - `to`: 可选，自定义 breadcrumb 链接目标
-
-#### `nav`
-
-- `visible`
-  是否进入主导航派生。
-- `group`
-  顶部分组键，当前固定为 `overview | components | basicSettings | systemManagement | logManagement | account`。
-- `order`
-  当前分组内的排序权重，数值越小越靠前。
-- `menuKey`
-  可选菜单权限键。声明后侧边栏和 KBar 会使用 IAM 菜单树节点的 `menuKey/menuCode/code` 过滤该菜单；未声明 `menuKey` 的菜单默认显示。
-- `icon`
-  对应 `Icons` 表中的图标键。
-- `shortcut`
-  KBar 快捷键声明。
-- `kind: 'container'`
-  声明该项是容器菜单，不是普通页面链接。
-- `parentId`
-  子菜单归属的父级路由路径。当前用于“表单”这种容器菜单。
-- `linkable: false`
-  显式声明该项不可直接跳转，只作为容器或展示项存在。
-
-#### `page`
-
-- `page.title`
-  页面内容区头部标题，对应 `PageContainer > Heading.title`。
-- `page.description`
-  页面内容区头部描述。
-- `page.infoContent`
-  页面头部信息浮层内容（Infobar）。
-
-### 运行时消费规则
-
-#### `PageContainer` 回退顺序
-
-- `pageTitle`: 显式 prop > `staticData.page.title` > `staticData.label`
-- `pageDescription`: 显式 prop > `staticData.page.description`
-- `infoContent`: 显式 prop > `staticData.page.infoContent`
-
-因此，只要页面头部文案属于 route 级静态信息，应优先写进 `defineRouteMeta()`，而不是在 feature 组件里重复传 `PageContainer` props。
-
-#### 导航派生规则
-
-- 侧边栏和 KBar 都从 Router 的 `routesById` + `staticData.nav` 派生，不再维护中心化导航配置。
-- 容器菜单依赖 `nav.kind === 'container'` 和子项的 `nav.parentId` 建树，不通过 URL 前缀做隐式推断。
-- `linkable: false` 的节点不会生成可执行 KBar action，也不会在侧边栏中渲染成跳转链接。
-- 声明 `nav.menuKey` 的节点会根据 IAM 菜单树过滤；无 `menuKey` 的框架、示例或公共页面不受权限过滤影响。
-- 路由显式声明 `nav.group` 时以该分组为准；未声明时才从后端菜单树祖先目录派生分组。
-
-#### WorkspacePageRoute
-
-- 标准 dashboard 内容页优先使用 `WorkspacePageRoute`，由它统一处理 workspace tabs 注册和 `PageContainer` 包装。
-- 页面主体组件应只输出页面内容，不再自行包裹 `PageContainer`；若组件仍需要单独直接渲染，可以保留默认 Screen 包装并额外导出主体组件。
-- 像聊天这类全屏自定义布局可以继续直接使用 `WorkspacePageBoundary`，并在 route 文件中说明原因。
-
-### 约束
-
-- dashboard 路由新增菜单页时，必须补 `nav.visible/group/order`。
-- dashboard 业务页面默认接入 workspace tabs。除重定向页、纯容器页或明确说明的不托管页面外，不要显式设置 `workspace.tagEnabled: false`。
-- 新增实际内容页时，应默认按 workspace 页面接入；若页面需要参与多页签管理，route 侧保持默认 `workspace` 配置，并使用 `WorkspacePageRoute` 托管页面主体。
-- 只有明确不需要标签页承载时，才允许关闭 tab；关闭时必须在对应 route 文件旁用注释或实现结构说明原因，避免把业务页面误排除在页签体系外。
-- 如果页面需要浏览器标题和页面头部标题不同，使用顶层 `title` 与 `page.title` 分离声明。
-- 外部链接按钮不要使用 TanStack Router `Link`；应使用普通 `<a href>`。
-- `defineRouteMeta()` 适用于“静态 route metadata + 默认 head”场景。若页面需要特殊 `head()` 逻辑，应在 route 文件中显式扩展，而不是反向修改消费端。
-
-## 配置中心规范
-
-### 架构
-
-```
-src/config/
-├── index.ts           # barrel：统一导出所有配置
-├── env.ts             # ★ 唯一读取 import.meta.env.VITE_* 的地方
-├── data-table.ts      # 特性配置（表格操作符、虚拟滚动等）
-└── workspace-tabs.ts  # 特性配置（页签保活上限、开关等）
-```
-
-### 核心原则
-
-1. **`env.ts` 是环境变量的唯一入口** — 禁止其他文件直接读取 `import.meta.env.VITE_*`
-2. **特性配置从 `env.ts` 取值** — 不自己绕开 env 层访问环境变量
-3. **`index.ts` 为对外唯一导出** — 消费者统一 `import { ... } from '@/config'`
-4. **每个环境变量必须在 `env.example.txt` 中有文档** — 含用途说明和默认值
-
-### 与 vite.config.ts 的边界
-
-`vite.config.ts` 和 `src/config/env.ts` 服务于不同层面，互不替代：
-
-|          | `vite.config.ts`                      | `src/config/env.ts`                       |
-| -------- | ------------------------------------- | ----------------------------------------- |
-| 运行环境 | Node.js（构建时 / dev server）        | 浏览器（应用运行时）                      |
-| 读取方式 | `loadEnv()` 读 `.env`                 | `import.meta.env.VITE_*`（Vite 静态替换） |
-| 管辖变量 | `APP_GATEWAY`、`PROXY_URL`、`ANALYZE` | `VITE_ENABLE_WORKSPACE_TABS` 等           |
-| 用途     | dev server 代理、构建工具开关         | 客户端特性开关                            |
-
-`vite.config.ts` 是构建工具自身配置，不属于应用配置层，不纳入 `src/config/` 管辖。
-
-### env.ts 写入规范
-
-```ts
-// src/config/env.ts
-import { env } from '@/config';
-
-// 新增环境变量开关只需在 env 对象加一行：
-export const env = {
-  // ... 已有变量 ...
-  /** 是否启用 XXX 功能（默认关闭） */
-  xxxEnabled: getEnvBool('VITE_ENABLE_XXX', false)
-} as const;
-```
-
-辅助函数：
-
-- `getEnvVar(name, defaultValue)` — 读取字符串型环境变量
-- `getEnvBool(name, defaultValue)` — 读取布尔型环境变量（`'1'` / `'true'` 为 true）
-
-### 特性配置规范
-
-特性配置分为两类：
-
-**A. 纯常量**（不依赖环境变量）— 直接定义即可：
-
-```ts
-// src/config/workspace-tabs.ts
-export const MAX_KEEPALIVE_TABS = 15;
-```
-
-**B. 依赖开关的派生值** — 从 `env.ts` import：
-
-```ts
-// src/config/data-table.ts
-import { env } from './env';
-
-export function isDataTableVirtualizationEnabled(): boolean {
-  if (!env.dataTableVirtualization) return false;
-  return isBrowserSupportedForVirtualization(); // 额外的运行时检测
-}
-```
-
-### 约束
-
-- 新增 `VITE_*` 环境变量时，必须先在 `env.ts` 注册，再在 `env.example.txt` 补文档
-- 特性 config 文件只 import `./env`（相对路径），不 import `@/config/env`（避免循环）
-- 消费者统一 `import { env } from '@/config'`，禁止绕过 barrel 直接 import 特性 config 内部文件
-- `env.ts` 内不做业务逻辑判断，只负责"读取 + 默认值"
-- 编译时不可变：纯 SPA 下 `VITE_*` 在构建时静态替换，不可运行时修改
-- `VITE_ENABLE_DATA_TABLE_VIRTUALIZATION` 是通用 DataTable 虚拟滚动开关；历史变量 `VITE_ENABLE_PRODUCT_TABLE_VIRTUALIZATION` 仅作为未设置新变量时的兼容 fallback。
-
-### 请求与登录态
-
-本地 IAM 运行链路由 `src/lib/api/iam/` 和共享 transport 维护：
-
-- `src/lib/api/transport.ts`：统一配置 generated client 的共享 middleware，注入 `Authorization`、处理 401 刷新与登出跳转。
-- `src/lib/api/iam/session.ts`：维护 access token、refresh token、改密后 token 更新和登出清理。
-- `src/lib/api/iam/queries.ts`：维护 `iam/me` 查询、当前账号信息归一化和权限快照缓存。
-
-OpenAPI client 当前仍保留在 `src/lib/api/clients/service/`，后续可在后端框架抽离完成后重新生成干净 client。
-
-### 超级管理员约束
-
-- 系统内置超级管理员角色编码固定为 `SUPER_ADMIN`，全系统有且只有一个内置超级管理员账号。
-- `SUPER_ADMIN` 不得出现在新增员工、编辑员工或分配员工角色的可选角色中，也不得通过普通员工管理流程授予其他账号。
-- 内置超级管理员禁止编辑基础资料、重新分配角色、切换状态或删除；仅允许本人按既有权限重置自己的密码。
-- 前端限制只负责交互防护，后端必须继续校验上述唯一性和不可变约束，禁止把安全边界仅建立在 UI 隐藏上。
+## 工程规范
+
+开发前阅读 [AGENTS.MD](AGENTS.MD) 和 [项目 Skill 入口](.agents/skills/oig-tanstack-admin/SKILL.md)，再按任务读取下列规范。README 提供项目概览和操作入口；团队约束正文统一维护在 reference，通用 skills 不能覆盖本仓库约束。
+
+| 任务                               | 规范                                                                                      |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| 安装、首次启动、代码生成与验证     | [开发工作流](.agents/skills/oig-tanstack-admin/references/development-workflow.md)        |
+| 目录归属与模块边界                 | [项目结构](.agents/skills/oig-tanstack-admin/references/project-structure.md)             |
+| Card、图标与页面布局               | [UI 组件](.agents/skills/oig-tanstack-admin/references/ui-components.md)                  |
+| 表格、列 DSL、编辑与虚拟化         | [DataTable](.agents/skills/oig-tanstack-admin/references/data-table.md)                   |
+| 路由元数据、权限、导航与 workspace | [路由与导航](.agents/skills/oig-tanstack-admin/references/routing-and-navigation.md)      |
+| 表单、选择器与浮层                 | [表单](.agents/skills/oig-tanstack-admin/references/forms.md)                             |
+| 拖拽、点击与 pointer 竞争          | [拖拽交互](.agents/skills/oig-tanstack-admin/references/drag-and-pointer-interactions.md) |
+| 环境变量、API transport 与 IAM     | [配置与 API](.agents/skills/oig-tanstack-admin/references/configuration-and-api.md)       |
+| Git 提交与推送                     | [Git 规范](.agents/skills/oig-tanstack-admin/references/git-commits.md)                   |
 
 ## 快速开始
 
@@ -539,16 +237,19 @@ git clone https://github.com/125002850/tanstack-start-admin.git
 cd tanstack-start-admin
 ```
 
-安装依赖并启动：
+先按[开发工作流](.agents/skills/oig-tanstack-admin/references/development-workflow.md)确认 Node、pnpm 和包源。首次检出后安装依赖、准备环境文件并生成客户端：
 
 ```bash
 corepack enable
-pnpm install
+pnpm install --frozen-lockfile
 cp env.example.txt .env
+pnpm codegen
 pnpm dev
 ```
 
 完成后可以通过 <http://localhost:3000> 访问应用。
+
+已有 `.env` 时保留现有配置。`pnpm codegen` 使用已提交的本地 OpenAPI spec；`pnpm dev` 启动时由 Router 插件生成路由树。首次单独执行类型检查前，按开发工作流先生成客户端并运行构建。
 
 - `APP_GATEWAY`、`PROXY_URL`：Vite 代理前缀与后端地址
 - `OPENAPI_FETCH_TARGET`：可选的 OpenAPI 文档地址，仅供拉取命令使用
@@ -567,6 +268,7 @@ pnpm dev
 ### 构建与启动
 
 ```bash
+pnpm codegen
 pnpm build
 pnpm preview   # 本地预览构建产物
 ```
