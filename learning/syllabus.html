@@ -1,0 +1,1722 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="基于 TanStack Admin 真实源码设计的 12 周 React 深入学习路线。"
+    />
+    <title>React 深入之路｜TanStack Admin 学习大纲</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #f3efe4;
+        --paper-strong: #fffdf6;
+        --ink: #17201f;
+        --muted: #63706d;
+        --line: #c9c4b7;
+        --line-strong: #8f9188;
+        --blue: #1649d8;
+        --orange: #e35b27;
+        --green: #17765d;
+        --violet: #6a3fc4;
+        --shadow: 0 18px 60px rgba(35, 38, 34, 0.1);
+        --display: 'Iowan Old Style', Baskerville, 'Songti SC', STSong, serif;
+        --sans: Aptos, 'Microsoft YaHei UI', 'PingFang SC', sans-serif;
+        --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 24px;
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        color: var(--ink);
+        background-color: var(--paper);
+        background-image:
+          linear-gradient(rgba(23, 32, 31, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(23, 32, 31, 0.035) 1px, transparent 1px);
+        background-size: 32px 32px;
+        font-family: var(--sans);
+        line-height: 1.65;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--blue) 65%, white);
+        outline-offset: 3px;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 100;
+        padding: 8px 12px;
+        color: white;
+        background: var(--ink);
+        transform: translateY(-180%);
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .page-shell {
+        width: min(1480px, calc(100% - 32px));
+        margin: 16px auto 64px;
+        border: 1px solid var(--line-strong);
+        background: color-mix(in srgb, var(--paper-strong) 94%, transparent);
+        box-shadow: var(--shadow);
+      }
+
+      .masthead {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 0.42fr);
+        min-height: 570px;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .hero-copy {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(28px, 6vw, 88px);
+        overflow: hidden;
+      }
+
+      .hero-copy > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero-copy::after {
+        position: absolute;
+        right: -90px;
+        bottom: -150px;
+        width: 360px;
+        height: 360px;
+        border: 60px solid color-mix(in srgb, var(--orange) 82%, transparent);
+        border-radius: 50%;
+        content: '';
+        pointer-events: none;
+      }
+
+      .eyebrow,
+      .section-kicker,
+      .module-index,
+      .rail-label {
+        margin: 0;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--blue);
+      }
+
+      .eyebrow::before {
+        width: 42px;
+        height: 3px;
+        background: currentColor;
+        content: '';
+      }
+
+      h1 {
+        max-width: 880px;
+        margin: 42px 0 24px;
+        font-family: var(--display);
+        font-size: clamp(3.4rem, 8vw, 7.6rem);
+        font-weight: 600;
+        letter-spacing: -0.065em;
+        line-height: 0.88;
+      }
+
+      .hero-lede {
+        max-width: 720px;
+        margin: 0;
+        color: #374441;
+        font-size: clamp(1rem, 1.8vw, 1.3rem);
+      }
+
+      .hero-foot {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 24px;
+        margin-top: 64px;
+        font-family: var(--mono);
+        font-size: 0.78rem;
+      }
+
+      .hero-foot span {
+        padding-bottom: 4px;
+        border-bottom: 1px solid currentColor;
+      }
+
+      .course-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: clamp(28px, 4vw, 56px);
+        color: #f9f7ef;
+        background: var(--ink);
+      }
+
+      .course-card h2 {
+        margin: 0 0 18px;
+        font-family: var(--display);
+        font-size: clamp(2rem, 4vw, 3.3rem);
+        font-weight: 500;
+        line-height: 1;
+      }
+
+      .course-card p {
+        margin: 0;
+        color: #c9d0cd;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        margin: 40px 0;
+        border-top: 1px solid #4b5552;
+        border-left: 1px solid #4b5552;
+      }
+
+      .metric {
+        padding: 18px;
+        border-right: 1px solid #4b5552;
+        border-bottom: 1px solid #4b5552;
+      }
+
+      .metric strong {
+        display: block;
+        color: #ff8b58;
+        font-family: var(--display);
+        font-size: 2.15rem;
+        font-weight: 500;
+        line-height: 1;
+      }
+
+      .metric span {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+      }
+
+      .progress-block {
+        margin-top: 32px;
+      }
+
+      .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+      }
+
+      .progress-track {
+        height: 8px;
+        overflow: hidden;
+        border: 1px solid #78817e;
+        background: #303a37;
+      }
+
+      .progress-fill {
+        width: 0;
+        height: 100%;
+        background: #ff7540;
+        transition: width 280ms ease;
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: 270px minmax(0, 1fr);
+      }
+
+      .course-rail {
+        align-self: start;
+        position: sticky;
+        top: 0;
+        min-height: 100vh;
+        padding: 32px 24px;
+        border-right: 1px solid var(--line-strong);
+      }
+
+      .course-rail nav {
+        margin-top: 24px;
+      }
+
+      .course-rail a {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 8px;
+        padding: 10px 0;
+        color: var(--muted);
+        text-decoration: none;
+        border-bottom: 1px solid var(--line);
+        transition:
+          color 160ms ease,
+          padding-left 160ms ease;
+      }
+
+      .course-rail a:hover,
+      .course-rail a[aria-current='true'] {
+        padding-left: 6px;
+        color: var(--blue);
+      }
+
+      .course-rail a span:first-child {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+      }
+
+      .rail-actions {
+        display: grid;
+        gap: 8px;
+        margin-top: 32px;
+      }
+
+      .text-button {
+        min-height: 40px;
+        padding: 8px 12px;
+        border: 1px solid var(--line-strong);
+        color: var(--ink);
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .text-button:hover {
+        color: var(--paper-strong);
+        background: var(--ink);
+      }
+
+      main {
+        min-width: 0;
+      }
+
+      .orientation {
+        padding: clamp(32px, 5vw, 72px);
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .orientation h2,
+      .phase-heading h2,
+      .capstone h2 {
+        margin: 10px 0 18px;
+        font-family: var(--display);
+        font-size: clamp(2.2rem, 5vw, 4.4rem);
+        font-weight: 500;
+        letter-spacing: -0.04em;
+        line-height: 1;
+      }
+
+      .orientation-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 32px;
+        margin-top: 36px;
+      }
+
+      .orientation h3,
+      .module h3,
+      .capstone h3 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .clean-list {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .clean-list li {
+        position: relative;
+        padding: 7px 0 7px 22px;
+      }
+
+      .clean-list li::before {
+        position: absolute;
+        top: 17px;
+        left: 0;
+        width: 8px;
+        height: 2px;
+        background: var(--orange);
+        content: '';
+      }
+
+      .state-map {
+        width: 100%;
+        margin-top: 36px;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+
+      .state-map th,
+      .state-map td {
+        padding: 12px 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .state-map th {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .phase {
+        --phase-color: var(--blue);
+      }
+
+      .phase[data-color='orange'] {
+        --phase-color: var(--orange);
+      }
+
+      .phase[data-color='green'] {
+        --phase-color: var(--green);
+      }
+
+      .phase[data-color='violet'] {
+        --phase-color: var(--violet);
+      }
+
+      .phase-heading {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 24px;
+        padding: clamp(32px, 5vw, 72px);
+        border-bottom: 4px solid var(--phase-color);
+      }
+
+      .phase-number {
+        color: var(--phase-color);
+        font-family: var(--display);
+        font-size: clamp(4.5rem, 8vw, 7rem);
+        line-height: 0.8;
+      }
+
+      .phase-heading p {
+        max-width: 700px;
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .module-list {
+        padding: 0 clamp(24px, 5vw, 72px);
+      }
+
+      .module {
+        position: relative;
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: clamp(22px, 4vw, 58px);
+        padding: 52px 0;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .module-meta {
+        position: sticky;
+        top: 24px;
+        align-self: start;
+      }
+
+      .module-index {
+        color: var(--phase-color);
+      }
+
+      .module-week {
+        display: block;
+        margin-top: 8px;
+        font-family: var(--display);
+        font-size: 1.6rem;
+      }
+
+      .module-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        margin-top: 22px;
+        cursor: pointer;
+        font-size: 0.78rem;
+      }
+
+      .module-check input {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        accent-color: var(--phase-color);
+      }
+
+      .module-body h3 {
+        font-family: var(--display);
+        font-size: clamp(1.8rem, 4vw, 3.2rem);
+        font-weight: 500;
+        letter-spacing: -0.035em;
+        line-height: 1.05;
+      }
+
+      .module-summary {
+        max-width: 760px;
+        margin: 12px 0 28px;
+        color: var(--muted);
+        font-size: 1.04rem;
+      }
+
+      .module-columns {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+      }
+
+      .module-columns > section {
+        padding-top: 12px;
+        border-top: 3px solid var(--phase-color);
+      }
+
+      .module-columns h4 {
+        margin: 0 0 10px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .module-columns ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .module-columns li {
+        margin: 7px 0;
+      }
+
+      .source-links {
+        display: grid;
+        gap: 8px;
+      }
+
+      .source-links a {
+        min-width: 0;
+        color: var(--blue);
+        text-underline-offset: 3px;
+      }
+
+      code {
+        font-family: var(--mono);
+        font-size: 0.82em;
+        overflow-wrap: anywhere;
+      }
+
+      .field-note {
+        margin: 0 clamp(24px, 5vw, 72px) 52px;
+        padding: 22px 24px;
+        border-left: 6px solid var(--orange);
+        background: #fff4e9;
+      }
+
+      .field-note strong {
+        display: block;
+        margin-bottom: 6px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+      }
+
+      .capstone {
+        padding: clamp(40px, 7vw, 96px);
+        color: #f8f6ee;
+        background: var(--blue);
+      }
+
+      .capstone .section-kicker {
+        color: #fbb891;
+      }
+
+      .capstone-grid {
+        display: grid;
+        grid-template-columns: 0.7fr 1fr;
+        gap: clamp(28px, 6vw, 90px);
+        margin-top: 42px;
+      }
+
+      .capstone ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: capstone;
+      }
+
+      .capstone li {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 12px;
+        padding: 16px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+        counter-increment: capstone;
+      }
+
+      .capstone li::before {
+        color: #fbb891;
+        font-family: var(--mono);
+        content: '0' counter(capstone);
+      }
+
+      .capstone .clean-list li {
+        display: block;
+        padding-left: 22px;
+        border: 0;
+        counter-increment: none;
+      }
+
+      .capstone .clean-list li::before {
+        color: transparent;
+        content: '';
+        background: #fbb891;
+      }
+
+      footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 18px 24px;
+        border-top: 1px solid var(--line-strong);
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
+      }
+
+      .deerflow {
+        opacity: 0.5;
+        text-decoration: none;
+      }
+
+      .deerflow:hover {
+        opacity: 1;
+      }
+
+      @media (max-width: 1080px) {
+        .masthead {
+          grid-template-columns: 1fr;
+        }
+
+        .course-card {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 32px;
+        }
+
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .course-rail {
+          position: static;
+          min-height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line-strong);
+        }
+
+        .course-rail nav {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+        }
+
+        .course-rail a {
+          padding-right: 12px;
+        }
+
+        .rail-actions {
+          grid-template-columns: repeat(2, minmax(0, 180px));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .page-shell {
+          width: 100%;
+          margin: 0;
+          border-right: 0;
+          border-left: 0;
+        }
+
+        .masthead {
+          min-height: auto;
+        }
+
+        .hero-copy,
+        .course-card {
+          padding: 28px 20px;
+        }
+
+        h1 {
+          margin-top: 64px;
+          font-size: clamp(3.2rem, 17vw, 5.5rem);
+        }
+
+        .course-card,
+        .orientation-grid,
+        .module-columns,
+        .capstone-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .course-rail {
+          padding: 22px 20px;
+          overflow-x: auto;
+        }
+
+        .course-rail nav {
+          display: flex;
+          min-width: 680px;
+        }
+
+        .course-rail a {
+          width: 170px;
+        }
+
+        .phase-heading {
+          grid-template-columns: 62px 1fr;
+          padding-right: 20px;
+          padding-left: 20px;
+        }
+
+        .module-list {
+          padding: 0 20px;
+        }
+
+        .module {
+          grid-template-columns: 1fr;
+          padding: 38px 0;
+        }
+
+        .module-meta {
+          position: static;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .module-check {
+          margin-top: 0;
+        }
+
+        .state-map {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+
+        footer {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .page-shell {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          box-shadow: none;
+        }
+
+        .masthead {
+          min-height: auto;
+        }
+
+        .course-rail,
+        .rail-actions,
+        .module-check,
+        .deerflow {
+          display: none;
+        }
+
+        .content-grid {
+          display: block;
+        }
+
+        .module,
+        .phase-heading,
+        .capstone {
+          break-inside: avoid;
+        }
+
+        .module-columns {
+          grid-template-columns: repeat(3, 1fr);
+        }
+
+        a {
+          text-decoration: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到课程正文</a>
+
+    <div class="page-shell">
+      <header class="masthead">
+        <div class="hero-copy">
+          <div>
+            <p class="eyebrow">Field Guide · React 19 · 2026</p>
+            <h1>React<br />深入之路</h1>
+            <p class="hero-lede">
+              不从 API 清单出发，而从真实工程问题出发。沿着 TanStack Admin 的渲染树、状态边界、
+              数据流和复杂交互，建立一套能迁移到任何 React 项目的底层理解。
+            </p>
+          </div>
+          <div class="hero-foot" aria-label="课程标签">
+            <span>中级 → 高级</span>
+            <span>机制主线</span>
+            <span>真实源码纵切</span>
+          </div>
+        </div>
+
+        <aside class="course-card" aria-labelledby="course-profile-title">
+          <div>
+            <p class="section-kicker">Course Profile</p>
+            <h2 id="course-profile-title">十二周，重建 React 心智模型。</h2>
+            <p>建议每周投入 6–8 小时：30% 原理、45% 源码阅读、25% 实验与测试。</p>
+          </div>
+          <div>
+            <div class="metric-grid" aria-label="课程数据">
+              <div class="metric"><strong>12</strong><span>学习模块</span></div>
+              <div class="metric"><strong>04</strong><span>递进阶段</span></div>
+              <div class="metric"><strong>01</strong><span>毕业项目</span></div>
+              <div class="metric"><strong>∞</strong><span>可迁移能力</span></div>
+            </div>
+            <div class="progress-block" aria-live="polite">
+              <div class="progress-labels">
+                <span>学习进度</span>
+                <span id="progress-text">0 / 12</span>
+              </div>
+              <div
+                class="progress-track"
+                role="progressbar"
+                aria-label="课程完成进度"
+                aria-valuemin="0"
+                aria-valuemax="12"
+                aria-valuenow="0"
+              >
+                <div class="progress-fill" id="progress-fill"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </header>
+
+      <div class="content-grid">
+        <aside class="course-rail" aria-label="课程目录">
+          <p class="rail-label">Curriculum Index</p>
+          <nav>
+            <a href="#phase-1"><span>01</span><span>React 心智模型</span></a>
+            <a href="#phase-2"><span>02</span><span>状态与数据流</span></a>
+            <a href="#phase-3"><span>03</span><span>复杂业务系统</span></a>
+            <a href="#phase-4"><span>04</span><span>并发与可靠性</span></a>
+            <a href="#capstone"><span>05</span><span>毕业项目</span></a>
+          </nav>
+          <div class="rail-actions">
+            <button class="text-button" id="print-course" type="button">打印 / 导出 PDF</button>
+            <button class="text-button" id="reset-progress" type="button">清空学习进度</button>
+          </div>
+        </aside>
+
+        <main id="main-content">
+          <section class="orientation" aria-labelledby="orientation-title">
+            <p class="section-kicker">Orientation</p>
+            <h2 id="orientation-title">课程不是照抄页面，而是追问“为什么”。</h2>
+            <p>
+              适合已经能独立完成普通 CRUD，但希望理解渲染、状态、架构和性能本质的 React
+              开发者。课程刻意弱化 RSC、Server Actions 和 Next.js SSR，因为本仓库是一套纯 SPA。
+            </p>
+
+            <div class="orientation-grid">
+              <section>
+                <h3>学完能够做到</h3>
+                <ul class="clean-list">
+                  <li>解释 Render、Commit、Effect 与状态保留机制。</li>
+                  <li>选择局部状态、Context、Zustand、URL 或 Query。</li>
+                  <li>设计类型安全、可组合、可测试的组件 API。</li>
+                  <li>定位闭包、竞态、重复渲染和虚拟卸载问题。</li>
+                </ul>
+              </section>
+              <section>
+                <h3>推荐学习循环</h3>
+                <ul class="clean-list">
+                  <li>先画调用链和状态所有权，不急着修改代码。</li>
+                  <li>用一个最小实验验证自己的解释。</li>
+                  <li>阅读同目录测试，理解真正被保护的契约。</li>
+                  <li>最后完成小型改造，并用验证结果复盘。</li>
+                </ul>
+              </section>
+            </div>
+
+            <table class="state-map">
+              <thead>
+                <tr>
+                  <th>状态类型</th>
+                  <th>项目方案</th>
+                  <th>典型场景</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>局部交互状态</td>
+                  <td><code>useState / useReducer</code></td>
+                  <td>Sheet、步骤、编辑会话</td>
+                </tr>
+                <tr>
+                  <td>子树共享状态</td>
+                  <td><code>Context</code></td>
+                  <td>字典、Sidebar、Workspace 页面</td>
+                </tr>
+                <tr>
+                  <td>跨页面客户端状态</td>
+                  <td><code>Zustand</code></td>
+                  <td>页签、聊天、通知、看板</td>
+                </tr>
+                <tr>
+                  <td>服务端状态</td>
+                  <td><code>React Query</code></td>
+                  <td>IAM、字典、导出任务</td>
+                </tr>
+                <tr>
+                  <td>导航状态</td>
+                  <td><code>Router / URL</code></td>
+                  <td>路径、搜索条件、权限入口</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="phase" id="phase-1" aria-labelledby="phase-1-title">
+            <header class="phase-heading">
+              <div class="phase-number">I</div>
+              <div>
+                <p class="section-kicker">Weeks 01–03</p>
+                <h2 id="phase-1-title">重新建立 React 心智模型</h2>
+                <p>先理解组件为什么渲染、状态为什么保留，再谈 Hook 和组件抽象。</p>
+              </div>
+            </header>
+
+            <div class="module-list">
+              <article class="module" id="module-1" data-module="1">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 01</p>
+                    <span class="module-week">第 1 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="1" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>从应用入口理解 React 树</h3>
+                  <p class="module-summary">
+                    追踪从 <code>createRoot</code> 到 Router Match、Provider、Outlet
+                    与业务页面的完整渲染树。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>Provider 的位置如何决定状态生命周期？</li>
+                        <li>路由切换时哪些节点保留、哪些节点销毁？</li>
+                        <li>一次导航会让哪些组件重新执行？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/main.tsx"><code>src/main.tsx</code></a
+                        ><a href="../src/routes/__root.tsx"><code>src/routes/__root.tsx</code></a
+                        ><a href="../src/routes/dashboard.tsx"
+                          ><code>src/routes/dashboard.tsx</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>绘制完整 Provider / Route 树。</li>
+                        <li>标注 Theme、Dictionary、Sidebar 的边界。</li>
+                        <li>口述一次 overview 导航链路。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-2" data-module="2">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 02</p>
+                    <span class="module-week">第 2 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="2" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>Render、Commit、State 与组件身份</h3>
+                  <p class="module-summary">
+                    理解 State 与树中位置绑定，以及卸载、隐藏和 React 19 Activity 对状态与 Effect
+                    的不同影响。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>为什么 Render 必须保持纯粹？</li>
+                        <li><code>key</code> 如何重置组件身份？</li>
+                        <li>隐藏页面为何仍可能清理 Effect？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/features/workspace-tabs/components/workspace-viewport.tsx"
+                          ><code>workspace-viewport.tsx</code></a
+                        ><a
+                          href="../src/features/workspace-tabs/components/workspace-page-boundary.tsx"
+                          ><code>workspace-page-boundary.tsx</code></a
+                        ><a href="../src/features/workspace-tabs/components/activity.tsx"
+                          ><code>activity.tsx</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>比较卸载、CSS 隐藏与 Activity。</li>
+                        <li>验证切换页签后的表单和 Effect。</li>
+                        <li>解释稳定 <code>tabId</code> 的必要性。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-3" data-module="3">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 03</p>
+                    <span class="module-week">第 3 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="3" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>组件组合与类型安全 API</h3>
+                  <p class="module-summary">
+                    从 children、Slot、Compound Components 进入泛型与条件类型，学习可扩展组件 API
+                    的边界设计。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>受控与非受控模式如何共存？</li>
+                        <li>为什么大量布尔 Props 是警报？</li>
+                        <li>类型系统怎样约束可编辑字段？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/components/ui/card.tsx"
+                          ><code>components/ui/card.tsx</code></a
+                        ><a href="../src/hooks/use-controllable-state.tsx"
+                          ><code>use-controllable-state.tsx</code></a
+                        ><a href="../src/components/ui/kanban.tsx"
+                          ><code>components/ui/kanban.tsx</code></a
+                        ><a
+                          href="../src/components/data-table/columns/data-table-column-builders.tsx"
+                          ><code>data-table-column-builders.tsx</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>设计一个双模式组件 API。</li>
+                        <li>画出 Kanban compound context。</li>
+                        <li>解释 DataTable DSL 的类型约束。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="phase" id="phase-2" data-color="orange" aria-labelledby="phase-2-title">
+            <header class="phase-heading">
+              <div class="phase-number">II</div>
+              <div>
+                <p class="section-kicker">Weeks 04–06</p>
+                <h2 id="phase-2-title">Hooks、状态边界与数据流</h2>
+                <p>区分同步、订阅、缓存和导航，避免把所有问题都塞进 useEffect。</p>
+              </div>
+            </header>
+
+            <div class="module-list">
+              <article class="module" id="module-4" data-module="4">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 04</p>
+                    <span class="module-week">第 4 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="4" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>Hooks、闭包、Ref 与 Effect</h3>
+                  <p class="module-summary">
+                    深入 Hook 调用顺序、闭包快照、稳定回调、可变 Ref 和外部状态订阅。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>闭包为什么会读取旧值？</li>
+                        <li>Ref 何时是状态真相源？</li>
+                        <li>事件逻辑为何不应搬进 Effect？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/hooks/use-callback-ref.tsx"
+                          ><code>use-callback-ref.tsx</code></a
+                        ><a href="../src/hooks/use-confirm-action.tsx"
+                          ><code>use-confirm-action.tsx</code></a
+                        ><a href="../src/components/layout/router-progress.tsx"
+                          ><code>router-progress.tsx</code></a
+                        ><a href="../src/hooks/use-data-table/use-data-table-editing.ts"
+                          ><code>use-data-table-editing.ts</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>构造并修复 stale closure。</li>
+                        <li>实现最小 <code>useSyncExternalStore</code>。</li>
+                        <li>解释 Ref Map + Reducer 通知模式。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-5" data-module="5">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 05</p>
+                    <span class="module-week">第 5 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="5" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>五类状态的所有权选择</h3>
+                  <p class="module-summary">
+                    建立局部状态、Context、Zustand、React Query 与 URL 状态之间清晰的职责地图。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>状态应该放在离谁最近的位置？</li>
+                        <li>Context value 如何避免无谓传播？</li>
+                        <li>为什么服务端数据不是全局状态？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/components/dictionary/dictionary-scope.tsx"
+                          ><code>dictionary-scope.tsx</code></a
+                        ><a href="../src/hooks/use-dict.ts"><code>use-dict.ts</code></a
+                        ><a href="../src/features/workspace-tabs/utils/store.ts"
+                          ><code>workspace-tabs/store.ts</code></a
+                        ><a href="../src/features/notifications/utils/store.ts"
+                          ><code>notifications/store.ts</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>制作项目状态所有权矩阵。</li>
+                        <li>比较 Context 与 Zustand selector。</li>
+                        <li>解释字典为何禁止逐单元格请求。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-6" data-module="6">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 06</p>
+                    <span class="module-week">第 6 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="6" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>类型安全路由与页面生命周期</h3>
+                  <p class="module-summary">
+                    理解文件路由、Router
+                    Context、beforeLoad、权限守卫、静态元数据和懒加载页面如何协同。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>权限为何要在路由边界校验？</li>
+                        <li>导航信息怎样从 route metadata 派生？</li>
+                        <li>URL 状态何时不应复制到组件？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/router.tsx"><code>src/router.tsx</code></a
+                        ><a href="../src/lib/router/app-route-meta.ts"
+                          ><code>app-route-meta.ts</code></a
+                        ><a href="../src/lib/router/dashboard-route-guard.ts"
+                          ><code>dashboard-route-guard.ts</code></a
+                        ><a
+                          href="../src/features/workspace-tabs/hooks/use-dashboard-route-tag-sync.ts"
+                          ><code>use-dashboard-route-tag-sync.ts</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>追踪一次侧边栏导航全链路。</li>
+                        <li>新增一条仅含元数据的实验路由。</li>
+                        <li>解释中心导航数组的失配风险。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="phase" id="phase-3" data-color="green" aria-labelledby="phase-3-title">
+            <header class="phase-heading">
+              <div class="phase-number">III</div>
+              <div>
+                <p class="section-kicker">Weeks 07–09</p>
+                <h2 id="phase-3-title">服务端状态、表单与无头表格</h2>
+                <p>把 React 放进真实业务约束：请求缓存、表单订阅、分页筛选与类型 DSL。</p>
+              </div>
+            </header>
+
+            <div class="module-list">
+              <article class="module" id="module-7" data-module="7">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 07</p>
+                    <span class="module-week">第 7 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="7" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>React Query 与 API 数据流</h3>
+                  <p class="module-summary">
+                    从 Query Key 和缓存身份出发，理解请求取消、重试、Mutation、失效和认证
+                    Transport。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>Server State 与 Client State 有何不同？</li>
+                        <li>重复请求怎样被缓存合并？</li>
+                        <li>旧请求晚到时如何避免覆盖新状态？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/lib/query-client.ts"><code>query-client.ts</code></a
+                        ><a href="../src/features/dictionaries/api/query-options.ts"
+                          ><code>dictionary query-options.ts</code></a
+                        ><a
+                          href="../src/features/dictionaries/components/dictionary-management-page.tsx"
+                          ><code>dictionary-management-page.tsx</code></a
+                        ><a href="../src/lib/api/transport.ts"><code>api/transport.ts</code></a>
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>绘制一次 CRUD 的缓存时序图。</li>
+                        <li>模拟 AbortSignal 与响应竞态。</li>
+                        <li>区分刷新数据和清理本地草稿。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-8" data-module="8">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 08</p>
+                    <span class="module-week">第 8 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="8" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>TanStack Form 与复杂表单</h3>
+                  <p class="module-summary">
+                    研究表单 Store 与 React Render
+                    的解耦，以及字段订阅、异步校验、嵌套对象和多步骤流程。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>字段订阅如何减少整表单渲染？</li>
+                        <li>关联字段和异步校验怎样避免竞态？</li>
+                        <li>Sheet 关闭时谁负责重置状态？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/components/ui/tanstack-form.tsx"
+                          ><code>tanstack-form.tsx</code></a
+                        ><a href="../src/features/forms/components/multi-step-config-form.tsx"
+                          ><code>multi-step-config-form.tsx</code></a
+                        ><a href="../src/features/forms/components/advanced-form-patterns.tsx"
+                          ><code>advanced-form-patterns.tsx</code></a
+                        ><a href="../src/features/forms/hooks/use-form-stepper.ts"
+                          ><code>use-form-stepper.ts</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>实现异步唯一性校验表单。</li>
+                        <li>统计不同订阅方式的渲染次数。</li>
+                        <li>加入未保存关闭确认。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-9" data-module="9">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 09</p>
+                    <span class="module-week">第 9 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="9" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>Headless Table 与项目级 DSL</h3>
+                  <p class="module-summary">
+                    拆解 TanStack Table 受控状态、Row Model、Meta 和项目 DataTable DSL
+                    的公共运行时。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>Headless UI 为什么适合复杂业务？</li>
+                        <li>服务端筛选与本地筛选如何隔离？</li>
+                        <li>稳定 Row ID 为什么决定编辑正确性？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/hooks/use-data-table/use-data-table.ts"
+                          ><code>use-data-table.ts</code></a
+                        ><a href="../src/hooks/use-data-table/use-dsl-data-table.ts"
+                          ><code>use-dsl-data-table.ts</code></a
+                        ><a href="../src/components/data-table/core/data-table.tsx"
+                          ><code>core/data-table.tsx</code></a
+                        ><a href="../src/components/data-table/columns/data-table-column-types.tsx"
+                          ><code>data-table-column-types.tsx</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>从表格状态推导 DSL 请求。</li>
+                        <li>比较两类筛选的状态边界。</li>
+                        <li>新增一个自定义列类型。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="phase" id="phase-4" data-color="violet" aria-labelledby="phase-4-title">
+            <header class="phase-heading">
+              <div class="phase-number">IV</div>
+              <div>
+                <p class="section-kicker">Weeks 10–12</p>
+                <h2 id="phase-4-title">并发渲染、性能与工程可靠性</h2>
+                <p>面对状态机、虚拟化、React 19、错误隔离和多层测试，建立可证明的正确性。</p>
+              </div>
+            </header>
+
+            <div class="module-list">
+              <article class="module" id="module-10" data-module="10">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 10</p>
+                    <span class="module-week">第 10 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="10" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>编辑状态机、虚拟化与复杂交互</h3>
+                  <p class="module-summary">
+                    分析 selected、edit-ready、editing 状态机，以及
+                    Session、草稿、虚拟卸载、键盘与拖拽竞争。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>旧 Editor 为什么可能误伤新 Session？</li>
+                        <li>虚拟化为何不能依赖当前 DOM？</li>
+                        <li>点击、拖拽和浮层如何分配事件？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/hooks/use-data-table/use-data-table-editing.ts"
+                          ><code>use-data-table-editing.ts</code></a
+                        ><a
+                          href="../src/components/data-table/virtualization/use-data-table-virtualization.ts"
+                          ><code>use-data-table-virtualization.ts</code></a
+                        ><a href="../src/hooks/use-dnd-click-drag-sensors.ts"
+                          ><code>use-dnd-click-drag-sensors.ts</code></a
+                        ><a href="../src/features/workspace-tabs/utils/page-overlays.ts"
+                          ><code>page-overlays.ts</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>绘制单元格编辑有限状态机。</li>
+                        <li>复现过期 blur 竞态。</li>
+                        <li>设计虚拟卸载的 fail-closed 行为。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-11" data-module="11">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 11</p>
+                    <span class="module-week">第 11 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="11" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>React 19、Suspense 与性能分析</h3>
+                  <p class="module-summary">
+                    区分代码分割、并发优先级、错误边界、渲染性能、网络性能和 Bundle 成本。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>Suspense Boundary 应放在哪里？</li>
+                        <li>Activity 隐藏时 Effect 如何变化？</li>
+                        <li>Memo 何时比重新渲染更昂贵？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../src/features/workspace-tabs/components/workspace-viewport.tsx"
+                          ><code>workspace-viewport.tsx</code></a
+                        ><a
+                          href="../src/features/workspace-tabs/components/workspace-slot-error-boundary.tsx"
+                          ><code>workspace-slot-error-boundary.tsx</code></a
+                        ><a href="../src/components/data-table/filters/data-table-local-filter.tsx"
+                          ><code>data-table-local-filter.tsx</code></a
+                        ><a href="../scripts/check-bundle-budget.mjs"
+                          ><code>check-bundle-budget.mjs</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>用 Profiler 建立渲染基线。</li>
+                        <li>比较 lazy 与 eager bundle。</li>
+                        <li>为慢列表引入 deferred value。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="module" id="module-12" data-module="12">
+                <div class="module-meta">
+                  <div>
+                    <p class="module-index">Module 12</p>
+                    <span class="module-week">第 12 周</span>
+                  </div>
+                  <label class="module-check"
+                    ><input type="checkbox" data-check="12" />标记已学</label
+                  >
+                </div>
+                <div class="module-body">
+                  <h3>测试分层与架构约束</h3>
+                  <p class="module-summary">
+                    从纯函数到 Hook、组件、架构契约和真实浏览器回归，用证据保护复杂 React 行为。
+                  </p>
+                  <div class="module-columns">
+                    <section>
+                      <h4>核心问题</h4>
+                      <ul>
+                        <li>jsdom 不能证明哪些交互？</li>
+                        <li>如何测试 Query、Router 和 Store？</li>
+                        <li>架构边界如何由机器强制？</li>
+                      </ul>
+                    </section>
+                    <section>
+                      <h4>源码入口</h4>
+                      <div class="source-links">
+                        <a href="../vitest.config.ts"><code>vitest.config.ts</code></a
+                        ><a href="../src/hooks/use-data-table/use-dsl-data-table.test.tsx"
+                          ><code>use-dsl-data-table.test.tsx</code></a
+                        ><a href="../src/test/contracts/project-architecture.test.ts"
+                          ><code>project-architecture.test.ts</code></a
+                        ><a href="../e2e/workspace-tabs-smoke.spec.ts"
+                          ><code>workspace-tabs-smoke.spec.ts</code></a
+                        >
+                      </div>
+                    </section>
+                    <section>
+                      <h4>实践产出</h4>
+                      <ul>
+                        <li>为异步 Hook 编写竞态测试。</li>
+                        <li>给模块增加一条架构契约。</li>
+                        <li>用 Playwright 覆盖关键用户路径。</li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <aside class="field-note">
+              <strong>CODE ARCHAEOLOGY / 代码考古题</strong>
+              README 描述概览页具有分区 Suspense，但当前 <code>overview-page.tsx</code>
+              仍直接导入图表。请以实际代码为准，定位现有完整 Suspense
+              案例，并设计文档或实现的修正方案。
+            </aside>
+          </section>
+
+          <section class="capstone" id="capstone" aria-labelledby="capstone-title">
+            <p class="section-kicker">Capstone Project</p>
+            <h2 id="capstone-title">交付一个真正属于这个仓库的后台功能。</h2>
+            <p>目标不是展示 API 数量，而是证明你能在现有架构边界内完成一条可靠的业务纵切。</p>
+            <div class="capstone-grid">
+              <section>
+                <h3>四次迭代</h3>
+                <ol>
+                  <li>类型安全路由、metadata、权限和懒加载页面。</li>
+                  <li>Generated Client、React Query 列表、Mutation 与缓存失效。</li>
+                  <li>TanStack Form 新增/编辑 Sheet，以及共享 DataTable。</li>
+                  <li>Workspace 生命周期、未保存保护、Vitest 与 Playwright。</li>
+                </ol>
+              </section>
+              <section>
+                <h3>验收标准</h3>
+                <ul class="clean-list">
+                  <li>能画出交互的数据流和渲染链路。</li>
+                  <li>能解释每个状态为什么属于当前层。</li>
+                  <li>不直接 fetch，不自行调用 useReactTable。</li>
+                  <li>不重复包装 PageContainer，不绕过公共运行时。</li>
+                  <li>能用测试、Profiler 和构建结果证明改动正确。</li>
+                </ul>
+              </section>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <footer>
+        <span>TanStack Admin · React 深入学习大纲 · 本地进度仅保存在当前浏览器</span>
+        <a class="deerflow" href="https://deerflow.tech" target="_blank" rel="noopener noreferrer"
+          >Created By Deerflow</a
+        >
+      </footer>
+    </div>
+
+    <script>
+      (() => {
+        const storageKey = 'tanstack-admin-react-learning-progress-v1';
+        const checks = [...document.querySelectorAll('[data-check]')];
+        const progressText = document.querySelector('#progress-text');
+        const progressFill = document.querySelector('#progress-fill');
+        const progressBar = document.querySelector('[role="progressbar"]');
+
+        const readProgress = () => {
+          try {
+            const value = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+            return new Set(Array.isArray(value) ? value.map(String) : []);
+          } catch {
+            return new Set();
+          }
+        };
+
+        const writeProgress = () => {
+          const completed = checks
+            .filter((check) => check.checked)
+            .map((check) => check.dataset.check);
+          localStorage.setItem(storageKey, JSON.stringify(completed));
+        };
+
+        const updateProgress = () => {
+          const completedCount = checks.filter((check) => check.checked).length;
+          const percentage = checks.length === 0 ? 0 : (completedCount / checks.length) * 100;
+          progressText.textContent = `${completedCount} / ${checks.length}`;
+          progressFill.style.width = `${percentage}%`;
+          progressBar.setAttribute('aria-valuenow', String(completedCount));
+        };
+
+        const completed = readProgress();
+        checks.forEach((check) => {
+          check.checked = completed.has(check.dataset.check);
+          check.addEventListener('change', () => {
+            writeProgress();
+            updateProgress();
+          });
+        });
+        updateProgress();
+
+        document.querySelector('#print-course').addEventListener('click', () => window.print());
+        document.querySelector('#reset-progress').addEventListener('click', () => {
+          if (!window.confirm('确认清空全部学习进度？')) return;
+          checks.forEach((check) => {
+            check.checked = false;
+          });
+          localStorage.removeItem(storageKey);
+          updateProgress();
+        });
+
+        if ('IntersectionObserver' in window) {
+          const links = new Map(
+            [...document.querySelectorAll('.course-rail nav a')].map((link) => [
+              link.getAttribute('href').slice(1),
+              link
+            ])
+          );
+          const observer = new IntersectionObserver(
+            (entries) => {
+              const visible = entries
+                .filter((entry) => entry.isIntersecting)
+                .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+              if (!visible) return;
+              links.forEach((link, id) => {
+                if (id === visible.target.id) link.setAttribute('aria-current', 'true');
+                else link.removeAttribute('aria-current');
+              });
+            },
+            { rootMargin: '-15% 0px -65% 0px', threshold: [0, 0.1, 0.4] }
+          );
+          links.forEach((_link, id) => {
+            const section = document.getElementById(id);
+            if (section) observer.observe(section);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>
