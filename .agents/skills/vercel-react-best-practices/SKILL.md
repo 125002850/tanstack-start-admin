@@ -9,6 +9,8 @@ metadata:
 
 # Vercel React Best Practices
 
+> 本仓库使用前，先读取[项目适配](../oig-tanstack-admin/references/external-skills.md#vercel-react-best-practices)。项目约束优先于下述通用建议，仅应用与当前任务相关的规则。
+
 Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 70 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
 
 ## When to Apply

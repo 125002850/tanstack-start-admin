@@ -21,6 +21,8 @@ description: oig tanstack admin 团队开发规范与任务路由。分析、设
 
 | 任务                                                                      | 必读文件                                                              |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 依赖安装、首次启动、代码生成、验证入口与规范维护                          | `references/development-workflow.md`                                  |
+| 外部 skill 的使用、安装与更新                                             | `references/external-skills.md` 中对应 skill 的章节                   |
 | 项目结构、目录归属、共享组件与 feature 分层                               | `references/project-structure.md`                                     |
 | Card、图标、页面布局、PageContainer、Management 页面                      | `references/ui-components.md`                                         |
 | DataTable、服务端分页、虚拟化、审计字段列                                 | `references/data-table.md`                                            |
@@ -28,7 +30,7 @@ description: oig tanstack admin 团队开发规范与任务路由。分析、设
 | TanStack Router、route metadata、侧边栏、KBar、breadcrumb、workspace tabs | `references/routing-and-navigation.md`                                |
 | 新增 dashboard 内容页                                                     | `references/routing-and-navigation.md`、`references/ui-components.md` |
 | 表单、字段校验、Sheet/Dialog 表单、SearchCombobox、overlay portal         | `references/forms.md`                                                 |
-| 拖拽排序、点击/拖拽共面、Dropdown/Popover pointer 竞争                   | `references/drag-and-pointer-interactions.md`                         |
+| 拖拽排序、点击/拖拽共面、Dropdown/Popover pointer 竞争                    | `references/drag-and-pointer-interactions.md`                         |
 | 环境变量、配置中心、请求头、OpenAPI、API transport                        | `references/configuration-and-api.md`                                 |
 | Git commit、push、提交标题、commitlint、远端校验                          | `references/git-commits.md`                                           |
 
@@ -38,8 +40,9 @@ description: oig tanstack admin 团队开发规范与任务路由。分析、设
 - 涉及 React/性能时，同时使用 `vercel-react-best-practices`。
 - 涉及组件 API 设计或布尔 prop 膨胀时，同时使用 `vercel-composition-patterns`。
 - 涉及 Vitest 测试时，同时使用 `vitest`。
+- 涉及 UI 可访问性、响应式布局与交互审查时，同时使用 `web-design-guidelines`。
 
-本 Skill 定义仓库特有约束；通用 Skill 不得覆盖这些约束。
+本 Skill 定义仓库特有约束；通用 Skill 不得覆盖这些约束。使用上述四个外部 skill 前，先读取[项目适配](references/external-skills.md)的对应章节。
 
 ## 常见错误
 

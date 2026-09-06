@@ -1,0 +1,27 @@
+{
+  "source": "vercel-labs/agent-skills",
+  "sourceUrl": "https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/composition-patterns",
+  "ref": "063bee94c3f4df8453406c830b0a7df0f2860278",
+  "skillPath": "skills/composition-patterns/SKILL.md",
+  "gitTreeHash": "bf90d0a4b83ea054653350f9c67f6de235d3a368",
+  "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07",
+  "hashScope": "skills CLI 对项目适配前完整上游目录计算的 SHA-256，包含相对文件名与原始文件字节。",
+  "installedAt": "2026-09-06",
+  "installedWith": "skills@1.5.18",
+  "transport": "固定提交的 GitHub Tree/Blob API；逐文件核对 Git blob SHA 后，经 CLI 从本地快照安装。",
+  "restoredUpstreamFiles": ["metadata.json"],
+  "projectAdaptation": "../oig-tanstack-admin/references/external-skills.md#vercel-composition-patterns",
+  "localPatches": [
+    {
+      "path": "SKILL.md",
+      "upstreamBlobHash": "d07025bf943345bc1cf15eb923594f889ff881f0",
+      "reason": "链接集中维护的项目适用边界。"
+    },
+    {
+      "path": "AGENTS.md",
+      "upstreamBlobHash": "558bf9aa1e36db2161f1633c9bfae14a819f0508",
+      "reason": "编译文档链接组合模式的项目适用边界。"
+    }
+  ],
+  "localAdditions": ["UPSTREAM.json"]
+}

@@ -1,0 +1,21 @@
+{
+  "source": "vercel-labs/agent-skills",
+  "sourceUrl": "https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278/skills/web-design-guidelines",
+  "ref": "063bee94c3f4df8453406c830b0a7df0f2860278",
+  "skillPath": "skills/web-design-guidelines/SKILL.md",
+  "gitTreeHash": "3116f3e62dbd02b44a598b1aa690d2a8938e8f89",
+  "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a",
+  "hashScope": "skills CLI 对项目适配前完整上游目录计算的 SHA-256，包含相对文件名与原始文件字节。",
+  "installedAt": "2026-09-06",
+  "installedWith": "skills@1.5.18",
+  "transport": "固定提交的 GitHub Tree/Blob API；逐文件核对 Git blob SHA 后，经 CLI 从本地快照安装。",
+  "projectAdaptation": "../oig-tanstack-admin/references/external-skills.md#web-design-guidelines",
+  "localPatches": [
+    {
+      "path": "SKILL.md",
+      "upstreamBlobHash": "ceae92ab319216a68274168fba9b63b998b65997",
+      "reason": "链接集中维护的项目适用边界。"
+    }
+  ],
+  "localAdditions": ["UPSTREAM.json"]
+}

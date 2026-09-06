@@ -1,5 +1,7 @@
 # React Composition Patterns
 
+> 本仓库使用前，先读取[项目适配](../oig-tanstack-admin/references/external-skills.md#vercel-composition-patterns)。项目约束优先于下述通用建议，仅应用与当前任务相关的规则。
+
 **Version 1.0.0**  
 Engineering  
 January 2026

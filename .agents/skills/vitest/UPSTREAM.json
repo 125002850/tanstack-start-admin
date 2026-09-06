@@ -1,0 +1,29 @@
+{
+  "source": "paulrberg/agent-skills",
+  "sourceUrl": "https://github.com/paulrberg/agent-skills/tree/23d7851a893533d44d8cb7a6c804f9d7d6528f9f/skills/vitest",
+  "ref": "23d7851a893533d44d8cb7a6c804f9d7d6528f9f",
+  "skillPath": "skills/vitest/SKILL.md",
+  "gitTreeHash": "1cc241fc1bc931e19b39dbd3f6caaa2bebdd1247",
+  "computedHash": "4da88c7e4b0c4267651d60fb520a20825aefcbac79c9dd5ed3ba032891768110",
+  "hashScope": "skills CLI 对项目适配前完整上游目录计算的 SHA-256，包含相对文件名与原始文件字节。",
+  "installedAt": "2026-09-06",
+  "installedWith": "skills@1.5.18",
+  "transport": "固定提交的 GitHub Tree/Blob API；逐文件核对 Git blob SHA 后，经 CLI 从本地快照安装。",
+  "verifiedRuntime": {
+    "vitest": "4.1.10"
+  },
+  "projectAdaptation": "../oig-tanstack-admin/references/external-skills.md#vitest",
+  "localPatches": [
+    {
+      "path": "SKILL.md",
+      "upstreamBlobHash": "f0b401a96ce32fe001b530319077e3b8d0430a2e",
+      "reason": "链接项目适配，并记录已核对的 Vitest 4.1.10 版本。"
+    },
+    {
+      "path": "references/testing-patterns.md",
+      "upstreamBlobHash": "992c14f0440c149d2a033779755cda9fc6106fa4",
+      "reason": "修正超时参数说明：4.1.10 支持数字型第三参数，移除的是第三参数对象选项。"
+    }
+  ],
+  "localAdditions": ["UPSTREAM.json"]
+}

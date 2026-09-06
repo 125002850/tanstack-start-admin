@@ -1,52 +1,51 @@
 ---
 name: vitest
-description: Vitest fast unit testing framework powered by Vite with Jest-compatible API. Use when writing tests, mocking, configuring coverage, or working with test filtering and fixtures.
+description:
+  "Use for Vitest in TypeScript projects (Node, bun, React/Next.js, Effect): write, run, or debug unit/component tests,
+  mocks, testing utilities, and coverage."
 metadata:
-  author: Anthony Fu
-  version: "2026.1.28"
-  source: Generated from https://github.com/vitest-dev/vitest, scripts located at https://github.com/antfu/skills
+  vitest: "4.1.10"
 ---
 
-Vitest is a next-generation testing framework powered by Vite. It provides a Jest-compatible API with native ESM, TypeScript, and JSX support out of the box. Vitest shares the same config, transformers, resolvers, and plugins with your Vite app.
+# Vitest
 
-**Key Features:**
-- Vite-native: Uses Vite's transformation pipeline for fast HMR-like test updates
-- Jest-compatible: Drop-in replacement for most Jest test suites
-- Smart watch mode: Only reruns affected tests based on module graph
-- Native ESM, TypeScript, JSX support without configuration
-- Multi-threaded workers for parallel test execution
-- Built-in coverage via V8 or Istanbul
-- Snapshot testing, mocking, and spy utilities
+> 本仓库使用前，先读取[项目适配](../oig-tanstack-admin/references/external-skills.md#vitest)。项目约束优先于下述通用建议，仅应用与当前任务相关的规则。
 
-> The skill is based on Vitest 3.x, generated at 2026-01-28.
+Follow the repository's Vitest configuration and test conventions before introducing generic patterns.
 
-## Core
+## Workflow
 
-| Topic | Description | Reference |
-|-------|-------------|-----------|
-| Configuration | Vitest and Vite config integration, defineConfig usage | [core-config](references/core-config.md) |
-| CLI | Command line interface, commands and options | [core-cli](references/core-cli.md) |
-| Test API | test/it function, modifiers like skip, only, concurrent | [core-test-api](references/core-test-api.md) |
-| Describe API | describe/suite for grouping tests and nested suites | [core-describe](references/core-describe.md) |
-| Expect API | Assertions with toBe, toEqual, matchers and asymmetric matchers | [core-expect](references/core-expect.md) |
-| Hooks | beforeEach, afterEach, beforeAll, afterAll, aroundEach | [core-hooks](references/core-hooks.md) |
+1. Inspect package scripts, Vitest config/projects, setup files, neighboring tests, path aliases, environment selection,
+   and repository instructions.
+2. Define the behavior or regression the test must prove. Prefer public behavior and observable outcomes over
+   implementation details.
+3. Match local file placement, naming, imports/globals, fixtures, cleanup, DOM utilities, and assertion style. Do not
+   enable globals, jsdom, coverage, or new setup merely because they are common defaults.
+4. Load conditional guidance only when needed:
+   - components, async behavior, snapshots, type tests, tables, fixtures, tags:
+     [references/testing-patterns.md](references/testing-patterns.md);
+   - spies, module mocks, timers, environment stubs: [references/mocking.md](references/mocking.md);
+   - config, projects, environments, coverage, reporters, v4 migration:
+     [references/configuration.md](references/configuration.md);
+   - timeouts, flaky tests, mock failures, resolution errors:
+     [references/troubleshooting.md](references/troubleshooting.md).
+5. Run the narrowest established command for the changed file or test name, then the affected package suite when shared
+   setup or contracts changed. Use `nlx vitest run ...` only when the repository has no preferred recipe/script. Prefer
+   `--reporter=agent` on Vitest 4.1+ for minimal agent-friendly output when the repository has no reporter convention.
 
-## Features
+## Defaults
 
-| Topic | Description | Reference |
-|-------|-------------|-----------|
-| Mocking | Mock functions, modules, timers, dates with vi utilities | [features-mocking](references/features-mocking.md) |
-| Snapshots | Snapshot testing with toMatchSnapshot and inline snapshots | [features-snapshots](references/features-snapshots.md) |
-| Coverage | Code coverage with V8 or Istanbul providers | [features-coverage](references/features-coverage.md) |
-| Test Context | Test fixtures, context.expect, test.extend for custom fixtures | [features-context](references/features-context.md) |
-| Concurrency | Concurrent tests, parallel execution, sharding | [features-concurrency](references/features-concurrency.md) |
-| Filtering | Filter tests by name, file patterns, tags | [features-filtering](references/features-filtering.md) |
+- Colocate tests when the repository does.
+- Restore mocks, timers, environment, and mutable shared state using the local cleanup convention.
+- Mock system boundaries, not the behavior under test.
+- Add coverage configuration only when coverage is the requested outcome.
+- Do not use jest-dom matchers unless setup imports `@testing-library/jest-dom`.
+- In Effect-TS repositories, follow `@effect/vitest` conventions (`it.effect`, Layers, TestClock) instead of generic
+  patterns.
+- For a bug fix, reproduce the failure before relying on the passing result when practical.
 
-## Advanced
-
-| Topic | Description | Reference |
-|-------|-------------|-----------|
-| Vi Utilities | vi helper: mock, spyOn, fake timers, hoisted, waitFor | [advanced-vi](references/advanced-vi.md) |
-| Environments | Test environments: node, jsdom, happy-dom, custom | [advanced-environments](references/advanced-environments.md) |
-| Type Testing | Type-level testing with expectTypeOf and assertType | [advanced-type-testing](references/advanced-type-testing.md) |
-| Projects | Multi-project workspaces, different configs per project | [advanced-projects](references/advanced-projects.md) |
+Completion requires a focused test that meaningfully exercises the requested behavior and passes under the repository's
+configuration. For a bug with observed red-before-green evidence, finish with `### 🧪 Regression covered`; otherwise use
+`### 🧪 Tests verified`. Include a phase/command/result table with only the phases actually run. Report mock, timer,
+environment, or shared-state cleanup only when the checks provide that evidence. Keep reporter output, snapshots,
+assertions, failure text, commands, and diagnostics exact and undecorated.

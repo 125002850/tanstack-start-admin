@@ -1,5 +1,7 @@
 # React Best Practices
 
+> 本仓库使用前，先读取[项目适配](../oig-tanstack-admin/references/external-skills.md#vercel-react-best-practices)。项目约束优先于下述通用建议，仅应用与当前任务相关的规则。
+
 **Version 1.0.0**  
 Vercel Engineering  
 January 2026
@@ -113,7 +115,7 @@ Waterfalls are the #1 performance killer. Each sequential await adds full networ
 
 When a branch uses `await` for a flag or remote value and also requires a **cheap synchronous** condition (local props, request metadata, already-loaded state), evaluate the cheap condition **first**. Otherwise you pay for the async call even when the compound condition can never be true.
 
-This is a specialization of [Defer Await Until Needed](./async-defer-await.md) for `flag && cheapCondition` style checks.
+This is a specialization of [Defer Await Until Needed](./rules/async-defer-await.md) for `flag && cheapCondition` style checks.
 
 **Incorrect:**
 
@@ -216,7 +218,7 @@ async function updateResource(resourceId: string, userId: string) {
 
 This optimization is especially valuable when the skipped branch is frequently taken, or when the deferred operation is expensive.
 
-For `await getFlag()` combined with a cheap synchronous guard (`flag && someCondition`), see [Check Cheap Conditions Before Async Flags](./async-cheap-condition-before-await.md).
+For `await getFlag()` combined with a cheap synchronous guard (`flag && someCondition`), see [Check Cheap Conditions Before Async Flags](./rules/async-cheap-condition-before-await.md).
 
 ### 1.3 Dependency-Based Parallelization
 
@@ -889,7 +891,7 @@ Safe exceptions:
 
 - Process-wide singletons that do not store request- or user-specific mutable data
 
-For static assets and config, see [Hoist Static I/O to Module Level](./server-hoist-static-io.md).
+For static assets and config, see [Hoist Static I/O to Module Level](./rules/server-hoist-static-io.md).
 
 ### 3.4 Cross-Request LRU Caching
 
