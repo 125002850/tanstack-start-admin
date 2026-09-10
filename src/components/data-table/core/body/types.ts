@@ -20,6 +20,7 @@ export interface DataTableBodyProps<TData> {
   isColumnDragging: boolean;
   useTransformFreeVirtualRows?: boolean;
   scrollViewportRef: RefObject<HTMLDivElement | null>;
+  scrollViewport: HTMLDivElement | null;
   headerRowRef: RefObject<HTMLTableRowElement | null>;
   onRowClick?: (rowKey: string) => void;
   expandedRowKey?: string | null;

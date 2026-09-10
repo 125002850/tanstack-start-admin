@@ -72,3 +72,73 @@ test.describe('@workspace-v2 infrastructure pages', () => {
     await expect(page.getByRole('menuitem', { name: /关闭所有标签/ })).toBeVisible();
   });
 });
+
+for (const background of [false, true]) {
+  test(`@workspace-v2 refreshes ${background ? 'background' : 'active'} tab tree and resets local filters`, async ({
+    page
+  }) => {
+    let version = '刷新前';
+    let requests = 0;
+    await page.route('**/api/system/dict/global/types/list-all', async (route) => {
+      await route.fulfill({
+        json: {
+          code: 200,
+          msg: 'ok',
+          data: [
+            {
+              id: 1,
+              dictTypeCode: 'workspace_e2e',
+              dictTypeName: '刷新测试',
+              status: 'enable'
+            }
+          ]
+        }
+      });
+    });
+    await page.route('**/api/system/dict/global/items/by-type', async (route) => {
+      requests++;
+      await route.fulfill({
+        json: {
+          code: 200,
+          msg: 'ok',
+          data: {
+            total: 1,
+            list: [
+              {
+                id: 1,
+                dictTypeCode: 'workspace_e2e',
+                dictItemCode: 'refresh-test',
+                dictItemName: version,
+                status: 'enable',
+                sortOrder: 1
+              }
+            ]
+          }
+        }
+      });
+    });
+    await page.goto('/dashboard/system-management/dictionaries');
+    const card = page
+      .getByText('字典项列表', { exact: true })
+      .locator('xpath=ancestor::*[@data-slot="card"][1]');
+    await expect(card.getByText('刷新前', { exact: true })).toBeVisible();
+    const filter = card.getByPlaceholder('搜索字典项名称');
+    await filter.fill('刷新');
+    await expect(card.getByText('刷新前', { exact: true })).toBeVisible();
+    if (background) {
+      await page.getByRole('tab', { name: /^仪表盘/ }).click();
+      await expect(card).toBeHidden();
+    }
+    const before = requests;
+    version = '刷新后';
+    await page.getByRole('tab', { name: /^字典管理/ }).click({ button: 'right' });
+    const refresh = page.getByRole('menuitem', { name: '刷新页面', exact: true });
+    // 覆盖菜单的键盘选择路径，避免刷新仅绑定鼠标 click。
+    if (background) await refresh.press('Enter');
+    else await refresh.click();
+    await expect(page).toHaveURL(/\/dashboard\/system-management\/dictionaries$/);
+    await expect.poll(() => requests).toBeGreaterThan(before);
+    await expect(card.getByText('刷新后', { exact: true })).toBeVisible();
+    await expect(filter).toHaveValue('');
+  });
+}

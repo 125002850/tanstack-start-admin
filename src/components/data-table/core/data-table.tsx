@@ -162,6 +162,12 @@ export function DataTable<TData>({
 }: DataTableProps<TData>) {
   // ScrollArea 的 viewport 是行/列虚拟化共同依赖的滚动容器。
   const scrollViewportRef = React.useRef<HTMLDivElement>(null);
+  const [scrollViewport, setScrollViewport] = React.useState<HTMLDivElement | null>(null);
+  const attachScrollViewport = React.useCallback((element: HTMLDivElement | null) => {
+    scrollViewportRef.current = element;
+    // Activity 恢复时，节点变化驱动虚拟化重新订阅。
+    setScrollViewport(element);
+  }, []);
   // 表头行用于表体虚拟行测量真实列宽，尤其在 fixed table layout 下避免宽度漂移。
   const headerRowRef = React.useRef<HTMLTableRowElement>(null);
   // 表头把列拖拽位移写入 table CSS 变量，body cells 继承变量后由合成层同步移动。
@@ -215,7 +221,7 @@ export function DataTable<TData>({
   } = useDataTableVirtualization({
     table,
     virtualization,
-    scrollViewportRef
+    scrollViewport
   });
   const pinnedHeaderHeight = table.getHeaderGroups().length * DATA_TABLE_HEADER_ROW_HEIGHT_PX;
   const isFlatLeafHeader = table.getHeaderGroups().length === 1;
@@ -335,6 +341,7 @@ export function DataTable<TData>({
       isColumnDragging={isColumnDragging}
       useTransformFreeVirtualRows={useTransformFreeVirtualRows}
       scrollViewportRef={scrollViewportRef}
+      scrollViewport={scrollViewport}
       headerRowRef={headerRowRef}
       onRowClick={
         expandConfig
@@ -377,7 +384,7 @@ export function DataTable<TData>({
             zIndex: DATA_TABLE_SCROLLBAR_Z_INDEX
           }
         }}
-        viewportRef={scrollViewportRef}
+        viewportRef={attachScrollViewport}
         viewportProps={
           scrollTargetId
             ? {

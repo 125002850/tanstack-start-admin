@@ -109,11 +109,11 @@ function resolveColumnVirtualizationFallbackReason<TData>({
 export function useDataTableVirtualization<TData>({
   table,
   virtualization,
-  scrollViewportRef
+  scrollViewport
 }: {
   table: TanstackTable<TData>;
   virtualization?: DataTableVirtualizationProp;
-  scrollViewportRef: React.RefObject<HTMLDivElement | null>;
+  scrollViewport: HTMLDivElement | null;
 }) {
   // gate/fallback 事件按 reason 去重，避免每次 render 都刷诊断事件和回调。
   const lastVirtualizationGateReasonRef = React.useRef<string | null>(null);
@@ -177,7 +177,7 @@ export function useDataTableVirtualization<TData>({
     shouldAttemptColumnVirtualization && !columnVirtualizationFallbackReason;
   const horizontalColumnVirtualizer = useVirtualizer({
     count: centerVisibleLeafColumns.length,
-    getScrollElement: () => scrollViewportRef.current,
+    getScrollElement: () => scrollViewport,
     estimateSize: (index) => centerVisibleLeafColumns[index]?.getSize() ?? DEFAULT_COLUMN_SIZE,
     horizontal: true,
     overscan: columnVirtualizationConfig?.overscan ?? DATA_TABLE_VIRTUAL_PRESET.columnOverscan,
@@ -238,15 +238,6 @@ export function useDataTableVirtualization<TData>({
   // Safari 组合场景下禁用 transform 定位，改用 top，避免 sticky 固定列和虚拟行错位。
   const useTransformFreeVirtualRows =
     shouldVirtualize && shouldVirtualizeColumns && hasPinnedColumns && isSafariBrowser();
-  const tableState = table.getState();
-  const columnSizingSignature = Object.entries(tableState.columnSizing ?? {})
-    .map(([key, value]) => `${key}:${value}`)
-    .toSorted()
-    .join('|');
-  const columnVisibilitySignature = Object.entries(tableState.columnVisibility ?? {})
-    .map(([key, value]) => `${key}:${value}`)
-    .toSorted()
-    .join('|');
   const centerColumnSizeSignature = centerVisibleLeafColumns
     .map((column) => `${column.id}:${column.getSize()}`)
     .join('|');
@@ -264,25 +255,23 @@ export function useDataTableVirtualization<TData>({
     });
   }, [centerVisibleLeafColumns.length, shouldVirtualizeColumns]);
 
+  const measuredColumnSizeSignatureRef = React.useRef(centerColumnSizeSignature);
   React.useLayoutEffect(() => {
-    if (!shouldVirtualizeColumns) {
+    if (
+      !shouldVirtualizeColumns ||
+      measuredColumnSizeSignatureRef.current === centerColumnSizeSignature
+    ) {
       return;
     }
 
     const frameId = requestAnimationFrameSafe(() => {
-      // 列宽、显隐、拖拽状态变化后下一帧重新测量横向虚拟列。
+      // 只在实际列顺序或尺寸变化后重建；Activity 恢复沿用已有缓存。
+      measuredColumnSizeSignatureRef.current = centerColumnSizeSignature;
       horizontalColumnVirtualizer.measure();
     });
 
     return () => cancelAnimationFrameSafe(frameId);
-  }, [
-    centerColumnSizeSignature,
-    columnSizingSignature,
-    columnVisibilitySignature,
-    horizontalColumnVirtualizer,
-    shouldVirtualizeColumns,
-    tableState.columnSizingInfo.isResizingColumn
-  ]);
+  }, [centerColumnSizeSignature, horizontalColumnVirtualizer, shouldVirtualizeColumns]);
 
   React.useEffect(() => {
     if (!columnVirtualizationFallbackReason) {

@@ -24,6 +24,7 @@ function PopulatedBody<TData>({
   isColumnDragging,
   useTransformFreeVirtualRows = false,
   scrollViewportRef,
+  scrollViewport,
   headerRowRef,
   onRowClick,
   expandedRowKey,
@@ -89,7 +90,7 @@ function PopulatedBody<TData>({
     rowCount: rows.length,
     resetKey,
     virtualization,
-    scrollViewportRef
+    scrollViewport
   });
   const standardBody = (
     <StandardBody

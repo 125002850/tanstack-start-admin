@@ -74,7 +74,7 @@ export function WorkspaceViewport() {
       {/* V2 page instances: active visible, inactive keep-alive hidden */}
       {entries.map(({ tagId, descriptor, active }) => (
         <WorkspaceSlotErrorBoundary
-          key={tagId}
+          key={`${tagId}:${tabs[tagId]?.renderVersion ?? 0}`}
           tagId={tagId}
           fallback={descriptor.errorFallback ?? renderDefaultWorkspaceFallback}
         >

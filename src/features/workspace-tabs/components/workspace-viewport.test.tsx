@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useOverlayLifecycle } from '@/components/ui/overlay-lifecycle';
 import { useWorkspaceTabStore } from '../utils/store';
 import { useWorkspacePageRegistryStore } from '../utils/page-registry';
@@ -448,4 +448,51 @@ describe('WorkspaceViewport', () => {
       expect(getByTestId('screen-c')).not.toBeVisible();
     });
   });
+});
+
+it('recreates only the refreshed page tree and preserves other workspace state', () => {
+  resetStore();
+  const mounted = vi.fn();
+  const unmounted = vi.fn();
+  function Page({ id }: { id: string }) {
+    const [value, setValue] = React.useState('initial');
+    React.useEffect(() => {
+      mounted(id);
+      return () => unmounted(id);
+    }, [id]);
+    return (
+      <input data-testid={id} value={value} onChange={(event) => setValue(event.target.value)} />
+    );
+  }
+  const renderA = vi.fn(() => <Page id='a' />);
+  const renderB = vi.fn(() => <Page id='b' />);
+  for (const [id, renderPage] of [
+    ['a', renderA],
+    ['b', renderB]
+  ] as const) {
+    useWorkspaceTabStore
+      .getState()
+      .openOrActivate({ id, href: `/${id}`, title: id, keepAlive: true });
+    useWorkspacePageRegistryStore
+      .getState()
+      .registerDescriptor(id, makePageDescriptor({ tabId: id, render: renderPage }));
+  }
+  const view = render(<WorkspaceViewport />);
+  fireEvent.change(screen.getByTestId('b'), { target: { value: 'keep-b' } });
+  act(() => useWorkspaceTabStore.setState({ activeId: 'a' }));
+  fireEvent.change(screen.getByTestId('a'), { target: { value: 'reset-a' } });
+  const previousNode = screen.getByTestId('a');
+  mounted.mockClear();
+  unmounted.mockClear();
+  act(() => useWorkspaceTabStore.getState().remountPage('a'));
+  expect(screen.getByTestId('a')).not.toBe(previousNode);
+  expect(screen.getByTestId('a')).toHaveValue('initial');
+  expect(renderA).toHaveBeenCalledTimes(2);
+  expect(renderB).toHaveBeenCalledTimes(1);
+  expect(unmounted).toHaveBeenCalledExactlyOnceWith('a');
+  expect(mounted).toHaveBeenCalledExactlyOnceWith('a');
+  act(() => useWorkspaceTabStore.setState({ activeId: 'b' }));
+  expect(screen.getByTestId('b')).toHaveValue('keep-b');
+  view.unmount();
+  resetStore();
 });

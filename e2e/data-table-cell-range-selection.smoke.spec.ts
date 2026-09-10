@@ -741,3 +741,55 @@ test('@workspace-v2 keeps themed row surfaces opaque and aligned with pinned cel
   expect(expandedSurface).not.toBe(selectedSurface);
   expect(expandedPinnedSurface).toBe(expandedSurface);
 });
+
+test('@workspace-v2 resumes virtual scrolling after repeated workspace tab switches', async ({
+  page
+}) => {
+  // 保留本文件 150 行的虚拟化夹具，覆盖通用 workspace 的小数据集。
+  await mockDictionaryData(page);
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const card = await gotoDictionaryTable(page);
+  const viewport = card.locator('[data-slot="scroll-area-viewport"]');
+  const body = card.locator('tbody[data-virtual-enabled="true"]');
+  await expect(body).toBeVisible();
+
+  const scrollTo = async (top: number) => {
+    await viewport.evaluate((element, value) => {
+      element.scrollTop = value;
+      element.dispatchEvent(new Event('scroll'));
+    }, top);
+    await expect
+      .poll(async () => {
+        return viewport.evaluate((element) => {
+          const viewportRect = element.getBoundingClientRect();
+          return Array.from(element.querySelectorAll('tbody[data-virtual-enabled="true"] tr')).some(
+            (row) => {
+              const rect = row.getBoundingClientRect();
+              return rect.bottom > viewportRect.top + 60 && rect.top < viewportRect.bottom;
+            }
+          );
+        });
+      })
+      .toBe(true);
+  };
+
+  await scrollTo(3200);
+  for (const nextTop of [1200, 4200, 0]) {
+    const previousTop = await viewport.evaluate((element) => element.scrollTop);
+    const previousFirst = await body.getAttribute('data-virtual-first-index');
+    await page.getByRole('tab', { name: /^仪表盘/ }).click();
+    await expect(page.getByRole('tab', { name: /^仪表盘/ })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+    await expect(card).toBeHidden();
+    await page.getByRole('tab', { name: /^字典管理/ }).click();
+    await expect(body).toBeVisible();
+    await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBe(previousTop);
+    await scrollTo(nextTop);
+    await expect(body).not.toHaveAttribute('data-virtual-first-index', previousFirst!);
+  }
+  await expect(card.getByText('code-001', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
