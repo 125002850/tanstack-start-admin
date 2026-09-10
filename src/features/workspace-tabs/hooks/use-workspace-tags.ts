@@ -1,5 +1,6 @@
 import { useRouter } from '@tanstack/react-router';
 import { useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 import { isDashboardHomeHref, resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
 import type { WorkspaceTab, WorkspaceTabId } from '../types';
@@ -158,11 +159,48 @@ export function useWorkspaceTags() {
   }, [navigate]);
 
   const refresh = useCallback(
-    (id: WorkspaceTabId) => {
-      const tab = useWorkspaceTabStore.getState().tabs[id];
-      if (tab) navigate(tab.href);
+    async (id: WorkspaceTabId) => {
+      const state = useWorkspaceTabStore.getState();
+      const tab = state.tabs[id];
+      if (!tab) return;
+
+      try {
+        if (state.activeId !== id) {
+          await router.navigate({ to: tab.href });
+          // Router 加载完成不代表 workspace 的 layout effect 已提交激活状态。
+          if (useWorkspaceTabStore.getState().activeId !== id) {
+            if (router.latestLocation.href !== router.buildLocation({ to: tab.href }).href) return;
+            await new Promise<void>((resolve) => {
+              let stopNavigation = () => {};
+              const finish = () => {
+                stopStore();
+                stopNavigation();
+                resolve();
+              };
+              const stopStore = useWorkspaceTabStore.subscribe((next) => {
+                if (next.activeId !== state.activeId || !next.tabs[id]) finish();
+              });
+              // 用户发起其他导航时取消等待，避免刷新错误页面。
+              stopNavigation = router.subscribe('onBeforeNavigate', finish);
+            });
+          }
+        }
+        if (useWorkspaceTabStore.getState().activeId !== id) return;
+        // 重建会丢弃局部状态，沿用页面的未保存更改确认；等待用户决策，不设关闭超时。
+        const guard = useWorkspaceTabStore.getState().lifecycleSnapshots[id]?.closeGuard;
+        if (guard && (await guard({ tabId: id, reason: 'refresh' })) === false) return;
+        if (useWorkspaceTabStore.getState().activeId !== id) return;
+        await dismissWorkspaceTabOverlays([id]);
+        await router.invalidate({ sync: true });
+        if (useWorkspaceTabStore.getState().activeId !== id) return;
+        // 先提交新页面树，再刷新其活跃查询，避免刷新被卸载页面的旧筛选请求。
+        flushSync(() => useWorkspaceTabStore.getState().remountPage(id));
+        await router.options.context.queryClient.invalidateQueries({ type: 'active' });
+      } catch {
+        toast.error('刷新页面失败，请重试');
+      }
     },
-    [navigate]
+    [router]
   );
 
   const touch = useCallback((id: WorkspaceTabId) => {

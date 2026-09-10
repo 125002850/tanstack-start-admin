@@ -9,6 +9,8 @@ export interface WorkspaceTab {
   closable: boolean;
   keepAlive: boolean;
   lastVisitedAt: number;
+  /** 仅刷新页面实例时递增，普通 tab 切换保持不变。 */
+  renderVersion?: number;
 }
 
 export interface WorkspaceTabSnapshot {
@@ -59,7 +61,7 @@ export interface WorkspacePageLifecyclePatch {
   dirty?: boolean;
   closeGuard?: (context: {
     tabId: string;
-    reason: 'close-current' | 'close-other' | 'close-all';
+    reason: 'close-current' | 'close-other' | 'close-all' | 'refresh';
   }) => boolean | Promise<boolean>;
 }
 
@@ -74,7 +76,7 @@ export interface WorkspacePageLifecycle {
   dirty: boolean;
   closeGuard?: (context: {
     tabId: string;
-    reason: 'close-current' | 'close-other' | 'close-all';
+    reason: 'close-current' | 'close-other' | 'close-all' | 'refresh';
   }) => boolean | Promise<boolean>;
 }
 

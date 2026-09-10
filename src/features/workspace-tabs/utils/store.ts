@@ -29,6 +29,7 @@ interface WorkspaceTabState {
   closeOther: (id: WorkspaceTabId) => void;
   closeAll: () => void;
   touch: (id: WorkspaceTabId) => void;
+  remountPage: (id: WorkspaceTabId) => void;
   evictInactive: (keepAliveIds: Set<WorkspaceTabId>) => void;
   disableKeepAlive: (id: WorkspaceTabId) => void;
   enableKeepAlive: (id: WorkspaceTabId) => void;
@@ -178,6 +179,17 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
     }
 
     commit();
+  },
+
+  remountPage: (id) => {
+    set((state) => {
+      const tab = state.tabs[id];
+      if (!tab) return state;
+      return {
+        tabs: { ...state.tabs, [id]: { ...tab, renderVersion: (tab.renderVersion ?? 0) + 1 } },
+        lifecycleSnapshots: { ...state.lifecycleSnapshots, [id]: makeDefaultLifecycle(tab.title) }
+      };
+    });
   },
 
   close: (id) => {

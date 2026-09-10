@@ -10,12 +10,12 @@ export function useRowVirtualizer({
   rowCount,
   resetKey,
   virtualization,
-  scrollViewportRef
+  scrollViewport
 }: {
   rowCount: number;
   resetKey: string;
   virtualization?: DataTableResolvedVirtualizationOptions;
-  scrollViewportRef: React.RefObject<HTMLDivElement | null>;
+  scrollViewport: HTMLDivElement | null;
 }) {
   const [runtimeFallback, setRuntimeFallback] = useState(false);
   const shouldVirtualize =
@@ -29,15 +29,21 @@ export function useRowVirtualizer({
   );
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rowCount,
-    getScrollElement: () => scrollViewportRef.current,
+    getScrollElement: () => scrollViewport,
     estimateSize,
     overscan: virtualization?.overscan ?? DATA_TABLE_VIRTUAL_PRESET.overscan,
     enabled: shouldVirtualize
   });
 
+  const previousEstimateSizeRef = useRef(estimateSize);
   useLayoutEffect(() => {
-    if (shouldVirtualize && scrollViewportRef.current && rowCount > 0) virtualizer.measure();
-  }, [rowCount, scrollViewportRef, shouldVirtualize, virtualizer]);
+    if (!shouldVirtualize || !scrollViewport || previousEstimateSizeRef.current === estimateSize) {
+      return;
+    }
+    // 固定行高仅在配置变化时失效；Activity 恢复和行数变化由 virtualizer 自行处理。
+    previousEstimateSizeRef.current = estimateSize;
+    virtualizer.measure();
+  }, [estimateSize, scrollViewport, shouldVirtualize, virtualizer]);
 
   const previousResetKeyRef = useRef('');
   useLayoutEffect(() => {
@@ -49,7 +55,7 @@ export function useRowVirtualizer({
 
   const frozenRef = useRef(false);
   useLayoutEffect(() => {
-    const element = scrollViewportRef.current;
+    const element = scrollViewport;
     if (!element || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -62,13 +68,12 @@ export function useRowVirtualizer({
         } else if (frozenRef.current) {
           frozenRef.current = false;
           emitDataTableVirtualEvent({ event: 'resumed-visible' });
-          virtualizer.measure();
         }
       }
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, [scrollViewportRef, virtualizer]);
+  }, [scrollViewport, virtualizer]);
 
   const enabledEmittedRef = useRef(false);
   useEffect(() => {

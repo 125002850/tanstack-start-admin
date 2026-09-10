@@ -63,7 +63,7 @@ export const Route = createFileRoute('/dashboard/users')({
 - `keepAlive`：是否保持页面实例。
 - `closable`：是否允许关闭 workspace tab；默认除 dashboard home 外为 true。
 - `instanceStrategy`：当前支持 `global | by-params`。
-- `refreshPolicy`：当前支持 `query-invalidate`。
+- `refreshPolicy`：保留 `query-invalidate` 配置兼容；刷新会重建目标页面树、重置局部筛选及编辑状态，再刷新活跃查询。普通切换仍保活，持久化偏好不清除。后台标签先激活，未保存修改通过 closeGuard 的 `refresh` reason 确认。
 
 ## 运行时消费
 

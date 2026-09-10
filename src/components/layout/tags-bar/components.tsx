@@ -17,7 +17,7 @@ import type { OverlayMetrics } from './types';
 
 // 右键菜单动作在多个标签组件之间共享，因此先收敛成一组能力接口。
 interface TagActionCallbacks {
-  refresh: (id: WorkspaceTabId) => void;
+  refresh: (id: WorkspaceTabId) => Promise<void> | void;
   close: (id: WorkspaceTabId) => Promise<void> | void;
   closeOther: (id: WorkspaceTabId) => Promise<void> | void;
   closeAll: () => Promise<void> | void;
@@ -37,7 +37,7 @@ function TagContextMenu(props: TagContextMenuProps) {
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className='w-48'>
-        <ContextMenuItem onClick={() => refresh(id)}>刷新页面</ContextMenuItem>
+        <ContextMenuItem onSelect={() => void refresh(id)}>刷新页面</ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onClick={() => void close(id)} disabled={!closable}>
           关闭标签
