@@ -1,3 +1,4 @@
+import { observeActiveElementOffset } from './observe-active-element-offset';
 import { type Column, type Table as TanstackTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as React from 'react';
@@ -179,6 +180,7 @@ export function useDataTableVirtualization<TData>({
     count: centerVisibleLeafColumns.length,
     getScrollElement: () => scrollViewport,
     estimateSize: (index) => centerVisibleLeafColumns[index]?.getSize() ?? DEFAULT_COLUMN_SIZE,
+    observeElementOffset: observeActiveElementOffset,
     horizontal: true,
     overscan: columnVirtualizationConfig?.overscan ?? DATA_TABLE_VIRTUAL_PRESET.columnOverscan,
     enabled: shouldVirtualizeColumns
