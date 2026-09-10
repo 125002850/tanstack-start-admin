@@ -277,3 +277,33 @@ describe('query client retry strategy', () => {
     expect(toastErrorMock).toHaveBeenCalledWith('mutation biz msg');
   });
 });
+
+it('silences locally rendered query errors while retaining the original exception', async () => {
+  const { getQueryClient, BizError } = await loadQueryClientModule();
+  const { SILENT_QUERY_META } = await import('./query-client');
+  const error = createBizError(BizError, 'locally rendered');
+  await expect(
+    getQueryClient().fetchQuery({
+      queryKey: ['silent'],
+      meta: SILENT_QUERY_META,
+      queryFn: async () => {
+        throw error;
+      }
+    })
+  ).rejects.toBe(error);
+  expect(toastErrorMock).not.toHaveBeenCalled();
+});
+
+it('does not retry or toast a cancelled request', async () => {
+  const { getQueryClient, retry } = await loadRetryStrategy();
+  const error = new DOMException('cancelled', 'AbortError');
+  expect(retry(0, error)).toBe(false);
+  const queryFn = vi.fn(async () => {
+    throw error;
+  });
+  await expect(getQueryClient().fetchQuery({ queryKey: ['cancelled'], queryFn })).rejects.toBe(
+    error
+  );
+  expect(queryFn).toHaveBeenCalledOnce();
+  expect(toastErrorMock).not.toHaveBeenCalled();
+});

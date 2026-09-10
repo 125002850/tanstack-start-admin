@@ -170,3 +170,21 @@ describe('OpenAPI package adoption contract', () => {
     expect(violations).toEqual([]);
   });
 });
+
+it('keeps raw browser requests inside the IAM transport boundary', () => {
+  const violations = collectFiles(
+    resolve(process.cwd(), 'src'),
+    (path) => /\.tsx?$/.test(path) && !/\.(test|spec)\.tsx?$/.test(path)
+  )
+    .filter((path) => {
+      const relativePath = toProjectPath(path);
+      return (
+        !relativePath.startsWith('src/test/') &&
+        !relativePath.includes('/generated/') &&
+        relativePath !== 'src/lib/api/iam/request.ts' &&
+        /\bbootstrapRequest\b|\bfetch\s*\(|new\s+XMLHttpRequest\b/.test(readFileSync(path, 'utf8'))
+      );
+    })
+    .map(toProjectPath);
+  expect(violations).toEqual([]);
+});

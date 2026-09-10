@@ -19,6 +19,10 @@ import {
   HTTP_STATUS_TOO_MANY_REQUESTS
 } from './http-status';
 
+import { isApiRequestAbort, normalizeApiError } from './api/error-normalizer';
+
+export const SILENT_QUERY_META = { suppressGlobalErrorToast: true } as const;
+
 let queryClient: QueryClient | undefined;
 
 const RETRYABLE_HTTP_STATUS = new Set([
@@ -75,6 +79,7 @@ function hasNonRetryableBusinessCode(error: unknown): boolean {
 }
 
 function isRetryableError(error: unknown): boolean {
+  if (isApiRequestAbort(error)) return false;
   if (hasNonRetryableBusinessCode(error)) {
     return false;
   }
@@ -123,42 +128,9 @@ function getQueryRetryDelay(attemptIndex: number, error: unknown): number {
   );
 }
 
-function extractBodyMessageFromRecord(body: unknown): string | undefined {
-  const record = body as Record<string, unknown> | undefined;
-
-  if (!record) return undefined;
-
-  const message = record.message;
-  if (typeof message === 'string' && message.trim().length > 0) {
-    return message;
-  }
-
-  const msg = record.msg;
-  if (typeof msg === 'string' && msg.trim().length > 0) {
-    return msg;
-  }
-
-  return undefined;
-}
-
-function extractBodyMessage(error: unknown): string | undefined {
-  if (error instanceof HttpError && error.causeBody) {
-    return extractBodyMessageFromRecord(error.causeBody) ?? error.message;
-  }
-  if (error instanceof BizError && error.causeBody) {
-    return extractBodyMessageFromRecord(error.causeBody) ?? error.message;
-  }
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message;
-  }
-  return undefined;
-}
-
 function showErrorToast(error: unknown) {
-  const message = extractBodyMessage(error);
-  if (message) {
-    toast.error(message);
-  }
+  if (isApiRequestAbort(error)) return;
+  toast.error(normalizeApiError(error).message);
 }
 
 export function getQueryClient() {
@@ -180,7 +152,7 @@ export function getQueryClient() {
       },
       queryCache: new QueryCache({
         onError: (error, query) => {
-          void query;
+          if (query.meta?.suppressGlobalErrorToast === true) return;
           showErrorToast(error);
         }
       }),
