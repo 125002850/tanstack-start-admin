@@ -46,7 +46,6 @@ import { downloadFileFromUrl } from '../lib/download-file';
 import { ExportRecordDetailSheet } from './export-record-detail-sheet';
 
 const TABLE_ID = 'export-center-list';
-const DEFAULT_REQUEST_SORT = [{ field: 'createTime', direction: 'DESC' as const }];
 const DOWNLOAD_URL_CACHE_SKEW_MS = 30_000;
 const AMZ_DATE_REGEX = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/;
 const EXPORT_RECORD_LIST_QUERY_KEY = ['service', 'export-my'] as const;
@@ -429,7 +428,6 @@ export default function ExportCenterManagementPage() {
     tableId: TABLE_ID,
     columns,
     queryOptions: pageMyExportRecordsQueryOptions,
-    defaultRequestSort: DEFAULT_REQUEST_SORT,
     showSelectColumn: true,
     rowActions,
     rowId: 'recordId',
