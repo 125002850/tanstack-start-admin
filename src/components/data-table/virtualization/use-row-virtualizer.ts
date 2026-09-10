@@ -1,3 +1,4 @@
+import { observeActiveElementOffset } from './observe-active-element-offset';
 import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
@@ -28,6 +29,7 @@ export function useRowVirtualizer({
     [virtualization?.estimateRowHeight]
   );
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+    observeElementOffset: observeActiveElementOffset,
     count: rowCount,
     getScrollElement: () => scrollViewport,
     estimateSize,
