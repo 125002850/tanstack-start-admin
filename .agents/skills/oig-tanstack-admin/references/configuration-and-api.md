@@ -117,3 +117,12 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 生成后的 `openapi/.generated/*-orval-mutator.ts` 只能从 `@oig/react-query-generator/core` 导入 `createDefaultApiClientCustomInstance`，不得反向依赖项目 `transport.ts`。
 - 生成后的 `src/lib/api/clients/*/generated/**/*.ts` 由 `openapi-client` 自动带上 `// @ts-nocheck`。
 - 禁止在 generated 文件中重复注册 middleware。
+
+
+## 错误呈现与契约修复
+
+- UI 使用 `src/lib/api/error-normalizer.ts` 的 `normalizeApiError()` / `normalizeBusinessError()`，不得直接展示未知异常的原始 message。transport 保留原始异常供认证、重试、取消判断。
+- 取消请求不重试、不弹错误；Query 默认由全局 toast 呈现，页面自行展示时传入 `SILENT_QUERY_META`（`@/lib/query-client`）。Mutation 有局部 `onError` 时由局部负责提示。
+- 原生 fetch / XMLHttpRequest / bootstrapRequest 的允许边界由 `src/test/contracts/openapi-adoption.test.ts` 检查；新业务功能使用生成客户端，不新增手写业务 transport。
+- 接口或类型缺失时，先核对后端 Controller/DTO、服务导出的 OpenAPI 和本地 spec。修复后端契约或同步服务版本后，再执行 `pnpm api`；单独 `pnpm codegen` 不会更新后端契约。
+- 禁止手改 spec、generated 文件、生成后 patch 或用类型断言补造契约。后端不可用时报告阻塞；保留模板自身的 IAM/SSO 认证边界与 operationId。
