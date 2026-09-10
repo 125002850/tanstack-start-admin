@@ -226,3 +226,5 @@ interface AuditFields {
 后端统一返回审计人 ID 和翻译后的姓名；共享审计列优先展示姓名，姓名缺失时回退展示 ID。调用点禁止用类型断言掩盖契约差异。
 
 - Activity 隐藏会清理 effect；行列 virtualizer 必须使用响应式 viewport 节点恢复订阅，保留滚动位置，尺寸缓存仅在实际行高或列布局改变时失效。
+
+- 普通服务端列表默认排序由后端统一维护（createTime DESC, id DESC）；前端不重复指定，只有明确业务顺序时才使用 defaultRequestSort。
