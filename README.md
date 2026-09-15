@@ -209,6 +209,10 @@ pnpm codegen
 
 页面禁止绕过 generated client 直接 `fetch('/...')`。
 
+## 通用平台模块
+
+操作审计、调度中心、工作日历及回灌公共组件见 [模块说明](docs/platform-modules.md)。
+
 ## 工程规范
 
 开发前阅读 [AGENTS.MD](AGENTS.MD) 和 [项目 Skill 入口](.agents/skills/oig-tanstack-admin/SKILL.md)，再按任务读取下列规范。README 提供项目概览和操作入口；团队约束正文统一维护在 reference，通用 skills 不能覆盖本仓库约束。
