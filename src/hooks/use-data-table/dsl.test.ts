@@ -567,4 +567,48 @@ describe('use-dsl-data-table.dsl', () => {
 
     expect(request.condition).toBeUndefined();
   });
+  it('preserves structured conditions from the column DSL and clears them without fallback', () => {
+    const buildFilterCondition = vi.fn((value: unknown): DataTableDslCondition | undefined =>
+      value
+        ? {
+            nodeType: 'compose',
+            logic: 'OR',
+            children: [
+              { nodeType: 'text', field: 'dictTypeCode', op: 'EQ', value: 'A' },
+              { nodeType: 'text', field: 'dictTypeName', op: 'EQ', value: 'B' }
+            ]
+          }
+        : undefined
+    );
+    const customColumns: ColumnDef<DictionaryTypeRow>[] = [
+      {
+        id: 'compound',
+        enableColumnFilter: true,
+        meta: { variant: 'multiSelect', query: { buildFilterCondition } }
+      }
+    ];
+    const build = (value: unknown) =>
+      buildDataTableDslRequest({
+        columns: customColumns,
+        pagination: { pageIndex: 0, pageSize: 20 },
+        sorting: [],
+        columnFilters: [{ id: 'compound', value }]
+      });
+    expect(build(['A']).condition).toEqual({
+      nodeType: 'compose',
+      logic: 'AND',
+      children: [
+        {
+          nodeType: 'compose',
+          logic: 'OR',
+          children: [
+            { nodeType: 'text', field: 'dictTypeCode', op: 'EQ', value: 'A' },
+            { nodeType: 'text', field: 'dictTypeName', op: 'EQ', value: 'B' }
+          ]
+        }
+      ]
+    });
+    expect(buildFilterCondition).toHaveBeenCalledWith(['A']);
+    expect(build(undefined).condition).toBeUndefined();
+  });
 });

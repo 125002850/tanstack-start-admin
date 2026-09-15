@@ -300,6 +300,29 @@ describe('TagsBar', () => {
     expect(homeTab).not.toHaveClass('cursor-grab');
   });
 
+  it('Alt+Arrow reorders movable tabs and keeps the home tab fixed', () => {
+    setupHomeAndChat();
+    openTab('/dashboard/system-management/dictionaries', 'Dictionaries');
+    render(<TagsBar />);
+    const dictionaries = screen.getByRole('tab', { name: 'Dictionaries' });
+    dictionaries.focus();
+    fireEvent.keyDown(dictionaries, { key: 'ArrowLeft', altKey: true });
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      '仪表盘',
+      'Dictionaries',
+      'Chat'
+    ]);
+    fireEvent.keyDown(dictionaries, { key: 'ArrowLeft', altKey: true });
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      '仪表盘',
+      'Dictionaries',
+      'Chat'
+    ]);
+    expect(useWorkspaceTabStore.getState().activeId).toBe(
+      '/dashboard/system-management/dictionaries'
+    );
+  });
+
   it('ArrowLeft and ArrowRight move focus across opened tabs', () => {
     setupHomeAndChat();
     render(<TagsBar />);

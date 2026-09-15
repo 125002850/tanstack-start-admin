@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
+import { useTextOverflow } from '@/hooks/use-text-overflow';
 import { useCellTooltip } from '@/components/data-table/cells/data-table-cell-tooltip';
 import { cn } from '@/lib/utils';
 
@@ -19,7 +20,7 @@ export function DataTableOverflowTooltipText({
   children,
   className
 }: DataTableOverflowTooltipTextProps) {
-  const spanRef = useRef<HTMLSpanElement>(null);
+  const { ref: spanRef, checkOverflow } = useTextOverflow('horizontal');
   const cellTooltip = useCellTooltip();
 
   const setSpanRef = useCallback(
@@ -31,16 +32,16 @@ export function DataTableOverflowTooltipText({
       }
       spanRef.current = node;
     },
-    [cellTooltip]
+    [cellTooltip, spanRef]
   );
 
   const handleMouseEnter = useCallback(() => {
     const element = spanRef.current;
     // 在交互发生时读取最新布局，列宽拖拽和窗口变化不需要逐 cell 订阅。
-    if (cellTooltip && element && element.scrollWidth > element.clientWidth) {
+    if (cellTooltip && element && checkOverflow()) {
       cellTooltip.showTooltip(element, value);
     }
-  }, [cellTooltip, value]);
+  }, [cellTooltip, value, checkOverflow, spanRef]);
 
   const handleMouseLeave = useCallback(() => {
     if (spanRef.current) {
@@ -48,7 +49,7 @@ export function DataTableOverflowTooltipText({
     } else {
       cellTooltip?.hideTooltip();
     }
-  }, [cellTooltip]);
+  }, [cellTooltip, spanRef]);
 
   return (
     <span

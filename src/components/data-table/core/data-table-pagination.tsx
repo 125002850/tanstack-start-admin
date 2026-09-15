@@ -1,7 +1,9 @@
 import type { Table } from '@tanstack/react-table';
+import * as React from 'react';
 import { Icons } from '@/components/icons';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -24,6 +26,8 @@ export interface DataTablePaginationLabels {
   totalRowsText?: (totalCount: number) => string;
   rowsPerPage?: string;
   pageText?: (page: number, totalPages: number) => string;
+  goToPage?: string;
+  pageInputHint?: string;
   goToFirstPage?: string;
   goToPreviousPage?: string;
   goToNextPage?: string;
@@ -55,8 +59,37 @@ export function DataTablePagination<TData>({
     ((selectedCount: number, totalCount: number) => `已选择 ${selectedCount} / ${totalCount} 行`);
   const totalRowsText =
     labels?.totalRowsText ?? ((totalCount: number) => `共 ${totalCount} 条数据`);
-  const pageText =
-    labels?.pageText ?? ((page: number, totalPages: number) => `第 ${page} / ${totalPages} 页`);
+  const { pageIndex, pageSize } = table.getState().pagination;
+  const pageCount = table.getPageCount();
+  const currentPage = pageCount === 0 ? 0 : pageIndex + 1;
+  const [editingPage, setEditingPage] = React.useState(false);
+  const focusPageInput = React.useCallback((input: HTMLInputElement | null) => {
+    input?.focus();
+    input?.select();
+  }, []);
+  const [pageInput, setPageInput] = React.useState(String(currentPage));
+
+  React.useEffect(() => {
+    setPageInput(String(currentPage));
+    setEditingPage(false);
+  }, [currentPage, pageCount, pageSize]);
+
+  const resetPageInput = () => {
+    setPageInput(String(currentPage));
+    setEditingPage(false);
+  };
+  const submitPageInput = () => {
+    const value = pageInput.trim();
+    const page = Number(value);
+    if (!/^\d+$/.test(value) || !Number.isSafeInteger(page) || pageCount <= 1) {
+      resetPageInput();
+      return;
+    }
+    const nextPage = Math.min(pageCount, Math.max(1, page));
+    setPageInput(String(nextPage));
+    setEditingPage(false);
+    if (nextPage !== currentPage) table.setPageIndex(nextPage - 1);
+  };
   // selectedRowCount 一旦受控，选择分母使用 table 持有的全量 rowCount。
   const isSelectedRowCountControlled = selectedRowCount !== undefined;
   const resolvedSelectedRowCount =
@@ -106,8 +139,56 @@ export function DataTablePagination<TData>({
             </SelectContent>
           </Select>
         </div>
-        <div className='flex items-center justify-center text-sm font-medium'>
-          {pageText(table.getState().pagination.pageIndex + 1, table.getPageCount())}
+        <div className='flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap'>
+          {editingPage && pageCount > 1 ? (
+            <>
+              <span>第</span>
+              <Input
+                ref={focusPageInput}
+                aria-label={labels?.goToPage ?? '跳转页码'}
+                title={labels?.pageInputHint ?? '输入页码，失焦或 Enter 跳转，Esc 取消'}
+                className='h-8 w-14 px-1 text-center tabular-nums'
+                inputMode='numeric'
+                autoComplete='off'
+                disabled={pageCount <= 1}
+                value={pageInput}
+                onChange={(event) => setPageInput(event.target.value)}
+                onFocus={(event) => event.currentTarget.select()}
+                onBlur={submitPageInput}
+                onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    submitPageInput();
+                  } else if (event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    resetPageInput();
+                  }
+                }}
+              />
+              <span>/ {pageCount} 页</span>
+            </>
+          ) : pageCount > 1 ? (
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              className='h-8 tabular-nums'
+              aria-label={labels?.goToPage ?? '跳转页码'}
+              onClick={() => {
+                setPageInput(String(currentPage));
+                setEditingPage(true);
+              }}
+            >
+              {labels?.pageText?.(currentPage, pageCount) ?? `第 ${currentPage} / ${pageCount} 页`}
+            </Button>
+          ) : (
+            <span className='flex h-8 items-center tabular-nums'>
+              {labels?.pageText?.(currentPage, pageCount) ?? `第 ${currentPage} / ${pageCount} 页`}
+            </span>
+          )}
         </div>
         <div className='flex items-center space-x-2'>
           <Button

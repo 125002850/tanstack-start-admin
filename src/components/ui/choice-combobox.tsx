@@ -1,4 +1,8 @@
 import * as React from 'react';
+import { useCommandState } from 'cmdk';
+
+import { useTextOverflow } from '@/hooks/use-text-overflow';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -25,6 +29,7 @@ export type ChoiceComboboxOption<TValue extends ChoiceComboboxValue = string> = 
   value: TValue;
   label: string;
   description?: string;
+  group?: string;
   disabled?: boolean;
 };
 
@@ -100,6 +105,55 @@ function getOptionKey(value: ChoiceComboboxValue) {
   return `${typeof value}:${String(value)}`;
 }
 
+function ChoiceOption({
+  value,
+  description,
+  keyboardNavigation,
+  children,
+  ...props
+}: React.ComponentProps<typeof CommandItem> & {
+  value: string;
+  description?: string;
+  keyboardNavigation: boolean;
+}) {
+  const { ref, checkOverflow } = useTextOverflow('horizontal');
+  const highlighted = useCommandState((state) => state.value === value);
+  const [hoverOpen, setHoverOpen] = React.useState(false);
+  const [keyboardOpen, setKeyboardOpen] = React.useState(false);
+  React.useEffect(() => {
+    setKeyboardOpen(keyboardNavigation && highlighted && checkOverflow());
+  }, [keyboardNavigation, highlighted, description, checkOverflow]);
+
+  const item = (
+    <CommandItem value={value} {...props}>
+      {children}
+      {description ? (
+        <span ref={ref} className='col-start-2 truncate text-xs text-muted-foreground'>
+          {description}
+        </span>
+      ) : null}
+    </CommandItem>
+  );
+  if (!description) return item;
+  return (
+    <Tooltip
+      open={keyboardNavigation ? keyboardOpen : hoverOpen}
+      onOpenChange={(nextOpen) => {
+        setHoverOpen(nextOpen && checkOverflow());
+        if (!nextOpen) setKeyboardOpen(false);
+      }}
+    >
+      {/* cmdk 会覆盖 Item 的 onPointerMove，触发层独立包裹整项。 */}
+      <TooltipTrigger asChild>
+        <div>{item}</div>
+      </TooltipTrigger>
+      <TooltipContent side='right' className='max-w-80 whitespace-normal break-words'>
+        {description}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   options,
   values,
@@ -133,6 +187,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   onValuesChange
 }: ChoiceComboboxProps<TValue>) {
   const [internalOpen, setInternalOpen] = React.useState(false);
+  const [keyboardNavigation, setKeyboardNavigation] = React.useState(false);
   const [internalSearch, setInternalSearch] = React.useState('');
   const listRef = React.useRef<HTMLDivElement>(null);
   const hasUserScrollIntentRef = React.useRef(false);
@@ -162,6 +217,15 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
         String(option.value).toLowerCase().includes(normalizedSearch)
     );
   }, [normalizedSearch, searchMode, uniqueOptions]);
+  const optionGroups = React.useMemo(() => {
+    const groups = new Map<string | undefined, ChoiceComboboxOption<TValue>[]>();
+    for (const option of filteredOptions) {
+      const group = groups.get(option.group) ?? [];
+      group.push(option);
+      groups.set(option.group, group);
+    }
+    return [...groups];
+  }, [filteredOptions]);
   const optionByValue = React.useMemo(
     () => new Map(uniqueOptions.map((option) => [option.value, option])),
     [uniqueOptions]
@@ -192,7 +256,10 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
     (nextOpen: boolean) => {
       if (controlledOpen === undefined) setInternalOpen(nextOpen);
       onOpenChange?.(nextOpen);
-      if (!nextOpen) setSearch('');
+      if (!nextOpen) {
+        setSearch('');
+        setKeyboardNavigation(false);
+      }
     },
     [controlledOpen, onOpenChange, setSearch]
   );
@@ -299,7 +366,15 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
         onEscapeKeyDown={onEscapeKeyDown}
         onKeyDown={onKeyDown}
       >
-        <Command shouldFilter={false}>
+        <Command
+          shouldFilter={false}
+          onKeyDownCapture={(event) => {
+            if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+              setKeyboardNavigation(true);
+            }
+          }}
+          onPointerMoveCapture={() => setKeyboardNavigation(false)}
+        >
           {searchMode === 'none' ? null : (
             <CommandInput
               value={search}
@@ -318,60 +393,58 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
             onWheelCapture={markUserScrollIntent}
           >
             <CommandEmpty>{isError ? errorText : isLoading ? loadingText : emptyText}</CommandEmpty>
-            <CommandGroup>
-              {filteredOptions.map((option) => {
-                const isSelected = selectedValues.has(option.value);
-                const isSelectionDisabled =
-                  option.disabled ||
-                  (selectionMode === 'multiple' &&
-                    ((!isSelected &&
-                      maxSelected !== undefined &&
-                      selectedValues.size >= maxSelected) ||
-                      (isSelected && !allowEmpty && selectedValues.size === 1)));
+            {optionGroups.map(([group, groupOptions]) => (
+              <CommandGroup key={group ?? 'ungrouped'} heading={group}>
+                {groupOptions.map((option) => {
+                  const isSelected = selectedValues.has(option.value);
+                  const isSelectionDisabled =
+                    option.disabled ||
+                    (selectionMode === 'multiple' &&
+                      ((!isSelected &&
+                        maxSelected !== undefined &&
+                        selectedValues.size >= maxSelected) ||
+                        (isSelected && !allowEmpty && selectedValues.size === 1)));
 
-                return (
-                  <CommandItem
-                    key={getOptionKey(option.value)}
-                    value={`${getOptionKey(option.value)} ${option.label}`}
-                    disabled={isSelectionDisabled}
-                    aria-selected={isSelected}
-                    onSelect={() => handleSelect(option)}
-                  >
-                    {selectionMode === 'multiple' ? (
-                      <span
-                        aria-hidden='true'
-                        className={cn(
-                          'border-primary flex size-4 items-center justify-center rounded-sm border',
-                          isSelected
-                            ? 'bg-primary text-primary-foreground'
-                            : 'opacity-50 [&_svg]:invisible'
-                        )}
-                      >
-                        <Icons.check className='size-4 text-primary-foreground' />
-                      </span>
-                    ) : (
-                      <span
-                        aria-hidden='true'
-                        className={cn(
-                          'flex size-4 items-center justify-center',
-                          !isSelected && '[&_svg]:invisible'
-                        )}
-                      >
-                        <Icons.check className='size-4 text-primary' />
-                      </span>
-                    )}
-                    <span className='flex min-w-0 flex-1 flex-col'>
-                      <span className='truncate'>{option.label}</span>
-                      {option.description ? (
-                        <span className='truncate text-xs text-muted-foreground'>
-                          {option.description}
+                  return (
+                    <ChoiceOption
+                      description={option.description}
+                      keyboardNavigation={keyboardNavigation}
+                      className='grid grid-cols-[1rem_minmax(0,1fr)] gap-x-2 gap-y-0.5'
+                      key={getOptionKey(option.value)}
+                      value={`${getOptionKey(option.value)} ${option.label}`}
+                      disabled={isSelectionDisabled}
+                      aria-selected={isSelected}
+                      onSelect={() => handleSelect(option)}
+                    >
+                      {selectionMode === 'multiple' ? (
+                        <span
+                          aria-hidden='true'
+                          className={cn(
+                            'border-primary flex size-4 items-center justify-center rounded-sm border',
+                            isSelected
+                              ? 'bg-primary text-primary-foreground'
+                              : 'opacity-50 [&_svg]:invisible'
+                          )}
+                        >
+                          <Icons.check className='size-4 text-primary-foreground' />
                         </span>
-                      ) : null}
-                    </span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
+                      ) : (
+                        <span
+                          aria-hidden='true'
+                          className={cn(
+                            'flex size-4 items-center justify-center',
+                            !isSelected && '[&_svg]:invisible'
+                          )}
+                        >
+                          <Icons.check className='size-4 text-primary' />
+                        </span>
+                      )}
+                      <span className='min-w-0 truncate'>{option.label}</span>
+                    </ChoiceOption>
+                  );
+                })}
+              </CommandGroup>
+            ))}
             {allowEmpty && selectedValues.size > 0 ? (
               <>
                 <CommandSeparator />

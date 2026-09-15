@@ -143,7 +143,7 @@ function getHeaderClassName<TData>(
 
 /** 把 TanStack 的排序状态转换为原生 aria-sort，提升读屏器可理解性。 */
 function getHeaderAriaSort<TData>(header: Header<TData, unknown>) {
-  if (!header.column.getCanSort()) {
+  if (!header.column.getCanSort() || header.column.getSortIndex() > 0) {
     return undefined;
   }
 

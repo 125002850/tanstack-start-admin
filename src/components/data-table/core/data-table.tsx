@@ -1,3 +1,4 @@
+import { getDataTableColumnLabel } from '@/components/data-table/columns/data-table-column-label';
 import { closestCenter, DndContext, DragOverlay } from '@dnd-kit/core';
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable';
@@ -135,6 +136,8 @@ function getDataTableLoadingSkeletonProps<TData>({
     withPagination: withPagination ?? hasPagination
   };
 }
+
+const DATA_TABLE_STATUS_VIEWPORT_WIDTH_CSS_PROPERTY = '--data-table-status-viewport-width';
 
 export function DataTable<TData>({
   table,
@@ -281,6 +284,41 @@ export function DataTable<TData>({
         loadingSkeleton
       })
     : null;
+  const shouldMeasureStatusViewport =
+    !shouldRenderLoadingSkeleton &&
+    (resolvedStatus ? resolvedStatus.type !== 'permission' : rows.length === 0);
+
+  React.useLayoutEffect(() => {
+    const viewport = scrollViewport;
+    if (!viewport || !shouldMeasureStatusViewport) return;
+
+    let lastWidth = 0;
+    const applyWidth = (width: number) => {
+      if (width <= 0 || width === lastWidth) return;
+      lastWidth = width;
+      viewport.style.setProperty(DATA_TABLE_STATUS_VIEWPORT_WIDTH_CSS_PROPERTY, `${width}px`);
+    };
+    const measure = () => applyWidth(viewport.clientWidth);
+
+    // 首次绘制前同步一次；后续只写 CSS 变量，避免容器 resize 触发表格重渲染。
+    measure();
+    window.addEventListener('resize', measure);
+
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(([entry]) =>
+            applyWidth(entry?.contentRect.width ?? viewport.clientWidth)
+          );
+    observer?.observe(viewport);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+      viewport.style.removeProperty(DATA_TABLE_STATUS_VIEWPORT_WIDTH_CSS_PROPERTY);
+    };
+  }, [shouldMeasureStatusViewport, scrollViewport]);
+
   const pageRows = rows;
   // 选择统计优先使用外部受控值；未受控时只统计当前已加载页，避免误表达跨页全选。
   const resolvedSelectedRowCount =
@@ -417,6 +455,17 @@ export function DataTable<TData>({
                 }
                 style={{ tableLayout: 'fixed', width: resolvedTableWidth }}
               >
+                <caption className='sr-only' aria-live='polite' aria-atomic='true'>
+                  {table.getState().sorting.length === 0
+                    ? '未排序'
+                    : `排序顺序：${table
+                        .getState()
+                        .sorting.map((sort, index) => {
+                          const column = table.getColumn(sort.id);
+                          return `${index + 1}. ${column ? getDataTableColumnLabel(column, table) : sort.id}${sort.desc ? '降序' : '升序'}`;
+                        })
+                        .join('；')}`}
+                </caption>
                 {shouldVirtualizeColumns ? null : (
                   <DataTableColGroup columns={orderedLeafColumns} />
                 )}

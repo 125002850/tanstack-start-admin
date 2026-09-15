@@ -257,8 +257,29 @@ export default function TagsBar() {
     setDragState({ activeId: null, snapshot: null, overlayMetrics: null });
   }, []);
 
+  const moveTag = React.useCallback((id: WorkspaceTabId, direction: -1 | 1) => {
+    setVisualOrder((current) => {
+      const index = current.indexOf(id);
+      const target = index + direction;
+      if (
+        id === HOME_ID ||
+        index < 0 ||
+        target < 0 ||
+        target >= current.length ||
+        current[target] === HOME_ID
+      )
+        return current;
+      return arrayMove(current, index, target);
+    });
+  }, []);
+
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLButtonElement>, id: WorkspaceTabId) => {
+      if (event.altKey && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+        event.preventDefault();
+        moveTag(id, event.key === 'ArrowLeft' ? -1 : 1);
+        return;
+      }
       const ids = visualOrder;
       const idx = ids.indexOf(id);
       let next: string | undefined;
@@ -294,7 +315,7 @@ export default function TagsBar() {
         scrollToTab(next);
       }
     },
-    [activeId, close, openOrActivate, scrollToTab, tabs, visualOrder]
+    [activeId, close, moveTag, openOrActivate, scrollToTab, tabs, visualOrder]
   );
 
   const handleClose = React.useCallback(
@@ -392,7 +413,7 @@ export default function TagsBar() {
               ) : null}
 
               <SortableContext items={nonHomeVisualOrder} strategy={horizontalListSortingStrategy}>
-                {nonHomeVisualOrder.map((id) => {
+                {nonHomeVisualOrder.map((id, index) => {
                   const tagState = getTagVisualState(id);
                   if (!tagState) return null;
 
@@ -404,6 +425,12 @@ export default function TagsBar() {
                       dirty={tagState.dirty}
                       closable={tagState.closable}
                       isActive={tagState.isActive}
+                      reorder={{
+                        canMoveLeft: index > 0,
+                        canMoveRight: index < nonHomeVisualOrder.length - 1,
+                        move: (direction) => moveTag(id, direction),
+                        restoreFocus: () => tabsRef.current.get(id)?.focus()
+                      }}
                       placeholderMetrics={
                         dragState.activeId === id ? dragState.overlayMetrics : null
                       }
