@@ -51,11 +51,15 @@ export interface DataTableDslDateTimeCondition<TField extends string = string> {
   end?: string;
 }
 
+/** Feature 模块通过声明合并注册后端专用条件，通用表格不依赖业务类型。 */
+export interface DataTableDslConditionExtensions {}
+
 export type DataTableDslCondition<TField extends string = string> =
   | DataTableDslComposeCondition<TField>
   | DataTableDslTextCondition<TField>
   | DataTableDslEnumCondition<TField>
-  | DataTableDslDateTimeCondition<TField>;
+  | DataTableDslDateTimeCondition<TField>
+  | DataTableDslConditionExtensions[keyof DataTableDslConditionExtensions];
 
 export interface DataTableDslSortItem<TField extends string = string> {
   field: TField;
@@ -327,6 +331,10 @@ function buildFilterCondition<TData>(
   const variant = meta?.variant;
   if (!isDataTableDslFilterVariantSupported(variant)) {
     return undefined;
+  }
+
+  if (meta?.query?.buildFilterCondition) {
+    return meta.query.buildFilterCondition(filter.value);
   }
 
   const field = meta?.query?.filterField ?? resolvedColumn.id;

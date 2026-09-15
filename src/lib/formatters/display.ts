@@ -68,3 +68,24 @@ export function getDictLabel(
   const label = getLabel(code);
   return label === code ? undefined : label;
 }
+
+export interface OperatorIdentity {
+  id?: number | null;
+  name?: string | null;
+  username?: string | null;
+  realName?: string | null;
+}
+
+/** 操作人可读标签：真实姓名 → 账号 → 有意义的展示名，否则退化为“未具名用户(#id)”。 */
+export function nullableOperatorLabel(op: OperatorIdentity | null | undefined) {
+  if (!op) return '-';
+  const realName = op.realName?.trim();
+  if (realName) return realName;
+  const username = op.username?.trim();
+  if (username) return username;
+  const name = op.name?.trim();
+  const idText = op.id == null ? undefined : String(op.id);
+  if (name && name !== idText) return name;
+  if (idText != null) return `未具名用户(#${idText})`;
+  return name ?? '-';
+}

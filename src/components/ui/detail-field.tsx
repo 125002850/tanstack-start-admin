@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { OverflowTooltipText } from '@/components/ui/overflow-tooltip-text';
 import { cn } from '@/lib/utils';
 
 export function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -25,46 +25,6 @@ export function FieldValue({
 
 type FieldValueMaxLines = 1 | 2;
 
-function OverflowTooltipValue({ text, maxLines }: { text: string; maxLines: FieldValueMaxLines }) {
-  const textRef = React.useRef<HTMLSpanElement>(null);
-  const [open, setOpen] = React.useState(false);
-
-  const isOverflowing = React.useCallback(() => {
-    const el = textRef.current;
-    if (!el) return false;
-
-    return el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1;
-  }, []);
-
-  const handleOpenChange = React.useCallback(
-    (nextOpen: boolean) => {
-      setOpen(nextOpen && text !== '-' && isOverflowing());
-    },
-    [isOverflowing, text]
-  );
-
-  const textNode = (
-    <span
-      ref={textRef}
-      className={cn('block min-w-0', maxLines === 1 ? 'truncate' : 'line-clamp-2')}
-      tabIndex={text === '-' ? undefined : 0}
-    >
-      {text}
-    </span>
-  );
-
-  if (text === '-') return textNode;
-
-  return (
-    <Tooltip open={open} onOpenChange={handleOpenChange}>
-      <TooltipTrigger asChild>{textNode}</TooltipTrigger>
-      <TooltipContent side='top' className='max-w-80 whitespace-normal break-words'>
-        {text}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
 export function FieldItem({
   label,
   value,
@@ -81,7 +41,7 @@ export function FieldItem({
       <FieldLabel>{label}</FieldLabel>
       <FieldValue className={valueMaxLines ? 'block' : undefined}>
         {valueMaxLines ? (
-          <OverflowTooltipValue text={String(displayValue)} maxLines={valueMaxLines} />
+          <OverflowTooltipText text={String(displayValue)} maxLines={valueMaxLines} />
         ) : (
           displayValue
         )}

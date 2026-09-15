@@ -241,6 +241,8 @@ export function useTableState<TData>({
     setColumnFilters((prev) =>
       typeof updaterOrValue === 'function' ? updaterOrValue(prev) : updaterOrValue
     );
+    // 服务端手动分页不会由 TanStack 自动重置；与筛选状态在同一事件中更新。
+    setPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 }));
   }, []);
 
   return {

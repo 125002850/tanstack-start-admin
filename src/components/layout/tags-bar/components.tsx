@@ -16,7 +16,15 @@ import { getPlaceholderClassName, getTagButtonClassName } from './helper';
 import type { OverlayMetrics } from './types';
 
 // 右键菜单动作在多个标签组件之间共享，因此先收敛成一组能力接口。
+interface TagReorderActions {
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
+  move: (direction: -1 | 1) => void;
+  restoreFocus: () => void;
+}
+
 interface TagActionCallbacks {
+  reorder?: TagReorderActions;
   refresh: (id: WorkspaceTabId) => Promise<void> | void;
   close: (id: WorkspaceTabId) => Promise<void> | void;
   closeOther: (id: WorkspaceTabId) => Promise<void> | void;
@@ -31,12 +39,45 @@ interface TagContextMenuProps extends TagActionCallbacks {
 
 // 所有标签都包一层统一的上下文菜单，避免 pinned / sortable 两套实现各管一份菜单逻辑。
 function TagContextMenu(props: TagContextMenuProps) {
-  const { children, id, closable, refresh, close, closeOther, closeAll } = props;
+  const { children, id, closable, refresh, close, closeOther, closeAll, reorder } = props;
+  const movedRef = React.useRef(false);
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className='w-48'>
+      <ContextMenuContent
+        className='w-48'
+        onCloseAutoFocus={(event) => {
+          if (movedRef.current) {
+            event.preventDefault();
+            movedRef.current = false;
+            reorder?.restoreFocus();
+          }
+        }}
+      >
+        {reorder && (
+          <>
+            <ContextMenuItem
+              disabled={!reorder.canMoveLeft}
+              onSelect={() => {
+                movedRef.current = true;
+                reorder.move(-1);
+              }}
+            >
+              向左移
+            </ContextMenuItem>
+            <ContextMenuItem
+              disabled={!reorder.canMoveRight}
+              onSelect={() => {
+                movedRef.current = true;
+                reorder.move(1);
+              }}
+            >
+              向右移
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
         <ContextMenuItem onSelect={() => void refresh(id)}>刷新页面</ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onClick={() => void close(id)} disabled={!closable}>
@@ -135,6 +176,7 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
         data-tab-id={id}
         data-pinned={dataPinned}
         role='tab'
+        aria-keyshortcuts={listeners ? 'Alt+ArrowLeft Alt+ArrowRight' : undefined}
         aria-selected={isActive}
         tabIndex={isActive ? 0 : -1}
         {...listeners}
@@ -278,7 +320,8 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
     refresh,
     close,
     closeOther,
-    closeAll
+    closeAll,
+    reorder
   } = props;
 
   return (
@@ -289,6 +332,7 @@ export function PinnedHomeTag(props: PinnedHomeTagProps) {
       close={close}
       closeOther={closeOther}
       closeAll={closeAll}
+      reorder={reorder}
     >
       <div className='shrink-0'>
         <InteractiveTagButton
@@ -338,7 +382,8 @@ export function SortableTagItem(props: SortableTagItemProps) {
     refresh,
     close,
     closeOther,
-    closeAll
+    closeAll,
+    reorder
   } = props;
 
   const { listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
@@ -369,6 +414,7 @@ export function SortableTagItem(props: SortableTagItemProps) {
       close={close}
       closeOther={closeOther}
       closeAll={closeAll}
+      reorder={reorder}
     >
       <div ref={setNodeRef} style={style} className='shrink-0'>
         {/* 拖拽激活后，原位置切换为 placeholder，真实内容转由 DragOverlay 承载。 */}

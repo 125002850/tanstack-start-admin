@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { DataTableStatusBody } from './data-table-status-body';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
@@ -131,38 +131,30 @@ function StatusInline({ config, colSpan }: DataTableStatusInlineProps) {
   const description = config.description ?? defaults.description;
 
   return (
-    <TableBody data-component='data-table-body'>
-      <TableRow>
-        <TableCell colSpan={colSpan}>
-          <div className='sticky left-1/2 -translate-x-1/2 inline-flex flex-col items-center justify-center py-16 text-center'>
-            <span className='text-muted-foreground/30 mb-4'>{defaults.icon}</span>
-            <h3 className='text-sm font-medium'>{title}</h3>
-            {description && <p className='text-muted-foreground mt-1 text-sm'>{description}</p>}
-            {(config.primaryAction ||
-              config.secondaryAction ||
-              config.additionalActions?.length) && (
-              <div className='mt-4 flex flex-wrap justify-center gap-2'>
-                {config.primaryAction && (
-                  <Button variant='outline' size='sm' onClick={config.primaryAction.onClick}>
-                    {config.primaryAction.label}
-                  </Button>
-                )}
-                {config.secondaryAction && (
-                  <Button variant='ghost' size='sm' onClick={config.secondaryAction.onClick}>
-                    {config.secondaryAction.label}
-                  </Button>
-                )}
-                {config.additionalActions?.map((action) => (
-                  <Button key={action.label} variant='outline' size='sm' onClick={action.onClick}>
-                    {action.label}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-        </TableCell>
-      </TableRow>
-    </TableBody>
+    <DataTableStatusBody colSpan={colSpan}>
+      <span className='text-muted-foreground/30 mb-4'>{defaults.icon}</span>
+      <h3 className='text-sm font-medium'>{title}</h3>
+      {description && <p className='text-muted-foreground mt-1 text-sm'>{description}</p>}
+      {(config.primaryAction || config.secondaryAction || config.additionalActions?.length) && (
+        <div className='mt-4 flex flex-wrap justify-center gap-2'>
+          {config.primaryAction && (
+            <Button variant='outline' size='sm' onClick={config.primaryAction.onClick}>
+              {config.primaryAction.label}
+            </Button>
+          )}
+          {config.secondaryAction && (
+            <Button variant='ghost' size='sm' onClick={config.secondaryAction.onClick}>
+              {config.secondaryAction.label}
+            </Button>
+          )}
+          {config.additionalActions?.map((action) => (
+            <Button key={action.label} variant='outline' size='sm' onClick={action.onClick}>
+              {action.label}
+            </Button>
+          ))}
+        </div>
+      )}
+    </DataTableStatusBody>
   );
 }
 

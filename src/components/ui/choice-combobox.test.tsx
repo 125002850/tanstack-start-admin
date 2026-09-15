@@ -58,6 +58,44 @@ describe('ChoiceCombobox', () => {
     Element.prototype.scrollIntoView ??= vi.fn();
   });
 
+  it('groups options and shows truncated descriptions on row hover and keyboard navigation', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MultipleChoiceCombobox
+        options={[
+          { value: 'NONE', label: '不提及' },
+          { value: 'EMPLOYEE', group: '请求传入', label: '员工名单', description: '完整员工说明' },
+          { value: 'FIXED', group: '预设人员', label: '指定员工', description: '短说明' }
+        ]}
+        value={[]}
+        onValueChange={onChange}
+        triggerLabel='提及'
+        placeholder='请选择'
+      />
+    );
+    await user.click(screen.getByRole('button', { name: '提及' }));
+    expect(screen.getByRole('group', { name: '请求传入' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '预设人员' })).toBeInTheDocument();
+    const description = screen.getByText('完整员工说明');
+    Object.defineProperties(description, {
+      clientWidth: { value: 80 },
+      scrollWidth: { value: 160 }
+    });
+    const option = screen.getByRole('option', { name: /员工名单/ });
+    await user.hover(option);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('完整员工说明');
+    await user.click(option);
+    expect(onChange).toHaveBeenCalledWith(['EMPLOYEE']);
+    await user.hover(screen.getByRole('option', { name: /指定员工/ }));
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    await user.keyboard('{ArrowUp}');
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('完整员工说明');
+    await user.type(screen.getByRole('combobox'), '指定');
+    expect(screen.queryByRole('group', { name: '请求传入' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '预设人员' })).toBeInTheDocument();
+  });
+
   it('uses a scalar value and closes after a searchable single selection', async () => {
     const user = userEvent.setup();
     render(<SingleHarness />);

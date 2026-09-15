@@ -1,3 +1,4 @@
+import type { DataTableDslCondition } from '@/hooks/use-data-table/dsl';
 import type { Column } from '@tanstack/react-table';
 import type { FC, SVGProps } from 'react';
 
@@ -140,5 +141,7 @@ export interface DataTableColumnDslQueryOptions<TData, TValue> {
     sortField?: string;
     filterOperator?: DataTableDslOperator;
     serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
+    /** 将复合业务筛选转换为完整条件节点；返回 undefined 表示清空。 */
+    buildFilterCondition?: (value: unknown) => DataTableDslCondition | undefined;
   };
 }

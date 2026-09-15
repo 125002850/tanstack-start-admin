@@ -5,56 +5,163 @@ import { copyTextToClipboard } from './copy-text-to-clipboard';
 const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
 const execCommandDescriptor = Object.getOwnPropertyDescriptor(document, 'execCommand');
 
-afterEach(() => {
-  restoreProperty(navigator, 'clipboard', clipboardDescriptor);
-  restoreProperty(document, 'execCommand', execCommandDescriptor);
-  document.querySelectorAll('textarea').forEach((element) => element.remove());
-  vi.restoreAllMocks();
-});
+describe('browser/copy-text-to-clipboard', () => {
+  afterEach(() => {
+    restoreProperty(navigator, 'clipboard', clipboardDescriptor);
+    restoreProperty(document, 'execCommand', execCommandDescriptor);
+    document.body.replaceChildren();
+  });
 
-describe('copyTextToClipboard', () => {
   it('uses the async Clipboard API when available', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText }
-    });
+    const execCommand = vi.fn(() => true);
+    setClipboard({ writeText });
+    setExecCommand(execCommand);
 
-    await expect(copyTextToClipboard('template text')).resolves.toBe(true);
-    expect(writeText).toHaveBeenCalledWith('template text');
-    expect(document.querySelector('textarea')).toBeNull();
+    await expect(copyTextToClipboard('copied text')).resolves.toBe(true);
+
+    expect(writeText).toHaveBeenCalledWith('copied text');
+    expect(execCommand).not.toHaveBeenCalled();
   });
 
-  it('falls back to selection copy and restores focus when Clipboard API rejects', async () => {
-    const writeText = vi.fn().mockRejectedValue(new Error('insecure origin'));
-    const execCommand = vi.fn(() => true);
-    const input = document.createElement('input');
-    document.body.append(input);
-    input.focus();
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText }
-    });
-    Object.defineProperty(document, 'execCommand', {
-      configurable: true,
-      value: execCommand
-    });
+  it('focuses a hidden textarea and falls back to execCommand', async () => {
+    const activeButton = document.createElement('button');
+    document.body.append(activeButton);
+    activeButton.focus();
+
+    setClipboard({ writeText: vi.fn().mockRejectedValue(new DOMException('Not allowed')) });
+    setExecCommand(
+      vi.fn(() => {
+        const textarea = document.querySelector('textarea');
+
+        expect(textarea).toBe(document.activeElement);
+        expect(textarea).toHaveValue('fallback text');
+        expect(textarea).toHaveAttribute('readonly');
+        expect(textarea).toHaveAttribute('tabindex', '-1');
+        expect(textarea).toHaveStyle({ left: '-9999px', position: 'fixed', top: '0px' });
+        return true;
+      })
+    );
 
     await expect(copyTextToClipboard('fallback text')).resolves.toBe(true);
-    expect(execCommand).toHaveBeenCalledWith('copy');
-    expect(document.querySelector('textarea')).toBeNull();
-    expect(input).toHaveFocus();
 
-    input.remove();
+    expect(document.querySelector('textarea')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(activeButton);
   });
 
-  it('returns false when neither clipboard implementation is available', async () => {
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
-    Object.defineProperty(document, 'execCommand', { configurable: true, value: undefined });
+  it('mounts the fallback textarea inside the provided focus scope', async () => {
+    const dialogContent = document.createElement('div');
+    const activeButton = document.createElement('button');
+    dialogContent.append(activeButton);
+    document.body.append(dialogContent);
+    activeButton.focus();
 
-    await expect(copyTextToClipboard('unavailable')).resolves.toBe(false);
+    const keepFocusInsideDialog = (event: FocusEvent) => {
+      if (event.target instanceof Node && !dialogContent.contains(event.target)) {
+        activeButton.focus();
+      }
+    };
+    document.addEventListener('focusin', keepFocusInsideDialog);
+
+    setClipboard(undefined);
+    const execCommand = vi.fn(() => {
+      const textarea = dialogContent.querySelector('textarea');
+
+      expect(textarea).toBe(document.activeElement);
+      expect(textarea).toHaveValue('dialog fallback text');
+      return true;
+    });
+    setExecCommand(execCommand);
+
+    try {
+      await expect(
+        copyTextToClipboard('dialog fallback text', { container: dialogContent })
+      ).resolves.toBe(true);
+    } finally {
+      document.removeEventListener('focusin', keepFocusInsideDialog);
+    }
+
+    expect(execCommand).toHaveBeenCalledWith('copy');
+    expect(dialogContent.querySelector('textarea')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(activeButton);
+  });
+
+  it('does not report success when a focus scope moves focus away from the textarea', async () => {
+    const dialogContent = document.createElement('div');
+    const activeButton = document.createElement('button');
+    dialogContent.append(activeButton);
+    document.body.append(dialogContent);
+    activeButton.focus();
+
+    const keepFocusInsideDialog = (event: FocusEvent) => {
+      if (event.target instanceof Node && !dialogContent.contains(event.target)) {
+        activeButton.focus();
+      }
+    };
+    document.addEventListener('focusin', keepFocusInsideDialog);
+
+    setClipboard(undefined);
+    const execCommand = vi.fn(() => true);
+    setExecCommand(execCommand);
+
+    try {
+      await expect(copyTextToClipboard('blocked by focus scope')).resolves.toBe(false);
+    } finally {
+      document.removeEventListener('focusin', keepFocusInsideDialog);
+    }
+
+    expect(execCommand).not.toHaveBeenCalled();
+    expect(document.querySelector('textarea')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(activeButton);
+  });
+
+  it('returns false and cleans up when the fallback throws', async () => {
+    const activeButton = document.createElement('button');
+    document.body.append(activeButton);
+    activeButton.focus();
+
+    setClipboard(undefined);
+    setExecCommand(
+      vi.fn(() => {
+        throw new DOMException('Copy blocked');
+      })
+    );
+
+    await expect(copyTextToClipboard('blocked text')).resolves.toBe(false);
+
+    expect(document.querySelector('textarea')).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(activeButton);
+  });
+
+  it('does not reject when restoring focus fails', async () => {
+    const activeButton = document.createElement('button');
+    document.body.append(activeButton);
+    activeButton.focus();
+    vi.spyOn(activeButton, 'focus').mockImplementation(() => {
+      throw new DOMException('Focus blocked');
+    });
+
+    setClipboard(undefined);
+    setExecCommand(vi.fn(() => true));
+
+    await expect(copyTextToClipboard('copied text')).resolves.toBe(true);
+    expect(document.querySelector('textarea')).not.toBeInTheDocument();
   });
 });
+
+function setClipboard(clipboard: Pick<Clipboard, 'writeText'> | undefined) {
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: clipboard
+  });
+}
+
+function setExecCommand(execCommand: typeof document.execCommand) {
+  Object.defineProperty(document, 'execCommand', {
+    configurable: true,
+    value: execCommand
+  });
+}
 
 function restoreProperty(
   target: object,
@@ -65,5 +172,6 @@ function restoreProperty(
     Reflect.deleteProperty(target, key);
     return;
   }
+
   Object.defineProperty(target, key, descriptor);
 }

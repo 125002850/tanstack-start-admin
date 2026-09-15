@@ -9,6 +9,8 @@ export interface TreeItem {
   value: string;
   label: string;
   searchText?: string;
+  disabled?: boolean;
+  disabledReason?: string;
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
   endContent?: React.ReactNode;
   children?: TreeItem[];
@@ -34,6 +36,7 @@ export type TreeSelection =
 interface TreeProps extends Omit<React.ComponentProps<'div'>, 'children'> {
   items: readonly TreeItem[];
   selection: TreeSelection;
+  defaultExpandedValues?: readonly string[];
   searchQuery?: string;
   emptyText?: string;
   searchEmptyText?: string;
@@ -46,6 +49,7 @@ interface TreeItemModel {
   parent?: TreeItemModel;
   children: TreeItemModel[];
   subtreeValues: string[];
+  selectableValues: string[];
 }
 
 interface TreeModel {
@@ -67,12 +71,17 @@ function createTreeModel(items: readonly TreeItem[]): TreeModel {
       item,
       parent,
       children: [],
-      subtreeValues: [item.value]
+      subtreeValues: [item.value],
+      selectableValues: []
     };
     nodesByValue.set(item.value, node);
     orderedValues.push(item.value);
     node.children = (item.children ?? []).map((child) => visit(child, node));
     node.subtreeValues = [item.value, ...node.children.flatMap((child) => child.subtreeValues)];
+    node.selectableValues = [
+      ...(item.disabled ? [] : [item.value]),
+      ...node.children.flatMap((child) => child.selectableValues)
+    ];
     return node;
   };
 
@@ -129,12 +138,12 @@ function getCascadeSelectionState(
   selectedValues: ReadonlySet<string>
 ): TreeSelectionState {
   let selectedCount = 0;
-  for (const value of node.subtreeValues) {
+  for (const value of node.selectableValues) {
     if (selectedValues.has(value)) selectedCount += 1;
   }
 
   if (selectedCount === 0) return 'unchecked';
-  if (selectedCount === node.subtreeValues.length) return 'checked';
+  if (selectedCount === node.selectableValues.length) return 'checked';
   return 'indeterminate';
 }
 
@@ -154,27 +163,34 @@ function toggleCascadeSelection(
   node: TreeItemModel,
   state: TreeSelectionState,
   selectedValues: ReadonlySet<string>,
-  orderedValues: readonly string[]
+  orderedValues: readonly string[],
+  nodesByValue: ReadonlyMap<string, TreeItemModel>
 ): string[] {
   const nextValues = new Set(selectedValues);
   const shouldSelectSubtree = state !== 'checked';
 
   for (const value of node.subtreeValues) {
+    if (nodesByValue.get(value)?.item.disabled) continue;
     if (shouldSelectSubtree) nextValues.add(value);
     else nextValues.delete(value);
   }
 
   let ancestor = node.parent;
   while (ancestor) {
-    const allDescendantsSelected = ancestor.subtreeValues
-      .slice(1)
+    const allDescendantsSelected = ancestor.selectableValues
+      .filter((value) => value !== ancestor!.item.value)
       .every((value) => nextValues.has(value));
-    if (allDescendantsSelected) nextValues.add(ancestor.item.value);
-    else nextValues.delete(ancestor.item.value);
+    if (!ancestor.item.disabled) {
+      if (allDescendantsSelected) nextValues.add(ancestor.item.value);
+      else nextValues.delete(ancestor.item.value);
+    }
     ancestor = ancestor.parent;
   }
 
-  return orderedValues.filter((value) => nextValues.has(value));
+  return [
+    ...orderedValues.filter((value) => nextValues.has(value)),
+    ...[...nextValues].filter((value) => !nodesByValue.has(value))
+  ];
 }
 
 function multipleSelectionLabel(item: TreeItem, state: TreeSelectionState) {
@@ -227,7 +243,9 @@ function TreeNode({
   const singleSelected = selection.mode === 'single' && selection.value === node.item.value;
   const selectionState = getSelectionState(node, selection, selectedValues);
 
+  const reasonId = React.useId();
   const handleSelect = () => {
+    if (node.item.disabled) return;
     if (selection.mode === 'single') {
       selection.onValueChange(node.item.value);
       return;
@@ -236,11 +254,17 @@ function TreeNode({
       const next = new Set(selectedValues);
       if (next.has(node.item.value)) next.delete(node.item.value);
       else next.add(node.item.value);
-      selection.onValuesChange(model.orderedValues.filter((value) => next.has(value)));
+      selection.onValuesChange([...next]);
       return;
     }
     selection.onValuesChange(
-      toggleCascadeSelection(node, selectionState!, selectedValues, model.orderedValues)
+      toggleCascadeSelection(
+        node,
+        selectionState!,
+        selectedValues,
+        model.orderedValues,
+        model.nodesByValue
+      )
     );
   };
 
@@ -254,6 +278,8 @@ function TreeNode({
       <div
         ref={(element) => onItemRef(node.item.value, element)}
         role='treeitem'
+        aria-disabled={node.item.disabled || undefined}
+        aria-describedby={node.item.disabledReason ? reasonId : undefined}
         tabIndex={activeValue === node.item.value ? 0 : -1}
         aria-label={ariaLabel}
         aria-level={depth + 1}
@@ -264,7 +290,8 @@ function TreeNode({
         aria-checked={selectionState ? multipleSelectionAriaState(selectionState) : undefined}
         className={cn(
           'group flex w-full min-w-0 cursor-pointer items-center overflow-hidden rounded outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          singleSelected ? 'bg-accent' : 'hover:bg-accent/60'
+          singleSelected ? 'bg-accent' : 'hover:bg-accent/60',
+          node.item.disabled && 'opacity-50'
         )}
         style={{ paddingLeft: `${depth}rem` }}
         onClick={handleSelect}
@@ -329,9 +356,14 @@ function TreeNode({
               <span className='min-w-0 flex-1 truncate'>{node.item.label}</span>
             </TooltipTrigger>
             <TooltipContent side='right' className='max-w-80 break-words'>
-              {node.item.label}
+              {node.item.disabledReason ?? node.item.label}
             </TooltipContent>
           </Tooltip>
+          {node.item.disabledReason && (
+            <span id={reasonId} className='sr-only'>
+              {node.item.disabledReason}
+            </span>
+          )}
           {node.item.endContent}
         </span>
       </div>
@@ -363,6 +395,7 @@ function TreeNode({
 export function Tree({
   items,
   selection,
+  defaultExpandedValues,
   searchQuery = '',
   emptyText = '暂无数据',
   searchEmptyText = '未找到匹配项',
@@ -376,7 +409,7 @@ export function Tree({
     [model.roots, normalizedSearchQuery]
   );
   const [expandedValues, setExpandedValues] = React.useState<ReadonlySet<string>>(() =>
-    collectTreeValues(model.roots)
+    defaultExpandedValues ? new Set(defaultExpandedValues) : collectTreeValues(model.roots)
   );
   const multipleValues =
     selection.mode === 'cascade-multiple' || selection.mode === 'independent-multiple'

@@ -171,6 +171,7 @@ function hasQueryOptions<TData, TValue>(options: DataTableColumnOptions<TData, T
     options.dsl?.filterOperator ||
     options.dsl?.filterNodeType ||
     options.dsl?.serializeFilter ||
+    options.dsl?.buildFilterCondition ||
     options.meta?.query
   );
 }
@@ -189,7 +190,9 @@ function resolveQueryMeta<TData, TValue>(
     filterNodeType: options.dsl?.filterNodeType ?? options.meta?.query?.filterNodeType,
     filterField: options.dsl?.filterField ?? options.meta?.query?.filterField,
     sortField: options.dsl?.sortField ?? options.meta?.query?.sortField,
-    serializeFilter: options.dsl?.serializeFilter ?? options.meta?.query?.serializeFilter
+    serializeFilter: options.dsl?.serializeFilter ?? options.meta?.query?.serializeFilter,
+    buildFilterCondition:
+      options.dsl?.buildFilterCondition ?? options.meta?.query?.buildFilterCondition
   };
 }
 

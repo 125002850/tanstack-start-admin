@@ -1,13 +1,16 @@
-import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { cleanup, render, screen } from '@testing-library/react';
 import {
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
   type ColumnDef
 } from '@tanstack/react-table';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { DataTablePagination } from './data-table-pagination';
+
+afterEach(cleanup);
 
 type TestRow = { id: number; name: string };
 
@@ -34,6 +37,7 @@ function Harness({
     data: rows,
     columns,
     rowCount,
+    manualPagination: rowCount !== undefined,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {
@@ -69,4 +73,67 @@ describe('DataTablePagination', () => {
 
     expect(screen.getByText('已选择 7 / 42 行')).toBeInTheDocument();
   });
+});
+
+it.each(['Enter', 'blur'])(
+  'enters editing, selects the current page and submits on %s',
+  async (submitMethod) => {
+    const user = userEvent.setup();
+    render(<Harness rowCount={100} />);
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '前往下一页' }));
+    await user.click(screen.getByRole('button', { name: '跳转页码' }));
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: '跳转页码' });
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue('2');
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(1);
+    await user.keyboard('8');
+    expect(input).toHaveValue('8');
+    if (submitMethod === 'Enter') await user.keyboard('{Enter}');
+    else await user.tab();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '跳转页码' })).toHaveTextContent('第 8 / 20 页');
+    await user.click(screen.getByRole('button', { name: '前往下一页' }));
+    expect(screen.getByRole('button', { name: '跳转页码' })).toHaveTextContent('第 9 / 20 页');
+  }
+);
+
+it('exits editing on Escape or invalid input without navigating', async () => {
+  const user = userEvent.setup();
+  render(<Harness rowCount={100} />);
+  for (const ending of ['escape', 'invalid']) {
+    await user.click(screen.getByRole('button', { name: '跳转页码' }));
+    await user.keyboard(ending === 'invalid' ? '2.5{Enter}' : '8');
+    if (ending === 'escape') await user.keyboard('{Escape}');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '跳转页码' })).toHaveTextContent('第 1 / 20 页');
+    expect(screen.getByRole('button', { name: '前往上一页' })).toBeDisabled();
+  }
+});
+
+it('clamps pages and closes editing when the total changes', async () => {
+  const user = userEvent.setup();
+  const { rerender } = render(<Harness rowCount={100} />);
+  await user.click(screen.getByRole('button', { name: '跳转页码' }));
+  await user.keyboard('999{Enter}');
+  expect(screen.getByRole('button', { name: '跳转页码' })).toHaveTextContent('第 20 / 20 页');
+  expect(screen.getByRole('button', { name: '前往下一页' })).toBeDisabled();
+  await user.click(screen.getByRole('button', { name: '跳转页码' }));
+  await user.keyboard('0{Enter}');
+  expect(screen.getByRole('button', { name: '跳转页码' })).toHaveTextContent('第 1 / 20 页');
+  await user.click(screen.getByRole('button', { name: '跳转页码' }));
+  await user.keyboard('8');
+  rerender(<Harness rowCount={10} />);
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '跳转页码' })).toHaveTextContent('第 1 / 2 页');
+});
+
+it.each([0, 5])('does not enter editing for %s server rows', async (rowCount) => {
+  const user = userEvent.setup();
+  render(<Harness rowCount={rowCount} />);
+  const page = rowCount === 0 ? 0 : 1;
+  await user.click(screen.getByText(`第 ${page} / ${page} 页`));
+  expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '跳转页码' })).not.toBeInTheDocument();
 });
