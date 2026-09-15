@@ -1,9 +1,12 @@
 import * as React from 'react';
 
 import type { DictTypes } from '@/constants/dictTypes';
-import { EMPTY_DICT_BATCH, useDicts, type DictBatchData } from '@/hooks/use-dict';
-
-const DictionaryContext = React.createContext<DictBatchData>(EMPTY_DICT_BATCH);
+import {
+  DictionaryContext,
+  EMPTY_DICT_BATCH,
+  normalizeDictTypes,
+  useDicts
+} from '@/hooks/use-dict';
 
 interface DictionaryScopeProps {
   typeCodes: readonly DictTypes[];
@@ -15,12 +18,32 @@ interface DictionaryScopeProps {
  * renderers only read context and can never produce per-cell network calls.
  */
 export function DictionaryScope({ typeCodes, children }: DictionaryScopeProps) {
+  const normalizedTypeCodes = React.useMemo(() => normalizeDictTypes(typeCodes), [typeCodes]);
   const dictionaries = useDicts(typeCodes);
-  return (
-    <DictionaryContext.Provider value={dictionaries.data ?? EMPTY_DICT_BATCH}>
-      {children}
-    </DictionaryContext.Provider>
+  const {
+    data,
+    error,
+    isError,
+    isFetching,
+    isPending,
+    refetch: refetchDictionaries
+  } = dictionaries;
+  const refetch = React.useCallback(() => {
+    void refetchDictionaries();
+  }, [refetchDictionaries]);
+  const value = React.useMemo(
+    () => ({
+      batch: data ?? EMPTY_DICT_BATCH,
+      declaredTypes: new Set(normalizedTypeCodes),
+      error,
+      isError,
+      isFetching,
+      isPending,
+      refetch
+    }),
+    [data, error, isError, isFetching, isPending, normalizedTypeCodes, refetch]
   );
+  return <DictionaryContext.Provider value={value}>{children}</DictionaryContext.Provider>;
 }
 
 interface DictTextProps {
@@ -33,5 +56,5 @@ export function DictText({ typeCode, value, emptyText = '-' }: DictTextProps) {
   const dictionaries = React.useContext(DictionaryContext);
   if (value === null || value === undefined || value === '') return emptyText;
   const code = String(value);
-  return dictionaries.byType.get(typeCode)?.codeMap.get(code) ?? code;
+  return dictionaries.batch.byType.get(typeCode)?.codeMap.get(code) ?? code;
 }

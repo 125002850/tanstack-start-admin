@@ -10,14 +10,26 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8080",
+      "url": "http://127.0.0.1:18082",
       "description": "Generated server url"
     }
   ],
   "tags": [
     {
+      "name": "操作日志",
+      "description": "全局 API 操作审计查询"
+    },
+    {
       "name": "全局字典",
       "description": "平台级全局字典维护与查询相关接口"
+    },
+    {
+      "name": "定时任务",
+      "description": "定时任务管理相关接口"
+    },
+    {
+      "name": "工作日历",
+      "description": "平台全局工作日历草稿、发布与时间判定"
     },
     {
       "name": "员工信息",
@@ -33,6 +45,647 @@
     }
   ],
   "paths": {
+    "/api/system/work-calendar/year/detail": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "获取年度工作日历详情",
+        "operationId": "fetchWorkCalendarYearDetail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCalendarYearDetailReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RWorkCalendarYearDetailRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/work-calendar/publish": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "确认发布工作日历草稿",
+        "operationId": "publishWorkCalendarDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishWorkCalendarDraftReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RWorkCalendarYearDetailRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/work-calendar/publish/prepare": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "预检工作日历发布",
+        "operationId": "prepareWorkCalendarPublication",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareWorkCalendarPublicationReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPrepareWorkCalendarPublicationRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/work-calendar/draft/save": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "保存工作日历草稿",
+        "operationId": "saveWorkCalendarDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveWorkCalendarDraftReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RWorkCalendarYearDetailRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/work-calendar/draft/import": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "JSON 覆盖导入工作日历草稿特殊日期",
+        "operationId": "importWorkCalendarDraft",
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "maximum": 2099,
+              "minimum": 2000,
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "draftVersionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "expectedLockVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "UTF-8 JSON 文件，最大 1 MiB",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RWorkCalendarYearDetailRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/work-calendar/draft/evaluate": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "试算已保存工作日历草稿",
+        "operationId": "evaluateWorkCalendarDraft",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateWorkCalendarDraftReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RTimeClassificationRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/work-calendar/classify": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "使用生效工作日历判定时间",
+        "operationId": "classifyWorkCalendarTime",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassifyWorkCalendarTimeReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RTimeClassificationRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/update": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "修改定时任务",
+        "description": "修改定时任务，自动取消旧调度并重新调度",
+        "operationId": "systemScheduleJobUpdate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobUpdateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RScheduleJobRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/trigger": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "立刻执行",
+        "description": "立即触发执行一次定时任务，不影响原有cron调度",
+        "operationId": "systemScheduleJobTrigger",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/page": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "分页查询定时任务",
+        "description": "分页查询定时任务列表",
+        "operationId": "systemScheduleJobPage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobPageQueryReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPageResultScheduleJobRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/operation-logs": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "查询操作记录",
+        "description": "按任务ID查询操作记录列表",
+        "operationId": "systemScheduleJobOperationLogs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobOperationLogQueryReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListScheduleJobOperationLogRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/next-executions": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "预演接下来执行时间",
+        "description": "根据 Cron 表达式预演计算接下来的执行时间列表",
+        "operationId": "systemScheduleJobNextExecutions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobCronPreviewReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/execution-logs": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "查询执行记录",
+        "description": "按任务ID查询执行记录列表",
+        "operationId": "systemScheduleJobExecutionLogs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobExecutionLogQueryReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListScheduleJobExecutionLogRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/enable": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "启用定时任务",
+        "description": "启用定时任务并加入调度",
+        "operationId": "systemScheduleJobEnable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RScheduleJobRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/disable": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "禁用定时任务",
+        "description": "禁用定时任务并取消调度",
+        "operationId": "systemScheduleJobDisable",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RScheduleJobRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/delete": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "删除定时任务",
+        "description": "删除定时任务，自动取消调度",
+        "operationId": "systemScheduleJobDelete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/create": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "新增定时任务",
+        "description": "新增定时任务，若启用则自动调度",
+        "operationId": "systemScheduleJobCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobCreateReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RScheduleJobRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/operation-audit/page": {
+      "post": {
+        "tags": [
+          "操作日志"
+        ],
+        "summary": "分页查询操作日志",
+        "operationId": "pageOperationAuditLogs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationAuditLogDynamicPageReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RPageResultOperationAuditLogRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/operation-audit/detail": {
+      "post": {
+        "tags": [
+          "操作日志"
+        ],
+        "summary": "查询操作日志详情",
+        "operationId": "detailOperationAuditLog",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperationAuditLogIdReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ROperationAuditLogDetailRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/system/dict/global/types/list": {
       "post": {
         "tags": [
@@ -218,6 +871,38 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/RListDictOptionGroupRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/dict/global/items/list-all": {
+      "post": {
+        "tags": [
+          "全局字典"
+        ],
+        "summary": "按类型查询全部全局字典项",
+        "description": "包含启用和停用项，按排序号、ID升序；类型不存在时返回空数组",
+        "operationId": "systemDictGlobalItemsListAll",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalDictItemListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListDictItemRspDTO"
                 }
               }
             }
@@ -770,6 +1455,2303 @@
   },
   "components": {
     "schemas": {
+      "WorkCalendarYearDetailReqDTO": {
+        "required": [
+          "year"
+        ],
+        "type": "object",
+        "properties": {
+          "year": {
+            "maximum": 2099,
+            "minimum": 2000,
+            "type": "integer",
+            "description": "自然年",
+            "format": "int32",
+            "example": 2026
+          },
+          "view": {
+            "type": "string",
+            "description": "查看视图；不传时优先返回草稿，否则返回当前生效版本",
+            "example": "draft",
+            "enum": [
+              "draft",
+              "active"
+            ],
+            "x-dict-type": "WORK_CALENDAR_YEAR_VIEW"
+          }
+        },
+        "description": "工作日历年度详情请求"
+      },
+      "RWorkCalendarYearDetailRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/WorkCalendarYearDetailRspDTO"
+          }
+        }
+      },
+      "ResolvedCalendarDayRspDTO": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "description": "星期，1 为周一、7 为周日",
+            "format": "int32"
+          },
+          "effectiveDayKind": {
+            "type": "string",
+            "enum": [
+              "regular_workday",
+              "adjusted_workday",
+              "weekend",
+              "public_holiday",
+              "other_non_working_day"
+            ],
+            "x-dict-type": "WORK_CALENDAR_EFFECTIVE_DAY_KIND"
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "weekend",
+                "public_holiday",
+                "adjusted_workday",
+                "other_non_working_day"
+              ],
+              "x-dict-type": "WORK_CALENDAR_DAY_TRAIT"
+            }
+          },
+          "dateName": {
+            "type": "string"
+          },
+          "effectivePeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+            }
+          }
+        },
+        "description": "工作日历单日解析结果"
+      },
+      "WorkCalendarDateOverrideRspDTO": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "adjusted_workday",
+              "public_holiday",
+              "other_non_working_day"
+            ],
+            "x-dict-type": "WORK_CALENDAR_DATE_OVERRIDE_TYPE"
+          },
+          "name": {
+            "type": "string"
+          },
+          "customPeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+            }
+          },
+          "sourceNote": {
+            "type": "string"
+          }
+        },
+        "description": "工作日历特殊日期响应"
+      },
+      "WorkCalendarPeriodRspDTO": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "开始时间，包含",
+            "example": "09:00"
+          },
+          "end": {
+            "type": "string",
+            "description": "结束时间，不包含",
+            "example": "12:00"
+          }
+        },
+        "description": "工作时段响应，采用左闭右开区间"
+      },
+      "WorkCalendarVersionSummaryRspDTO": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "versionNo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ],
+            "x-dict-type": "WORK_CALENDAR_VERSION_STATUS"
+          },
+          "lockVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "publishedBy": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "publishedByName": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "工作日历版本摘要"
+      },
+      "WorkCalendarYearDetailRspDTO": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "zoneId": {
+            "type": "string",
+            "description": "固定时区",
+            "enum": [
+              "Asia/Shanghai"
+            ]
+          },
+          "viewBasis": {
+            "type": "string",
+            "enum": [
+              "published_snapshot",
+              "weekly_fallback",
+              "saved_draft"
+            ],
+            "x-dict-type": "WORK_CALENDAR_CLASSIFICATION_BASIS"
+          },
+          "authoritative": {
+            "type": "boolean"
+          },
+          "activeVersion": {
+            "$ref": "#/components/schemas/WorkCalendarVersionSummaryRspDTO"
+          },
+          "draftVersion": {
+            "$ref": "#/components/schemas/WorkCalendarVersionSummaryRspDTO"
+          },
+          "standardPeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+            }
+          },
+          "dateOverrides": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarDateOverrideRspDTO"
+            }
+          },
+          "resolvedDays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResolvedCalendarDayRspDTO"
+            }
+          }
+        },
+        "description": "工作日历年度详情"
+      },
+      "PublishWorkCalendarDraftReqDTO": {
+        "required": [
+          "contentHash",
+          "draftVersionId",
+          "expectedLockVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "draftVersionId": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedLockVersion": {
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "contentHash": {
+            "pattern": "[a-f0-9]{64}",
+            "type": "string"
+          }
+        },
+        "description": "确认发布工作日历草稿请求"
+      },
+      "PrepareWorkCalendarPublicationReqDTO": {
+        "required": [
+          "draftVersionId",
+          "expectedLockVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "draftVersionId": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedLockVersion": {
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "工作日历发布预检请求"
+      },
+      "DateOverrideChangeRspDTO": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "changeType": {
+            "type": "string",
+            "enum": [
+              "added",
+              "removed",
+              "changed"
+            ],
+            "x-dict-type": "WORK_CALENDAR_PUBLICATION_CHANGE_TYPE"
+          },
+          "before": {
+            "$ref": "#/components/schemas/WorkCalendarDateOverrideRspDTO"
+          },
+          "after": {
+            "$ref": "#/components/schemas/WorkCalendarDateOverrideRspDTO"
+          }
+        }
+      },
+      "PrepareWorkCalendarPublicationRspDTO": {
+        "type": "object",
+        "properties": {
+          "draftVersionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "draftLockVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "publishable": {
+            "type": "boolean"
+          },
+          "validationIssues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "diffSummary": {
+            "$ref": "#/components/schemas/PublicationDiffRspDTO"
+          }
+        },
+        "description": "工作日历发布预检结果"
+      },
+      "PublicationDiffRspDTO": {
+        "type": "object",
+        "properties": {
+          "initialPublication": {
+            "type": "boolean"
+          },
+          "standardPeriodsChanged": {
+            "type": "boolean"
+          },
+          "previousStandardPeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+            }
+          },
+          "nextStandardPeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+            }
+          },
+          "addedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "removedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dateChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateOverrideChangeRspDTO"
+            }
+          }
+        },
+        "description": "工作日历发布差异摘要"
+      },
+      "RPrepareWorkCalendarPublicationRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PrepareWorkCalendarPublicationRspDTO"
+          }
+        }
+      },
+      "SaveWorkCalendarDraftReqDTO": {
+        "required": [
+          "dateOverrides",
+          "standardPeriods",
+          "year"
+        ],
+        "type": "object",
+        "properties": {
+          "year": {
+            "maximum": 2099,
+            "minimum": 2000,
+            "type": "integer",
+            "format": "int32"
+          },
+          "draftVersionId": {
+            "type": "integer",
+            "description": "已有草稿版本 ID；首次保存为空",
+            "format": "int64"
+          },
+          "expectedLockVersion": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "已有草稿乐观锁版本；首次保存为空",
+            "format": "int32"
+          },
+          "standardPeriods": {
+            "maxItems": 8,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodReqDTO"
+            }
+          },
+          "dateOverrides": {
+            "maxItems": 366,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarDateOverrideReqDTO"
+            }
+          }
+        },
+        "description": "保存工作日历完整草稿请求"
+      },
+      "WorkCalendarDateOverrideReqDTO": {
+        "required": [
+          "date",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "特殊日期",
+            "format": "date",
+            "example": "2026-10-04"
+          },
+          "type": {
+            "type": "string",
+            "description": "特殊日期覆盖类型稳定编码",
+            "enum": [
+              "adjusted_workday",
+              "public_holiday",
+              "other_non_working_day"
+            ],
+            "x-dict-type": "WORK_CALENDAR_DATE_OVERRIDE_TYPE"
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "节日或安排名称",
+            "example": "国庆节、中秋节"
+          },
+          "customPeriods": {
+            "maxItems": 8,
+            "minItems": 0,
+            "type": "array",
+            "description": "调休工作日自定义时段；缺失表示继承标准时段",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodReqDTO"
+            }
+          },
+          "sourceNote": {
+            "maxLength": 256,
+            "minLength": 0,
+            "type": "string",
+            "description": "来源或备注"
+          }
+        },
+        "description": "工作日历特殊日期请求"
+      },
+      "WorkCalendarPeriodReqDTO": {
+        "required": [
+          "end",
+          "start"
+        ],
+        "type": "object",
+        "properties": {
+          "start": {
+            "pattern": "(?:[01]\\d|2[0-3]):[0-5]\\d",
+            "type": "string",
+            "description": "开始时间，包含",
+            "example": "09:00"
+          },
+          "end": {
+            "pattern": "(?:[01]\\d|2[0-3]):[0-5]\\d",
+            "type": "string",
+            "description": "结束时间，不包含",
+            "example": "12:00"
+          }
+        },
+        "description": "工作时段请求，采用左闭右开区间"
+      },
+      "EvaluateWorkCalendarDraftReqDTO": {
+        "required": [
+          "draftVersionId",
+          "expectedLockVersion",
+          "localDateTime"
+        ],
+        "type": "object",
+        "properties": {
+          "draftVersionId": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedLockVersion": {
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "localDateTime": {
+            "type": "string",
+            "description": "Asia/Shanghai 本地时间",
+            "format": "date-time"
+          }
+        },
+        "description": "已保存工作日历草稿试算请求"
+      },
+      "RTimeClassificationRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TimeClassificationRspDTO"
+          }
+        }
+      },
+      "TimeClassificationRspDTO": {
+        "type": "object",
+        "properties": {
+          "inputLocalDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "zoneId": {
+            "type": "string",
+            "description": "固定时区",
+            "enum": [
+              "Asia/Shanghai"
+            ]
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "working_time",
+              "workday_break",
+              "weekend",
+              "public_holiday",
+              "other_non_working_day"
+            ],
+            "x-dict-type": "WORK_CALENDAR_TIME_CLASSIFICATION"
+          },
+          "working": {
+            "type": "boolean"
+          },
+          "effectiveDayKind": {
+            "type": "string",
+            "enum": [
+              "regular_workday",
+              "adjusted_workday",
+              "weekend",
+              "public_holiday",
+              "other_non_working_day"
+            ],
+            "x-dict-type": "WORK_CALENDAR_EFFECTIVE_DAY_KIND"
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "weekend",
+                "public_holiday",
+                "adjusted_workday",
+                "other_non_working_day"
+              ],
+              "x-dict-type": "WORK_CALENDAR_DAY_TRAIT"
+            }
+          },
+          "dateName": {
+            "type": "string"
+          },
+          "effectivePeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+            }
+          },
+          "matchedPeriod": {
+            "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+          },
+          "authoritative": {
+            "type": "boolean"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "published_snapshot",
+              "weekly_fallback",
+              "saved_draft"
+            ],
+            "x-dict-type": "WORK_CALENDAR_CLASSIFICATION_BASIS"
+          },
+          "holidayStatus": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "candidate",
+              "unknown"
+            ],
+            "x-dict-type": "WORK_CALENDAR_HOLIDAY_STATUS"
+          },
+          "calendarYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "calendarVersionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "calendarVersionNo": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "工作日历时间判定结果"
+      },
+      "ClassifyWorkCalendarTimeReqDTO": {
+        "required": [
+          "localDateTime"
+        ],
+        "type": "object",
+        "properties": {
+          "localDateTime": {
+            "type": "string",
+            "description": "Asia/Shanghai 本地时间",
+            "format": "date-time"
+          }
+        },
+        "description": "工作日历生效规则时间判定请求"
+      },
+      "ScheduleJobUpdateReqDTO": {
+        "required": [
+          "id",
+          "invokeRoute",
+          "jobCode",
+          "jobName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobName": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "任务名称",
+            "example": "示例维护任务"
+          },
+          "jobCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string",
+            "description": "任务编码",
+            "example": "maintenanceJob"
+          },
+          "defaultCron": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "默认cron表达式",
+            "example": "0 0/5 * * * ?"
+          },
+          "cronExpression": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "cron表达式（当前生效）",
+            "example": "0 0/5 * * * ?"
+          },
+          "invokeRoute": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": "string",
+            "description": "调用路由（接口URL或bean://beanName.methodName）",
+            "example": "bean://maintenanceJob.run"
+          },
+          "remark": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": "string",
+            "description": "备注",
+            "example": "每5分钟执行维护任务"
+          },
+          "groupName": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string",
+            "description": "任务分组",
+            "example": "平台维护"
+          }
+        },
+        "description": "定时任务修改请求"
+      },
+      "RScheduleJobRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ScheduleJobRspDTO"
+          }
+        }
+      },
+      "ScheduleJobRspDTO": {
+        "type": "object",
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createById": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "createByName": {
+            "type": "string",
+            "description": "创建人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "updateById": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "updateByName": {
+            "type": "string",
+            "description": "更新人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "id": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobName": {
+            "type": "string",
+            "description": "任务名称",
+            "example": "示例维护任务"
+          },
+          "jobCode": {
+            "type": "string",
+            "description": "任务编码",
+            "example": "maintenanceJob"
+          },
+          "defaultCron": {
+            "type": "string",
+            "description": "默认cron表达式",
+            "example": "0 0/5 * * * ?"
+          },
+          "cronExpression": {
+            "type": "string",
+            "description": "cron表达式（当前生效）",
+            "example": "0 0/5 * * * ?"
+          },
+          "invokeRoute": {
+            "type": "string",
+            "description": "调用路由",
+            "example": "bean://maintenanceJob.run"
+          },
+          "status": {
+            "type": "string",
+            "description": "启用状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": [
+              "enable",
+              "disable"
+            ]
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注",
+            "example": "每5分钟执行维护任务"
+          },
+          "groupName": {
+            "type": "string",
+            "description": "任务分组",
+            "example": "平台维护"
+          }
+        },
+        "description": "定时任务响应"
+      },
+      "ScheduleJobIdReqDTO": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "定时任务ID请求"
+      },
+      "RVoid": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "ScheduleJobConditionNode": {
+        "required": [
+          "nodeType"
+        ],
+        "type": "object",
+        "properties": {
+          "nodeType": {
+            "type": "string",
+            "description": "节点类型",
+            "enum": [
+              "compose",
+              "text",
+              "dateTime",
+              "enum"
+            ]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleJobConditionNode"
+            }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段；枚举字段",
+            "enum": [
+              "jobName",
+              "jobCode",
+              "invokeRoute",
+              "groupName",
+              "createTime",
+              "updateTime",
+              "status"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符；枚举操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "string",
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+          },
+          "end": {
+            "type": "string",
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+          }
+        },
+        "description": "查询条件树",
+        "discriminator": {
+          "propertyName": "nodeType",
+          "mapping": {
+            "compose": "#/components/schemas/ScheduleJobGroupCondition",
+            "text": "#/components/schemas/ScheduleJobTextCondition",
+            "dateTime": "#/components/schemas/ScheduleJobDateTimeCondition",
+            "enum": "#/components/schemas/ScheduleJobEnumCondition"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ScheduleJobGroupCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ScheduleJobTextCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ScheduleJobEnumCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ScheduleJobDateTimeCondition"
+          }
+        ]
+      },
+      "ScheduleJobDateTimeCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "定时任务时间条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ScheduleJobConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "时间字段",
+                "enum": [
+                  "createTime",
+                  "updateTime"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "时间操作符",
+                "enum": [
+                  "GT",
+                  "GTE",
+                  "LT",
+                  "LTE",
+                  "BETWEEN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "start": {
+                "type": "string",
+                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "end": {
+                "type": "string",
+                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "dateTime"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ScheduleJobEnumCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "定时任务枚举条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ScheduleJobConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "枚举字段",
+                "enum": [
+                  "status"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "枚举操作符",
+                "enum": [
+                  "EQ",
+                  "IN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "enum"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ScheduleJobGroupCondition": {
+        "required": [
+          "children",
+          "logic"
+        ],
+        "type": "object",
+        "description": "定时任务逻辑分组",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ScheduleJobConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "logic": {
+                "type": "string",
+                "description": "分组逻辑",
+                "enum": [
+                  "AND",
+                  "OR"
+                ]
+              },
+              "children": {
+                "type": "array",
+                "description": "子节点列表",
+                "items": {
+                  "$ref": "#/components/schemas/ScheduleJobConditionNode"
+                }
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "compose"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "ScheduleJobPageQueryReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "condition": {
+            "$ref": "#/components/schemas/ScheduleJobConditionNode"
+          },
+          "sort": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "排序项",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleJobSortItem"
+            }
+          },
+          "keyword": {
+            "type": "string",
+            "description": "关键字，模糊匹配任务名称和任务编码"
+          }
+        },
+        "description": "定时任务分页查询请求"
+      },
+      "ScheduleJobSortItem": {
+        "required": [
+          "direction",
+          "field"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "排序字段",
+            "enum": [
+              "id",
+              "jobName",
+              "jobCode",
+              "groupName",
+              "cronExpression",
+              "invokeRoute",
+              "remark",
+              "createTime",
+              "updateTime"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "description": "排序方向",
+            "enum": [
+              "ASC",
+              "DESC"
+            ]
+          }
+        },
+        "description": "定时任务排序项"
+      },
+      "ScheduleJobTextCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "description": "定时任务文本条件",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ScheduleJobConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "文本字段",
+                "enum": [
+                  "jobName",
+                  "jobCode",
+                  "invokeRoute",
+                  "groupName"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "文本操作符",
+                "enum": [
+                  "EQ",
+                  "CONTAINS",
+                  "STARTS_WITH",
+                  "ENDS_WITH",
+                  "IN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "text"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "PageResultScheduleJobRspDTO": {
+        "required": [
+          "list",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "总条数",
+            "format": "int64",
+            "example": 0
+          },
+          "list": {
+            "type": "array",
+            "description": "当前页数据列表",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleJobRspDTO"
+            }
+          }
+        },
+        "description": "分页结果"
+      },
+      "RPageResultScheduleJobRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultScheduleJobRspDTO"
+          }
+        }
+      },
+      "ScheduleJobOperationLogQueryReqDTO": {
+        "required": [
+          "jobId"
+        ],
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "定时任务操作记录查询请求"
+      },
+      "RListScheduleJobOperationLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleJobOperationLogRspDTO"
+            }
+          }
+        }
+      },
+      "ScheduleJobOperationLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "记录ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobId": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobCode": {
+            "type": "string",
+            "description": "任务编码",
+            "example": "maintenanceJob"
+          },
+          "jobName": {
+            "type": "string",
+            "description": "任务名称",
+            "example": "示例维护任务"
+          },
+          "operationType": {
+            "type": "string",
+            "description": "操作类型",
+            "example": "CREATE"
+          },
+          "operationContent": {
+            "type": "string",
+            "description": "操作内容（JSON）",
+            "example": "{\"jobName\":\"示例维护\"}"
+          },
+          "operatorId": {
+            "type": "integer",
+            "description": "操作人ID",
+            "format": "int64"
+          },
+          "operatorName": {
+            "type": "string",
+            "description": "操作人名称",
+            "example": "admin"
+          },
+          "createTime": {
+            "type": "string",
+            "description": "操作时间",
+            "format": "date-time"
+          }
+        },
+        "description": "定时任务操作记录响应"
+      },
+      "ScheduleJobCronPreviewReqDTO": {
+        "required": [
+          "cronExpression"
+        ],
+        "type": "object",
+        "properties": {
+          "cronExpression": {
+            "type": "string",
+            "description": "Cron 表达式",
+            "example": "0 0/5 * * * ?"
+          },
+          "count": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer",
+            "description": "预演执行次数，默认 5，最大 10",
+            "format": "int32",
+            "example": 5
+          }
+        },
+        "description": "Cron 表达式执行时间预演请求"
+      },
+      "RListString": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ScheduleJobExecutionLogQueryReqDTO": {
+        "required": [
+          "jobId"
+        ],
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "定时任务执行记录查询请求"
+      },
+      "RListScheduleJobExecutionLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleJobExecutionLogRspDTO"
+            }
+          }
+        }
+      },
+      "ScheduleJobExecutionLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "记录ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobId": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobCode": {
+            "type": "string",
+            "description": "任务编码",
+            "example": "maintenanceJob"
+          },
+          "jobName": {
+            "type": "string",
+            "description": "任务名称",
+            "example": "示例维护任务"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "开始时间",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "结束时间",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "执行状态：success-成功，failed-失败",
+            "example": "success"
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "错误信息"
+          },
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          }
+        },
+        "description": "定时任务执行记录响应"
+      },
+      "ScheduleJobCreateReqDTO": {
+        "required": [
+          "invokeRoute",
+          "jobCode",
+          "jobName"
+        ],
+        "type": "object",
+        "properties": {
+          "jobName": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "任务名称",
+            "example": "示例维护任务"
+          },
+          "jobCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string",
+            "description": "任务编码",
+            "example": "maintenanceJob"
+          },
+          "defaultCron": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "默认cron表达式",
+            "example": "0 0/5 * * * ?"
+          },
+          "cronExpression": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string",
+            "description": "cron表达式（当前生效）",
+            "example": "0 0/5 * * * ?"
+          },
+          "invokeRoute": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": "string",
+            "description": "调用路由（接口URL或bean://beanName.methodName）",
+            "example": "bean://maintenanceJob.run"
+          },
+          "status": {
+            "type": "string",
+            "description": "启用状态",
+            "example": "enable",
+            "enum": [
+              "enable",
+              "disable"
+            ],
+            "x-dict-type": "ENABLE_STATUS"
+          },
+          "remark": {
+            "maxLength": 512,
+            "minLength": 0,
+            "type": "string",
+            "description": "备注",
+            "example": "每5分钟执行维护任务"
+          },
+          "groupName": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string",
+            "description": "任务分组",
+            "example": "平台维护"
+          }
+        },
+        "description": "定时任务创建请求"
+      },
+      "OperationAuditLogConditionNode": {
+        "required": [
+          "nodeType"
+        ],
+        "type": "object",
+        "properties": {
+          "nodeType": {
+            "type": "string",
+            "description": "节点类型",
+            "enum": [
+              "compose",
+              "text",
+              "dateTime",
+              "enum",
+              "number"
+            ]
+          },
+          "logic": {
+            "type": "string",
+            "description": "分组逻辑",
+            "enum": [
+              "AND",
+              "OR"
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "子节点列表",
+            "items": {
+              "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+            }
+          },
+          "field": {
+            "type": "string",
+            "description": "文本字段；时间字段；枚举字段；数值字段",
+            "enum": [
+              "moduleCode",
+              "moduleName",
+              "description",
+              "operatorName",
+              "clientIp",
+              "traceId",
+              "requestPath",
+              "operationTime",
+              "action",
+              "resultStatus",
+              "logId",
+              "operatorId",
+              "durationMs",
+              "httpStatus",
+              "resultCode"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "description": "文本操作符；时间操作符；枚举操作符；数值操作符",
+            "enum": [
+              "EQ",
+              "CONTAINS",
+              "STARTS_WITH",
+              "ENDS_WITH",
+              "IN",
+              "IS_NULL",
+              "IS_NOT_NULL",
+              "GT",
+              "GTE",
+              "LT",
+              "LTE",
+              "BETWEEN",
+              "NE"
+            ]
+          },
+          "value": {
+            "description": "单值操作符使用；单值比较时使用，格式 yyyy-MM-dd HH:mm:ss；单值操作符使用；单值比较时使用"
+          },
+          "values": {
+            "type": "array",
+            "description": "IN 操作符使用",
+            "items": {
+              "type": "string",
+              "description": "IN 操作符使用"
+            }
+          },
+          "payloadValid": {
+            "type": "boolean"
+          },
+          "start": {
+            "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss；BETWEEN 开始值"
+          },
+          "end": {
+            "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss；BETWEEN 结束值"
+          }
+        },
+        "description": "操作日志查询节点",
+        "discriminator": {
+          "propertyName": "nodeType",
+          "mapping": {
+            "compose": "#/components/schemas/OperationAuditLogGroupCondition",
+            "text": "#/components/schemas/OperationAuditLogTextCondition",
+            "dateTime": "#/components/schemas/OperationAuditLogDateTimeCondition",
+            "enum": "#/components/schemas/OperationAuditLogEnumCondition",
+            "number": "#/components/schemas/OperationAuditLogNumberCondition"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/OperationAuditLogGroupCondition"
+          },
+          {
+            "$ref": "#/components/schemas/OperationAuditLogTextCondition"
+          },
+          {
+            "$ref": "#/components/schemas/OperationAuditLogDateTimeCondition"
+          },
+          {
+            "$ref": "#/components/schemas/OperationAuditLogEnumCondition"
+          },
+          {
+            "$ref": "#/components/schemas/OperationAuditLogNumberCondition"
+          }
+        ]
+      },
+      "OperationAuditLogDateTimeCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "时间字段",
+                "enum": [
+                  "operationTime"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "时间操作符",
+                "enum": [
+                  "GT",
+                  "GTE",
+                  "LT",
+                  "LTE",
+                  "BETWEEN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值比较时使用，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "start": {
+                "type": "string",
+                "description": "BETWEEN 开始值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "end": {
+                "type": "string",
+                "description": "BETWEEN 结束值，格式 yyyy-MM-dd HH:mm:ss"
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "dateTime"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "OperationAuditLogDynamicPageReqDTO": {
+        "type": "object",
+        "properties": {
+          "pageNo": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "页码，从1开始",
+            "format": "int64",
+            "example": 1
+          },
+          "pageSize": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "每页条数",
+            "format": "int64",
+            "example": 20
+          },
+          "condition": {
+            "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+          },
+          "sort": {
+            "maxItems": 3,
+            "minItems": 0,
+            "type": "array",
+            "description": "排序项",
+            "items": {
+              "$ref": "#/components/schemas/OperationAuditLogSortItem"
+            }
+          }
+        },
+        "description": "操作日志动态分页请求"
+      },
+      "OperationAuditLogEnumCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "枚举字段",
+                "enum": [
+                  "action",
+                  "resultStatus"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "枚举操作符",
+                "enum": [
+                  "EQ",
+                  "IN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "enum"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "OperationAuditLogGroupCondition": {
+        "required": [
+          "children",
+          "logic"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "logic": {
+                "type": "string",
+                "description": "分组逻辑",
+                "enum": [
+                  "AND",
+                  "OR"
+                ]
+              },
+              "children": {
+                "type": "array",
+                "description": "子节点列表",
+                "items": {
+                  "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+                }
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "compose"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "OperationAuditLogNumberCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "数值字段",
+                "enum": [
+                  "logId",
+                  "operatorId",
+                  "durationMs",
+                  "httpStatus",
+                  "resultCode"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "数值操作符",
+                "enum": [
+                  "EQ",
+                  "NE",
+                  "GT",
+                  "GTE",
+                  "LT",
+                  "LTE",
+                  "BETWEEN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "number",
+                "description": "单值比较时使用"
+              },
+              "start": {
+                "type": "number",
+                "description": "BETWEEN 开始值"
+              },
+              "end": {
+                "type": "number",
+                "description": "BETWEEN 结束值"
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "number"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "OperationAuditLogSortItem": {
+        "required": [
+          "direction",
+          "field"
+        ],
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "排序字段",
+            "enum": [
+              "logId",
+              "operationTime",
+              "moduleName",
+              "action",
+              "operatorName",
+              "resultStatus",
+              "durationMs"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "description": "排序方向",
+            "enum": [
+              "ASC",
+              "DESC"
+            ]
+          }
+        },
+        "description": "排序项"
+      },
+      "OperationAuditLogTextCondition": {
+        "required": [
+          "field",
+          "op"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OperationAuditLogConditionNode"
+          },
+          {
+            "required": [
+              "nodeType"
+            ],
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "文本字段",
+                "enum": [
+                  "moduleCode",
+                  "moduleName",
+                  "description",
+                  "operatorName",
+                  "clientIp",
+                  "traceId",
+                  "requestPath"
+                ]
+              },
+              "op": {
+                "type": "string",
+                "description": "文本操作符",
+                "enum": [
+                  "EQ",
+                  "CONTAINS",
+                  "STARTS_WITH",
+                  "ENDS_WITH",
+                  "IN",
+                  "IS_NULL",
+                  "IS_NOT_NULL"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "description": "单值操作符使用"
+              },
+              "values": {
+                "type": "array",
+                "description": "IN 操作符使用",
+                "items": {
+                  "type": "string",
+                  "description": "IN 操作符使用"
+                }
+              },
+              "payloadValid": {
+                "type": "boolean"
+              },
+              "nodeType": {
+                "type": "string",
+                "description": "节点类型",
+                "enum": [
+                  "text"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "OperationAuditLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "logId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "moduleName": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "delete",
+              "status_change",
+              "confirm",
+              "publish",
+              "archive",
+              "sync",
+              "import",
+              "export",
+              "upload",
+              "download",
+              "execute"
+            ],
+            "x-dict-type": "OPERATION_AUDIT_ACTION"
+          },
+          "description": {
+            "type": "string"
+          },
+          "operatorId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "operatorName": {
+            "type": "string"
+          },
+          "clientIp": {
+            "type": "string"
+          },
+          "resultStatus": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failed"
+            ],
+            "x-dict-type": "OPERATION_AUDIT_STATUS"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "operationTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "操作日志列表项"
+      },
+      "PageResultOperationAuditLogRspDTO": {
+        "required": [
+          "list",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "总条数",
+            "format": "int64",
+            "example": 0
+          },
+          "list": {
+            "type": "array",
+            "description": "当前页数据列表",
+            "items": {
+              "$ref": "#/components/schemas/OperationAuditLogRspDTO"
+            }
+          }
+        },
+        "description": "分页结果"
+      },
+      "RPageResultOperationAuditLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultOperationAuditLogRspDTO"
+          }
+        }
+      },
+      "OperationAuditLogIdReqDTO": {
+        "required": [
+          "logId"
+        ],
+        "type": "object",
+        "properties": {
+          "logId": {
+            "type": "integer",
+            "description": "操作日志 ID",
+            "format": "int64"
+          }
+        },
+        "description": "操作日志详情请求"
+      },
+      "OperationAuditLogDetailRspDTO": {
+        "type": "object",
+        "properties": {
+          "logId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "moduleCode": {
+            "type": "string"
+          },
+          "moduleName": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "delete",
+              "status_change",
+              "confirm",
+              "publish",
+              "archive",
+              "sync",
+              "import",
+              "export",
+              "upload",
+              "download",
+              "execute"
+            ],
+            "x-dict-type": "OPERATION_AUDIT_ACTION"
+          },
+          "description": {
+            "type": "string"
+          },
+          "operatorId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "operatorName": {
+            "type": "string"
+          },
+          "clientIp": {
+            "type": "string"
+          },
+          "resultStatus": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failed"
+            ],
+            "x-dict-type": "OPERATION_AUDIT_STATUS"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "operationTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operatorUsername": {
+            "type": "string"
+          },
+          "operatorRealName": {
+            "type": "string"
+          },
+          "requestMethod": {
+            "type": "string"
+          },
+          "requestPath": {
+            "type": "string"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "requestParams": {
+            "type": "string"
+          },
+          "httpStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resultCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "errorMessage": {
+            "type": "string"
+          }
+        },
+        "description": "操作日志详情"
+      },
+      "ROperationAuditLogDetailRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OperationAuditLogDetailRspDTO"
+          }
+        }
+      },
       "GlobalDictTypeConditionNode": {
         "required": [
           "nodeType"
@@ -1267,21 +4249,6 @@
         },
         "description": "全局字典类型修改请求"
       },
-      "RVoid": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object"
-          }
-        }
-      },
       "GlobalDictTypeDeleteReqDTO": {
         "required": [
           "id"
@@ -1401,6 +4368,118 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DictOptionGroupRspDTO"
+            }
+          }
+        }
+      },
+      "GlobalDictItemListReqDTO": {
+        "required": [
+          "dictTypeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "EVENT_MANAGEMENT_FIELD"
+          }
+        },
+        "description": "按类型查询全部全局字典项请求（不分页）"
+      },
+      "DictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "description": "更新时间",
+            "format": "date-time"
+          },
+          "createById": {
+            "type": "integer",
+            "description": "创建人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "createByName": {
+            "type": "string",
+            "description": "创建人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "updateById": {
+            "type": "integer",
+            "description": "更新人ID",
+            "format": "int64",
+            "example": 10001
+          },
+          "updateByName": {
+            "type": "string",
+            "description": "更新人名称",
+            "readOnly": true,
+            "example": "admin"
+          },
+          "id": {
+            "type": "integer",
+            "description": "字典项ID",
+            "format": "int64",
+            "example": 101
+          },
+          "dictTypeCode": {
+            "type": "string",
+            "description": "字典类型编码",
+            "example": "GENDER"
+          },
+          "dictItemCode": {
+            "type": "string",
+            "description": "字典项编码",
+            "example": "MALE"
+          },
+          "dictItemName": {
+            "type": "string",
+            "description": "字典项名称",
+            "example": "男"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "排序号",
+            "format": "int32",
+            "example": 1
+          },
+          "remark": {
+            "type": "string",
+            "description": "备注"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态：enable-启用，disable-禁用",
+            "example": "enable",
+            "enum": [
+              "enable",
+              "disable"
+            ]
+          }
+        },
+        "description": "字典项响应"
+      },
+      "RListDictItemRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DictItemRspDTO"
             }
           }
         }
@@ -1737,86 +4816,6 @@
             }
           }
         ]
-      },
-      "DictItemRspDTO": {
-        "type": "object",
-        "properties": {
-          "createTime": {
-            "type": "string",
-            "description": "创建时间",
-            "format": "date-time"
-          },
-          "updateTime": {
-            "type": "string",
-            "description": "更新时间",
-            "format": "date-time"
-          },
-          "createById": {
-            "type": "integer",
-            "description": "创建人ID",
-            "format": "int64",
-            "example": 10001
-          },
-          "createByName": {
-            "type": "string",
-            "description": "创建人名称",
-            "readOnly": true,
-            "example": "admin"
-          },
-          "updateById": {
-            "type": "integer",
-            "description": "更新人ID",
-            "format": "int64",
-            "example": 10001
-          },
-          "updateByName": {
-            "type": "string",
-            "description": "更新人名称",
-            "readOnly": true,
-            "example": "admin"
-          },
-          "id": {
-            "type": "integer",
-            "description": "字典项ID",
-            "format": "int64",
-            "example": 101
-          },
-          "dictTypeCode": {
-            "type": "string",
-            "description": "字典类型编码",
-            "example": "GENDER"
-          },
-          "dictItemCode": {
-            "type": "string",
-            "description": "字典项编码",
-            "example": "MALE"
-          },
-          "dictItemName": {
-            "type": "string",
-            "description": "字典项名称",
-            "example": "男"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "description": "排序号",
-            "format": "int32",
-            "example": 1
-          },
-          "remark": {
-            "type": "string",
-            "description": "备注"
-          },
-          "status": {
-            "type": "string",
-            "description": "状态：enable-启用，disable-禁用",
-            "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
-          }
-        },
-        "description": "字典项响应"
       },
       "PageResultDictItemRspDTO": {
         "required": [

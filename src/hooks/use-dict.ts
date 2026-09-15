@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { systemDictGlobalItemsOptions } from '@/lib/api/clients/service';
@@ -17,6 +17,16 @@ export interface DictBatchData {
   byType: ReadonlyMap<string, DictData>;
 }
 
+export interface DictionaryContextValue {
+  batch: DictBatchData;
+  declaredTypes: ReadonlySet<string>;
+  error: Error | null;
+  isError: boolean;
+  isFetching: boolean;
+  isPending: boolean;
+  refetch: () => void;
+}
+
 const EMPTY_DICT_DATA: DictData = {
   codeMap: new Map(),
   labelMap: new Map(),
@@ -25,8 +35,31 @@ const EMPTY_DICT_DATA: DictData = {
 
 export const EMPTY_DICT_BATCH: DictBatchData = { byType: new Map() };
 
+export const DictionaryContext = React.createContext<DictionaryContextValue>({
+  batch: EMPTY_DICT_BATCH,
+  declaredTypes: new Set(),
+  error: null,
+  isError: false,
+  isFetching: false,
+  isPending: false,
+  refetch: () => undefined
+});
+
 export function normalizeDictTypes(typeCodes: readonly string[]): string[] {
   return [...new Set(typeCodes.map((code) => code.trim()).filter(Boolean))].toSorted();
+}
+
+export function dictionaryOptionsWithCodeFallback<const TCode extends string>(
+  options: readonly Option[],
+  codes: readonly TCode[]
+): readonly { value: TCode; label: string }[] {
+  const allowedCodes = new Set<string>(codes);
+  const matchingOptions = options.filter((option): option is Option & { value: TCode } =>
+    allowedCodes.has(String(option.value))
+  );
+  return matchingOptions.length > 0
+    ? matchingOptions
+    : codes.map((value) => ({ value, label: value }));
 }
 
 export function buildDictBatch(groups: readonly DictOptionGroupRspDTO[]): DictBatchData {
@@ -74,29 +107,44 @@ export function useDicts(typeCodes: readonly DictTypes[]) {
 }
 
 export function useDict(typeCode: DictTypes) {
-  const query = useDicts(typeCode ? [typeCode] : []);
-  const data = query.data?.byType.get(typeCode) ?? EMPTY_DICT_DATA;
-  const { refetch } = query;
+  const scope = React.useContext(DictionaryContext);
+  const isProvidedByScope = scope.declaredTypes.has(typeCode);
+  const query = useDicts(isProvidedByScope || !typeCode ? [] : [typeCode]);
+  const data =
+    (isProvidedByScope ? scope.batch : query.data)?.byType.get(typeCode) ?? EMPTY_DICT_DATA;
+  const error = isProvidedByScope ? scope.error : query.error;
+  const isError = isProvidedByScope ? scope.isError : query.isError;
+  const isFetching = isProvidedByScope ? scope.isFetching : query.isFetching;
+  const isPending = isProvidedByScope ? scope.isPending : query.isPending;
+  const { refetch: scopeRefetch } = scope;
+  const { refetch: queryRefetch } = query;
 
-  const getLabel = useCallback((code: string): string => data.codeMap.get(code) ?? code, [data]);
-  const getCode = useCallback(
+  const getLabel = React.useCallback(
+    (code: string): string => data.codeMap.get(code) ?? code,
+    [data]
+  );
+  const getCode = React.useCallback(
     (label: string): string | undefined => data.labelMap.get(label),
     [data]
   );
-  const refresh = useCallback(() => {
-    void refetch();
-  }, [refetch]);
+  const refresh = React.useCallback(() => {
+    if (isProvidedByScope) {
+      scopeRefetch();
+      return;
+    }
+    void queryRefetch();
+  }, [isProvidedByScope, queryRefetch, scopeRefetch]);
 
   return {
     options: data.options,
     getLabel,
     getCode,
     refresh,
-    error: query.error,
-    isError: query.isError,
-    isFetching: query.isFetching,
-    isPending: query.isPending,
-    loading: query.isPending,
-    isEmpty: !query.isPending && !query.isError && data.options.length === 0
+    error,
+    isError,
+    isFetching,
+    isPending,
+    loading: isPending,
+    isEmpty: !isPending && !isError && data.options.length === 0
   };
 }

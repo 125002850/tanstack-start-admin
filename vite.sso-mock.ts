@@ -4,7 +4,13 @@ import type { Plugin } from 'vite';
 const LOGIN_INFO_PATH = '/api/getLoginInfo';
 const MOCK_USER_ID = '1';
 
-export const DEV_MOCK_SSO_MENU_KEYS = ['dict-management', 'export-center'] as const;
+export const DEV_MOCK_SSO_MENU_KEYS = [
+  'dict-management',
+  'export-center',
+  'operation-audit',
+  'schedule-center',
+  'work-calendar'
+] as const;
 
 function normalizeGatewayPrefix(value: string): string {
   const normalized = value.trim().replace(/^\/+|\/+$/g, '');
