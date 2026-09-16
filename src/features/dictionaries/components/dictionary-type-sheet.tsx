@@ -12,6 +12,7 @@ import {
   SheetTitle
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
+import { Field, FieldLabel } from '@/components/ui/field';
 
 import { DictStatus, STATUS_OPTIONS } from '@/constants/enums';
 import type { DictionaryTypeMutationPayload, DictionaryTypeRecord } from '../api/types';
@@ -115,12 +116,10 @@ export function DictionaryTypeSheet({
           {isEdit ? (
             <editForm.AppForm>
               <editForm.Form id={formId} className='space-y-4 px-0'>
-                <div className='space-y-2 rounded-lg border bg-muted/20 px-4 py-3'>
-                  <div className='text-muted-foreground text-xs tracking-[0.18em]'>
-                    字典类型编码
-                  </div>
-                  <Input value={type?.dictTypeCode ?? ''} disabled />
-                </div>
+                <Field data-disabled>
+                  <FieldLabel htmlFor='dictionary-type-code'>字典类型编码</FieldLabel>
+                  <Input id='dictionary-type-code' value={type?.dictTypeCode ?? ''} disabled />
+                </Field>
 
                 <EditTextField
                   name='dictTypeName'
