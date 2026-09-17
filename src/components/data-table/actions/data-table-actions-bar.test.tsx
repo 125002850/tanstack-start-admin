@@ -30,6 +30,41 @@ function ActionsBarHarness({
 afterEach(cleanup);
 
 describe('DataTableActionsBar', () => {
+  it('explains disabled selection actions and keeps disabled menu items inert', async () => {
+    const user = userEvent.setup();
+    const callback = vi.fn();
+    render(
+      <ActionsBarHarness
+        getSelectedRows={() => DATA}
+        actions={[
+          {
+            kind: 'selection',
+            label: '批量删除',
+            disabled: true,
+            disabledReason: '请先停用所选记录',
+            callback
+          },
+          {
+            label: '更多',
+            children: [{ label: '导出', disabled: true, disabledReason: '文件尚未生成', callback }]
+          }
+        ]}
+      />
+    );
+    const button = screen.getByRole('button', { name: '批量删除' });
+    expect(button).toBeDisabled();
+    button.parentElement!.focus();
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('请先停用所选记录');
+    await user.click(screen.getByRole('button', { name: '更多' }));
+    const item = await screen.findByRole('menuitem', { name: /导出/ });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveTextContent('文件尚未生成');
+    await user.keyboard('{ArrowDown}{Enter}');
+    await user.click(item);
+    expect(callback).not.toHaveBeenCalled();
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+  });
+
   it('renders visible actions inside a single button group', async () => {
     const user = userEvent.setup();
 

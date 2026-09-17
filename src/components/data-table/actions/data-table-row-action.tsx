@@ -6,8 +6,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Icons } from '@/components/icons';
-import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { DataTableActionTooltip } from './data-table-action-tooltip';
 import * as React from 'react';
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 import { DATA_TABLE_ROW_ACTIONS_MAX_VISIBLE } from '@/lib/data-table/row-actions';
@@ -39,6 +38,33 @@ export function DataTableRowActions<TData>({
 }: DataTableRowActionsProps<TData>) {
   const [sheetAction, setSheetAction] = React.useState<DataTableRowAction<TData> | null>(null);
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  const pendingRef = React.useRef(new Set<string>());
+  const [pendingKeys, setPendingKeys] = React.useState<ReadonlySet<string>>(new Set());
+  const runAction = React.useCallback(
+    async (action: DataTableRowAction<TData>, currentRow: TData) => {
+      const key = action.id ?? action.label;
+      if (
+        pendingRef.current.has(key) ||
+        resolveRowActionValue(action.disabled ?? false, currentRow)
+      )
+        return;
+      pendingRef.current.add(key);
+      let asynchronous = false;
+      try {
+        const result = action.onClick?.(currentRow);
+        if (result instanceof Promise) {
+          asynchronous = true;
+          setPendingKeys(new Set(pendingRef.current));
+          await result;
+        }
+      } finally {
+        pendingRef.current.delete(key);
+        if (asynchronous) setPendingKeys(new Set(pendingRef.current));
+      }
+    },
+    []
+  );
+
   const { withConfirm, confirmDialog } = useConfirmAction<[DataTableRowAction<TData>, TData]>();
 
   // Sheet 关闭后等待 CSS 退出动画结束再卸载，避免硬编码 setTimeout 并保持动画时长同步。
@@ -63,7 +89,10 @@ export function DataTableRowActions<TData>({
 
   const handleClick = React.useCallback(
     async (action: DataTableRowAction<TData>) => {
-      if (resolveRowActionValue(action.disabled ?? false, row)) {
+      if (
+        pendingRef.current.has(action.id ?? action.label) ||
+        resolveRowActionValue(action.disabled ?? false, row)
+      ) {
         return;
       }
 
@@ -76,7 +105,7 @@ export function DataTableRowActions<TData>({
           confirmText: (currentAction) => currentAction.confirmDelete?.confirmText ?? '删除',
           cancelText: (currentAction) => currentAction.confirmDelete?.cancelText ?? '取消',
           run: async (currentAction, currentRow) => {
-            await currentAction.onClick?.(currentRow);
+            await runAction(currentAction, currentRow);
           }
         })(action, row);
         return;
@@ -87,9 +116,9 @@ export function DataTableRowActions<TData>({
         setSheetOpen(true);
         return;
       }
-      await action.onClick?.(row);
+      await runAction(action, row);
     },
-    [row, withConfirm]
+    [row, withConfirm, runAction]
   );
 
   const resolvedActions = React.useMemo(
@@ -106,64 +135,97 @@ export function DataTableRowActions<TData>({
       {sheetAction?.Sheet && (
         <sheetAction.Sheet data={row} open={sheetOpen} onOpenChange={handleSheetOpenChange} />
       )}
-      <TooltipProvider>
-        <div className='flex items-center gap-0.5' data-row-expand-ignore>
-          {visibleActions.map((action) => (
-            <TooltipPrimitive.Root key={action.id ?? action.label}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-8 w-8'
-                  disabled={resolveRowActionValue(action.disabled ?? false, row)}
-                  onClick={(event) => {
-                    event.stopPropagation();
+
+      <div className='flex items-center gap-0.5' data-row-expand-ignore>
+        {visibleActions.map((action) => (
+          <DataTableActionTooltip
+            key={action.id ?? action.label}
+            label={action.label}
+            disabled={
+              pendingKeys.has(action.id ?? action.label) ||
+              resolveRowActionValue(action.disabled ?? false, row)
+            }
+            reason={
+              pendingKeys.has(action.id ?? action.label)
+                ? '正在处理，请稍候。'
+                : resolveRowActionValue(action.disabledReason ?? '', row)
+            }
+          >
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-8 w-8'
+              disabled={
+                pendingKeys.has(action.id ?? action.label) ||
+                resolveRowActionValue(action.disabled ?? false, row)
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+                void handleClick(action);
+              }}
+              aria-label={action.label}
+              data-row-expand-ignore
+            >
+              {action.icon}
+            </Button>
+          </DataTableActionTooltip>
+        ))}
+        {moreActions.length > 0 && (
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant='ghost'
+                className='h-8 w-8 p-0'
+                aria-label='更多操作'
+                data-row-expand-ignore
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+              >
+                <Icons.ellipsis className='size-4' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              {moreActions.map((action) => (
+                <DropdownMenuItem
+                  key={action.id ?? action.label}
+                  data-row-expand-ignore
+                  aria-disabled={
+                    pendingKeys.has(action.id ?? action.label) ||
+                    resolveRowActionValue(action.disabled ?? false, row)
+                  }
+                  className='aria-disabled:opacity-50 aria-disabled:cursor-not-allowed'
+                  onClick={(event) => event.stopPropagation()}
+                  onSelect={(event) => {
+                    if (
+                      pendingRef.current.has(action.id ?? action.label) ||
+                      resolveRowActionValue(action.disabled ?? false, row)
+                    ) {
+                      event.preventDefault();
+                      return;
+                    }
                     void handleClick(action);
                   }}
-                  aria-label={action.label}
-                  data-row-expand-ignore
                 >
                   {action.icon}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{action.label}</TooltipContent>
-            </TooltipPrimitive.Root>
-          ))}
-          {moreActions.length > 0 && (
-            <DropdownMenu modal={false}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant='ghost'
-                  className='h-8 w-8 p-0'
-                  aria-label='更多操作'
-                  data-row-expand-ignore
-                  onClick={(event) => {
-                    event.stopPropagation();
-                  }}
-                >
-                  <Icons.ellipsis className='size-4' />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align='end'>
-                {moreActions.map((action) => (
-                  <DropdownMenuItem
-                    key={action.id ?? action.label}
-                    data-row-expand-ignore
-                    disabled={resolveRowActionValue(action.disabled ?? false, row)}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleClick(action);
-                    }}
-                  >
-                    {action.icon}
-                    <span className='ml-2'>{action.label}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </TooltipProvider>
+                  <span className='ml-2'>
+                    <span className='block'>{action.label}</span>
+                    {pendingKeys.has(action.id ?? action.label) ||
+                    resolveRowActionValue(action.disabled ?? false, row) ? (
+                      <span className='block text-xs'>
+                        {(pendingKeys.has(action.id ?? action.label)
+                          ? '正在处理，请稍候。'
+                          : resolveRowActionValue(action.disabledReason ?? '', row)) ||
+                          '当前条件不满足，暂不可操作。'}
+                      </span>
+                    ) : null}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     </>
   );
 }
