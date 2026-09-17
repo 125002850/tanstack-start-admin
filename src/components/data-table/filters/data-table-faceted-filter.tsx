@@ -1,3 +1,4 @@
+import { OverflowTooltip } from '@/components/ui/overflow-tooltip';
 import type { Option } from './types';
 import type { Column } from '@tanstack/react-table';
 import { Icons } from '@/components/icons';
@@ -120,25 +121,30 @@ export function DataTableFacetedFilter<TData, TValue>({
                 const isSelected = selectedValues.has(option.value);
 
                 return (
-                  <CommandItem
-                    key={option.value}
-                    keywords={option.keywords ? [...option.keywords] : undefined}
-                    onSelect={() => onItemSelect(option, isSelected)}
-                  >
-                    <div
-                      className={cn(
-                        'border-primary flex size-4 items-center justify-center rounded-sm border',
-                        isSelected ? 'bg-primary' : 'opacity-50 [&_svg]:invisible'
-                      )}
-                    >
-                      <Icons.check className='size-4 text-primary-foreground' />
+                  <OverflowTooltip key={option.value} content={option.label}>
+                    <div>
+                      <CommandItem
+                        keywords={option.keywords ? [...option.keywords] : undefined}
+                        onSelect={() => onItemSelect(option, isSelected)}
+                      >
+                        <div
+                          className={cn(
+                            'border-primary flex size-4 items-center justify-center rounded-sm border',
+                            isSelected ? 'bg-primary' : 'opacity-50 [&_svg]:invisible'
+                          )}
+                        >
+                          <Icons.check className='size-4 text-primary-foreground' />
+                        </div>
+                        {option.icon ? <option.icon /> : null}
+                        <span data-overflow-tooltip-text className='min-w-0 truncate'>
+                          {option.label}
+                        </span>
+                        {option.count ? (
+                          <span className='ml-auto font-mono text-xs'>{option.count}</span>
+                        ) : null}
+                      </CommandItem>
                     </div>
-                    {option.icon && <option.icon />}
-                    <span className='truncate'>{option.label}</span>
-                    {option.count && (
-                      <span className='ml-auto font-mono text-xs'>{option.count}</span>
-                    )}
-                  </CommandItem>
+                  </OverflowTooltip>
                 );
               })}
             </CommandGroup>

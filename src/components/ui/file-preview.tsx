@@ -1,3 +1,4 @@
+import { OverflowTooltipText } from './overflow-tooltip-text';
 import type { FC } from 'react';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -168,14 +169,13 @@ export const FilePreview: FC<FilePreviewProps> = ({
                   {getFileIcon(file.type, file.name)}
                 </div>
                 <div className='flex min-w-0 flex-1 flex-col'>
-                  <p
+                  <OverflowTooltipText
+                    text={file.name}
                     className={cn(
                       'truncate text-sm font-medium',
                       isInverted ? 'text-primary-foreground' : 'text-foreground'
                     )}
-                  >
-                    {file.name.length > 18 ? `${file.name.substring(0, 15)}...` : file.name}
-                  </p>
+                  />
                   <span
                     className={cn(
                       'text-xs',

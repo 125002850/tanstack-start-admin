@@ -49,6 +49,9 @@ async function dragTab(page: Page, source: Locator, target: Locator) {
 
   await page.mouse.move(sourceX, sourceY);
   await page.mouse.down();
+  await page.mouse.move(sourceX - 12, sourceY, { steps: 3 });
+  await expect(page.locator('[data-slot="workspace-tag-overlay"]')).toBeVisible();
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
   await page.mouse.move(targetX, targetY, { steps: 14 });
   await page.mouse.up();
 
@@ -74,6 +77,17 @@ test('@workspace-v2 drag sorting keeps home first and preserves navigation', asy
 
   const exportTab = page.getByRole('tab', { name: /^导出中心/ });
   const dictionaryTab = page.getByRole('tab', { name: /^字典管理/ });
+  // 保持按钮尺寸，仅缩窄文本以触发真实截断。
+  await exportTab.evaluate((node) => {
+    const button = node as HTMLElement;
+    button.style.width = `${button.getBoundingClientRect().width}px`;
+    const text = button.querySelector<HTMLElement>('[data-overflow-tooltip-text]')!;
+    text.style.maxWidth = '24px';
+  });
+  await page.mouse.move(0, 0);
+  await exportTab.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('导出中心');
+
   await dragTab(page, exportTab, dictionaryTab);
 
   await expect(page).toHaveURL(/\/dashboard\/system-management\/export-center$/);

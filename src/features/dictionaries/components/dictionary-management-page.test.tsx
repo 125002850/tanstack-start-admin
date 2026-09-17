@@ -367,8 +367,8 @@ describe('DictionaryManagementPage', () => {
     });
 
     expect(screen.getByRole('button', { name: /颜色 color/i })).toHaveAttribute(
-      'data-state',
-      'active'
+      'aria-pressed',
+      'true'
     );
     await waitFor(() => {
       expect(screen.getByText('红色')).toBeInTheDocument();
@@ -393,8 +393,8 @@ describe('DictionaryManagementPage', () => {
     });
 
     expect(screen.getByRole('button', { name: /发票状态 invoice/i })).toHaveAttribute(
-      'data-state',
-      'active'
+      'aria-pressed',
+      'true'
     );
     await waitFor(() => {
       expect(screen.getByText('待开票')).toBeInTheDocument();

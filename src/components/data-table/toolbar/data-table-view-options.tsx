@@ -1,3 +1,4 @@
+import { OverflowTooltip } from '@/components/ui/overflow-tooltip';
 import {
   closestCenter,
   DndContext,
@@ -200,16 +201,22 @@ function StaticDataTableViewOptionItem<TData>({
   );
 
   return (
-    <CommandItem onPointerUpCapture={handlePointerUpCapture} onSelect={handleSelect}>
-      <span aria-hidden='true' className='size-5 shrink-0' />
-      <span className='truncate'>{label}</span>
-      <Icons.check
-        className={cn(
-          'ml-auto size-4 shrink-0 text-primary',
-          column.getIsVisible() ? 'opacity-100' : 'opacity-0'
-        )}
-      />
-    </CommandItem>
+    <OverflowTooltip content={label}>
+      <div>
+        <CommandItem onPointerUpCapture={handlePointerUpCapture} onSelect={handleSelect}>
+          <span aria-hidden='true' className='size-5 shrink-0' />
+          <span data-overflow-tooltip-text className='min-w-0 truncate'>
+            {label}
+          </span>
+          <Icons.check
+            className={cn(
+              'ml-auto size-4 shrink-0 text-primary',
+              column.getIsVisible() ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+        </CommandItem>
+      </div>
+    </OverflowTooltip>
   );
 }
 
@@ -243,39 +250,43 @@ function SortableDataTableViewOptionItem<TData>({
   );
 
   return (
-    <div ref={setNodeRef} style={style} data-slot='data-table-view-option-sortable'>
-      <CommandItem
-        className='group/view-option'
-        onPointerUpCapture={handlePointerUpCapture}
-        onSelect={handleSelect}
-      >
-        <button
-          ref={setActivatorNodeRef}
-          type='button'
-          aria-label={`拖拽调整 ${label} 列顺序`}
-          data-slot='data-table-view-option-drag-handle'
-          className='text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-5 shrink-0 cursor-grab items-center justify-center rounded-sm opacity-0 transition-opacity group-hover/view-option:opacity-100 group-focus-within/view-option:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:outline-none active:cursor-grabbing'
-          {...attributes}
-          {...listeners}
-          onPointerUp={(event) => {
-            event.stopPropagation();
-          }}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          }}
+    <OverflowTooltip content={label} disabled={isDragging}>
+      <div ref={setNodeRef} style={style} data-slot='data-table-view-option-sortable'>
+        <CommandItem
+          className='group/view-option'
+          onPointerUpCapture={handlePointerUpCapture}
+          onSelect={handleSelect}
         >
-          <Icons.gripVertical />
-        </button>
-        <span className='truncate'>{label}</span>
-        <Icons.check
-          className={cn(
-            'ml-auto size-4 shrink-0 text-primary',
-            column.getIsVisible() ? 'opacity-100' : 'opacity-0'
-          )}
-        />
-      </CommandItem>
-    </div>
+          <button
+            ref={setActivatorNodeRef}
+            type='button'
+            aria-label={`拖拽调整 ${label} 列顺序`}
+            data-slot='data-table-view-option-drag-handle'
+            className='text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-5 shrink-0 cursor-grab items-center justify-center rounded-sm opacity-0 transition-opacity group-hover/view-option:opacity-100 group-focus-within/view-option:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:outline-none active:cursor-grabbing'
+            {...attributes}
+            {...listeners}
+            onPointerUp={(event) => {
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+          >
+            <Icons.gripVertical />
+          </button>
+          <span data-overflow-tooltip-text className='min-w-0 truncate'>
+            {label}
+          </span>
+          <Icons.check
+            className={cn(
+              'ml-auto size-4 shrink-0 text-primary',
+              column.getIsVisible() ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+        </CommandItem>
+      </div>
+    </OverflowTooltip>
   );
 }
 

@@ -1,3 +1,4 @@
+import { OverflowTooltip } from '@/components/ui/overflow-tooltip';
 import * as React from 'react';
 import type { Table } from '@tanstack/react-table';
 
@@ -70,30 +71,44 @@ export function DictionaryTypeList({
                 const isActive = record.dictTypeCode === selectedTypeCode;
 
                 return (
-                  <button
+                  <OverflowTooltip
                     key={record.id}
-                    type='button'
-                    data-state={isActive ? 'active' : 'inactive'}
-                    className={cn(
-                      'w-full rounded-xl border px-3 py-3 text-left transition-colors',
-                      isActive
-                        ? 'border-primary bg-primary/8 shadow-xs'
-                        : 'bg-background hover:bg-muted/60'
-                    )}
-                    onClick={() => onSelect(record.dictTypeCode!)}
-                  >
-                    <div className='flex items-start justify-between gap-3'>
-                      <div className='min-w-0'>
-                        <div className='truncate text-sm font-medium'>{record.dictTypeName}</div>
-                        <div className='text-muted-foreground truncate text-xs tracking-[0.18em]'>
-                          {record.dictTypeCode}
-                        </div>
+                    content={
+                      <div className='flex flex-col gap-1'>
+                        <span className='font-medium'>{record.dictTypeName}</span>
+                        <span>{record.dictTypeCode}</span>
                       </div>
-                      <Badge variant={isActive ? 'default' : 'outline'}>
-                        {getStatusLabel(record.status)}
-                      </Badge>
-                    </div>
-                  </button>
+                    }
+                  >
+                    <button
+                      type='button'
+                      aria-pressed={isActive}
+                      className={cn(
+                        'w-full rounded-xl border px-3 py-3 text-left transition-colors',
+                        isActive
+                          ? 'border-primary bg-primary/8 shadow-xs'
+                          : 'bg-background hover:bg-muted/60'
+                      )}
+                      onClick={() => onSelect(record.dictTypeCode!)}
+                    >
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='min-w-0'>
+                          <div data-overflow-tooltip-text className='truncate text-sm font-medium'>
+                            {record.dictTypeName}
+                          </div>
+                          <div
+                            data-overflow-tooltip-text
+                            className='text-muted-foreground truncate text-xs tracking-[0.18em]'
+                          >
+                            {record.dictTypeCode}
+                          </div>
+                        </div>
+                        <Badge variant={isActive ? 'default' : 'outline'}>
+                          {getStatusLabel(record.status)}
+                        </Badge>
+                      </div>
+                    </button>
+                  </OverflowTooltip>
                 );
               })
             ) : (

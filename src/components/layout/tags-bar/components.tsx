@@ -1,3 +1,4 @@
+import { OverflowTooltip } from '@/components/ui/overflow-tooltip';
 import type { DraggableSyntheticListeners } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -105,7 +106,9 @@ function TagContent(props: TagContentProps) {
 
   return (
     <>
-      <span className='max-w-[120px] truncate'>{title}</span>
+      <span data-overflow-tooltip-text className='max-w-[120px] truncate'>
+        {title}
+      </span>
       {dirty && (
         <span
           className='size-1.5 shrink-0 rounded-full bg-yellow-400'
@@ -170,27 +173,29 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
       data-pinned={dataPinned}
       className={getTagButtonClassName(isActive)}
     >
-      <button
-        ref={tabRef}
-        data-slot='workspace-tag'
-        data-tab-id={id}
-        data-pinned={dataPinned}
-        role='tab'
-        aria-keyshortcuts={listeners ? 'Alt+ArrowLeft Alt+ArrowRight' : undefined}
-        aria-selected={isActive}
-        tabIndex={isActive ? 0 : -1}
-        {...listeners}
-        onPointerDownCapture={onPrepareActivate}
-        onClick={onActivate}
-        onKeyDown={onKeyDown}
-        className={cn(
-          'inline-flex h-full min-w-0 items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-          closable ? 'pl-2.5 pr-0.5' : 'px-2.5',
-          listeners ? 'cursor-grab active:cursor-grabbing' : undefined
-        )}
-      >
-        <TagContent title={title} dirty={dirty} closable={false} isActive={isActive} />
-      </button>
+      <OverflowTooltip content={title}>
+        <button
+          ref={tabRef}
+          data-slot='workspace-tag'
+          data-tab-id={id}
+          data-pinned={dataPinned}
+          role='tab'
+          aria-keyshortcuts={listeners ? 'Alt+ArrowLeft Alt+ArrowRight' : undefined}
+          aria-selected={isActive}
+          tabIndex={isActive ? 0 : -1}
+          {...listeners}
+          onPointerDownCapture={onPrepareActivate}
+          onClick={onActivate}
+          onKeyDown={onKeyDown}
+          className={cn(
+            'inline-flex h-full min-w-0 items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            closable ? 'pl-2.5 pr-0.5' : 'px-2.5',
+            listeners ? 'cursor-grab active:cursor-grabbing' : undefined
+          )}
+        >
+          <TagContent title={title} dirty={dirty} closable={false} isActive={isActive} />
+        </button>
+      </OverflowTooltip>
       {closable ? (
         <button
           type='button'

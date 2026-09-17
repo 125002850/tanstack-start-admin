@@ -85,3 +85,26 @@ it('can clear enabled descendants while preserving disabled and missing selectio
   await user.click(screen.getByRole('treeitem', { name: '根，已选中' }));
   expect(changed).toHaveBeenCalledWith(['disabled', 'missing']);
 });
+
+it('only shows ordinary labels when truncated and always exposes a disabled reason on focus', async () => {
+  const user = userEvent.setup();
+  render(
+    <Tree items={items} selection={{ mode: 'single', value: null, onValueChange: vi.fn() }} />
+  );
+  const label = screen.getByText('根');
+  Object.defineProperties(label, {
+    clientWidth: { configurable: true, value: 100 },
+    scrollWidth: { value: 80 }
+  });
+  // 保留 treeitem 的游走焦点，不给名称增加额外的 Tab 停靠点。
+  const root = screen.getByRole('treeitem', { name: '根' });
+  await user.tab();
+  expect(root).toHaveFocus();
+  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  await user.tab();
+  Object.defineProperty(label, 'clientWidth', { value: 40 });
+  await user.tab({ shift: true });
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('根');
+  await user.keyboard('{ArrowDown}');
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('不能选择下级角色');
+});
