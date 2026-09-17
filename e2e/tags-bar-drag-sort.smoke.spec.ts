@@ -44,6 +44,8 @@ async function dragTabByDistance(page: Page, source: Locator, target: Locator) {
   await page.mouse.move(sourceX, sourceY);
   await page.mouse.down();
   await page.mouse.move(sourceX - 12, sourceY, { steps: 3 });
+  await expect(page.locator('[data-slot="workspace-tag-overlay"]')).toBeVisible();
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
   await page.mouse.move(targetX, targetY, { steps: 18 });
   await page.waitForTimeout(100);
   await page.mouse.up();
@@ -70,6 +72,17 @@ test('@workspace-v2 drag sorting keeps home first and preserves navigation', asy
   await expect(page).toHaveURL(/\/dashboard\/system-management\/dictionaries$/);
   await exportTab.click();
   await expect(page).toHaveURL(/\/dashboard\/system-management\/export-center$/);
+
+  // 保持按钮尺寸，仅缩窄文本以触发真实截断。
+  await exportTab.evaluate((node) => {
+    const button = node as HTMLElement;
+    button.style.width = `${button.getBoundingClientRect().width}px`;
+    const text = button.querySelector<HTMLElement>('[data-overflow-tooltip-text]')!;
+    text.style.maxWidth = '24px';
+  });
+  await page.mouse.move(0, 0);
+  await exportTab.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('导出中心');
 
   await dragTabByDistance(page, exportTab, dictionaryTab);
 

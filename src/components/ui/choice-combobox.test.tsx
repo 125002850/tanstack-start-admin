@@ -85,6 +85,7 @@ describe('ChoiceCombobox', () => {
     const option = screen.getByRole('option', { name: /员工名单/ });
     await user.hover(option);
     expect(await screen.findByRole('tooltip')).toHaveTextContent('完整员工说明');
+    expect(screen.getByRole('tooltip')).toHaveTextContent('员工名单');
     await user.click(option);
     expect(onChange).toHaveBeenCalledWith(['EMPLOYEE']);
     await user.hover(screen.getByRole('option', { name: /指定员工/ }));
@@ -94,6 +95,73 @@ describe('ChoiceCombobox', () => {
     await user.type(screen.getByRole('combobox'), '指定');
     expect(screen.queryByRole('group', { name: '请求传入' })).not.toBeInTheDocument();
     expect(screen.getByRole('group', { name: '预设人员' })).toBeInTheDocument();
+  });
+
+  it.each([undefined, '系统角色说明'])(
+    'shows a truncated label with its optional description (%s) on hover and keyboard navigation',
+    async (description) => {
+      const user = userEvent.setup();
+      render(
+        <SingleChoiceCombobox
+          options={[
+            { value: 1, label: '访客' },
+            { value: 2, label: '完整管理员名称', description }
+          ]}
+          value={null}
+          triggerLabel='角色'
+          placeholder='请选择角色'
+          onValueChange={vi.fn()}
+        />
+      );
+      await user.click(screen.getByRole('button', { name: '角色' }));
+      Object.defineProperties(screen.getByText('完整管理员名称'), {
+        clientWidth: { value: 80 },
+        scrollWidth: { value: 160 }
+      });
+      if (description) {
+        Object.defineProperties(screen.getByText(description), {
+          clientWidth: { value: 80 },
+          scrollWidth: { value: 80 }
+        });
+      }
+
+      await user.hover(screen.getByRole('option', { name: /完整管理员名称/ }));
+      const tooltip = await screen.findByRole('tooltip');
+      expect(tooltip).toHaveTextContent('完整管理员名称');
+      if (description) expect(tooltip).toHaveTextContent(description);
+      else expect(tooltip).toHaveTextContent(/^完整管理员名称$/);
+
+      await user.hover(screen.getByRole('option', { name: '访客' }));
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+      await user.keyboard('{ArrowDown}');
+      expect(await screen.findByRole('tooltip')).toHaveTextContent('完整管理员名称');
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    }
+  );
+
+  it('does not show a tooltip when both label and description fit', async () => {
+    const user = userEvent.setup();
+    render(
+      <SingleChoiceCombobox
+        options={[{ value: 1, label: '管理员', description: '系统角色' }]}
+        value={null}
+        triggerLabel='角色'
+        placeholder='请选择角色'
+        onValueChange={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: '角色' }));
+    for (const text of ['管理员', '系统角色']) {
+      Object.defineProperties(screen.getByText(text), {
+        clientWidth: { value: 80 },
+        scrollWidth: { value: 80 }
+      });
+    }
+    await user.hover(screen.getByRole('option', { name: '管理员 系统角色' }));
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   });
 
   it('uses a scalar value and closes after a searchable single selection', async () => {

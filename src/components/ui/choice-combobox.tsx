@@ -101,34 +101,44 @@ function getOptionKey(value: ChoiceComboboxValue) {
 
 function ChoiceOption({
   value,
+  label,
   description,
   keyboardNavigation,
   children,
   ...props
 }: React.ComponentProps<typeof CommandItem> & {
   value: string;
+  label: string;
   description?: string;
   keyboardNavigation: boolean;
 }) {
-  const { ref, checkOverflow } = useTextOverflow('horizontal');
+  const { ref: labelRef, checkOverflow: checkLabelOverflow } = useTextOverflow('horizontal');
+  const { ref: descriptionRef, checkOverflow: checkDescriptionOverflow } =
+    useTextOverflow('horizontal');
+  const checkOverflow = React.useCallback(
+    () => checkLabelOverflow() || checkDescriptionOverflow(),
+    [checkLabelOverflow, checkDescriptionOverflow]
+  );
   const highlighted = useCommandState((state) => state.value === value);
   const [hoverOpen, setHoverOpen] = React.useState(false);
   const [keyboardOpen, setKeyboardOpen] = React.useState(false);
   React.useEffect(() => {
     setKeyboardOpen(keyboardNavigation && highlighted && checkOverflow());
-  }, [keyboardNavigation, highlighted, description, checkOverflow]);
+  }, [keyboardNavigation, highlighted, label, description, checkOverflow]);
 
   const item = (
     <CommandItem value={value} {...props}>
       {children}
+      <span ref={labelRef} className='min-w-0 truncate'>
+        {label}
+      </span>
       {description ? (
-        <span ref={ref} className='col-start-2 truncate text-xs text-muted-foreground'>
+        <span ref={descriptionRef} className='col-start-2 truncate text-xs text-muted-foreground'>
           {description}
         </span>
       ) : null}
     </CommandItem>
   );
-  if (!description) return item;
   return (
     <Tooltip
       open={keyboardNavigation ? keyboardOpen : hoverOpen}
@@ -142,7 +152,10 @@ function ChoiceOption({
         <div>{item}</div>
       </TooltipTrigger>
       <TooltipContent side='right' className='max-w-80 whitespace-normal break-words'>
-        {description}
+        <div className='flex flex-col gap-1'>
+          <span className='font-medium'>{label}</span>
+          {description ? <span>{description}</span> : null}
+        </div>
       </TooltipContent>
     </Tooltip>
   );
@@ -393,6 +406,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
 
                   return (
                     <ChoiceOption
+                      label={option.label}
                       description={option.description}
                       keyboardNavigation={keyboardNavigation}
                       className='grid grid-cols-[1rem_minmax(0,1fr)] gap-x-2 gap-y-0.5'
@@ -425,7 +439,6 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                           <Icons.check className='size-4 text-primary' />
                         </span>
                       )}
-                      <span className='min-w-0 truncate'>{option.label}</span>
                     </ChoiceOption>
                   );
                 })}

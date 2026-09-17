@@ -1,3 +1,4 @@
+import { OverflowTooltip } from '@/components/ui/overflow-tooltip';
 import type { Column } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as React from 'react';
@@ -31,19 +32,23 @@ function LocalFilterOptionRow({ option, selected, onToggle }: LocalFilterOptionR
   const checkboxId = React.useId();
 
   return (
-    <label
-      htmlFor={checkboxId}
-      role='listitem'
-      className='hover:bg-accent flex h-8 cursor-default items-center gap-2 rounded-sm px-1.5 text-sm'
-    >
-      <Checkbox
-        id={checkboxId}
-        checked={selected}
-        aria-label={option.label}
-        onCheckedChange={() => onToggle(option.key)}
-      />
-      <span className='min-w-0 flex-1 truncate'>{option.label}</span>
-    </label>
+    <OverflowTooltip content={option.label}>
+      <label
+        htmlFor={checkboxId}
+        role='listitem'
+        className='hover:bg-accent flex h-8 cursor-default items-center gap-2 rounded-sm px-1.5 text-sm'
+      >
+        <Checkbox
+          id={checkboxId}
+          checked={selected}
+          aria-label={option.label}
+          onCheckedChange={() => onToggle(option.key)}
+        />
+        <span data-overflow-tooltip-text className='min-w-0 flex-1 truncate'>
+          {option.label}
+        </span>
+      </label>
+    </OverflowTooltip>
   );
 }
 

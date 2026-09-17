@@ -1,3 +1,4 @@
+import { useTextOverflow } from '@/hooks/use-text-overflow';
 import * as React from 'react';
 
 import { Icons } from '@/components/icons';
@@ -244,6 +245,8 @@ function TreeNode({
   const selectionState = getSelectionState(node, selection, selectedValues);
 
   const reasonId = React.useId();
+  const { ref: labelRef, checkOverflow } = useTextOverflow('horizontal');
+  const [tooltipOpen, setTooltipOpen] = React.useState(false);
   const handleSelect = () => {
     if (node.item.disabled) return;
     if (selection.mode === 'single') {
@@ -275,98 +278,106 @@ function TreeNode({
 
   return (
     <>
-      <div
-        ref={(element) => onItemRef(node.item.value, element)}
-        role='treeitem'
-        aria-disabled={node.item.disabled || undefined}
-        aria-describedby={node.item.disabledReason ? reasonId : undefined}
-        tabIndex={activeValue === node.item.value ? 0 : -1}
-        aria-label={ariaLabel}
-        aria-level={depth + 1}
-        aria-posinset={index + 1}
-        aria-setsize={siblingCount}
-        aria-expanded={hasChildren ? expanded : undefined}
-        aria-selected={selection.mode === 'single' ? singleSelected : undefined}
-        aria-checked={selectionState ? multipleSelectionAriaState(selectionState) : undefined}
-        className={cn(
-          'group flex w-full min-w-0 cursor-pointer items-center overflow-hidden rounded outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          singleSelected ? 'bg-accent' : 'hover:bg-accent/60',
-          node.item.disabled && 'opacity-50'
-        )}
-        style={{ paddingLeft: `${depth}rem` }}
-        onClick={handleSelect}
-        onFocus={() => onActiveValueChange(node.item.value)}
-        onKeyDown={(event) => onItemKeyDown(event, node)}
+      <Tooltip
+        delayDuration={400}
+        open={tooltipOpen}
+        onOpenChange={(nextOpen) => {
+          setTooltipOpen(nextOpen && (Boolean(node.item.disabledReason) || checkOverflow()));
+        }}
       >
-        {hasChildren && !forceExpanded ? (
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon'
-            tabIndex={-1}
-            data-tree-expander=''
-            className='size-6 shrink-0 text-muted-foreground'
-            aria-label={expanded ? `收起${node.item.label}` : `展开${node.item.label}`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleExpanded(node.item.value);
-            }}
-          >
-            {expanded ? (
-              <Icons.chevronDown className='size-4' />
-            ) : (
-              <Icons.chevronRight className='size-4' />
+        <TooltipTrigger asChild>
+          <div
+            ref={(element) => onItemRef(node.item.value, element)}
+            role='treeitem'
+            aria-disabled={node.item.disabled || undefined}
+            aria-describedby={node.item.disabledReason ? reasonId : undefined}
+            tabIndex={activeValue === node.item.value ? 0 : -1}
+            aria-label={ariaLabel}
+            aria-level={depth + 1}
+            aria-posinset={index + 1}
+            aria-setsize={siblingCount}
+            aria-expanded={hasChildren ? expanded : undefined}
+            aria-selected={selection.mode === 'single' ? singleSelected : undefined}
+            aria-checked={selectionState ? multipleSelectionAriaState(selectionState) : undefined}
+            className={cn(
+              'group flex w-full min-w-0 cursor-pointer items-center overflow-hidden rounded outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              singleSelected ? 'bg-accent' : 'hover:bg-accent/60',
+              node.item.disabled && 'opacity-50'
             )}
-          </Button>
-        ) : hasChildren ? (
-          <span
-            aria-hidden
-            className='inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground'
+            style={{ paddingLeft: `${depth}rem` }}
+            onClick={handleSelect}
+            onFocus={() => onActiveValueChange(node.item.value)}
+            onKeyDown={(event) => onItemKeyDown(event, node)}
           >
-            <Icons.chevronDown className='size-4' />
-          </span>
-        ) : (
-          <span className='size-6 shrink-0' aria-hidden />
-        )}
-        <span
-          className={cn(
-            'flex min-w-0 flex-1 items-center gap-2 rounded px-2 py-1 text-left text-sm',
-            singleSelected ? 'font-medium text-accent-foreground' : 'text-foreground/90'
-          )}
-        >
-          {selectionState ? (
+            {hasChildren && !forceExpanded ? (
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                tabIndex={-1}
+                data-tree-expander=''
+                className='size-6 shrink-0 text-muted-foreground'
+                aria-label={expanded ? `收起${node.item.label}` : `展开${node.item.label}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleExpanded(node.item.value);
+                }}
+              >
+                {expanded ? (
+                  <Icons.chevronDown className='size-4' />
+                ) : (
+                  <Icons.chevronRight className='size-4' />
+                )}
+              </Button>
+            ) : hasChildren ? (
+              <span
+                aria-hidden
+                className='inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground'
+              >
+                <Icons.chevronDown className='size-4' />
+              </span>
+            ) : (
+              <span className='size-6 shrink-0' aria-hidden />
+            )}
             <span
-              aria-hidden
-              data-tree-selection-state={selectionState}
               className={cn(
-                'flex size-4 shrink-0 items-center justify-center rounded-sm border border-primary',
-                selectionState === 'unchecked' ? 'opacity-50 [&_svg]:invisible' : 'bg-primary'
+                'flex min-w-0 flex-1 items-center gap-2 rounded px-2 py-1 text-left text-sm',
+                singleSelected ? 'font-medium text-accent-foreground' : 'text-foreground/90'
               )}
             >
-              {selectionState === 'indeterminate' ? (
-                <Icons.minus className='size-4 text-primary-foreground' />
-              ) : (
-                <Icons.check className='size-4 text-primary-foreground' />
+              {selectionState ? (
+                <span
+                  aria-hidden
+                  data-tree-selection-state={selectionState}
+                  className={cn(
+                    'flex size-4 shrink-0 items-center justify-center rounded-sm border border-primary',
+                    selectionState === 'unchecked' ? 'opacity-50 [&_svg]:invisible' : 'bg-primary'
+                  )}
+                >
+                  {selectionState === 'indeterminate' ? (
+                    <Icons.minus className='size-4 text-primary-foreground' />
+                  ) : (
+                    <Icons.check className='size-4 text-primary-foreground' />
+                  )}
+                </span>
+              ) : null}
+              {Icon ? <Icon className='size-4 shrink-0' /> : null}
+              <span ref={labelRef} className='min-w-0 flex-1 truncate'>
+                {node.item.label}
+              </span>
+              {node.item.disabledReason && (
+                <span id={reasonId} className='sr-only'>
+                  {node.item.disabledReason}
+                </span>
               )}
+              {node.item.endContent}
             </span>
-          ) : null}
-          {Icon ? <Icon className='size-4 shrink-0' /> : null}
-          <Tooltip delayDuration={400}>
-            <TooltipTrigger asChild>
-              <span className='min-w-0 flex-1 truncate'>{node.item.label}</span>
-            </TooltipTrigger>
-            <TooltipContent side='right' className='max-w-80 break-words'>
-              {node.item.disabledReason ?? node.item.label}
-            </TooltipContent>
-          </Tooltip>
-          {node.item.disabledReason && (
-            <span id={reasonId} className='sr-only'>
-              {node.item.disabledReason}
-            </span>
-          )}
-          {node.item.endContent}
-        </span>
-      </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side='right' className='max-w-80 break-words'>
+          {node.item.disabledReason ?? node.item.label}
+        </TooltipContent>
+      </Tooltip>
       {hasChildren && expanded
         ? node.children.map((child, childIndex) => (
             <TreeNode
