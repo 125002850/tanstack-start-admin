@@ -17,6 +17,8 @@ interface DataTableActionBase<TData> {
   type?: 'default' | 'danger';
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   disabled?: DataTableActionResolver<TData, boolean>;
+  /** 仅在禁用时展示，可按选择状态返回原因。 */
+  disabledReason?: DataTableActionResolver<TData, string | null | undefined>;
   className?: DataTableActionResolver<TData, string>;
   callback?: (ctx: DataTableActionContext<TData>) => void | Promise<void>;
   children?: DataTableAction<TData>[];
@@ -41,8 +43,10 @@ export interface DataTableRowAction<TData> {
   label: string;
   icon?: ReactNode;
   disabled?: boolean | ((row: TData) => boolean);
+  /** 仅在禁用时展示，支持按行返回具体原因。 */
+  disabledReason?: string | ((row: TData) => string | null | undefined);
   hidden?: boolean | ((row: TData) => boolean);
-  onClick?: (row: TData) => void;
+  onClick?: (row: TData) => void | Promise<void>;
   confirmDelete?: {
     title?: string;
     description?: (row: TData) => string;

@@ -225,3 +225,40 @@ test('@workspace-v2 keeps virtual scrolling, pinned columns, and cell alignment 
   await expect(card.locator('td[data-cell-column-id="select"]').first()).toBeVisible();
   await expect(card.locator('td[data-cell-column-id="actions"]').first()).toBeVisible();
 });
+
+test('@workspace-v2 explains disabled refresh actions on keyboard focus and hover', async ({
+  page
+}) => {
+  const releaseItems = await mockDictionaryData(page);
+  releaseItems();
+  await page.goto(DICTIONARY_ROUTE);
+  const card = dictionaryItemsCard(page);
+  await expect(card.getByText('reg-001', { exact: true })).toBeVisible();
+  let releaseRefresh!: () => void;
+  const refreshGate = new Promise<void>((resolve) => {
+    releaseRefresh = resolve;
+  });
+  await page.route('**/api/system/dict/global/items/by-type', async (route) => {
+    await refreshGate;
+    await route.fulfill({ json: apiEnvelope({ total: 180, list: createDictionaryItems() }) });
+  });
+  const refresh = card.getByRole('button', { name: '刷新列表' });
+  const explanation = card.locator('[data-disabled-action]').filter({
+    has: page.getByRole('button', { name: '刷新列表' })
+  });
+
+  await refresh.click();
+  await expect(refresh).toBeDisabled();
+  await explanation.focus();
+  await expect(explanation).toBeFocused();
+  await expect(page.getByRole('tooltip')).toContainText('正在刷新，请稍候。');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Space');
+  await expect(refresh).toBeDisabled();
+  await page.keyboard.press('Tab');
+  await explanation.hover();
+  await expect(page.getByRole('tooltip')).toContainText('正在刷新，请稍候。');
+
+  releaseRefresh();
+  await expect(refresh).toBeEnabled();
+});

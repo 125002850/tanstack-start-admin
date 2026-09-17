@@ -14,6 +14,7 @@ import { Icons } from '@/components/icons';
 import { getSelectedPageRows } from '@/lib/data-table/selection';
 import { cn } from '@/lib/utils';
 import type { DataTableAction, DataTableActionContext, DataTableActionResolver } from './types';
+import { DataTableActionTooltip } from './data-table-action-tooltip';
 
 /**
  * 表格顶部/底部批量操作栏。
@@ -136,7 +137,10 @@ export function DataTableActionsBar<TData>({
 
   return (
     <div className={cn('flex items-center', className)}>
-      <ButtonGroup aria-label='表格操作'>
+      <ButtonGroup
+        aria-label='表格操作'
+        className='[&>[data-disabled-action]:not(:first-child)>button]:border-l-0'
+      >
         {visibleActions.map((action, index) => (
           <React.Fragment key={action.label}>
             {index > 0 && shouldRenderActionSeparator(visibleActions[index - 1]!, action) && (
@@ -161,9 +165,12 @@ function ActionItem<TData>({
   const [isLoading, setIsLoading] = React.useState(false);
   const disabled = isLoading || resolveValue(action.disabled ?? false, ctx);
   const className = resolveValue(action.className ?? '', ctx);
+  const disabledReason = isLoading
+    ? '正在处理，请稍候。'
+    : resolveValue(action.disabledReason ?? '', ctx);
 
   const handleClick = React.useCallback(async () => {
-    if (!action.callback || isLoading) return;
+    if (!action.callback || disabled) return;
     const result = action.callback(ctx);
     if (result instanceof Promise) {
       setIsLoading(true);
@@ -173,7 +180,7 @@ function ActionItem<TData>({
         setIsLoading(false);
       }
     }
-  }, [action, isLoading, ctx]);
+  }, [action, disabled, ctx]);
 
   // 有 children 的 action 作为下拉入口，子项自己处理 loading 和 disabled。
   if (action.children && action.children.length > 0) {
@@ -183,18 +190,20 @@ function ActionItem<TData>({
 
     return (
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant={getActionButtonVariant(action)}
-            size='sm'
-            disabled={disabled}
-            className={cn('gap-1.5', className)}
-          >
-            {action.icon}
-            {action.label}
-            <Icons.chevronDown className='size-3.5 opacity-50' />
-          </Button>
-        </DropdownMenuTrigger>
+        <DataTableActionTooltip label={action.label} disabled={disabled} reason={disabledReason}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant={getActionButtonVariant(action)}
+              size='sm'
+              disabled={disabled}
+              className={cn('gap-1.5', className)}
+            >
+              {action.icon}
+              {action.label}
+              <Icons.chevronDown className='size-3.5 opacity-50' />
+            </Button>
+          </DropdownMenuTrigger>
+        </DataTableActionTooltip>
         <DropdownMenuContent align='start' className='min-w-[160px]'>
           {action.label && (
             <DropdownMenuLabel className='text-xs font-normal text-muted-foreground'>
@@ -216,17 +225,20 @@ function ActionItem<TData>({
 
   // 无 children 的 action 作为普通按钮。
   return (
-    <Button
-      variant={getActionButtonVariant(action)}
-      size='sm'
-      disabled={disabled}
-      isLoading={isLoading}
-      onClick={handleClick}
-      className={cn('gap-1.5', className)}
-    >
-      {action.icon}
-      {action.label}
-    </Button>
+    <DataTableActionTooltip label={action.label} disabled={disabled} reason={disabledReason}>
+      <Button
+        variant={getActionButtonVariant(action)}
+        size='sm'
+        disabled={disabled}
+        isLoading={isLoading}
+        aria-label={action.label}
+        onClick={handleClick}
+        className={cn('gap-1.5', className)}
+      >
+        {action.icon}
+        {action.label}
+      </Button>
+    </DataTableActionTooltip>
   );
 }
 
@@ -244,11 +256,14 @@ function DropdownActionItem<TData>({
   const disabled = isLoading || resolveValue(action.disabled ?? false, ctx);
   const hidden = isActionHidden(action, ctx);
   const className = resolveValue(action.className ?? '', ctx);
+  const disabledReason = isLoading
+    ? '正在处理，请稍候。'
+    : resolveValue(action.disabledReason ?? '', ctx);
 
   const handleSelect = React.useCallback(
     async (e: Event) => {
       e.preventDefault();
-      if (!action.callback || isLoading) return;
+      if (!action.callback || disabled) return;
       const result = action.callback(ctx);
       if (result instanceof Promise) {
         setIsLoading(true);
@@ -259,7 +274,7 @@ function DropdownActionItem<TData>({
         }
       }
     },
-    [action, isLoading, ctx]
+    [action, disabled, ctx]
   );
 
   if (hidden) return null;
@@ -268,13 +283,23 @@ function DropdownActionItem<TData>({
     <>
       {showSeparator && <DropdownMenuSeparator />}
       <DropdownMenuItem
-        disabled={disabled}
+        aria-disabled={disabled}
         onSelect={handleSelect}
         variant={getActionMenuItemVariant(action)}
-        className={cn('gap-1.5', className)}
+        className={cn(
+          'gap-1.5 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed',
+          className
+        )}
       >
         {isLoading ? <Icons.spinner className='size-3.5 animate-spin' /> : action.icon}
-        {action.label}
+        <span>
+          <span className='block'>{action.label}</span>
+          {disabled ? (
+            <span className='block text-xs'>
+              {disabledReason || '当前条件不满足，暂不可操作。'}
+            </span>
+          ) : null}
+        </span>
       </DropdownMenuItem>
     </>
   );

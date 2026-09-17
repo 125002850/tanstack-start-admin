@@ -264,6 +264,7 @@ export function DataTable<TData>({
       label: '刷新列表',
       icon: <Icons.chevronsDown className='size-3.5' />,
       disabled: isRefreshing,
+      disabledReason: '正在刷新，请稍候。',
       callback: () => void onRefresh()
     };
 
