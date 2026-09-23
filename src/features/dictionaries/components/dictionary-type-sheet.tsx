@@ -159,9 +159,23 @@ export function DictionaryTypeSheet({
         </div>
 
         <SheetFooter className='flex-row justify-end'>
-          <Button type='submit' form={formId}>
-            {isEdit ? '保存修改' : '创建字典类型'}
-          </Button>
+          {isEdit ? (
+            <editForm.Subscribe selector={(state) => state.isSubmitting}>
+              {(submitting) => (
+                <Button type='submit' form={formId} isLoading={submitting}>
+                  保存修改
+                </Button>
+              )}
+            </editForm.Subscribe>
+          ) : (
+            <createForm.Subscribe selector={(state) => state.isSubmitting}>
+              {(submitting) => (
+                <Button type='submit' form={formId} isLoading={submitting}>
+                  创建
+                </Button>
+              )}
+            </createForm.Subscribe>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>

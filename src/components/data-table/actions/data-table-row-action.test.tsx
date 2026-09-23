@@ -134,4 +134,29 @@ describe('DataTableRowActions', () => {
       expect(onDelete).toHaveBeenCalledWith(ROW);
     });
   });
+  it('resolves generic confirmation from the row and waits before running it', async () => {
+    const onClick = vi.fn();
+    render(
+      <DataTableRowActions
+        row={ROW}
+        actions={[
+          {
+            label: '切换状态',
+            confirm: {
+              title: (row) => `确认停用 ${row.name}？`,
+              description: '将停止后续调度。',
+              confirmText: '确认停用'
+            },
+            onClick
+          }
+        ]}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: '切换状态' }));
+    expect(await screen.findByText('确认停用 Alice？')).toBeInTheDocument();
+    expect(screen.getByText('将停止后续调度。')).toBeInTheDocument();
+    expect(onClick).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '确认停用' }));
+    await waitFor(() => expect(onClick).toHaveBeenCalledExactlyOnceWith(ROW));
+  });
 });

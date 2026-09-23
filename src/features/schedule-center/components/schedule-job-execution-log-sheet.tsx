@@ -37,7 +37,7 @@ function getExecStatusLabel(status?: string): string {
 }
 
 function getExecStatusBadgeVariant(status?: string): React.ComponentProps<typeof Badge>['variant'] {
-  if (status === SCHEDULE_JOB_EXECUTION_STATUS.SUCCESS) return 'default';
+  if (status === SCHEDULE_JOB_EXECUTION_STATUS.SUCCESS) return 'success';
   if (status === SCHEDULE_JOB_EXECUTION_STATUS.FAILED) return 'destructive';
   return 'outline';
 }

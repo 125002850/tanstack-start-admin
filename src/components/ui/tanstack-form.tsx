@@ -38,6 +38,7 @@ import {
   FormFileUploadField
 } from '@/components/forms/fields';
 import { cn } from '@/lib/utils';
+import { handleFormSubmitError } from '@/lib/query-client';
 import {
   fieldContext,
   formContext,
@@ -73,7 +74,7 @@ function Form({
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      form.handleSubmit();
+      void form.handleSubmit().catch(handleFormSubmitError);
     },
     [form]
   );

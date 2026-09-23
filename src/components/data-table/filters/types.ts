@@ -6,8 +6,38 @@ import type { FC, SVGProps } from 'react';
 export interface DataTableFilterOption {
   label: string;
   value: string;
+  /** 参与筛选搜索但不展示的领域编码、别名等关键词。 */
+  keywords?: readonly string[];
   count?: number;
   icon?: FC<SVGProps<SVGSVGElement>>;
+}
+
+export interface DataTableRemoteFilterPage {
+  items: DataTableFilterOption[];
+  total?: number;
+}
+
+export interface DataTableRemoteFilterLabels {
+  searchPlaceholder?: string;
+  emptyText?: string;
+  loadingText?: string;
+  errorText?: string;
+  clearLabel?: string;
+  loadMoreLabel?: string;
+}
+
+export interface DataTableRemoteFilterOptions {
+  loadOptions: (params: {
+    keyword: string;
+    pageNo: number;
+    pageSize: number;
+    signal: AbortSignal;
+  }) => Promise<DataTableRemoteFilterPage>;
+  debounceMs?: number;
+  pageSize?: number;
+  /** 远程多选时允许选择的最大数量。 */
+  maxSelected?: number;
+  labels?: DataTableRemoteFilterLabels;
 }
 
 /** @deprecated 使用 DataTableFilterOption。 */
@@ -73,6 +103,7 @@ export type DataTableDslFilterNodeType = 'text' | 'enum';
 export type DataTableColumnFilterVariant =
   | 'text'
   | 'select'
+  | 'remoteSelect'
   | 'multiSelect'
   | 'date'
   | 'dateRange'
@@ -122,6 +153,8 @@ export interface DataTableColumnFilterOptions<TData = unknown, TValue = unknown>
   filter?: false | DataTableColumnFilterVariant;
   filterPlaceholder?: string;
   filterOptions?: DataTableFilterOptions;
+  /** 远程 select / multiSelect 筛选的数据源；Toolbar 负责统一渲染。 */
+  filterRemoteOptions?: DataTableRemoteFilterOptions;
   filterMin?: number | Date;
   filterMax?: number | Date;
   filterUnit?: string;

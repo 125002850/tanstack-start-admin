@@ -92,10 +92,13 @@ function Button({
       type={type ?? 'button'}
       {...props}
     >
-      <span className={cn('inline-flex items-center gap-2', isLoading && 'invisible')}>
+      <span className={cn('inline-flex items-center gap-2', isLoading && 'opacity-0')}>
         {children}
       </span>
-      <span className={cn('flex items-center justify-center', !isLoading && 'invisible')}>
+      <span
+        aria-hidden='true'
+        className={cn('flex items-center justify-center', !isLoading && 'invisible')}
+      >
         <Spinner />
       </span>
     </button>

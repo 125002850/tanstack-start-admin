@@ -96,14 +96,26 @@ export function DataTableRowActions<TData>({
         return;
       }
 
-      if (action.confirmDelete) {
+      if (action.confirm || action.confirmDelete) {
         // 删除确认由 useConfirmAction 统一渲染；实际删除逻辑仍来自 action.onClick。
         withConfirm({
-          title: (currentAction) => currentAction.confirmDelete?.title ?? '确认删除',
+          title: (currentAction, currentRow) =>
+            currentAction.confirm
+              ? resolveRowActionValue(currentAction.confirm.title ?? '确认操作', currentRow)
+              : (currentAction.confirmDelete?.title ?? '确认删除'),
           description: (currentAction, currentRow) =>
-            currentAction.confirmDelete?.description?.(currentRow) ?? '此操作不可撤销。',
-          confirmText: (currentAction) => currentAction.confirmDelete?.confirmText ?? '删除',
-          cancelText: (currentAction) => currentAction.confirmDelete?.cancelText ?? '取消',
+            currentAction.confirm
+              ? resolveRowActionValue(
+                  currentAction.confirm.description ?? '请确认是否继续。',
+                  currentRow
+                )
+              : (currentAction.confirmDelete?.description?.(currentRow) ?? '此操作不可撤销。'),
+          confirmText: (currentAction) =>
+            currentAction.confirm
+              ? (currentAction.confirm.confirmText ?? '确认')
+              : (currentAction.confirmDelete?.confirmText ?? '删除'),
+          cancelText: (currentAction) =>
+            currentAction.confirm?.cancelText ?? currentAction.confirmDelete?.cancelText ?? '取消',
           run: async (currentAction, currentRow) => {
             await runAction(currentAction, currentRow);
           }

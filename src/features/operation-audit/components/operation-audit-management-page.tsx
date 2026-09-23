@@ -8,7 +8,6 @@ import { createDataTableColumnDsl } from '@/components/data-table/columns/data-t
 import { DataTable } from '@/components/data-table/core/data-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { Icons } from '@/components/icons';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useDict } from '@/hooks/use-dict';
 import { useDslDataTable } from '@/hooks/use-data-table';
@@ -87,21 +86,22 @@ function OperationAuditContent() {
           return label || operationAuditEnumLabel(value);
         }
       }),
-      columnDsl.field('resultStatus', '状态', {
+      columnDsl.badge('resultStatus', '状态', {
         size: 100,
         filter: 'select',
         filterOptions: status.options,
         dsl: { filterNodeType: 'enum' },
-        renderCell: ({ row }) => {
-          const value = row.original.resultStatus;
+        format: (value) => {
           const code = operationAuditEnumCode(value);
           const label = status.getLabel(code);
-          return (
-            <Badge variant={code === 'failed' ? 'destructive' : 'default'}>
-              {label ?? operationAuditEnumLabel(value)}
-            </Badge>
-          );
-        }
+          return label ?? operationAuditEnumLabel(value);
+        },
+        variant: (value) =>
+          operationAuditEnumCode(value) === 'failed'
+            ? 'destructive'
+            : operationAuditEnumCode(value) === 'success'
+              ? 'success'
+              : 'outline'
       }),
       columnDsl.field('durationMs', '耗时', {
         size: 100,

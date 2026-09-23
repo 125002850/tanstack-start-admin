@@ -8,16 +8,17 @@ import { emitDataTableVirtualEvent } from './data-table-virtual-events';
 import type { DataTableResolvedVirtualizationOptions } from './types';
 
 export function useRowVirtualizer({
-  rowCount,
+  rows,
   resetKey,
   virtualization,
   scrollViewport
 }: {
-  rowCount: number;
+  rows: ReadonlyArray<{ id: string }>;
   resetKey: string;
   virtualization?: DataTableResolvedVirtualizationOptions;
   scrollViewport: HTMLDivElement | null;
 }) {
+  const rowCount = rows.length;
   const [runtimeFallback, setRuntimeFallback] = useState(false);
   const shouldVirtualize =
     typeof window !== 'undefined' &&
@@ -28,9 +29,11 @@ export function useRowVirtualizer({
     () => virtualization?.estimateRowHeight ?? DATA_TABLE_VIRTUAL_PRESET.estimateRowHeight,
     [virtualization?.estimateRowHeight]
   );
+  const getItemKey = useCallback((index: number) => rows[index].id, [rows]);
   const virtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     observeElementOffset: observeActiveElementOffset,
     count: rowCount,
+    getItemKey,
     getScrollElement: () => scrollViewport,
     estimateSize,
     overscan: virtualization?.overscan ?? DATA_TABLE_VIRTUAL_PRESET.overscan,

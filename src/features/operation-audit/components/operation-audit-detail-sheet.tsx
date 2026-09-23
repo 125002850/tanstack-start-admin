@@ -125,7 +125,11 @@ export function OperationAuditDetailSheet({
                 <DetailItem
                   label='状态'
                   value={
-                    <Badge variant={failed ? 'destructive' : 'default'}>
+                    <Badge
+                      variant={
+                        failed ? 'destructive' : statusCode === 'success' ? 'success' : 'outline'
+                      }
+                    >
                       {statusDictionary.getLabel(statusCode) ?? operationAuditEnumLabel(status)}
                     </Badge>
                   }

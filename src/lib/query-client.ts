@@ -139,6 +139,15 @@ function showErrorToast(error: unknown) {
   toast.error(normalizeApiError(error).message);
 }
 
+/** 接住表单提交异常；Mutation 的全局或局部 onError 已负责对应提示。 */
+export function handleFormSubmitError(error: unknown) {
+  const handledByMutation = queryClient
+    ?.getMutationCache()
+    .getAll()
+    .some((mutation) => mutation.state.status === 'error' && mutation.state.error === error);
+  if (!handledByMutation) showErrorToast(error);
+}
+
 export function getQueryClient() {
   if (!queryClient) {
     queryClient = new QueryClient({

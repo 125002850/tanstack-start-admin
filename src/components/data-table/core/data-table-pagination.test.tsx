@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event';
 import { cleanup, render, screen } from '@testing-library/react';
 import {
   getCoreRowModel,
+  getExpandedRowModel,
   getPaginationRowModel,
   useReactTable,
   type ColumnDef
@@ -73,6 +74,52 @@ describe('DataTablePagination', () => {
 
     expect(screen.getByText('已选择 7 / 42 行')).toBeInTheDocument();
   });
+});
+
+interface TreePaginationRow {
+  id: string;
+  selectable: boolean;
+  children?: TreePaginationRow[];
+}
+
+function TreeHarness({ controlledCount }: { controlledCount: boolean }) {
+  const data: TreePaginationRow[] = [
+    { id: 'parent', selectable: true, children: [{ id: 'child', selectable: true }] },
+    { id: 'other', selectable: true, children: [{ id: 'disabled-child', selectable: false }] }
+  ];
+  const table = useReactTable({
+    data,
+    columns: [{ accessorKey: 'id' }],
+    meta: { dataTableTree: { columnId: 'id' } },
+    getRowId: (row) => row.id,
+    getSubRows: (row) => row.children,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    enableRowSelection: (row) => row.original.selectable,
+    enableSubRowSelection: false,
+    manualPagination: true,
+    rowCount: 40,
+    initialState: { rowSelection: { child: true } }
+  });
+
+  return (
+    <>
+      <button type='button' onClick={() => table.toggleAllRowsExpanded()}>
+        切换展开
+      </button>
+      <DataTablePagination table={table} selectedRowCount={controlledCount ? 1 : undefined} />
+    </>
+  );
+}
+
+it.each([false, true])('树表选择分母使用本页可选节点，受控数量为 %s', async (controlledCount) => {
+  const user = userEvent.setup();
+  render(<TreeHarness controlledCount={controlledCount} />);
+  expect(screen.getByText('已选择 1 / 3 行')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '切换展开' }));
+  expect(screen.getByText('已选择 1 / 3 行')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '切换展开' }));
+  expect(screen.getByText('已选择 1 / 3 行')).toBeInTheDocument();
 });
 
 it.each(['Enter', 'blur'])(

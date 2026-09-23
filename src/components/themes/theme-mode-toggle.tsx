@@ -1,5 +1,5 @@
 import { Icons } from '@/components/icons';
-import { useTheme } from 'next-themes';
+import { useThemeMode } from './use-theme-mode';
 import * as React from 'react';
 import { flushSync } from 'react-dom';
 
@@ -20,18 +20,17 @@ function getTransitionOrigin(event: React.MouseEvent<HTMLButtonElement>) {
 }
 
 export function ThemeModeToggle() {
-  const { setTheme, resolvedTheme } = useTheme();
+  const { toggleThemeMode } = useThemeMode();
 
   const handleThemeToggle = React.useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      const newMode = resolvedTheme === 'dark' ? 'light' : 'dark';
       const root = document.documentElement;
       const reducesMotion =
         typeof window.matchMedia === 'function' &&
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       if (reducesMotion || typeof document.startViewTransition !== 'function') {
-        setTheme(newMode);
+        toggleThemeMode();
         return;
       }
 
@@ -46,7 +45,7 @@ export function ThemeModeToggle() {
 
       try {
         const transition = document.startViewTransition(() => {
-          flushSync(() => setTheme(newMode));
+          flushSync(() => toggleThemeMode());
         });
 
         void transition.ready
@@ -77,10 +76,10 @@ export function ThemeModeToggle() {
         void transition.finished.then(cleanup, cleanup);
       } catch {
         root.removeAttribute('data-theme-mode-transition');
-        setTheme(newMode);
+        toggleThemeMode();
       }
     },
-    [resolvedTheme, setTheme]
+    [toggleThemeMode]
   );
 
   return (

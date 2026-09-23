@@ -10,11 +10,14 @@ import {
   getSortedRowModel,
   useReactTable
 } from '@tanstack/react-table';
-import type { PaginationState, TableOptions } from '@tanstack/react-table';
+import type { ExpandedState, PaginationState, TableOptions } from '@tanstack/react-table';
 import * as React from 'react';
 
+import { resolveRowDetailColumns } from '@/lib/data-table/row-detail';
 import { dataTableColumnSizes, dataTableConfig } from '@/config/data-table';
-import { getSelectedPageRows } from '@/lib/data-table/selection';
+import { getSelectedPageRowIds, getSelectedPageRows } from '@/lib/data-table/selection';
+import { getTreeNodeIds, prepareTreeData, resolveTreeColumns } from '@/lib/data-table/tree';
+import { useDataTableTreeExpansion } from './use-data-table-tree-expansion';
 import type {
   ColumnOrderStorageMode,
   ColumnResizeStorageMode,
@@ -104,6 +107,8 @@ interface DataTableRuntimeContext {
     requireExplicitRowId: boolean;
   };
   enableZebraStriping?: boolean;
+  /** DSL 的业务条件上下文；排序变化不重置树展开状态。 */
+  treeScopeKey?: string;
 }
 
 /** 仅供共享 hook 组合使用；业务代码必须通过公开的 useDataTable/useDslDataTable 接入。 */
@@ -121,11 +126,19 @@ export function useDataTableRuntime<TData>(
     showRowNumberColumn = true,
     rowNumberDisplayMode = 'static',
     showSelectColumn = false,
+    rowSelection: controlledRowSelection,
+    onRowSelectionChange,
+    enableRowSelection = true,
     tableId,
     rowId,
     actionColumnPin = 'right',
     rowActions,
     expandConfig,
+    rowDetail,
+    tree,
+    getSubRows,
+    expanded: controlledExpanded,
+    onExpandedChange: externalOnExpandedChange,
     editing: editingOptions,
     sortingMode = 'client',
     onColumnOrderChange: externalOnColumnOrderChange,
@@ -135,15 +148,46 @@ export function useDataTableRuntime<TData>(
   const editingScopeKey = runtimeContext.editingScope?.scopeKey ?? 'default';
   const requireExplicitEditingRowId = runtimeContext.editingScope?.requireExplicitRowId ?? false;
 
+  if (rowDetail && (tree || expandConfig || getSubRows)) {
+    throw new Error('rowDetail 不能与 tree、getSubRows 或 expandConfig 同时使用');
+  }
+  if (rowDetail && !rowId) throw new Error('rowDetail 必须配置稳定 rowId');
   const instanceId = React.useId();
   // 展开面板 id 优先来自 tableId；无 tableId 时用 React id 兜底并移除冒号。
   const expandPanelId = expandConfig ? getStableExpandPanelId(tableId, instanceId) : null;
   const [expandedRowKey, setExpandedRowKey] = React.useState<string | null>(null);
+  const [internalExpanded, setInternalExpanded] = React.useState<ExpandedState>(
+    () => initialState?.expanded ?? {}
+  );
+  const expanded = controlledExpanded ?? internalExpanded;
+  const isExpandedControlled = controlledExpanded !== undefined;
+  const onExpandedChange = React.useCallback<NonNullable<TableOptions<TData>['onExpandedChange']>>(
+    (updater) => {
+      if (!isExpandedControlled) setInternalExpanded(updater);
+      externalOnExpandedChange?.(updater);
+    },
+    [externalOnExpandedChange, isExpandedControlled]
+  );
+  const treeColumnId = tree?.columnId;
+  const detailColumnId = rowDetail?.columnId;
+  const expansionColumnId = treeColumnId ?? detailColumnId;
+  const treeEnabled = tree !== undefined;
+  const rowDetailEnabled = rowDetail !== undefined;
+  const treeData = React.useMemo(
+    () => (treeEnabled ? prepareTreeData(tableProps.data, getSubRows) : undefined),
+    [getSubRows, tableProps.data, treeEnabled]
+  );
 
   const normalizedColumns = React.useMemo<Array<ColumnDef<TData>>>(
     // 手写 actions 列也会被规范化为不可 resize，保持和自动生成操作列一致。
-    () => columns.map((column) => normalizeActionColumn(column)),
-    [columns]
+    () => {
+      const normalized = columns.map((column) => normalizeActionColumn(column));
+      if (detailColumnId) return resolveRowDetailColumns(normalized, detailColumnId);
+      return treeColumnId === undefined || !treeData
+        ? normalized
+        : resolveTreeColumns(normalized, treeColumnId, treeData.originalIndexes);
+    },
+    [columns, treeColumnId, treeData, detailColumnId]
   );
 
   const hasGeneratedRowActionsColumn = !!rowActions?.length;
@@ -319,18 +363,20 @@ export function useDataTableRuntime<TData>(
     );
   }, [rowId, showSelectColumn, tableId, tableProps.data]);
 
+  const resolvedTotalCount =
+    totalCount ?? (treeEnabled || rowDetailEnabled ? tableProps.data.length : undefined);
   const resolvedPageCount = React.useMemo(() => {
     if (typeof explicitPageCount === 'number') {
       return explicitPageCount;
     }
 
-    if (typeof totalCount === 'number') {
+    if (typeof resolvedTotalCount === 'number') {
       // 服务端分页常见场景：只传 totalCount，由 hook 按当前 pageSize 推导页数。
-      return getPageCount(totalCount, pagination.pageSize);
+      return getPageCount(resolvedTotalCount, pagination.pageSize);
     }
 
     return -1;
-  }, [explicitPageCount, pagination.pageSize, totalCount]);
+  }, [explicitPageCount, pagination.pageSize, resolvedTotalCount]);
 
   const resolvedGetRowId = React.useCallback<NonNullable<TableOptions<TData>['getRowId']>>(
     (row, index, parent) =>
@@ -339,11 +385,17 @@ export function useDataTableRuntime<TData>(
         row,
         index,
         parent,
-        rowId
+        rowId,
+        requireStableRowId: treeEnabled || rowDetailEnabled
       }),
-    [rowId, tableId]
+    [rowId, tableId, treeEnabled, rowDetailEnabled]
   );
   const editableFields = React.useMemo(() => collectEditableFields(baseColumns), [baseColumns]);
+  if (treeEnabled && (editableFields.size > 0 || editingOptions !== undefined)) {
+    throw new Error(
+      '[DataTable tree] Cell editing is not supported yet. Use row actions to edit tree records.'
+    );
+  }
   const hasExplicitEditingRowId = rowId !== undefined;
   const editingEnabled =
     editableFields.size > 0 && (!requireExplicitEditingRowId || hasExplicitEditingRowId);
@@ -405,14 +457,24 @@ export function useDataTableRuntime<TData>(
         pagination,
         sorting,
         columnFilters,
-        editingScopeKey
+        editingScopeKey,
+        treeScope: treeEnabled ? [tableId, runtimeContext.treeScopeKey] : undefined
       }),
-    [columnFilters, editingScopeKey, pagination, sorting]
+    [
+      columnFilters,
+      editingScopeKey,
+      pagination,
+      runtimeContext.treeScopeKey,
+      sorting,
+      tableId,
+      treeEnabled
+    ]
   );
   const localFiltering = useDataTableLocalFiltering({
-    data: editingRows,
+    data: treeData?.data ?? editingRows,
     columns: resolvedColumns,
-    resetScope: localFilteringResetScope
+    resetScope: localFilteringResetScope,
+    getSubRows: treeData?.getSubRows
   });
 
   const runtimeTableOptions = {
@@ -420,7 +482,7 @@ export function useDataTableRuntime<TData>(
     columns: resolvedColumns,
     initialState: resolvedInitialState,
     pageCount: resolvedPageCount,
-    rowCount: totalCount,
+    rowCount: resolvedTotalCount,
     meta: {
       rowNumberDisplayMode,
       rowNumberPagination,
@@ -430,6 +492,9 @@ export function useDataTableRuntime<TData>(
         reset: resetColumnOrder
       },
       dataTableId: tableId,
+      dataTableTree: tree,
+      dataTableRowDetail: rowDetail,
+      dataTableInstanceId: instanceId,
       dataTableEditing: editingEnabled ? editingState.runtime : undefined,
       dataTableLocalFiltering: localFiltering.runtime,
       dataTableRowActions: rowActions,
@@ -438,12 +503,16 @@ export function useDataTableRuntime<TData>(
     state: {
       pagination,
       sorting,
-      columnVisibility,
+      columnVisibility:
+        expansionColumnId === undefined
+          ? columnVisibility
+          : { ...columnVisibility, [expansionColumnId]: true },
       columnPinning,
       columnOrder,
-      rowSelection,
+      rowSelection: controlledRowSelection ?? rowSelection,
       columnFilters,
-      columnSizing
+      columnSizing,
+      expanded
     },
     defaultColumn: {
       // 默认关闭列筛选，只有 DSL/业务显式 filter 的列才出现在工具栏。
@@ -451,8 +520,15 @@ export function useDataTableRuntime<TData>(
       size: dataTableColumnSizes.md,
       enableColumnFilter: false
     },
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
+    enableRowSelection,
+    enableSubRowSelection: treeEnabled ? false : undefined,
+    autoResetExpanded: treeEnabled || rowDetail ? false : undefined,
+    getRowCanExpand: rowDetail ? (row) => rowDetail.canExpand?.(row) ?? true : undefined,
+    onExpandedChange,
+    onRowSelectionChange: (updater) => {
+      if (controlledRowSelection === undefined) setRowSelection(updater);
+      onRowSelectionChange?.(updater);
+    },
     onPaginationChange,
     onSortingChange,
     onColumnFiltersChange,
@@ -461,6 +537,7 @@ export function useDataTableRuntime<TData>(
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     getRowId: resolvedGetRowId,
+    getSubRows: treeEnabled ? localFiltering.getSubRows : getSubRows,
     enableColumnResizing: true,
     columnResizeMode: 'onEnd' as const,
     getCoreRowModel: getCoreRowModel(),
@@ -479,6 +556,35 @@ export function useDataTableRuntime<TData>(
   const table = useReactTable({
     ...tableProps,
     ...runtimeTableOptions
+  });
+
+  const coreRows = table.getCoreRowModel().flatRows;
+  const treeNodeIds = React.useMemo(
+    () =>
+      treeEnabled
+        ? getTreeNodeIds(coreRows)
+        : rowDetail
+          ? new Set(coreRows.filter((row) => row.getCanExpand()).map((row) => row.id))
+          : undefined,
+    [coreRows, treeEnabled, rowDetail]
+  );
+  useDataTableTreeExpansion({
+    expanded,
+    onExpandedChange,
+    nodeIds: treeNodeIds,
+    scopeKey:
+      treeEnabled || rowDetail
+        ? JSON.stringify({
+            tableId,
+            context: runtimeContext.treeScopeKey,
+            pagination,
+            columnFilters,
+            detailFilters: rowDetail ? localFiltering.runtime.filters : undefined
+          })
+        : undefined,
+    filterKey: localFiltering.hasActiveTreeFilter
+      ? JSON.stringify(localFiltering.runtime.filters)
+      : undefined
   });
 
   const expandedRow =
@@ -509,13 +615,10 @@ export function useDataTableRuntime<TData>(
   const getSelectedRows = React.useCallback(() => getSelectedPageRows(table), [table]);
   // selectedRows/selectedRowIds 都只表达当前已加载 rowModel，不表达跨页选择。
   const selectedRows = getSelectedRows();
-  const selectedRowIds = table
-    .getRowModel()
-    .rows.filter((row) => row.getIsSelected())
-    .map((row) => row.id);
+  const selectedRowIds = getSelectedPageRowIds(table);
   const clearSelectedRows = React.useCallback(() => {
-    setRowSelection({});
-  }, [setRowSelection]);
+    table.setRowSelection({});
+  }, [table]);
 
   return {
     table,

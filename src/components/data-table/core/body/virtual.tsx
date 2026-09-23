@@ -54,6 +54,8 @@ export function VirtualBody<TData>({
         return (
           <TableRow
             key={row.id}
+            data-tree-row-id={cellServices.treeEnabled ? row.id : undefined}
+            data-tree-depth={cellServices.treeEnabled ? row.depth : undefined}
             data-index={virtualRow.index}
             data-row-index={virtualRow.index}
             data-striped={enableZebraStriping && virtualRow.index % 2 === 1 ? 'true' : undefined}

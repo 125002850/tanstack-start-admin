@@ -367,3 +367,29 @@ html[data-theme-mode-transition='true']::view-transition-old(root) {
 html[data-theme-mode-transition='true']::view-transition-new(root) {
   z-index: 1;
 }
+
+/* 行内明细沿用 DataTable 表头表体，但保持从属层级。 */
+[data-slot='data-table-detail'] [data-slot='table'] {
+  border: 0;
+}
+[data-slot='data-table-detail'] [data-component='data-table-header'] [data-slot='table-head'] {
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+[data-slot='data-table-detail'] [data-component='data-table-header'] [data-slot='table-row'] {
+  border-bottom-color: var(--border);
+}
+
+[data-component='data-table-body'] [data-slot='table-row'][data-detail-expanded='true'] {
+  --data-table-row-surface: color-mix(in oklab, var(--background) 96%, var(--primary) 4%);
+}
+/* 固定操作列表头保留不透明底色，避免横向滚动时与后方标题重叠。 */
+[data-slot='data-table-detail'] [data-component='data-table-header'] [data-column-id='actions'] {
+  background: var(--background);
+}
+
+@theme inline {
+  --color-switch-background: var(--switch-background);
+}

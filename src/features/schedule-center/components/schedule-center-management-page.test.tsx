@@ -88,7 +88,7 @@ describe('ScheduleCenterManagementPage', () => {
       expect(requests.at(-1)?.condition).toEqual({
         nodeType: 'compose',
         logic: 'AND',
-        children: [{ nodeType: 'enum', field: 'status', op: 'EQ', value: 'enable' }]
+        children: [{ nodeType: 'enum', field: 'status', op: 'IN', values: ['enable'] }]
       });
     });
   });

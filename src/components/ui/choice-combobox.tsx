@@ -29,6 +29,9 @@ export type ChoiceComboboxOption<TValue extends ChoiceComboboxValue = string> = 
   value: TValue;
   label: string;
   description?: string;
+  keywords?: readonly string[];
+  icon?: React.FC<React.SVGProps<SVGSVGElement>>;
+  count?: number;
   group?: string;
   disabled?: boolean;
 };
@@ -42,6 +45,11 @@ export type ChoiceComboboxLoadMoreProps = {
 };
 
 export type ChoiceComboboxSearchMode = 'none' | 'local' | 'remote';
+
+export type ChoiceComboboxTriggerProps = Pick<
+  React.ComponentProps<typeof Button>,
+  'ref' | 'id' | 'type' | 'disabled' | 'aria-describedby' | 'aria-invalid' | 'aria-label'
+>;
 
 type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
   options: readonly ChoiceComboboxOption<TValue>[];
@@ -63,6 +71,7 @@ type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
   id?: string;
   className?: string;
   contentClassName?: string;
+  renderTrigger?: (props: ChoiceComboboxTriggerProps) => React.ReactElement;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -104,6 +113,8 @@ function ChoiceOption({
   label,
   description,
   keyboardNavigation,
+  icon: OptionIcon,
+  count,
   children,
   ...props
 }: React.ComponentProps<typeof CommandItem> & {
@@ -111,6 +122,8 @@ function ChoiceOption({
   label: string;
   description?: string;
   keyboardNavigation: boolean;
+  icon?: React.FC<React.SVGProps<SVGSVGElement>>;
+  count?: number;
 }) {
   const { ref: labelRef, checkOverflow: checkLabelOverflow } = useTextOverflow('horizontal');
   const { ref: descriptionRef, checkOverflow: checkDescriptionOverflow } =
@@ -129,8 +142,12 @@ function ChoiceOption({
   const item = (
     <CommandItem value={value} {...props}>
       {children}
-      <span ref={labelRef} className='min-w-0 truncate'>
-        {label}
+      <span className='flex min-w-0 items-center gap-2'>
+        {OptionIcon ? <OptionIcon className='size-4 shrink-0' /> : null}
+        <span ref={labelRef} className='min-w-0 truncate'>
+          {label}
+        </span>
+        {count ? <span className='ml-auto font-mono text-xs'>{count}</span> : null}
       </span>
       {description ? (
         <span ref={descriptionRef} className='col-start-2 truncate text-xs text-muted-foreground'>
@@ -184,6 +201,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   id,
   className,
   contentClassName,
+  renderTrigger,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
   onOpenChange,
@@ -220,7 +238,8 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
       (option) =>
         option.label.toLowerCase().includes(normalizedSearch) ||
         option.description?.toLowerCase().includes(normalizedSearch) ||
-        String(option.value).toLowerCase().includes(normalizedSearch)
+        String(option.value).toLowerCase().includes(normalizedSearch) ||
+        option.keywords?.some((keyword) => keyword.toLowerCase().includes(normalizedSearch))
     );
   }, [normalizedSearch, searchMode, uniqueOptions]);
   const optionGroups = React.useMemo(() => {
@@ -240,6 +259,15 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
     () => normalizedValues.map((value) => optionByValue.get(value)?.label ?? String(value)),
     [normalizedValues, optionByValue]
   );
+  const triggerProps: ChoiceComboboxTriggerProps = {
+    ref: setTriggerNode,
+    id,
+    type: 'button',
+    disabled,
+    'aria-describedby': ariaDescribedBy,
+    'aria-invalid': ariaInvalid,
+    'aria-label': triggerLabel
+  };
 
   const setSearch = React.useCallback(
     (nextSearch: string) => {
@@ -335,27 +363,25 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          ref={setTriggerNode}
-          id={id}
-          data-slot='choice-combobox-trigger'
-          type='button'
-          variant='outline'
-          disabled={disabled}
-          aria-describedby={ariaDescribedBy}
-          aria-invalid={ariaInvalid}
-          aria-label={triggerLabel}
-          className={cn(
-            'min-w-0 w-full justify-between gap-2 font-normal',
-            selectedLabels.length === 0 && 'text-muted-foreground',
-            className
-          )}
-        >
-          <span className='min-w-0 flex-1 truncate text-left'>
-            {selectedLabels.length > 0 ? selectedLabels.join(',') : placeholder}
-          </span>
-          <Icons.chevronsUpDown className='size-4 shrink-0 text-muted-foreground' />
-        </Button>
+        {renderTrigger ? (
+          renderTrigger(triggerProps)
+        ) : (
+          <Button
+            {...triggerProps}
+            data-slot='choice-combobox-trigger'
+            variant='outline'
+            className={cn(
+              'min-w-0 w-full justify-between gap-2 font-normal',
+              selectedLabels.length === 0 && 'text-muted-foreground',
+              className
+            )}
+          >
+            <span className='min-w-0 flex-1 truncate text-left'>
+              {selectedLabels.length > 0 ? selectedLabels.join(',') : placeholder}
+            </span>
+            <Icons.chevronsUpDown className='size-4 shrink-0 text-muted-foreground' />
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         className={cn('w-[var(--radix-popover-trigger-width)] p-0', contentClassName)}
@@ -408,6 +434,8 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                     <ChoiceOption
                       label={option.label}
                       description={option.description}
+                      icon={option.icon}
+                      count={option.count}
                       keyboardNavigation={keyboardNavigation}
                       className='grid grid-cols-[1rem_minmax(0,1fr)] gap-x-2 gap-y-0.5'
                       key={getOptionKey(option.value)}

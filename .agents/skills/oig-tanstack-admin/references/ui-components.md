@@ -142,3 +142,9 @@ export default function XxxRoutePage() {
 - 非标准布局页面（例如不应套 `PageContainer` 的全屏工具页）可以直接使用 `WorkspacePageBoundary`，但必须显式说明原因。
 - Management 层禁止通过 `flex-1 w-full` 等样式补救外层布局。
 - Management 层禁止导入或渲染 `PageContainer`；需要标题、描述、Infobar 时，在 `WorkspacePageRoute.pageContainerProps` 上显式传入 props。
+
+## 业务状态展示与操作
+
+- 状态徽标只展示状态，不承担点击修改。成功/可用使用 success，处理中使用 info，失败使用 destructive，停用使用 secondary，未知值使用 outline；展示名称继续来自本项目字典契约。
+- 启停或生命周期变化移到明确的操作入口，确认后执行；异步期间禁用重复操作。禁止将业务系统的枚举 desc 或硬编码名称替代模板字典。
+- 主题按钮与 KBar 使用 `useThemeMode`，根据 resolvedTheme 切换明暗；设置为 system 后继续响应系统偏好。

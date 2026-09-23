@@ -36,7 +36,7 @@ const OPERATION_TYPE_LABELS: Record<string, string> = {
   UPDATE: '更新',
   DELETE: '删除',
   ENABLE: '启用',
-  DISABLE: '禁用'
+  DISABLE: '停用'
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -76,7 +76,7 @@ function formatFieldValue(key: string, value: unknown): string {
   if (key === 'status') {
     const s = String(value);
     if (s === ScheduleJobRspDTOStatus.enable) return '启用';
-    if (s === ScheduleJobRspDTOStatus.disable) return '禁用';
+    if (s === ScheduleJobRspDTOStatus.disable) return '停用';
     return s;
   }
   return String(value);

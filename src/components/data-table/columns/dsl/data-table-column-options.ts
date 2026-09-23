@@ -72,6 +72,7 @@ interface ResolveDataTableColumnOptionsParams<TData, TValue> {
 const FILTER_VARIANT_META = {
   text: 'text',
   select: 'select',
+  remoteSelect: 'select',
   multiSelect: 'multiSelect',
   date: 'date',
   dateRange: 'dateRange',
@@ -86,6 +87,7 @@ function inferFilterPlaceholder(variant: DataTableColumnFilterVariant, title: st
     case 'text':
       return `搜索${title}`;
     case 'select':
+    case 'remoteSelect':
     case 'multiSelect':
     case 'boolean':
     case 'date':
@@ -120,6 +122,10 @@ function resolveFilterMeta<TData, TValue>(
     variant: FILTER_VARIANT_META[filter],
     placeholder: options.filterPlaceholder ?? inferFilterPlaceholder(filter, title),
     options: options.filterOptions,
+    remoteFilter:
+      filter === 'remoteSelect' || filter === 'multiSelect'
+        ? options.filterRemoteOptions
+        : undefined,
     range,
     unit: options.filterUnit
   };
@@ -132,6 +138,13 @@ function resolveLocalFilterMeta<TData, TValue>(
   options: DataTableColumnOptions<TData, TValue>
 ): DataTableColumnMeta<TData, TValue>['localFilter'] {
   if (options.localFilter === false) return undefined;
+  if (
+    options.localFilter === undefined &&
+    (options.filter === 'remoteSelect' ||
+      (options.filter === 'multiSelect' && options.filterRemoteOptions))
+  ) {
+    return undefined;
+  }
 
   const filter = options.localFilter ?? defaults.localFilter;
   if (!filter) return options.meta?.localFilter;
@@ -208,6 +221,7 @@ function stripDslManagedMeta<TData, TValue>(
   delete nextMeta.variant;
   delete nextMeta.placeholder;
   delete nextMeta.options;
+  delete nextMeta.remoteFilter;
   delete nextMeta.range;
   delete nextMeta.unit;
   delete nextMeta.query;

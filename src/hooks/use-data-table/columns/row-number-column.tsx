@@ -27,7 +27,10 @@ function estimateRowNumberWidth(totalCount?: number): number {
 
 function getVisibleRowIndex<TData>(table: Table<TData>, row: Row<TData>): number {
   // 过滤/排序后的 rowModel 位置优先；找不到时退回 TanStack Row 的原始 index。
-  const visibleIndex = table.getRowModel().rows.findIndex((visibleRow) => visibleRow.id === row.id);
+  const rows = table.options.meta?.dataTableTree
+    ? table.getPreExpandedRowModel().rows
+    : table.getRowModel().rows;
+  const visibleIndex = rows.findIndex((visibleRow) => visibleRow.id === row.id);
   return visibleIndex >= 0 ? visibleIndex : row.index;
 }
 
@@ -42,6 +45,8 @@ export function createRowNumberColumn<TData>(totalCount?: number): ColumnDef<TDa
     id: DATA_TABLE_ROW_NUMBER_COLUMN_ID,
     header: () => <span className='sr-only'>序号</span>,
     cell: ({ row, table }) => {
+      // 根节点是分页单位；子节点不占序号，展开也不会改变后续根节点的编号。
+      if (table.options.meta?.dataTableTree && row.depth > 0) return null;
       const meta = getRowNumberMeta(table);
       const displayMode = meta.rowNumberDisplayMode ?? 'static';
       const { pageIndex, pageSize } = meta.rowNumberPagination ?? table.getState().pagination;

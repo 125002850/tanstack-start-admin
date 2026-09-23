@@ -1,0 +1,44 @@
+.selected-object-row {
+  display: grid;
+  grid-template-rows: 1fr;
+  padding-bottom: 4px;
+}
+
+.selected-object-row[data-motion='enter'] {
+  animation: selected-object-enter 180ms ease-out both;
+}
+
+.selected-object-row[data-motion='exit'] {
+  pointer-events: none;
+  animation: selected-object-exit 150ms ease-out both;
+}
+
+@keyframes selected-object-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes selected-object-exit {
+  from {
+    opacity: 1;
+    grid-template-rows: 1fr;
+    padding-bottom: 4px;
+  }
+  to {
+    opacity: 0;
+    grid-template-rows: 0fr;
+    padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selected-object-row[data-motion] {
+    animation-duration: 1ms;
+  }
+}

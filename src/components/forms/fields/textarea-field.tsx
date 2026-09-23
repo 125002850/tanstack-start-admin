@@ -41,6 +41,7 @@ export function TextareaField({
         <Textarea
           id={field.name}
           aria-label={label}
+          aria-required={required || undefined}
           value={value}
           onBlur={field.handleBlur}
           onChange={(e) => field.handleChange(e.target.value)}

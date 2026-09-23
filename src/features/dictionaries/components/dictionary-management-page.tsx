@@ -227,38 +227,46 @@ function DictionaryManagementContent() {
         type={sheetState?.type ?? null}
         onSubmit={handleTypeSubmit}
       />
-      {dictionaryTypeQuery.isLoading && dictionaryTypes.length === 0 ? (
-        <DictionaryManagementFallback />
-      ) : (
-        <div className='grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start'>
-          <DictionaryTypeList
-            table={dictionaryTypeTable}
-            types={dictionaryTypes}
-            selectedTypeCode={selectedType?.dictTypeCode ?? null}
-            onSelect={(dictTypeCode) => {
-              setRequestedTypeCode(dictTypeCode);
-            }}
-            onAddType={() => setSheetState({ type: null })}
-          />
-
-          <div className='min-w-0 space-y-4'>
-            <DictionaryTypeDetails
-              record={selectedType}
-              onEdit={() => setSheetState({ type: selectedType })}
-              onDelete={selectedType ? handleDeleteTypeClick : undefined}
+      <div aria-label='字典管理内容' className='flex h-full min-h-0 min-w-0 flex-col' role='region'>
+        {dictionaryTypeQuery.isLoading && dictionaryTypes.length === 0 ? (
+          <DictionaryManagementFallback />
+        ) : (
+          <div
+            className='flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto xl:grid xl:grid-cols-[300px_minmax(0,1fr)] xl:overflow-hidden'
+            data-slot='dictionary-management-columns'
+          >
+            <DictionaryTypeList
+              table={dictionaryTypeTable}
+              types={dictionaryTypes}
+              selectedTypeCode={selectedType?.dictTypeCode ?? null}
+              onSelect={(dictTypeCode) => {
+                setRequestedTypeCode(dictTypeCode);
+              }}
+              onAddType={() => setSheetState({ type: null })}
             />
 
-            <DictionaryItemsPanel
-              record={selectedType}
-              onTotalChange={setSelectedTypeItemTotal}
-              onItemSubmit={handleItemSubmit}
-              onDelete={handleDelete}
-              onBulkDelete={handleBulkDelete}
-              onToggleItemStatus={handleToggleItemStatus}
-            />
+            <div
+              className='flex min-w-0 shrink-0 flex-col gap-4 xl:h-full xl:min-h-0 xl:shrink xl:overflow-hidden'
+              data-slot='dictionary-management-detail-column'
+            >
+              <DictionaryTypeDetails
+                record={selectedType}
+                onEdit={() => setSheetState({ type: selectedType })}
+                onDelete={selectedType ? handleDeleteTypeClick : undefined}
+              />
+
+              <DictionaryItemsPanel
+                record={selectedType}
+                onTotalChange={setSelectedTypeItemTotal}
+                onItemSubmit={handleItemSubmit}
+                onDelete={handleDelete}
+                onBulkDelete={handleBulkDelete}
+                onToggleItemStatus={handleToggleItemStatus}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }

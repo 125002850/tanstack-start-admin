@@ -17,16 +17,18 @@
   --destructive-foreground: oklch(0.9702 0 0);
   --border: oklch(0.9219 0 0);
   --input: oklch(0.9219 0 0);
+  --switch-background: oklch(0.9219 0 0);
   --ring: oklch(0.709 0 0);
   --data-table-header-background: color-mix(in oklab, var(--card) 82%, var(--foreground) 18%);
   --data-table-header-foreground: var(--foreground);
   --data-table-row-selected-background: color-mix(in oklab, var(--card) 92%, var(--primary) 8%);
   --data-table-row-expanded-background: color-mix(in oklab, var(--card) 84%, var(--foreground) 16%);
-  --chart-1: oklch(0.5555 0 0);
-  --chart-2: oklch(0.5555 0 0);
-  --chart-3: oklch(0.5555 0 0);
-  --chart-4: oklch(0.5555 0 0);
-  --chart-5: oklch(0.5555 0 0);
+  /* 交错灰阶拉开相邻系列；前两个系列优先保证明暗差异。 */
+  --chart-1: oklch(0.22 0 0);
+  --chart-2: oklch(0.66 0 0);
+  --chart-3: oklch(0.33 0 0);
+  --chart-4: oklch(0.55 0 0);
+  --chart-5: oklch(0.44 0 0);
   --sidebar: oklch(0.9851 0 0);
   --sidebar-foreground: oklch(0.1448 0 0);
   --sidebar-primary: oklch(0.2046 0 0);
@@ -76,13 +78,15 @@
   --destructive-foreground: oklch(0.2686 0 0);
   --border: oklch(0.3407 0 0);
   --input: oklch(0.4386 0 0);
+  --switch-background: oklch(0.4386 0 0);
   --ring: oklch(0.5555 0 0);
   --data-table-row-expanded-background: color-mix(in oklab, var(--card) 76%, var(--foreground) 24%);
-  --chart-1: oklch(0.5555 0 0);
-  --chart-2: oklch(0.5555 0 0);
-  --chart-3: oklch(0.5555 0 0);
-  --chart-4: oklch(0.5555 0 0);
-  --chart-5: oklch(0.5555 0 0);
+  /* 交错灰阶拉开相邻系列；前两个系列优先保证明暗差异。 */
+  --chart-1: oklch(0.94 0 0);
+  --chart-2: oklch(0.58 0 0);
+  --chart-3: oklch(0.85 0 0);
+  --chart-4: oklch(0.67 0 0);
+  --chart-5: oklch(0.76 0 0);
   --sidebar: oklch(0.2046 0 0);
   --sidebar-foreground: oklch(0.9851 0 0);
   --sidebar-primary: oklch(0.9851 0 0);

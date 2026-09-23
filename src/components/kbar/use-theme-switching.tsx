@@ -1,15 +1,11 @@
 import { useRegisterActions } from 'kbar';
-import { useTheme } from 'next-themes';
+import { useThemeMode } from '@/components/themes/use-theme-mode';
 import { useThemeConfig } from '@/components/themes/active-theme';
 import { THEMES } from '@/components/themes/theme.config';
 
 const useThemeSwitching = () => {
-  const { theme, setTheme } = useTheme();
+  const { setTheme, toggleThemeMode } = useThemeMode();
   const { activeTheme, setActiveTheme } = useThemeConfig();
-
-  const toggleDarkLight = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
 
   const cycleTheme = () => {
     const currentIndex = THEMES.findIndex((t) => t.value === activeTheme);
@@ -30,7 +26,7 @@ const useThemeSwitching = () => {
       name: '切换明暗模式',
       shortcut: ['d', 'd'],
       section: '主题',
-      perform: toggleDarkLight
+      perform: toggleThemeMode
     },
     {
       id: 'setLightTheme',
@@ -43,10 +39,16 @@ const useThemeSwitching = () => {
       name: '切换为深色模式',
       section: '主题',
       perform: () => setTheme('dark')
+    },
+    {
+      id: 'setSystemTheme',
+      name: '跟随系统明暗模式',
+      section: '主题',
+      perform: () => setTheme('system')
     }
   ];
 
-  useRegisterActions(themeActions, [theme, activeTheme]);
+  useRegisterActions(themeActions, [toggleThemeMode, setTheme, activeTheme, setActiveTheme]);
 };
 
 export default useThemeSwitching;

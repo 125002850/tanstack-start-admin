@@ -41,7 +41,7 @@ import {
   DataTableSkeleton,
   type DataTableSkeletonProps
 } from '@/components/data-table/feedback/data-table-skeleton';
-import { getSelectedPageRowCount } from '@/lib/data-table/selection';
+import { getPageSelectionTotalRowCount, getSelectedPageRowCount } from '@/lib/data-table/selection';
 import { DATA_TABLE_SCROLLBAR_Z_INDEX } from './data-table-pinning';
 import { useDataTableColumnDnd } from '@/components/data-table/dnd/use-data-table-column-dnd';
 import { useDataTableExpandPanel } from '@/components/data-table/expand/use-data-table-expand-panel';
@@ -218,6 +218,7 @@ export function DataTable<TData>({
     columnVirtualWindow,
     orderedLeafColumns,
     resolvedTableWidth,
+    scrollToColumn,
     shouldVirtualizeColumns,
     useTransformFreeVirtualRows,
     virtConfig
@@ -285,19 +286,21 @@ export function DataTable<TData>({
         loadingSkeleton
       })
     : null;
+  const hasRowDetail = Boolean(table.options.meta?.dataTableRowDetail);
   const shouldMeasureStatusViewport =
     !shouldRenderLoadingSkeleton &&
     (resolvedStatus ? resolvedStatus.type !== 'permission' : rows.length === 0);
 
   React.useLayoutEffect(() => {
     const viewport = scrollViewport;
-    if (!viewport || !shouldMeasureStatusViewport) return;
+    if (!viewport || (!shouldMeasureStatusViewport && !hasRowDetail)) return;
 
     let lastWidth = 0;
     const applyWidth = (width: number) => {
       if (width <= 0 || width === lastWidth) return;
       lastWidth = width;
       viewport.style.setProperty(DATA_TABLE_STATUS_VIEWPORT_WIDTH_CSS_PROPERTY, `${width}px`);
+      viewport.style.setProperty('--data-table-detail-viewport-width', `${width}px`);
     };
     const measure = () => applyWidth(viewport.clientWidth);
 
@@ -317,16 +320,18 @@ export function DataTable<TData>({
       observer?.disconnect();
       window.removeEventListener('resize', measure);
       viewport.style.removeProperty(DATA_TABLE_STATUS_VIEWPORT_WIDTH_CSS_PROPERTY);
+      viewport.style.removeProperty('--data-table-detail-viewport-width');
     };
-  }, [shouldMeasureStatusViewport, scrollViewport]);
+  }, [shouldMeasureStatusViewport, hasRowDetail, scrollViewport]);
 
-  const pageRows = rows;
   // 选择统计优先使用外部受控值；未受控时只统计当前已加载页，避免误表达跨页全选。
   const resolvedSelectedRowCount =
     selectedRowCount ??
     (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
   const resolvedSelectedTotalRowCount =
-    selectedRowCount !== undefined ? totalRowCount : pageRows.length;
+    !table.options.meta?.dataTableTree && selectedRowCount !== undefined
+      ? totalRowCount
+      : getPageSelectionTotalRowCount(table);
   const isExpanded = !!(expandConfig && expandedRow && expandPanelId);
   const {
     activeExpandTab,
@@ -381,6 +386,7 @@ export function DataTable<TData>({
       useTransformFreeVirtualRows={useTransformFreeVirtualRows}
       scrollViewportRef={scrollViewportRef}
       scrollViewport={scrollViewport}
+      scrollToColumn={scrollToColumn}
       headerRowRef={headerRowRef}
       onRowClick={
         expandConfig

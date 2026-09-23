@@ -1,4 +1,10 @@
-import type { InitialTableState, Row, TableOptions } from '@tanstack/react-table';
+import type {
+  InitialTableState,
+  ExpandedState,
+  Row,
+  RowSelectionState,
+  TableOptions
+} from '@tanstack/react-table';
 
 import type {
   ColumnOrderStorageMode,
@@ -10,6 +16,8 @@ import type {
   SortingStorageMode
 } from '@/types/data-table';
 import type { RowNumberDisplayMode } from './columns/row-number-column';
+import type { DataTableRowDetailConfig } from '@/types/data-table';
+import type { DataTableTreeConfig } from '@/types/data-table';
 
 export type DataTablePinnedSide = 'left' | 'right';
 
@@ -27,6 +35,8 @@ export type DataTableRuntimeConfiguredTableOption =
   | 'defaultColumn'
   | 'enableColumnResizing'
   | 'enableRowSelection'
+  | 'enableSubRowSelection'
+  | 'autoResetExpanded'
   | 'getCoreRowModel'
   | 'getFacetedMinMaxValues'
   | 'getFacetedRowModel'
@@ -35,6 +45,8 @@ export type DataTableRuntimeConfiguredTableOption =
   | 'getExpandedRowModel'
   | 'getPaginationRowModel'
   | 'getRowId'
+  | 'getSubRows'
+  | 'getRowCanExpand'
   | 'getSortedRowModel'
   | 'initialState'
   | 'manualFiltering'
@@ -48,6 +60,7 @@ export type DataTableRuntimeConfiguredTableOption =
   | 'onColumnVisibilityChange'
   | 'onPaginationChange'
   | 'onRowSelectionChange'
+  | 'onExpandedChange'
   | 'onSortingChange'
   | 'pageCount'
   | 'rowCount'
@@ -59,7 +72,11 @@ export type DataTableRuntimeRemappedPublicTableOption =
   | 'data'
   | 'initialState'
   | 'onColumnOrderChange'
-  | 'pageCount';
+  | 'pageCount'
+  | 'enableRowSelection'
+  | 'getSubRows'
+  | 'onExpandedChange'
+  | 'onRowSelectionChange';
 
 /** TanStack Table 的底层扩展入口；共享 hook 不允许业务调用方介入。 */
 export type DataTableReservedTableOption = '_features' | 'mergeOptions' | 'onStateChange';
@@ -181,7 +198,13 @@ export interface UseDataTableProps<TData> extends Pick<
   rowNumberDisplayMode?: RowNumberDisplayMode;
   /** 是否自动注入多选列。默认 `false`。选中统计默认是当前页范围。 */
   showSelectColumn?: boolean;
-  /** 行选中态所属的数据上下文 key；变化时会自动清空当前选中。 */
+  /** 受控选择；跨页状态由调用方维护，选中行统计仍只覆盖当前页。 */
+  rowSelection?: RowSelectionState;
+  /** 选择变更回调，配合 rowSelection 使用；未受控时也会通知。 */
+  onRowSelectionChange?: TableOptions<TData>['onRowSelectionChange'];
+  /** 是否允许勾选，可按行控制。默认 true。 */
+  enableRowSelection?: TableOptions<TData>['enableRowSelection'];
+  /** 非受控选择的数据上下文 key；变化时仅清空选择，不重置展开或本地筛选。受控选择由调用方重置。 */
   rowSelectionScopeKey?: string | number | null;
   /** 操作列的固定方向。默认 `'right'`。 */
   actionColumnPin?: DataTablePinnedSide;
@@ -189,6 +212,14 @@ export interface UseDataTableProps<TData> extends Pick<
   rowActions?: DataTableRowAction<TData>[];
   /** 行展开配置。传入后启用行点击展开和详情面板，不再额外注入展开图标列。 */
   expandConfig?: ExpandConfigEdge<TData>;
+  /** 已加载嵌套树；复用 rowId/getSubRows，在指定业务列展示层级。 */
+  tree?: DataTableTreeConfig;
+  /** 行内详情，与 tree / expandConfig 互斥；父表使用非虚拟分页展示。 */
+  rowDetail?: DataTableRowDetailConfig<TData>;
+  /** 受控的树展开状态。未传时使用内部状态和 initialState.expanded。 */
+  expanded?: ExpandedState;
+  /** 展开变更回调；受控模式与 expanded 配套使用。 */
+  onExpandedChange?: TableOptions<TData>['onExpandedChange'];
   /** editableField 的行级权限与编辑完成通知。 */
   editing?: DataTableEditingOptions<TData>;
 }

@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { DictStatus } from '@/constants/enums';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +37,7 @@ export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTy
     <Card>
       <CardHeader>
         <div className='flex flex-wrap items-start justify-between gap-3'>
-          <div className='space-y-1'>
+          <div className='flex min-w-0 flex-col gap-1 break-all'>
             <CardTitle>{record.dictTypeName}</CardTitle>
             <CardDescription>{`编码：${record.dictTypeCode}`}</CardDescription>
           </div>
@@ -55,7 +57,22 @@ export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTy
         </div>
       </CardHeader>
       <CardContent className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
-        <DetailField label='状态' value={getStatusLabel(record.status)} />
+        <DetailField
+          label='状态'
+          value={
+            <Badge
+              variant={
+                record.status === DictStatus.ENABLE
+                  ? 'success'
+                  : record.status === DictStatus.DISABLE
+                    ? 'secondary'
+                    : 'outline'
+              }
+            >
+              {getStatusLabel(record.status) || '—'}
+            </Badge>
+          }
+        />
         <AuditInfo
           label='创建信息'
           operator={record.createByName ?? record.createById}
@@ -71,9 +88,9 @@ export function DictionaryTypeDetails({ record, onEdit, onDelete }: DictionaryTy
   );
 }
 
-function DetailField({ label, value }: { label: string; value?: string | number }) {
+function DetailField({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
-    <div className='space-y-1 rounded-lg border bg-muted/20 px-4 py-3'>
+    <div className='min-w-0 space-y-1 break-all rounded-lg border bg-muted/20 px-4 py-3'>
       <div className='text-muted-foreground text-xs tracking-[0.18em]'>{label}</div>
       <div className='text-sm font-medium'>{value || '-'}</div>
     </div>

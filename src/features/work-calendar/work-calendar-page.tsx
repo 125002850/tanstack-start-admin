@@ -1,19 +1,10 @@
 import { useDict } from '@/hooks/use-dict';
 import { DictionaryScope } from '@/components/dictionary/dictionary-scope';
-import * as React from 'react';
-import { useStore } from '@tanstack/react-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-
 import { Icons } from '@/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppForm } from '@/components/ui/tanstack-form';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   evaluateWorkCalendarDraftMutationOptions,
   fetchWorkCalendarYearDetailQueryKey,
@@ -27,50 +18,47 @@ import {
   type WorkCalendarYearDetailReqDTO,
   type WorkCalendarYearDetailRspDTO
 } from '@/lib/api/clients/service';
-
-export const WorkCalendarYearDetailReqDTOView = {
-  draft: 'draft',
-  active: 'active'
-} as const;
-
-const WORK_CALENDAR_CLASSIFICATION_BASIS = {
-  weeklyFallback: 'weekly_fallback'
-} as const;
-
-export type WorkCalendarYearDetailReqDTOView =
-  (typeof WorkCalendarYearDetailReqDTOView)[keyof typeof WorkCalendarYearDetailReqDTOView];
 import { normalizeApiError } from '@/lib/api/error-normalizer';
-import { cn } from '@/lib/utils';
-
+import { useStore } from '@tanstack/react-form';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as React from 'react';
+import { toast } from 'sonner';
 import { DateOverrideSheet } from './components/date-override-sheet';
+import { StandardPeriodsEditor } from './components/standard-periods-editor';
 import {
   DraftEvaluationDialog,
   ImportJsonDialog,
   PublicationDialog,
   WorkCalendarDirtyDialog
 } from './components/work-calendar-dialogs';
-import { WorkCalendarYearControl } from './components/work-calendar-year-control';
+import { Header } from './components/work-calendar-header';
+import { CalendarLegend } from './components/work-calendar-legend';
 import { YearCalendarGrid } from './components/year-calendar-grid';
 import { useWorkCalendarDirtyGuard } from './hooks/use-work-calendar-dirty-guard';
 import {
-  createDefaultPeriod,
   findChangedDates,
-  getPeriodValidationMessage,
   indexOverrides,
   toDraftFormValue,
-  WORK_CALENDAR_TIME_ZONE,
   workCalendarDraftSchema,
   type WorkCalendarDateOverrideValue,
-  type WorkCalendarDraftFormValue,
-  type WorkCalendarPeriodValue
+  type WorkCalendarDraftFormValue
 } from './model/work-calendar-model';
+import {
+  type WorkCalendarViewMode,
+  WorkCalendarYearDetailReqDTOView
+} from './model/work-calendar-page-model';
+import {
+  requireResponse,
+  resolveWorkCalendarViewMode,
+  toOperationError,
+  toSaveRequest,
+  WORK_CALENDAR_CLASSIFICATION_BASIS
+} from './model/work-calendar-page-model';
 
 interface WorkCalendarPageProps {
   year: number;
   onYearChange: (year: number) => void;
 }
-
-export type WorkCalendarViewMode = 'draft' | 'active';
 
 export default function WorkCalendarPage(props: WorkCalendarPageProps) {
   return (
@@ -494,246 +482,6 @@ function WorkCalendarEditor({
   );
 }
 
-interface HeaderProps {
-  year: number;
-  detail: WorkCalendarYearDetailRspDTO;
-  dirty: boolean;
-  viewMode: WorkCalendarViewMode;
-  refreshing: boolean;
-  saving: boolean;
-  preparing: boolean;
-  onYearChange: (year: number) => void;
-  onViewModeChange: (mode: WorkCalendarViewMode) => void;
-  onSave: () => void;
-  onImport: () => void;
-  onEvaluate: () => void;
-  onPublish: () => void;
-}
-
-export function Header({
-  year,
-  detail,
-  dirty,
-  viewMode,
-  refreshing,
-  saving,
-  preparing,
-  onYearChange,
-  onViewModeChange,
-  onSave,
-  onImport,
-  onEvaluate,
-  onPublish
-}: HeaderProps) {
-  const basis = useDict('WORK_CALENDAR_CLASSIFICATION_BASIS');
-  const draftView = viewMode === WorkCalendarYearDetailReqDTOView.draft;
-
-  return (
-    <header className='flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-sm xl:flex-row xl:items-center xl:justify-between'>
-      <div className='space-y-3'>
-        <div className='flex flex-wrap items-center gap-2'>
-          <h1 className='text-xl font-semibold tracking-tight'>工作日历</h1>
-          <Badge variant='outline'>{WORK_CALENDAR_TIME_ZONE}</Badge>
-          {detail.activeVersion && <Badge>生效 v{detail.activeVersion.versionNo ?? '—'}</Badge>}
-          {detail.draftVersion && (
-            <Badge variant='secondary'>草稿 v{detail.draftVersion.versionNo ?? '—'}</Badge>
-          )}
-          {!detail.activeVersion && !detail.draftVersion && (
-            <Badge variant='outline'>首次配置</Badge>
-          )}
-          {!draftView && <Badge variant='outline'>只读</Badge>}
-          {draftView && dirty && <Badge variant='outline'>有未保存修改</Badge>}
-          {refreshing && <Icons.spinner className='size-4 animate-spin text-muted-foreground' />}
-        </div>
-        <div className='flex flex-wrap items-center gap-2'>
-          <WorkCalendarYearControl year={year} onYearChange={onYearChange} />
-          {detail.activeVersion && (
-            <ToggleGroup
-              type='single'
-              variant='outline'
-              size='sm'
-              value={viewMode}
-              aria-label='工作日历版本视图'
-              onValueChange={(value) => {
-                if (
-                  value === WorkCalendarYearDetailReqDTOView.draft ||
-                  value === WorkCalendarYearDetailReqDTOView.active
-                ) {
-                  onViewModeChange(value);
-                }
-              }}
-            >
-              <ToggleGroupItem value={WorkCalendarYearDetailReqDTOView.draft}>
-                {detail.draftVersion ? `草稿 v${detail.draftVersion.versionNo ?? '—'}` : '新草稿'}
-              </ToggleGroupItem>
-              <ToggleGroupItem value={WorkCalendarYearDetailReqDTOView.active}>
-                生效 v{detail.activeVersion.versionNo ?? '—'}
-              </ToggleGroupItem>
-            </ToggleGroup>
-          )}
-          <span className='text-sm text-muted-foreground'>
-            {draftView ? basis.getLabel(detail.viewBasis ?? '') : '当前生效快照（只读）'}
-          </span>
-        </div>
-      </div>
-
-      {draftView && (
-        <div className='flex flex-wrap items-center gap-2'>
-          <Button type='button' variant='outline' onClick={onEvaluate}>
-            <Icons.clock className='size-4' />
-            草稿试算
-          </Button>
-          <Button type='button' variant='outline' onClick={onImport}>
-            <Icons.upload className='size-4' />
-            导入 JSON
-          </Button>
-          {dirty && (
-            <Button type='button' variant='outline' isLoading={saving} onClick={onSave}>
-              <Icons.save className='size-4' />
-              保存草稿
-            </Button>
-          )}
-          <Button type='button' isLoading={preparing} onClick={onPublish}>
-            <Icons.checks className='size-4' />
-            发布
-          </Button>
-        </div>
-      )}
-    </header>
-  );
-}
-
-function StandardPeriodsEditor({
-  periods,
-  readOnly,
-  onChange
-}: {
-  periods: WorkCalendarPeriodValue[];
-  readOnly: boolean;
-  onChange: (periods: WorkCalendarPeriodValue[]) => void;
-}) {
-  const validationMessage = getPeriodValidationMessage(periods);
-  return (
-    <Card className='h-auto'>
-      <CardHeader>
-        <CardTitle>标准工作时段</CardTitle>
-        <CardDescription>
-          适用于普通工作日及未自定义时段的调休工作日；区间采用左闭右开规则。
-        </CardDescription>
-      </CardHeader>
-      <CardContent className='gap-3'>
-        {periods.length === 0 && (
-          <p className='rounded-md border border-dashed p-4 text-sm text-muted-foreground'>
-            尚未配置标准时段。添加至少一个时段后才能保存草稿。
-          </p>
-        )}
-        {periods.map((period, index) => (
-          <div key={index} className='flex max-w-lg items-center gap-2'>
-            <Input
-              type='time'
-              disabled={readOnly}
-              aria-label={`第 ${index + 1} 个标准时段开始时间`}
-              value={period.start}
-              onChange={(event) =>
-                onChange(updatePeriod(periods, index, 'start', event.target.value))
-              }
-            />
-            <span className='text-sm text-muted-foreground'>至</span>
-            <Input
-              type='time'
-              disabled={readOnly}
-              aria-label={`第 ${index + 1} 个标准时段结束时间`}
-              value={period.end}
-              onChange={(event) =>
-                onChange(updatePeriod(periods, index, 'end', event.target.value))
-              }
-            />
-            {!readOnly && (
-              <Button
-                type='button'
-                size='icon'
-                variant='ghost'
-                aria-label={`删除第 ${index + 1} 个标准时段`}
-                onClick={() => onChange(periods.filter((_, itemIndex) => itemIndex !== index))}
-              >
-                <Icons.trash className='size-4' />
-              </Button>
-            )}
-          </div>
-        ))}
-        {!readOnly && (
-          <Button
-            type='button'
-            size='sm'
-            variant='outline'
-            disabled={periods.length >= 8}
-            onClick={() => onChange([...periods, createDefaultPeriod(periods)])}
-          >
-            <Icons.add className='size-4' />
-            添加时段
-          </Button>
-        )}
-        {!readOnly && validationMessage && (
-          <p className='text-sm text-destructive'>{validationMessage}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function CalendarLegend({ viewBasis, dirty }: { viewBasis: string; dirty: boolean }) {
-  return (
-    <div className='flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 text-sm'>
-      <div className='flex flex-wrap gap-3' aria-label='工作日历图例'>
-        <LegendItem
-          mark='工'
-          label='工作日'
-          className='bg-background text-foreground hover:text-foreground'
-        />
-        <LegendItem mark='休' label='周末' className='bg-muted/55 text-muted-foreground' />
-        <LegendItem
-          mark='假'
-          label='法定节假日'
-          className='bg-destructive/10 text-destructive dark:bg-destructive/15'
-        />
-        <LegendItem
-          mark='班'
-          label='调休工作日'
-          className='bg-accent text-accent-foreground ring-1 ring-border'
-        />
-        <LegendItem
-          mark='休'
-          label='其他非工作日'
-          className='bg-secondary text-secondary-foreground'
-        />
-      </div>
-      <p className='text-muted-foreground'>
-        当前网格：{viewBasis}
-        {dirty ? '；虚线日期为待保存局部修改' : ''}
-      </p>
-    </div>
-  );
-}
-
-function LegendItem({
-  mark,
-  label,
-  className
-}: {
-  mark: string;
-  label: string;
-  className: string;
-}) {
-  return (
-    <span className='inline-flex items-center gap-1.5'>
-      <span className={cn('flex size-6 items-center justify-center rounded text-[9px]', className)}>
-        {mark}
-      </span>
-      {label}
-    </span>
-  );
-}
-
 function WorkCalendarPageSkeleton() {
   return (
     <div className='space-y-4' aria-label='工作日历加载中'>
@@ -746,70 +494,4 @@ function WorkCalendarPageSkeleton() {
       </div>
     </div>
   );
-}
-
-function updatePeriod(
-  periods: WorkCalendarPeriodValue[],
-  index: number,
-  field: keyof WorkCalendarPeriodValue,
-  value: string
-) {
-  return periods.map((period, itemIndex) =>
-    itemIndex === index ? { ...period, [field]: value } : period
-  );
-}
-
-function toSaveRequest(value: WorkCalendarDraftFormValue) {
-  return {
-    year: value.year,
-    draftVersionId: value.draftVersionId,
-    expectedLockVersion: value.expectedLockVersion,
-    standardPeriods: value.standardPeriods,
-    dateOverrides: value.dateOverrides.map((override) => ({
-      date: override.date,
-      type: override.type,
-      name: override.name,
-      customPeriods: override.customPeriods,
-      sourceNote: override.sourceNote
-    }))
-  };
-}
-
-function toOperationError(error: unknown, fallback: string) {
-  const info = normalizeApiError(error, { fallbackMessage: fallback });
-  switch (info.code) {
-    case 3005003:
-      return '草稿已被其他操作更新。请重新加载后再继续编辑。';
-    case 3005004:
-    case 3005005:
-      return '工作时段无效或存在重叠，请检查开始和结束时间。';
-    case 3005006:
-      return '特殊日期配置不合法，请检查日期类型、名称与自定义时段。';
-    case 3005007:
-      return 'JSON 文件不符合导入格式或超过大小限制。';
-    case 3005008:
-      return '全年规则校验未通过，请修正后重新预检。';
-    default:
-      return info.message;
-  }
-}
-
-function requireResponse<T>(value: T | undefined, message: string): T {
-  if (value === undefined) throw new Error(message);
-  return value;
-}
-
-export function resolveWorkCalendarViewMode(
-  detail: WorkCalendarYearDetailRspDTO,
-  requestedView?: WorkCalendarViewMode
-): WorkCalendarViewMode {
-  if (requestedView === WorkCalendarYearDetailReqDTOView.draft) {
-    return WorkCalendarYearDetailReqDTOView.draft;
-  }
-  if (requestedView === WorkCalendarYearDetailReqDTOView.active && detail.activeVersion) {
-    return WorkCalendarYearDetailReqDTOView.active;
-  }
-  return detail.draftVersion || !detail.activeVersion
-    ? WorkCalendarYearDetailReqDTOView.draft
-    : WorkCalendarYearDetailReqDTOView.active;
 }

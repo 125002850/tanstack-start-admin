@@ -1,4 +1,6 @@
-import type { Row } from '@tanstack/react-table';
+import { Fragment } from 'react';
+import { DataTableRowDetail } from '@/components/data-table/row-detail/data-table-row-detail';
+import type { Row, Table } from '@tanstack/react-table';
 
 import { DATA_TABLE_ROW_HEIGHT_PX } from '@/config/data-table';
 import { TableBody, TableRow } from '@/components/ui/table';
@@ -8,12 +10,14 @@ import { FlowCell, FlowColumnWindowCells } from './cell';
 import type { DataTableBodyCellServices, DataTableBodyRowInteraction } from './types';
 
 export function StandardBody<TData>({
+  table,
   rows,
   enableZebraStriping,
   columnVirtualWindow,
   cellServices,
   rowInteraction
 }: {
+  table: Table<TData>;
   rows: Row<TData>[];
   enableZebraStriping: boolean;
   columnVirtualWindow?: DataTableColumnVirtualWindow<TData>;
@@ -29,27 +33,40 @@ export function StandardBody<TData>({
       }
     >
       {rows.map((row, index) => (
-        <TableRow
-          key={row.id}
-          data-row-index={index}
-          data-striped={enableZebraStriping && index % 2 === 1 ? 'true' : undefined}
-          data-expanded={rowInteraction.isExpanded(row) ? 'true' : undefined}
-          data-state={row.getIsSelected() ? 'selected' : undefined}
-          aria-selected={row.getIsSelected() ? true : undefined}
-          className={rowInteraction.className}
-          onClick={(event) => rowInteraction.handleClick(event, row)}
-          onKeyDown={(event) => rowInteraction.handleKeyDown(event, row)}
-          tabIndex={rowInteraction.getTabIndex(row)}
-          style={{ height: DATA_TABLE_ROW_HEIGHT_PX }}
-        >
-          {columnVirtualWindow?.enabled ? (
-            <FlowColumnWindowCells row={row} window={columnVirtualWindow} services={cellServices} />
-          ) : (
-            row
-              .getVisibleCells()
-              .map((cell) => <FlowCell key={cell.id} cell={cell} services={cellServices} />)
-          )}
-        </TableRow>
+        <Fragment key={row.id}>
+          <TableRow
+            data-tree-row-id={cellServices.treeEnabled ? row.id : undefined}
+            data-tree-depth={cellServices.treeEnabled ? row.depth : undefined}
+            data-row-index={index}
+            data-striped={enableZebraStriping && index % 2 === 1 ? 'true' : undefined}
+            data-expanded={rowInteraction.isExpanded(row) ? 'true' : undefined}
+            data-detail-expanded={
+              table.options.meta?.dataTableRowDetail && row.getCanExpand() && row.getIsExpanded()
+                ? 'true'
+                : undefined
+            }
+            data-state={row.getIsSelected() ? 'selected' : undefined}
+            aria-selected={row.getIsSelected() ? true : undefined}
+            className={rowInteraction.className}
+            onClick={(event) => rowInteraction.handleClick(event, row)}
+            onKeyDown={(event) => rowInteraction.handleKeyDown(event, row)}
+            tabIndex={rowInteraction.getTabIndex(row)}
+            style={{ height: DATA_TABLE_ROW_HEIGHT_PX }}
+          >
+            {columnVirtualWindow?.enabled ? (
+              <FlowColumnWindowCells
+                row={row}
+                window={columnVirtualWindow}
+                services={cellServices}
+              />
+            ) : (
+              row
+                .getVisibleCells()
+                .map((cell) => <FlowCell key={cell.id} cell={cell} services={cellServices} />)
+            )}
+          </TableRow>
+          <DataTableRowDetail row={row} table={table} />
+        </Fragment>
       ))}
     </TableBody>
   );

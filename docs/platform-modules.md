@@ -2,11 +2,11 @@
 
 回灌模块沿用 generated client、DataTable、workspace tabs 和字典 code 契约。
 
-| 页面 | 路由 | 菜单键 |
-| --- | --- | --- |
+| 页面     | 路由                                           | 菜单键            |
+| -------- | ---------------------------------------------- | ----------------- |
 | 操作审计 | `/dashboard/system-management/operation-audit` | `operation-audit` |
 | 调度中心 | `/dashboard/system-management/schedule-center` | `schedule-center` |
-| 工作日历 | `/dashboard/system-management/work-calendar` | `work-calendar` |
+| 工作日历 | `/dashboard/system-management/work-calendar`   | `work-calendar`   |
 
 页面需要配套 `java-admin-starter` 的操作审计、调度、日历增量迁移与 API。更新后端后，按 README 的 `pnpm api` 重新拉取契约；单独运行前端不会生成审计或执行任务。
 
@@ -21,3 +21,11 @@
 - 表格支持输入页码跳转，空态/错误态在可见表格宽度内居中；多列排序使用 Shift 点击。
 - TreeCombobox 支持树形单选/多选、搜索及禁用节点说明；ChoiceCombobox 支持分组。
 - 页签支持 `Alt+ArrowLeft/ArrowRight` 和右键菜单调序，首页位置固定。
+
+## 业务系统增量回灌（2026-09-23）
+
+- DataTable 增加树形行、行内明细、轻量明细表格、受控跨页选择，以及远程单多选筛选；对象选择器复用这些共享能力。使用边界见 DataTable 技能 reference。
+- 字典管理支持窄屏滚动和提交状态；平台状态统一为只读徽标，状态操作显式确认。表单必填语义、加载按钮可访问名称和提交异常处理同步增强。
+- 主题按钮与命令面板统一模式切换，支持跟随系统；单色主题改善图表灰阶。
+- 工作日历拆分页头、图例、时段编辑与页面模型，保持原有 code/字典契约和离开保护。
+- 保留审计列 DSL、操作列自定义尺寸、上传字段及现有后端请求契约；未引入业务系统依赖或环境配置。

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -301,6 +301,29 @@ describe('DictionaryManagementPage', () => {
     globalThis.ResizeObserver = originalResizeObserver;
   });
 
+  it('stretches both desktop columns to the remaining page height', async () => {
+    serviceMocks.systemDictGlobalTypesListAll.mockResolvedValue(PAGE_ONE_TYPES.slice(0, 1));
+    serviceMocks.systemDictGlobalItemsByType.mockResolvedValue({
+      total: 1,
+      list: ITEMS_BY_TYPE.payment
+    });
+
+    render(<DictionaryManagementPage />, { wrapper: createWrapper() });
+
+    await screen.findByText('已支付');
+    const content = screen.getByRole('region', { name: '字典管理内容' });
+    const columns = content.querySelector('[data-slot="dictionary-management-columns"]');
+    const detailColumn = content.querySelector('[data-slot="dictionary-management-detail-column"]');
+    const typeCard = screen.getByText('字典类型').closest('[data-slot="card"]');
+    const itemCard = screen.getByText('字典项列表').closest('[data-slot="card"]');
+
+    expect(content).toHaveClass('h-full', 'min-h-0');
+    expect(columns).toHaveClass('min-h-0', 'flex-1', 'xl:overflow-hidden');
+    expect(typeCard).toHaveClass('xl:h-full', 'xl:min-h-0');
+    expect(detailColumn).toHaveClass('xl:min-h-0', 'xl:h-full', 'xl:overflow-hidden');
+    expect(itemCard).toHaveClass('min-h-0', 'xl:flex-1', 'xl:overflow-hidden');
+  });
+
   it('drives dictionary type requests from table state and falls back selection on page changes', async () => {
     const typeRequests: DictionaryTypeRequest[] = [];
     const itemRequests: DictionaryItemRequest[] = [];
@@ -591,9 +614,14 @@ describe('DictionaryManagementPage', () => {
     });
     const requestCountBeforeToggle = itemRequests.length;
 
-    const paidItemRow = screen.getByText('已支付').closest('tr');
-    expect(paidItemRow).not.toBeNull();
-    fireEvent.click(within(paidItemRow!).getByText('启用'));
+    const dictionaryItemRow = screen.getByRole('row', {
+      name: /paid.*已支付.*启用/i
+    });
+    const statusBadge = within(dictionaryItemRow).getByText('启用');
+    expect(statusBadge).toHaveAttribute('data-slot', 'badge');
+    await user.click(statusBadge);
+    expect(updateItemMutationFn).not.toHaveBeenCalled();
+    await user.click(within(dictionaryItemRow).getByRole('button', { name: '切换状态' }));
     expect(await screen.findByText('确认停用字典项「已支付」？')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '确认切换' }));
 
