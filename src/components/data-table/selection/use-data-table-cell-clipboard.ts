@@ -96,10 +96,15 @@ export function useDataTableCellClipboard<TData>({
           return normalizeDataTableCellClipboardText(copyValue(cell.getValue(), cell.row.original));
         }
         const cellElement = cellElementsRef.current.get(key);
-        const renderedText = cellElement
-          ? typeof cellElement.innerText === 'string'
-            ? cellElement.innerText
-            : (cellElement.textContent ?? '')
+        // 树列的层级说明和展开控件不属于业务值，仍保留 formatter 渲染后的文本。
+        const contentElement =
+          cellElement?.querySelector<HTMLElement>(
+            '[data-tree-cell-content], [data-row-detail-cell-content]'
+          ) ?? cellElement;
+        const renderedText = contentElement
+          ? typeof contentElement.innerText === 'string'
+            ? contentElement.innerText
+            : (contentElement.textContent ?? '')
           : undefined;
         return resolveDataTableCellClipboardText({
           renderedText,

@@ -1,4 +1,4 @@
-import type { Row } from '@tanstack/react-table';
+import type { Row, TableOptions } from '@tanstack/react-table';
 
 import type { DataTableRowId } from './types';
 
@@ -40,7 +40,9 @@ export function resolveDataTableRowId<TData>({
   index,
   parent,
   parentId,
-  rowId
+  rowId,
+  getRowId,
+  requireStableRowId = false
 }: {
   tableId: string;
   row: TData;
@@ -48,6 +50,8 @@ export function resolveDataTableRowId<TData>({
   parent?: Row<TData>;
   parentId?: string | null;
   rowId?: DataTableRowId<TData>;
+  getRowId?: NonNullable<TableOptions<TData>['getRowId']>;
+  requireStableRowId?: boolean;
 }) {
   const resolvedParentId = parentId ?? parent?.id ?? null;
   const fallback = getDataTableFallbackRowId({
@@ -56,10 +60,16 @@ export function resolveDataTableRowId<TData>({
     parentId: resolvedParentId
   });
 
-  if (typeof rowId === 'function') {
-    return stringifyDataTableRowId(rowId(row, index, parent)) ?? fallback;
+  const value = getRowId
+    ? getRowId(row, index, parent)
+    : typeof rowId === 'function'
+      ? rowId(row, index, parent)
+      : (row as Record<PropertyKey, unknown>)[rowId ?? 'id'];
+  const resolvedId = stringifyDataTableRowId(value);
+  if (requireStableRowId && resolvedId === null) {
+    throw new Error(
+      '[DataTable tree] Every node requires a stable rowId; index fallback is not supported.'
+    );
   }
-
-  const value = (row as Record<PropertyKey, unknown>)[rowId ?? 'id'];
-  return stringifyDataTableRowId(value) ?? fallback;
+  return resolvedId ?? fallback;
 }

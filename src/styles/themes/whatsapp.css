@@ -17,6 +17,7 @@
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.9436 0.0051 228.8204);
   --input: oklch(0.9436 0.0051 228.8204);
+  --switch-background: oklch(0.94 0.0051 228.8204);
   --ring: oklch(0.761 0.2015 149.7403);
   --chart-1: oklch(0.761 0.2015 149.7403);
   --chart-2: oklch(0.4335 0.0754 182.2315);
@@ -76,6 +77,7 @@
   --destructive-foreground: oklch(0.9436 0.0051 228.8204);
   --border: oklch(0.3351 0.0253 234.8586);
   --input: oklch(0.3351 0.0253 234.8586);
+  --switch-background: oklch(0.3351 0.0253 234.8586);
   --ring: oklch(0.6509 0.1283 170.4258);
   --chart-1: oklch(0.761 0.2015 149.7403);
   --chart-2: oklch(0.6509 0.1283 170.4258);
@@ -181,4 +183,10 @@
   border-color: var(--data-table-select-border);
   background-color: var(--data-table-select-background);
   box-shadow: 0 0 0 1px var(--data-table-select-shadow);
+}
+
+[data-theme='whatsapp']:not(.dark) {
+  --switch-border: oklch(0.92 0.0051 228.8204);
+  --switch-thumb-background: oklch(0.99 0 0);
+  --switch-thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
 }

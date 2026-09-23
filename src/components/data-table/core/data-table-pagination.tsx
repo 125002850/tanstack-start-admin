@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { getSelectedPageRowCount } from '@/lib/data-table/selection';
+import { getPageSelectionTotalRowCount, getSelectedPageRowCount } from '@/lib/data-table/selection';
 import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table/state-persistence';
 import { cn } from '@/lib/utils';
 
@@ -97,7 +97,11 @@ export function DataTablePagination<TData>({
     (getSelectedRows ? getSelectedRows().length : getSelectedPageRowCount(table));
   const resolvedSelectedTotalRowCount =
     selectedTotalRowCount ??
-    (isSelectedRowCountControlled ? table.getRowCount() : table.getRowModel().rows.length);
+    (table.options.meta?.dataTableTree
+      ? getPageSelectionTotalRowCount(table)
+      : isSelectedRowCountControlled
+        ? table.getRowCount()
+        : table.getRowModel().rows.length);
   const resolvedTotalRowCount = table.getRowCount();
 
   return (

@@ -1,21 +1,11 @@
-import { OverflowTooltip } from '@/components/ui/overflow-tooltip';
 import type { Option } from './types';
 import type { Column } from '@tanstack/react-table';
-import { Icons } from '@/components/icons';
-
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator
-} from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 import * as React from 'react';
-
+import {
+  MultipleChoiceCombobox,
+  SingleChoiceCombobox,
+  type ChoiceComboboxTriggerProps
+} from '@/components/ui/choice-combobox';
 import { DataTableFilterTrigger } from './data-table-filter-trigger';
 
 /**
@@ -37,6 +27,10 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   title?: string;
   options: readonly Option[];
   multiple?: boolean;
+  /** 非 column 筛选器通过 value/onValueChange 管理查询范围。 */
+  value?: readonly string[];
+  onValueChange?: (value: string[] | undefined) => void;
+  clearable?: boolean;
   labels?: DataTableFacetedFilterLabels;
 }
 
@@ -45,122 +39,81 @@ export function DataTableFacetedFilter<TData, TValue>({
   title,
   options,
   multiple,
+  value,
+  onValueChange,
+  clearable = true,
   labels
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const [open, setOpen] = React.useState(false);
 
-  const columnFilterValue = column?.getFilterValue();
-  // Set 只作为渲染和切换时的本地结构，写回 column 时仍转换为数组。
+  const columnFilterValue = value ?? column?.getFilterValue();
+  const setFilterValue = React.useCallback(
+    (next: string[] | undefined) => {
+      if (onValueChange) onValueChange(next);
+      else column?.setFilterValue(next);
+    },
+    [column, onValueChange]
+  );
   const selectedValues = React.useMemo(
     () => new Set(Array.isArray(columnFilterValue) ? columnFilterValue : []),
     [columnFilterValue]
-  );
-
-  const onItemSelect = React.useCallback(
-    (option: Option, isSelected: boolean) => {
-      if (!column) return;
-
-      if (multiple) {
-        // 多选：切换当前 option，并在没有任何值时清空 filter。
-        const newSelectedValues = new Set(selectedValues);
-        if (isSelected) {
-          newSelectedValues.delete(option.value);
-        } else {
-          newSelectedValues.add(option.value);
-        }
-        const filterValues = Array.from(newSelectedValues);
-        column.setFilterValue(filterValues.length ? filterValues : undefined);
-      } else {
-        // 单选：再次点击已选项表示清空；选择新值后立即关闭 popover。
-        column.setFilterValue(isSelected ? undefined : [option.value]);
-        setOpen(false);
-      }
-    },
-    [column, multiple, selectedValues]
   );
 
   const onReset = React.useCallback(
     (event?: React.MouseEvent) => {
       event?.preventDefault();
       event?.stopPropagation();
-      column?.setFilterValue(undefined);
+      if (clearable) setFilterValue(undefined);
     },
-    [column]
+    [clearable, setFilterValue]
   );
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <DataTableFilterTrigger
-          title={title}
-          state={
-            selectedValues.size > 0
-              ? {
-                  status: 'active',
-                  onClear: onReset,
-                  selection: {
-                    kind: 'labels',
-                    count: selectedValues.size,
-                    items: options
-                      .filter((option) => selectedValues.has(option.value))
-                      .map((option) => ({ key: option.value, label: option.label })),
-                    summaryText: labels?.selectedSummaryText?.(selectedValues.size)
-                  }
+  const commonProps = {
+    open,
+    onOpenChange: setOpen,
+    options,
+    triggerLabel: title ?? '筛选',
+    placeholder: title ?? '筛选',
+    searchMode: 'local' as const,
+    searchPlaceholder: labels?.inputPlaceholder?.(title) ?? `筛选${title ?? ''}`,
+    emptyText: labels?.emptyMessage ?? '未找到匹配项',
+    clearLabel: labels?.clearFiltersText ?? '清除筛选',
+    allowEmpty: clearable,
+    contentClassName: 'data-table-filter-popover w-72',
+    renderTrigger: (triggerProps: ChoiceComboboxTriggerProps) => (
+      <DataTableFilterTrigger
+        {...triggerProps}
+        title={title}
+        state={
+          selectedValues.size > 0
+            ? {
+                status: 'active',
+                onClear: clearable ? onReset : undefined,
+                selection: {
+                  kind: 'labels',
+                  count: selectedValues.size,
+                  items: options
+                    .filter((option) => selectedValues.has(option.value))
+                    .map((option) => ({ key: option.value, label: option.label })),
+                  summaryText: labels?.selectedSummaryText?.(selectedValues.size)
                 }
-              : { status: 'idle' }
-          }
-        />
-      </PopoverTrigger>
-      <PopoverContent className='data-table-filter-popover w-[12.5rem] p-0' align='start'>
-        <Command>
-          <CommandInput placeholder={labels?.inputPlaceholder?.(title) ?? `筛选${title ?? ''}`} />
-          <CommandList className='max-h-full'>
-            <CommandEmpty>{labels?.emptyMessage ?? '未找到匹配项'}</CommandEmpty>
-            <CommandGroup className='max-h-[18.75rem] overflow-x-hidden overflow-y-auto'>
-              {options.map((option) => {
-                const isSelected = selectedValues.has(option.value);
-
-                return (
-                  <OverflowTooltip key={option.value} content={option.label}>
-                    <div>
-                      <CommandItem
-                        keywords={option.keywords ? [...option.keywords] : undefined}
-                        onSelect={() => onItemSelect(option, isSelected)}
-                      >
-                        <div
-                          className={cn(
-                            'border-primary flex size-4 items-center justify-center rounded-sm border',
-                            isSelected ? 'bg-primary' : 'opacity-50 [&_svg]:invisible'
-                          )}
-                        >
-                          <Icons.check className='size-4 text-primary-foreground' />
-                        </div>
-                        {option.icon ? <option.icon /> : null}
-                        <span data-overflow-tooltip-text className='min-w-0 truncate'>
-                          {option.label}
-                        </span>
-                        {option.count ? (
-                          <span className='ml-auto font-mono text-xs'>{option.count}</span>
-                        ) : null}
-                      </CommandItem>
-                    </div>
-                  </OverflowTooltip>
-                );
-              })}
-            </CommandGroup>
-            {selectedValues.size > 0 && (
-              <>
-                <CommandSeparator />
-                <CommandGroup>
-                  <CommandItem onSelect={() => onReset()} className='justify-center text-center'>
-                    {labels?.clearFiltersText ?? '清除筛选'}
-                  </CommandItem>
-                </CommandGroup>
-              </>
-            )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+              }
+            : { status: 'idle' }
+        }
+      />
+    )
+  };
+  return multiple ? (
+    <MultipleChoiceCombobox
+      {...commonProps}
+      value={Array.from(selectedValues)}
+      onValueChange={(next) => setFilterValue(next.length ? next : undefined)}
+    />
+  ) : (
+    <SingleChoiceCombobox
+      {...commonProps}
+      value={Array.from(selectedValues)[0] ?? null}
+      onValueChange={(next) => setFilterValue(next == null ? undefined : [next])}
+    />
   );
 }

@@ -1,36 +1,39 @@
-import type { Table } from '@tanstack/react-table';
+import type { Row, Table } from '@tanstack/react-table';
 
-/** 返回当前 rowModel 中被选中的业务行；服务端分页下只代表当前已加载页。 */
-export function getSelectedPageRows<TData>(table: Table<TData>): TData[] {
-  const rowSelection = table.getState().rowSelection ?? {};
-  const rows = table.getRowModel().rows;
-
-  if (rows.length === 0) {
-    return [];
-  }
-
-  const selectedRows: TData[] = [];
-
-  for (const row of rows) {
-    if (rowSelection[row.id]) {
-      selectedRows.push(row.original);
-    }
-  }
-
-  return selectedRows;
+/** 树表选择覆盖本页已加载且筛选后保留的节点，折叠不改变选择范围。 */
+function getPageSelectionRows<TData>(table: Table<TData>): Row<TData>[] {
+  return table.options.meta?.dataTableTree
+    ? table.getPreExpandedRowModel().flatRows.filter((row) => row.getCanSelect())
+    : table.getRowModel().rows;
 }
 
-/** 只统计当前 rowModel 的选中数量，避免 rowSelection 中残留跨页/旧页 id 影响展示。 */
-export function getSelectedPageRowCount<TData>(table: Table<TData>): number {
+/** 当前页可执行选择的节点；树表包含折叠子节点，平表保持可见行范围。 */
+export function getPageSelectableRows<TData>(table: Table<TData>): Row<TData>[] {
+  const rows = getPageSelectionRows(table);
+  return table.options.meta?.dataTableTree ? rows : rows.filter((row) => row.getCanSelect());
+}
+
+/** 选择摘要的分母；平表保留原有本页行数，树表只统计可选择的节点。 */
+export function getPageSelectionTotalRowCount<TData>(table: Table<TData>): number {
+  return getPageSelectionRows(table).length;
+}
+
+function getSelectedPageTableRows<TData>(table: Table<TData>): Row<TData>[] {
   const rowSelection = table.getState().rowSelection ?? {};
-  const rows = table.getRowModel().rows;
-  let count = 0;
+  return getPageSelectionRows(table).filter((row) => rowSelection[row.id]);
+}
 
-  for (const row of rows) {
-    if (rowSelection[row.id]) {
-      count += 1;
-    }
-  }
+/** 返回本页被选中的业务行；树表中收起节点不会移除已选子行。 */
+export function getSelectedPageRows<TData>(table: Table<TData>): TData[] {
+  return getSelectedPageTableRows(table).map((row) => row.original);
+}
 
-  return count;
+/** 与业务行结果使用相同范围，避免 ID、数量和批量操作对象不一致。 */
+export function getSelectedPageRowIds<TData>(table: Table<TData>): string[] {
+  return getSelectedPageTableRows(table).map((row) => row.id);
+}
+
+/** 忽略其他页、已筛除和不可选树节点的残留选择。 */
+export function getSelectedPageRowCount<TData>(table: Table<TData>): number {
+  return getSelectedPageTableRows(table).length;
 }

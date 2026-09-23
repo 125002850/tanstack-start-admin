@@ -4,6 +4,8 @@ import type { FC, SVGProps } from 'react';
 
 import type { DataTableRowAction } from '../actions/types';
 import type { DataTableColumnOrderMeta } from './types';
+import type { DataTableRowDetailConfig } from '../row-detail/types';
+import type { DataTableTreeConfig } from '../tree/types';
 import type {
   DataTableEditableChoiceColumnMeta,
   DataTableEditableColumnMeta,
@@ -57,6 +59,9 @@ declare module '@tanstack/react-table' {
     dataTableColumnOrder?: DataTableColumnOrderMeta;
     enableZebraStriping?: boolean;
     dataTableId?: string;
+    dataTableTree?: DataTableTreeConfig;
+    dataTableRowDetail?: DataTableRowDetailConfig<TData>;
+    dataTableInstanceId?: string;
     dataTableEditing?: DataTableEditingRuntime<TData>;
     dataTableLocalFiltering?: DataTableLocalFilteringRuntime;
     dataTableRowActions?: DataTableRowAction<TData>[];

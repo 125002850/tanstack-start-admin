@@ -17,6 +17,7 @@
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.8729 0.0091 247.9142);
   --input: var(--border);
+  --switch-background: var(--border);
   --ring: oklch(0.6397 0.172 36.4421);
   --data-table-header-background: var(--accent);
   --data-table-header-foreground: var(--accent-foreground);
@@ -74,6 +75,7 @@
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.329 0 0);
   --input: var(--border);
+  --switch-background: var(--border);
   --ring: oklch(0.6397 0.172 36.4421);
   --chart-1: oklch(0.7124 0.0606 248.6896);
   --chart-2: oklch(0.6678 0.1546 41.62);

@@ -244,6 +244,27 @@ describe('data-table-column-factory', () => {
     expect(column.meta?.localFilter).toBeUndefined();
   });
 
+  it('compiles a remote multi-select into multiSelect metadata without current-page filtering', () => {
+    const columnDsl = createDataTableColumnDsl<Row>();
+    const remoteFilter = {
+      loadOptions: vi.fn(async () => ({ items: [] }))
+    };
+    const column = columnDsl.field('name', '员工', {
+      filter: 'multiSelect',
+      filterRemoteOptions: remoteFilter,
+      dsl: { filterField: 'employeeNo' }
+    });
+
+    expect(column.enableColumnFilter).toBe(true);
+    expect(column.meta).toMatchObject({
+      variant: 'multiSelect',
+      placeholder: '选择员工',
+      remoteFilter,
+      query: { filterField: 'employeeNo' }
+    });
+    expect(column.meta?.localFilter).toBeUndefined();
+  });
+
   it('enables sorting for business columns by default and preserves explicit opt-out', () => {
     const columnDsl = createDataTableColumnDsl<Row>();
     const customOptions = {

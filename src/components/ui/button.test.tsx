@@ -26,6 +26,16 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: /Refresh/ })).toHaveAttribute('type', 'button');
   });
 
+  it('loading preserves the action name and prevents another submission', () => {
+    const { rerender } = render(<Button isLoading={false}>创建</Button>);
+    expect(screen.getByRole('button', { name: '创建' })).toBeEnabled();
+    rerender(<Button isLoading>创建</Button>);
+    const button = screen.getByRole('button', { name: '创建' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it('does not inject a default type when rendering via asChild', () => {
     render(
       <Button asChild>

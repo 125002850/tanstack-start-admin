@@ -42,6 +42,7 @@ export function TextField({
           <Input
             id={field.name}
             aria-label={label}
+            aria-required={required || undefined}
             type={type}
             value={value ?? ''}
             onBlur={field.handleBlur}

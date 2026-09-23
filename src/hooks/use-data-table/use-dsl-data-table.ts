@@ -256,7 +256,8 @@ export function useDslDataTable<
         scopeKey: resolvedData.scopeKey,
         requireExplicitRowId: true
       },
-      enableZebraStriping
+      enableZebraStriping,
+      treeScopeKey: JSON.stringify(baseCondition ?? null)
     }
   );
 

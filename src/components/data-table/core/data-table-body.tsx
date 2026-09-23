@@ -13,6 +13,7 @@ import { DataTableStatus } from '@/components/data-table/feedback/data-table-sta
 import { useDataTableCellSelection } from '@/components/data-table/selection/use-data-table-cell-selection';
 import { VirtualBodyBoundary } from '@/components/data-table/virtualization/boundary';
 import { useRowVirtualizer } from '@/components/data-table/virtualization/use-row-virtualizer';
+import { useDataTableTreeFocus } from '@/components/data-table/tree/use-data-table-tree-focus';
 
 function PopulatedBody<TData>({
   table,
@@ -20,6 +21,7 @@ function PopulatedBody<TData>({
   enableZebraStriping,
   virtualization,
   columnVirtualWindow,
+  scrollToColumn,
   columnDragMotionById,
   isColumnDragging,
   useTransformFreeVirtualRows = false,
@@ -30,6 +32,11 @@ function PopulatedBody<TData>({
   expandedRowKey,
   getExpandRowKey
 }: Omit<DataTableBodyProps<TData>, 'emptyMessage' | 'status'> & { rows: Row<TData>[] }) {
+  const treeEnabled = Boolean(table.options.meta?.dataTableTree);
+  const ensureTreeColumnVisible = useCallback(() => {
+    const treeColumnId = table.options.meta?.dataTableTree?.columnId;
+    if (treeColumnId) scrollToColumn?.(treeColumnId);
+  }, [scrollToColumn, table]);
   const rowInteraction = useRowInteraction({ onRowClick, expandedRowKey, getExpandRowKey });
   const { getCellFillHandleProps, getCellSelectionProps, getCellServerError } =
     useDataTableCellSelection<TData>({
@@ -69,6 +76,7 @@ function PopulatedBody<TData>({
   );
   const cellServices = useMemo<DataTableBodyCellServices<TData>>(
     () => ({
+      treeEnabled,
       columnDragMotionById,
       isColumnDragging,
       getCellSelectionProps,
@@ -76,6 +84,7 @@ function PopulatedBody<TData>({
       renderCellFillHandle
     }),
     [
+      treeEnabled,
       columnDragMotionById,
       getCellSelectionProps,
       isColumnDragging,
@@ -87,13 +96,23 @@ function PopulatedBody<TData>({
   const localFilters = table.options.meta?.dataTableLocalFiltering?.filters;
   const resetKey = `${state.pagination.pageIndex}-${state.pagination.pageSize}-${JSON.stringify(state.sorting)}-${JSON.stringify(state.columnFilters)}-${JSON.stringify(localFilters ?? [])}`;
   const { handleRuntimeError, shouldVirtualize, virtualizer } = useRowVirtualizer({
-    rowCount: rows.length,
+    rows,
     resetKey,
     virtualization,
     scrollViewport
   });
+  useDataTableTreeFocus({
+    enabled: treeEnabled,
+    rows,
+    scrollViewport,
+    virtualizer,
+    shouldVirtualize,
+    columnVirtualWindow,
+    ensureTreeColumnVisible
+  });
   const standardBody = (
     <StandardBody
+      table={table}
       rows={rows}
       enableZebraStriping={enableZebraStriping}
       columnVirtualWindow={columnVirtualWindow}

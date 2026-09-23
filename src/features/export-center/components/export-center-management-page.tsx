@@ -1,3 +1,4 @@
+import { getStatusBadgeVariant } from './export-status';
 import * as React from 'react';
 import type { ApiClientError } from '@oig/react-query-generator/core';
 import { useMutation } from '@tanstack/react-query';
@@ -5,7 +6,6 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 import { Icons } from '@/components/icons';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { DataTable } from '@/components/data-table/core/data-table';
 import {
@@ -57,21 +57,6 @@ const columnDsl = createDataTableColumnDsl<ExportRecordRecord>();
 interface CachedDownloadUrl {
   url: string;
   expiresAt: number;
-}
-
-function getStatusBadgeVariant(
-  record: ExportRecordRecord
-): React.ComponentProps<typeof Badge>['variant'] {
-  switch (record.status) {
-    case EXPORT_RECORD_STATUS.FAILED:
-      return 'destructive';
-    case EXPORT_RECORD_STATUS.SUCCESS:
-      return 'default';
-    case EXPORT_RECORD_STATUS.PROCESSING:
-      return 'secondary';
-  }
-
-  return 'outline';
 }
 
 function resolveExportStatusLabel(
@@ -166,14 +151,12 @@ function getColumns(
       enableSorting: false,
       cellClassName: 'max-w-[180px]'
     }),
-    columnDsl.field('status', '状态', {
+    columnDsl.badge('status', '状态', {
       size: 120,
       filter: false,
       enableSorting: false,
-      renderCell: ({ row }) => {
-        const label = getStatusLabel(row.original);
-        return <Badge variant={getStatusBadgeVariant(row.original)}>{label}</Badge>;
-      }
+      format: (_value, row) => getStatusLabel(row),
+      variant: (_value, row) => getStatusBadgeVariant(row)
     }),
     columnDsl.field('fileType', '类型', {
       size: 100,

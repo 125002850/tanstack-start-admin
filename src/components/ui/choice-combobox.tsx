@@ -29,6 +29,9 @@ export type ChoiceComboboxOption<TValue extends ChoiceComboboxValue = string> = 
   value: TValue;
   label: string;
   description?: string;
+  keywords?: readonly string[];
+  icon?: React.FC<React.SVGProps<SVGSVGElement>>;
+  count?: number;
   group?: string;
   disabled?: boolean;
 };
@@ -110,6 +113,8 @@ function ChoiceOption({
   label,
   description,
   keyboardNavigation,
+  icon: OptionIcon,
+  count,
   children,
   ...props
 }: React.ComponentProps<typeof CommandItem> & {
@@ -117,6 +122,8 @@ function ChoiceOption({
   label: string;
   description?: string;
   keyboardNavigation: boolean;
+  icon?: React.FC<React.SVGProps<SVGSVGElement>>;
+  count?: number;
 }) {
   const { ref: labelRef, checkOverflow: checkLabelOverflow } = useTextOverflow('horizontal');
   const { ref: descriptionRef, checkOverflow: checkDescriptionOverflow } =
@@ -135,8 +142,12 @@ function ChoiceOption({
   const item = (
     <CommandItem value={value} {...props}>
       {children}
-      <span ref={labelRef} className='min-w-0 truncate'>
-        {label}
+      <span className='flex min-w-0 items-center gap-2'>
+        {OptionIcon ? <OptionIcon className='size-4 shrink-0' /> : null}
+        <span ref={labelRef} className='min-w-0 truncate'>
+          {label}
+        </span>
+        {count ? <span className='ml-auto font-mono text-xs'>{count}</span> : null}
       </span>
       {description ? (
         <span ref={descriptionRef} className='col-start-2 truncate text-xs text-muted-foreground'>
@@ -227,7 +238,8 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
       (option) =>
         option.label.toLowerCase().includes(normalizedSearch) ||
         option.description?.toLowerCase().includes(normalizedSearch) ||
-        String(option.value).toLowerCase().includes(normalizedSearch)
+        String(option.value).toLowerCase().includes(normalizedSearch) ||
+        option.keywords?.some((keyword) => keyword.toLowerCase().includes(normalizedSearch))
     );
   }, [normalizedSearch, searchMode, uniqueOptions]);
   const optionGroups = React.useMemo(() => {
@@ -422,6 +434,8 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                     <ChoiceOption
                       label={option.label}
                       description={option.description}
+                      icon={option.icon}
+                      count={option.count}
                       keyboardNavigation={keyboardNavigation}
                       className='grid grid-cols-[1rem_minmax(0,1fr)] gap-x-2 gap-y-0.5'
                       key={getOptionKey(option.value)}

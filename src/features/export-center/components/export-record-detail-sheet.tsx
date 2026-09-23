@@ -1,3 +1,5 @@
+import { Badge } from '@/components/ui/badge';
+import { getStatusBadgeVariant } from './export-status';
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 
@@ -55,7 +57,10 @@ export function ExportRecordDetailSheet({
           <DetailItem label='文件名' value={nullableText(detail.fileName)} />
           <DetailItem label='导出业务' value={nullableText(detail.exportBizName)} />
           <DetailItem label='业务编码' value={nullableText(detail.exportBizCode)} />
-          <DetailItem label='状态' value={getStatusLabel(detail)} />
+          <DetailItem
+            label='状态'
+            value={<Badge variant={getStatusBadgeVariant(detail)}>{getStatusLabel(detail)}</Badge>}
+          />
           <DetailItem label='文件类型' value={nullableText(detail.fileType)} />
           <DetailItem label='内容类型' value={nullableText(detail.contentType)} />
           <DetailItem label='文件大小' value={nullableFileSize(detail.fileSize)} />

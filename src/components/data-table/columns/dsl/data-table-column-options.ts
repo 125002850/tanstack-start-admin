@@ -122,7 +122,10 @@ function resolveFilterMeta<TData, TValue>(
     variant: FILTER_VARIANT_META[filter],
     placeholder: options.filterPlaceholder ?? inferFilterPlaceholder(filter, title),
     options: options.filterOptions,
-    remoteFilter: filter === 'remoteSelect' ? options.filterRemoteOptions : undefined,
+    remoteFilter:
+      filter === 'remoteSelect' || filter === 'multiSelect'
+        ? options.filterRemoteOptions
+        : undefined,
     range,
     unit: options.filterUnit
   };
@@ -135,7 +138,13 @@ function resolveLocalFilterMeta<TData, TValue>(
   options: DataTableColumnOptions<TData, TValue>
 ): DataTableColumnMeta<TData, TValue>['localFilter'] {
   if (options.localFilter === false) return undefined;
-  if (options.localFilter === undefined && options.filter === 'remoteSelect') return undefined;
+  if (
+    options.localFilter === undefined &&
+    (options.filter === 'remoteSelect' ||
+      (options.filter === 'multiSelect' && options.filterRemoteOptions))
+  ) {
+    return undefined;
+  }
 
   const filter = options.localFilter ?? defaults.localFilter;
   if (!filter) return options.meta?.localFilter;

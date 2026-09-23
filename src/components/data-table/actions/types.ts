@@ -47,6 +47,12 @@ export interface DataTableRowAction<TData> {
   disabledReason?: string | ((row: TData) => string | null | undefined);
   hidden?: boolean | ((row: TData) => boolean);
   onClick?: (row: TData) => void | Promise<void>;
+  confirm?: {
+    title?: string | ((row: TData) => string);
+    description?: string | ((row: TData) => string);
+    confirmText?: string;
+    cancelText?: string;
+  };
   confirmDelete?: {
     title?: string;
     description?: (row: TData) => string;

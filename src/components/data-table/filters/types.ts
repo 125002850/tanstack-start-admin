@@ -35,6 +35,8 @@ export interface DataTableRemoteFilterOptions {
   }) => Promise<DataTableRemoteFilterPage>;
   debounceMs?: number;
   pageSize?: number;
+  /** 远程多选时允许选择的最大数量。 */
+  maxSelected?: number;
   labels?: DataTableRemoteFilterLabels;
 }
 
@@ -151,7 +153,7 @@ export interface DataTableColumnFilterOptions<TData = unknown, TValue = unknown>
   filter?: false | DataTableColumnFilterVariant;
   filterPlaceholder?: string;
   filterOptions?: DataTableFilterOptions;
-  /** filter='remoteSelect' 时必填；Toolbar 负责统一渲染，业务只提供远程数据源。 */
+  /** 远程 select / multiSelect 筛选的数据源；Toolbar 负责统一渲染。 */
   filterRemoteOptions?: DataTableRemoteFilterOptions;
   filterMin?: number | Date;
   filterMax?: number | Date;

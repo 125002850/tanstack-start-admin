@@ -67,6 +67,7 @@ import {
   IconPhoto,
   IconPizza,
   IconPlus,
+  IconPower,
   IconRosetteDiscountCheck,
   IconRotate,
   IconRotateClockwise,
@@ -250,5 +251,6 @@ export const Icons = {
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
   moreHorizontal: IconDots,
-  sparkle: IconSparkleHighlight
+  sparkle: IconSparkleHighlight,
+  power: IconPower
 };

@@ -376,8 +376,8 @@ export function ScheduleJobFormSheet({
         </div>
 
         <SheetFooter className='flex-row justify-end'>
-          <Button type='submit' form={formId} disabled={isPending}>
-            {isEdit ? '保存修改' : '创建任务'}
+          <Button type='submit' form={formId} isLoading={isPending}>
+            {isEdit ? '保存修改' : '创建'}
           </Button>
         </SheetFooter>
       </SheetContent>

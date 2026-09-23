@@ -13,3 +13,5 @@ export * from '@/components/data-table/expand/types';
 export { isDataTableFlatFilterOptions } from '@/components/data-table/filters/model';
 export * from '@/components/data-table/filters/types';
 export * from '@/components/data-table/virtualization/types';
+export * from '@/components/data-table/tree/types';
+export * from '@/components/data-table/row-detail/types';

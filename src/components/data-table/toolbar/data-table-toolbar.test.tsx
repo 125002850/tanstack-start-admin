@@ -42,8 +42,8 @@ vi.mock('@/components/data-table/filters/data-table-tree-filter', () => ({
 }));
 
 vi.mock('@/components/data-table/filters/data-table-remote-select-filter', () => ({
-  DataTableRemoteSelectFilter: ({ title }: { title: string }) => (
-    <div data-testid='remote-select-filter'>
+  DataTableRemoteSelectFilter: ({ title, multiple }: { title: string; multiple?: boolean }) => (
+    <div data-testid='remote-select-filter' data-multiple={multiple ? 'true' : 'false'}>
       <button>{title}</button>
     </div>
   )
@@ -118,6 +118,25 @@ describe('DataTableToolbar filter variant dispatch', () => {
 
     expect(screen.getByTestId('remote-select-filter')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Name' })).toBeInTheDocument();
+    expect(screen.queryByTestId('faceted-filter')).not.toBeInTheDocument();
+  });
+
+  it('renders the standardized remote multi-select filter from column metadata', () => {
+    const columns: ColumnDef<TestRow>[] = [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        meta: {
+          variant: 'multiSelect' as const,
+          label: 'Name',
+          remoteFilter: { loadOptions: vi.fn(async () => ({ items: [] })) }
+        }
+      }
+    ];
+
+    render(<ToolbarHarness columns={columns} />);
+
+    expect(screen.getByTestId('remote-select-filter')).toHaveAttribute('data-multiple', 'true');
     expect(screen.queryByTestId('faceted-filter')).not.toBeInTheDocument();
   });
 

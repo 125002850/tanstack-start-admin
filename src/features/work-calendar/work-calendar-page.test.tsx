@@ -5,10 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { WorkCalendarYearDetailRspDTO } from '@/lib/api/clients/service';
 
 import {
-  Header,
   resolveWorkCalendarViewMode,
   type WorkCalendarViewMode
-} from './work-calendar-page';
+} from './model/work-calendar-page-model';
+import { Header } from './components/work-calendar-header';
 
 afterEach(() => cleanup());
 

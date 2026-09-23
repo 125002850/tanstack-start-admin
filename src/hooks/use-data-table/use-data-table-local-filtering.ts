@@ -24,6 +24,18 @@ interface UseDataTableLocalFilteringOptions<TData> {
   data: TData[];
   columns: readonly ColumnDef<TData>[];
   resetScope: string;
+  getSubRows?: (row: TData, index: number) => TData[] | undefined;
+}
+
+interface CompiledLocalFilter<TData> {
+  column: DataTableLocalFilterColumn<TData>;
+  selectedKeys: ReadonlySet<string>;
+}
+
+interface LocalFilterTreeNode<TData> {
+  row: TData;
+  index: number;
+  children?: LocalFilterTreeNode<TData>[];
 }
 
 const EMPTY_LOCAL_FILTERS: DataTableLocalColumnFilter[] = [];
@@ -157,26 +169,98 @@ function formatLocalFilterValue<TData>(
   return String(value);
 }
 
+function compileLocalFilters<TData>(
+  filterColumns: ReadonlyMap<string, DataTableLocalFilterColumn<TData>>,
+  filters: readonly DataTableLocalColumnFilter[],
+  excludedColumnId?: string
+): CompiledLocalFilter<TData>[] {
+  return filters.flatMap((filter) => {
+    if (filter.id === excludedColumnId) return [];
+    const column = filterColumns.get(filter.id);
+    return column ? [{ column, selectedKeys: new Set(filter.value.selectedKeys) }] : [];
+  });
+}
+
+function matchesLocalFilters<TData>(
+  row: TData,
+  index: number,
+  compiledFilters: readonly CompiledLocalFilter<TData>[]
+) {
+  return compiledFilters.every(({ column, selectedKeys }) =>
+    getLocalFilterValues(column.getValue(row, index)).some((value) =>
+      selectedKeys.has(getDataTableLocalFilterValueKey(value))
+    )
+  );
+}
+
 function filterRowsWithColumns<TData>(
   data: TData[],
   filterColumns: ReadonlyMap<string, DataTableLocalFilterColumn<TData>>,
   filters: readonly DataTableLocalColumnFilter[],
   excludedColumnId?: string
 ) {
-  const compiledFilters = filters.flatMap((filter) => {
-    if (filter.id === excludedColumnId) return [];
-    const column = filterColumns.get(filter.id);
-    return column ? [{ column, selectedKeys: new Set(filter.value.selectedKeys) }] : [];
-  });
+  const compiledFilters = compileLocalFilters(filterColumns, filters, excludedColumnId);
   if (compiledFilters.length === 0) return data;
 
-  return data.filter((row, rowIndex) =>
-    compiledFilters.every(({ column, selectedKeys }) =>
-      getLocalFilterValues(column.getValue(row, rowIndex)).some((value) =>
-        selectedKeys.has(getDataTableLocalFilterValueKey(value))
-      )
-    )
-  );
+  return data.filter((row, rowIndex) => matchesLocalFilters(row, rowIndex, compiledFilters));
+}
+
+function indexTreeNodes<TData>(
+  data: TData[],
+  getSubRows: (row: TData, index: number) => TData[] | undefined
+): LocalFilterTreeNode<TData>[] {
+  return data.map((row, index) => {
+    const children = getSubRows(row, index);
+    return {
+      row,
+      index,
+      children: children ? indexTreeNodes(children, getSubRows) : undefined
+    };
+  });
+}
+
+/** 同一节点满足全部条件时保留整棵子树，否则只保留命中后代及其祖先路径。 */
+function filterTreeNodes<TData>(
+  nodes: LocalFilterTreeNode<TData>[],
+  compiledFilters: readonly CompiledLocalFilter<TData>[]
+): LocalFilterTreeNode<TData>[] {
+  if (compiledFilters.length === 0) return nodes;
+
+  return nodes.flatMap((node) => {
+    if (matchesLocalFilters(node.row, node.index, compiledFilters)) return [node];
+    if (!node.children?.length) return [];
+
+    const children = filterTreeNodes(node.children, compiledFilters);
+    return children.length > 0 ? [{ ...node, children }] : [];
+  });
+}
+
+function visitTreeNodes<TData>(
+  nodes: LocalFilterTreeNode<TData>[],
+  visit: (node: LocalFilterTreeNode<TData>) => void
+) {
+  nodes.forEach((node) => {
+    visit(node);
+    if (node.children) visitTreeNodes(node.children, visit);
+  });
+}
+
+/** 使用单独的 children 投影，避免改写或克隆调用方的业务对象。 */
+function projectTreeNodes<TData>(nodes: LocalFilterTreeNode<TData>[]) {
+  const childrenByRow = new Map<TData, TData[]>();
+  visitTreeNodes(nodes, (node) => {
+    if (node.children) {
+      childrenByRow.set(
+        node.row,
+        node.children.map((child) => child.row)
+      );
+    }
+  });
+
+  return {
+    data: nodes.map((node) => node.row),
+    getSubRows: (row: TData, _index: number) => childrenByRow.get(row)
+  };
 }
 
 function compareLocalFilterCandidates(left: LocalFilterCandidate, right: LocalFilterCandidate) {
@@ -197,18 +281,18 @@ function collectColumnFilterOptions<TData>(
   data: TData[],
   filterColumns: ReadonlyMap<string, DataTableLocalFilterColumn<TData>>,
   filters: readonly DataTableLocalColumnFilter[],
-  columnId: string
+  columnId: string,
+  treeNodes?: LocalFilterTreeNode<TData>[]
 ) {
   const column = filterColumns.get(columnId);
   if (!column) return EMPTY_LOCAL_FILTER_OPTIONS;
 
-  const availableRows = filterRowsWithColumns(data, filterColumns, filters, column.id);
   const configuredOrder = new Map(
     column.meta.options?.map((option, index) => [option.value, index]) ?? []
   );
   const candidates = new Map<string, LocalFilterCandidate>();
 
-  availableRows.forEach((row, rowIndex) => {
+  const collectRowValues = (row: TData, rowIndex: number) => {
     getLocalFilterValues(column.getValue(row, rowIndex)).forEach((rawValue) => {
       const key = getDataTableLocalFilterValueKey(rawValue);
       if (candidates.has(key)) return;
@@ -219,7 +303,17 @@ function collectColumnFilterOptions<TData>(
         configuredOrder: configuredOrder.get(String(rawValue))
       });
     });
-  });
+  };
+
+  if (treeNodes) {
+    const availableNodes = filterTreeNodes(
+      treeNodes,
+      compileLocalFilters(filterColumns, filters, column.id)
+    );
+    visitTreeNodes(availableNodes, ({ row, index }) => collectRowValues(row, index));
+  } else {
+    filterRowsWithColumns(data, filterColumns, filters, column.id).forEach(collectRowValues);
+  }
 
   return [...candidates.values()]
     .toSorted(compareLocalFilterCandidates)
@@ -240,7 +334,8 @@ export function filterDataTableRows<TData>(
 export function useDataTableLocalFiltering<TData>({
   data,
   columns,
-  resetScope
+  resetScope,
+  getSubRows
 }: UseDataTableLocalFilteringOptions<TData>) {
   const [snapshot, setSnapshot] = React.useState<{
     scope: string;
@@ -280,21 +375,40 @@ export function useDataTableLocalFiltering<TData>({
   }, [resetScope]);
 
   const filterColumns = React.useMemo(() => collectLocalFilterColumns(columns), [columns]);
+  const treeNodes = React.useMemo(
+    () => (getSubRows ? indexTreeNodes(data, getSubRows) : undefined),
+    [data, getSubRows]
+  );
   const getFilterOptions = React.useMemo(() => {
     const cache = new Map<string, readonly DataTableLocalFilterOption[]>();
 
     return (columnId: string) => {
       const cached = cache.get(columnId);
       if (cached) return cached;
-      const options = collectColumnFilterOptions(data, filterColumns, filters, columnId);
+      const options = collectColumnFilterOptions(data, filterColumns, filters, columnId, treeNodes);
       cache.set(columnId, options);
       return options;
     };
-  }, [data, filterColumns, filters]);
-  const filteredData = React.useMemo(
-    () => filterRowsWithColumns(data, filterColumns, filters),
-    [data, filterColumns, filters]
-  );
+  }, [data, filterColumns, filters, treeNodes]);
+  const filteredRows = React.useMemo(() => {
+    if (!treeNodes) {
+      return {
+        data: filterRowsWithColumns(data, filterColumns, filters),
+        getSubRows,
+        hasActiveTreeFilter: false
+      };
+    }
+
+    const compiledFilters = compileLocalFilters(filterColumns, filters);
+    if (compiledFilters.length === 0) {
+      return { data, getSubRows, hasActiveTreeFilter: false };
+    }
+
+    return {
+      ...projectTreeNodes(filterTreeNodes(treeNodes, compiledFilters)),
+      hasActiveTreeFilter: true
+    };
+  }, [data, filterColumns, filters, getSubRows, treeNodes]);
 
   const runtime = React.useMemo<DataTableLocalFilteringRuntime>(
     () => ({
@@ -307,5 +421,5 @@ export function useDataTableLocalFiltering<TData>({
     [filters, getFilterOptions, reset, setFilterValue]
   );
 
-  return { data: filteredData, runtime };
+  return { ...filteredRows, runtime };
 }

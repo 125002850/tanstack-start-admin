@@ -29,6 +29,7 @@ import { FormTextField, TextField } from '@/components/forms/fields/text-field';
 import { FormTextareaField, TextareaField } from '@/components/forms/fields/textarea-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { handleFormSubmitError } from '@/lib/query-client';
 import {
   fieldContext,
   formContext,
@@ -81,7 +82,7 @@ function Form({
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      form.handleSubmit();
+      void form.handleSubmit().catch(handleFormSubmitError);
     },
     [form]
   );

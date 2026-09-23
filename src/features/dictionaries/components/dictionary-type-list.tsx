@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 
 import type { DictionaryTypeRecord } from '../api/types';
 import { DICTIONARY_TYPE_KEYWORD_FILTER_COLUMN_ID } from './dictionary-type-columns';
-import { getStatusLabel } from '@/constants/enums';
+import { DictStatus, getStatusLabel } from '@/constants/enums';
 
 interface DictionaryTypeListProps {
   table: Table<DictionaryTypeRecord>;
@@ -41,8 +41,8 @@ export function DictionaryTypeList({
   }, [keywordFilterValue]);
 
   return (
-    <Card className='xl:sticky xl:top-0'>
-      <CardHeader>
+    <Card className='min-w-0 shrink-0 xl:h-full xl:min-h-0'>
+      <CardHeader className='shrink-0'>
         <CardTitle>字典类型</CardTitle>
         <CardDescription>按字典编码或名称筛选字典类型列表</CardDescription>
       </CardHeader>
@@ -51,7 +51,7 @@ export function DictionaryTypeList({
           <Input
             value={keyword}
             placeholder='搜索 编码 / 名称'
-            className='h-9 flex-1'
+            className='h-9 min-w-0 flex-1'
             onChange={(event) => {
               const nextKeyword = event.target.value;
               setKeyword(nextKeyword);
@@ -64,8 +64,8 @@ export function DictionaryTypeList({
           </Button>
         </div>
 
-        <div className='max-h-[64vh] overflow-y-auto pr-2'>
-          <div className='space-y-2'>
+        <div className='max-h-72 min-h-0 flex-1 overflow-y-auto pr-2 xl:max-h-none'>
+          <div className='flex flex-col gap-2'>
             {types.length > 0 ? (
               types.map((record) => {
                 const isActive = record.dictTypeCode === selectedTypeCode;
@@ -103,7 +103,15 @@ export function DictionaryTypeList({
                             {record.dictTypeCode}
                           </div>
                         </div>
-                        <Badge variant={isActive ? 'default' : 'outline'}>
+                        <Badge
+                          variant={
+                            record.status === DictStatus.ENABLE
+                              ? 'success'
+                              : record.status === DictStatus.DISABLE
+                                ? 'secondary'
+                                : 'outline'
+                          }
+                        >
                           {getStatusLabel(record.status)}
                         </Badge>
                       </div>

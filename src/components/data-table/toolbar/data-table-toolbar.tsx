@@ -35,6 +35,10 @@ interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
   isQuerying?: boolean;
   labels?: DataTableToolbarLabels;
+  /** 显示在自动列筛选之前的自定义查询控件。 */
+  leadingFilters?: React.ReactNode;
+  /** 页面可恢复自己的默认查询范围；未提供时清空所有列筛选。 */
+  onResetFilters?: () => void;
 }
 
 export function DataTableToolbar<TData>({
@@ -43,6 +47,8 @@ export function DataTableToolbar<TData>({
   children,
   className,
   labels,
+  onResetFilters,
+  leadingFilters,
   ...props
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -51,8 +57,12 @@ export function DataTableToolbar<TData>({
   const columns = table.getAllColumns().filter((column) => column.getCanFilter());
 
   const onReset = React.useCallback(() => {
-    table.resetColumnFilters(true);
-  }, [table]);
+    if (onResetFilters) {
+      onResetFilters();
+    } else {
+      table.resetColumnFilters(true);
+    }
+  }, [onResetFilters, table]);
 
   return (
     <div
@@ -62,6 +72,7 @@ export function DataTableToolbar<TData>({
       {...props}
     >
       <div className='flex flex-1 flex-wrap items-center gap-2'>
+        {leadingFilters}
         {columns.map((column) => (
           <DataTableToolbarFilter key={column.id} column={column} table={table} labels={labels} />
         ))}
@@ -159,10 +170,11 @@ function DataTableToolbarFilter<TData>({
         case 'multiSelect': {
           const filterOptions = columnMeta.options;
           const multiple = columnMeta.variant === 'multiSelect';
-          if (!multiple && columnMeta.remoteFilter) {
+          if (columnMeta.remoteFilter) {
             return (
               <DataTableRemoteSelectFilter
                 column={column}
+                multiple={multiple}
                 title={columnLabel}
                 remoteOptions={columnMeta.remoteFilter}
                 tableId={tableId}

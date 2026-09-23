@@ -26,5 +26,7 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 });
 
 function DictionariesPage() {
-  return <WorkspacePageRoute render={() => <DictionaryManagementPage />} />;
+  return (
+    <WorkspacePageRoute contentSizing='contained' render={() => <DictionaryManagementPage />} />
+  );
 }

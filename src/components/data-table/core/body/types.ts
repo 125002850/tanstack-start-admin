@@ -16,6 +16,7 @@ export interface DataTableBodyProps<TData> {
   status?: DataTableStatusConfig;
   virtualization?: DataTableResolvedVirtualizationOptions;
   columnVirtualWindow?: DataTableColumnVirtualWindow<TData>;
+  scrollToColumn?: (columnId: string) => void;
   columnDragMotionById: DataTableColumnDragMotionMap;
   isColumnDragging: boolean;
   useTransformFreeVirtualRows?: boolean;
@@ -28,6 +29,7 @@ export interface DataTableBodyProps<TData> {
 }
 
 export type DataTableBodyCellServices<TData> = {
+  treeEnabled?: boolean;
   columnDragMotionById: DataTableColumnDragMotionMap;
   isColumnDragging: boolean;
   getCellSelectionProps: (cell: Cell<TData, unknown>) => DataTableCellSelectionProps;

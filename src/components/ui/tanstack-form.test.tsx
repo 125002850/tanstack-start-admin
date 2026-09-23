@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import * as z from 'zod';
@@ -70,4 +70,33 @@ describe('TanStack form', () => {
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(input).toHaveAttribute('aria-describedby', error.id);
   });
+});
+
+vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
+
+it('keeps submitted input and safely reports a rejected form submission', async () => {
+  const { toast } = await import('sonner');
+  function RejectedForm() {
+    const form = useAppForm({
+      defaultValues: { name: '保留输入' },
+      onSubmit: async () => {
+        throw new Error('private server detail');
+      }
+    });
+    return (
+      <form.AppForm>
+        <form.Form>
+          <form.AppField name='name'>
+            {(field) => <field.TextField label='待保存名称' />}
+          </form.AppField>
+          <Button type='submit'>保存测试表单</Button>
+        </form.Form>
+      </form.AppForm>
+    );
+  }
+  render(<RejectedForm />);
+  await userEvent.setup().click(screen.getByRole('button', { name: '保存测试表单' }));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+  expect(toast.error).not.toHaveBeenCalledWith('private server detail');
+  expect(screen.getByRole('textbox', { name: '待保存名称' })).toHaveValue('保留输入');
 });

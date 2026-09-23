@@ -122,8 +122,11 @@ export function useDataTableVirtualization<TData>({
   const columnVirtualizationEnabledEmittedRef = React.useRef(false);
 
   const virtualizationResolution = React.useMemo(
-    () => resolveDataTableVirtualizationOptions(virtualization),
-    [virtualization]
+    () =>
+      resolveDataTableVirtualizationOptions(
+        table.options.meta?.dataTableRowDetail ? false : virtualization
+      ),
+    [virtualization, table.options.meta?.dataTableRowDetail]
   );
   const virtConfig: DataTableResolvedVirtualizationOptions | undefined =
     virtualizationResolution.value;
@@ -185,6 +188,14 @@ export function useDataTableVirtualization<TData>({
     overscan: columnVirtualizationConfig?.overscan ?? DATA_TABLE_VIRTUAL_PRESET.columnOverscan,
     enabled: shouldVirtualizeColumns
   });
+  const scrollToColumn = React.useCallback(
+    (columnId: string) => {
+      if (!shouldVirtualizeColumns) return;
+      const index = centerVisibleLeafColumns.findIndex((column) => column.id === columnId);
+      if (index >= 0) horizontalColumnVirtualizer.scrollToIndex(index, { align: 'start' });
+    },
+    [centerVisibleLeafColumns, horizontalColumnVirtualizer, shouldVirtualizeColumns]
+  );
   const columnVirtualItems = shouldVirtualizeColumns
     ? horizontalColumnVirtualizer.getVirtualItems()
     : [];
@@ -300,6 +311,7 @@ export function useDataTableVirtualization<TData>({
     columnVirtualWindow,
     orderedLeafColumns,
     resolvedTableWidth,
+    scrollToColumn,
     shouldVirtualizeColumns,
     useTransformFreeVirtualRows,
     virtConfig

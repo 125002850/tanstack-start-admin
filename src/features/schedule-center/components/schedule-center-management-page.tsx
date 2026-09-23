@@ -48,17 +48,14 @@ type ScheduleJobRecord = ScheduleJobRspDTO;
 function getStatusBadgeVariant(status?: string): React.ComponentProps<typeof Badge>['variant'] {
   if (!status) return 'outline';
   const key = status.toLowerCase();
-  if (key === ScheduleJobRspDTOStatus.enable) return 'default';
+  if (key === ScheduleJobRspDTOStatus.enable) return 'success';
   if (key === ScheduleJobRspDTOStatus.disable) return 'secondary';
   return 'outline';
 }
 
 const columnDsl = createDataTableColumnDsl<ScheduleJobRecord>();
 
-function getColumns(
-  onToggleStatus: (row: ScheduleJobRecord) => void,
-  status: ReturnType<typeof useDict>
-): Array<ColumnDef<ScheduleJobRecord>> {
+function getColumns(status: ReturnType<typeof useDict>): Array<ColumnDef<ScheduleJobRecord>> {
   return [
     columnDsl.field('jobName', '任务名称', {
       size: 200,
@@ -83,23 +80,14 @@ function getColumns(
       size: 220,
       cellClassName: 'font-mono text-xs'
     }),
-    columnDsl.field('status', '状态', {
+    columnDsl.badge('status', '状态', {
       size: 100,
-      filter: 'select',
+      filter: 'multiSelect',
       filterOptions: status.options,
       dsl: { filterNodeType: 'enum' },
       enableSorting: false,
-      renderCell: ({ row }) => (
-        <Badge asChild variant={getStatusBadgeVariant(row.original.status as string)}>
-          <button
-            type='button'
-            className='cursor-pointer'
-            onClick={() => onToggleStatus(row.original)}
-          >
-            {status.getLabel(row.original.status ?? '')}
-          </button>
-        </Badge>
-      )
+      format: (value) => status.getLabel(value ?? ''),
+      variant: (value) => getStatusBadgeVariant(value)
     }),
     columnDsl.field('remark', '备注', {
       size: 'lg',
@@ -167,12 +155,12 @@ function ScheduleCenterContent() {
   >({
     ...disableMutationOpts,
     onSuccess: (...args) => {
-      toast.success('任务已禁用');
+      toast.success('任务已停用');
       return disableMutationOpts.onSuccess?.(...args);
     },
     onError: (error) =>
       toast.error(
-        normalizeApiError(error, { fallbackMessage: '任务禁用失败，请稍后重试。' }).message
+        normalizeApiError(error, { fallbackMessage: '任务停用失败，请稍后重试。' }).message
       )
   });
 
@@ -192,10 +180,7 @@ function ScheduleCenterContent() {
     [disableMutation, enableMutation]
   );
 
-  const columns = React.useMemo(
-    () => getColumns(handleToggleStatus, status),
-    [handleToggleStatus, status]
-  );
+  const columns = React.useMemo(() => getColumns(status), [status]);
 
   const deleteMutationOpts = systemScheduleJobDeleteMutationOptions();
   const deleteMutation = useMutation<
@@ -271,6 +256,22 @@ function ScheduleCenterContent() {
         }
       },
       {
+        label: '切换状态',
+        icon: <Icons.power className='size-4' />,
+        disabled: (row) =>
+          row.id == null ||
+          enableMutation.isPending ||
+          disableMutation.isPending ||
+          ![ScheduleJobRspDTOStatus.enable, ScheduleJobRspDTOStatus.disable].includes(row.status!),
+        confirm: {
+          title: (row) =>
+            row.status === ScheduleJobRspDTOStatus.enable ? '确认停用任务？' : '确认启用任务？',
+          description: '修改后影响任务的后续调度。',
+          confirmText: '确认切换'
+        },
+        onClick: handleToggleStatus
+      },
+      {
         label: '删除',
         icon: <Icons.trash className='size-4' />,
         disabled: (row) => row.id == null || row.status === ScheduleJobRspDTOStatus.enable,
@@ -283,14 +284,21 @@ function ScheduleCenterContent() {
         onClick: async (row: ScheduleJobRecord) => {
           if (row.id == null) return;
           if (row.status === ScheduleJobRspDTOStatus.enable) {
-            toast.error('启用状态的任务无法删除，请先禁用');
+            toast.error('启用状态的任务无法删除，请先停用');
             return;
           }
           await deleteMutation.mutateAsync({ id: row.id });
         }
       }
     ],
-    [deleteMutation, handleOpenEdit, triggerMutation]
+    [
+      handleToggleStatus,
+      enableMutation.isPending,
+      disableMutation.isPending,
+      deleteMutation,
+      handleOpenEdit,
+      triggerMutation
+    ]
   );
 
   const { table, queryState, refreshProps } = useDslDataTable<

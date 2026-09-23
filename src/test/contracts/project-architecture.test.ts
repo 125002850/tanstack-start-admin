@@ -295,6 +295,7 @@ describe('project architecture contracts', () => {
     const businessPrefixes = ['src/features/', 'src/routes/'];
     const publicModules = new Set([
       '@/components/data-table/core/data-table',
+      '@/components/data-table/row-detail/data-table-detail',
       '@/components/data-table/columns/data-table-column-factory',
       '@/components/data-table/toolbar/data-table-toolbar',
       '@/hooks/use-data-table',
@@ -441,7 +442,9 @@ describe('project architecture contracts', () => {
       '@/components/data-table/expand/types',
       '@/components/data-table/filters/model',
       '@/components/data-table/filters/types',
-      '@/components/data-table/virtualization/types'
+      '@/components/data-table/virtualization/types',
+      '@/components/data-table/tree/types',
+      '@/components/data-table/row-detail/types'
     ]);
 
     expect(componentViolations).toEqual([]);

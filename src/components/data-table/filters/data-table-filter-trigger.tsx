@@ -17,7 +17,7 @@ type DataTableFilterTriggerState =
     }
   | {
       status: 'active';
-      onClear: React.MouseEventHandler<HTMLElement>;
+      onClear?: React.MouseEventHandler<HTMLElement>;
       selection:
         | {
             kind: 'labels';
@@ -60,7 +60,7 @@ export function DataTableFilterTrigger({
       data-slot='data-table-filter-trigger'
       data-active={isActive ? 'true' : undefined}
     >
-      {isActive ? (
+      {isActive && state.onClear ? (
         <span
           aria-hidden='true'
           data-filter-clear=''
@@ -69,8 +69,10 @@ export function DataTableFilterTrigger({
         >
           <Icons.xCircle />
         </span>
-      ) : (
+      ) : state.status === 'idle' ? (
         (state.icon ?? <Icons.plusCircle />)
+      ) : (
+        <Icons.plusCircle />
       )}
       {title}
       {isActive ? (

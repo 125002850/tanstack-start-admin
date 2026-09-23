@@ -103,6 +103,11 @@ export function DictionaryItemsPanel({
         )
       },
       {
+        label: '切换状态',
+        icon: <Icons.power className='size-4' />,
+        onClick: onToggleItemStatus
+      },
+      {
         label: '删除',
         icon: <Icons.trash className='size-4' />,
         confirmDelete: {
@@ -114,7 +119,7 @@ export function DictionaryItemsPanel({
         onClick: (item) => handleDelete(item)
       }
     ],
-    [handleItemSubmit, handleDelete]
+    [handleItemSubmit, handleDelete, onToggleItemStatus]
   );
 
   const baseCondition = React.useMemo<DataTableDslCondition | undefined>(() => {
@@ -154,7 +159,7 @@ export function DictionaryItemsPanel({
       ApiClientError,
       readonly ['service', 'mdm-dict-global-items-by-type', DictionaryItemsQueryRequest]
     >({
-      columns: dictionaryItemColumns(onToggleItemStatus),
+      columns: dictionaryItemColumns(),
       tableId,
       queryOptions: dictionaryItemsQueryOptions,
       baseCondition,
@@ -214,7 +219,7 @@ export function DictionaryItemsPanel({
   );
 
   return (
-    <Card>
+    <Card className='min-h-0 min-w-0 shrink-0 xl:flex-1 xl:shrink xl:overflow-hidden'>
       {batchConfirmDialog}
       {record && (
         <DictionaryItemSheet
@@ -228,7 +233,7 @@ export function DictionaryItemsPanel({
       <CardHeader>
         <div className='space-y-1'>
           <CardTitle>字典项列表</CardTitle>
-          <CardDescription>
+          <CardDescription className='break-all'>
             {record
               ? `当前类型：${record.dictTypeName}（${record.dictTypeCode}）`
               : '请先选择字典类型'}

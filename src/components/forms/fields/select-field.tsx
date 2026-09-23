@@ -60,6 +60,7 @@ export function SelectField({
             id={field.name}
             className='w-full min-w-0'
             aria-label={label}
+            aria-required={required || undefined}
             aria-describedby={field.formMessageId}
             aria-invalid={field.isInvalid}
           >

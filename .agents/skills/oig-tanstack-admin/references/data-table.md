@@ -246,3 +246,19 @@ interface AuditFields {
 - Activity 隐藏会清理 effect；行列 virtualizer 必须使用响应式 viewport 节点恢复订阅，保留滚动位置，尺寸缓存仅在实际行高或列布局改变时失效。
 
 - 普通服务端列表默认排序由后端统一维护（createTime DESC, id DESC）；前端不重复指定，只有明确业务顺序时才使用 defaultRequestSort。
+
+## 树形行、行内明细与对象选择
+
+- 树形表格通过 `tree: { columnId }`、同步 `getSubRows` 与全树唯一 `rowId` 配置；只处理已加载节点，不隐式请求子节点。树列必须是唯一业务叶子列且保持可见。
+- 树形选择不级联；全选只操作当前页筛选后可选择的节点（含折叠子节点），不得清除其他页或筛选外的选择。分页总数按根记录计数，选择数量按节点计数。
+- 树形表格暂不支持单元格编辑，使用行操作编辑；本地筛选保留匹配节点的祖先，并在清除筛选后恢复展开状态。
+- `rowDetail: { columnId, canExpand?, render }` 用于按需挂载行内详情，必须配置稳定 `rowId`；与 `tree`、`getSubRows`、`expandConfig` 互斥。详情不计入数据行与分页；启用时主表关闭行列虚拟化。
+- 轻量明细表格使用 `DataTableDetail`（`components/data-table/row-detail/data-table-detail`），复用列 DSL 和共享表头表体；不要自建 `<table>`。树与明细纯算法放 `lib/data-table`，展开状态编排放 `hooks/use-data-table`。
+- `ObjectPicker<T>` 位于 `components/object-picker`；调用方提供完整受控 `selectedItems` 和稳定 key，通过 `renderTable` 对接受控 `rowSelection`。当前页勾选只改变传入的 `pageItems`，确认后是否保存由调用方负责。
+
+## 远程筛选与受控查询
+
+- 列使用 `filter: 'select' | 'multiSelect'` 配合 `filterRemoteOptions.loadOptions({keyword, pageNo, pageSize, signal})` 声明远程选项；返回 `{items, total?}`，选项使用稳定 value。支持分页、取消与 `maxSelected`，禁止在业务层另写筛选弹层。
+- 固定单多选统一复用 ChoiceCombobox，支持 keywords、icon 和 count。必选查询使用受控 `value/onValueChange` 与 `clearable={false}`。
+- Toolbar 的 `leadingFilters` 放前置查询控件，`onResetFilters` 用于恢复业务默认查询范围；不传时仍清空列筛选。
+- 普通确认操作使用 `rowActions.confirm`，title/description 可按行计算；`confirmDelete` 保持兼容。状态徽标只读，状态变更使用带确认的操作入口。

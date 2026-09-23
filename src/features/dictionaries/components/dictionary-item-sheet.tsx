@@ -155,9 +155,13 @@ export function DictionaryItemSheet({
               删除
             </Button>
           )}
-          <Button type='submit' form='dictionary-item-sheet-form'>
-            {isEdit ? '保存修改' : '新增字典项'}
-          </Button>
+          <form.Subscribe selector={(state) => state.isSubmitting}>
+            {(submitting) => (
+              <Button type='submit' form='dictionary-item-sheet-form' isLoading={submitting}>
+                {isEdit ? '保存修改' : '创建'}
+              </Button>
+            )}
+          </form.Subscribe>
         </SheetFooter>
       </SheetContent>
 

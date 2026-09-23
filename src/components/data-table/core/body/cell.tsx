@@ -5,6 +5,8 @@ import { DataTableRowActions } from '@/components/data-table/actions/data-table-
 import { DataTableCellContent } from '@/components/data-table/cells/data-table-cell-content';
 import { resolveDataTableColumnDragCellMotion } from '@/components/data-table/dnd/data-table-column-drag-motion';
 import { TableCell } from '@/components/ui/table';
+import { DataTableRowDetailTrigger } from '@/components/data-table/row-detail/data-table-row-detail-trigger';
+import { DataTableTreeCell } from '@/components/data-table/tree/data-table-tree-cell';
 import {
   getColumnPinningShadow,
   getColumnPinningShadowOverlayStyle,
@@ -100,6 +102,12 @@ function CellFrame<TData>({
     cell.column.id,
     services.isColumnDragging
   );
+  const isTreeColumn =
+    cell.getContext().table.options.meta?.dataTableTree?.columnId === cell.column.id;
+  const detailMeta = cell.getContext().table.options.meta;
+  const isDetailColumn = detailMeta?.dataTableRowDetail?.columnId === cell.column.id;
+  const content = <DataTableCellContent cell={cell}>{renderCellValue(cell)}</DataTableCellContent>;
+  const value = cell.getValue();
 
   return (
     <TableCell
@@ -118,7 +126,26 @@ function CellFrame<TData>({
       }}
     >
       <PinnedCellSurface cell={cell}>
-        <DataTableCellContent cell={cell}>{renderCellValue(cell)}</DataTableCellContent>
+        {isTreeColumn ? (
+          <DataTableTreeCell
+            row={cell.row}
+            label={
+              typeof value === 'string' || typeof value === 'number' ? String(value) : cell.row.id
+            }
+          >
+            {content}
+          </DataTableTreeCell>
+        ) : isDetailColumn ? (
+          <DataTableRowDetailTrigger
+            row={cell.row}
+            instanceId={detailMeta?.dataTableInstanceId ?? ''}
+            label={String(value ?? cell.row.id)}
+          >
+            {content}
+          </DataTableRowDetailTrigger>
+        ) : (
+          content
+        )}
       </PinnedCellSurface>
       {services.renderCellServerError(cell)}
       {services.renderCellFillHandle(cell)}
