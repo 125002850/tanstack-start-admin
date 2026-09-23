@@ -6,6 +6,9 @@ for (const width of [390, 768, 1280, 1440]) {
   test(`@workspace-v2 dictionary controls remain reachable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await mockIamSession(page);
+    await page.route('**/api/system/dict/global/items/options', (route) =>
+      route.fulfill({ json: { code: 200, msg: 'ok', data: [] } })
+    );
     await page.route('**/api/system/dict/global/items/by-type', (route) =>
       route.fulfill({ json: { code: 200, msg: 'ok', data: { total: 0, list: [] } } })
     );

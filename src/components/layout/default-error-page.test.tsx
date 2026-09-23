@@ -19,15 +19,16 @@ describe('DefaultErrorPage', () => {
     localStorage.clear();
   });
 
-  it('renders a 404 state from the default monochrome illustration family', () => {
-    render(
+  it('renders a 404 state for an explicitly selected monochrome theme', () => {
+    renderWithTheme(
       <DefaultErrorPage
         code='404'
         title='页面不存在'
         description='访问的页面不存在或已被移动。'
         alertTitle='路由未匹配'
         alertDescription='请检查地址是否正确。'
-      />
+      />,
+      'vercel'
     );
 
     expect(screen.getByRole('heading', { name: '页面不存在' })).toBeInTheDocument();
