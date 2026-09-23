@@ -1,3 +1,5 @@
+import { useStore } from 'zustand';
+import { sessionExpiryStore } from '@/lib/api/sso/session-expiry';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
   createFileRoute,
@@ -54,6 +56,9 @@ function getErrorMessage(error: unknown): string {
 }
 
 function DashboardErrorComponent({ error, reset }: ErrorComponentProps) {
+  const expired = useStore(sessionExpiryStore, (state) => state.expired);
+  // 登录失效由路由树外的全局确认框接管，避免同时误报 500。
+  if (expired) return null;
   if (isLoginForbiddenError(error)) {
     return <LoginForbiddenPage message={error.message} logoutUrl={error.logoutUrl} />;
   }

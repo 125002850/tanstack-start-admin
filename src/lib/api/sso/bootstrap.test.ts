@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockSession = {
+  handleUnauthorized: vi.fn<(url?: string | null) => void>(),
   getAuthHeader: vi.fn<() => string | null>(),
   setAuthHeader: vi.fn<(token: string) => void>(),
   getLogoutUrl: vi.fn<() => string | null>(),
@@ -11,6 +12,7 @@ const mockSession = {
 };
 
 vi.mock('./session', () => ({
+  handleUnauthorized: (url?: string | null) => mockSession.handleUnauthorized(url),
   getAuthHeader: () => mockSession.getAuthHeader(),
   setAuthHeader: (token: string) => mockSession.setAuthHeader(token),
   getLogoutUrl: () => mockSession.getLogoutUrl(),
@@ -111,7 +113,7 @@ describe('bootstrap', () => {
     expect(mockLocation.href).toBe('https://sso/login');
   });
 
-  it('redirects to logoutUrl on expired-token 401 when url is cached', async () => {
+  it('requests confirmation on expired-token 401 using the cached logout URL', async () => {
     mockSession.getAuthHeader.mockReturnValue('Bearer expired');
     mockSession.getLogoutUrl.mockReturnValue('https://sso/logout');
 
@@ -122,7 +124,8 @@ describe('bootstrap', () => {
 
     expect(resp.status).toBe(401);
     expect(mockSession.preserveLoginQueryFromCurrentUrl).not.toHaveBeenCalled();
-    expect(mockLocation.href).toBe('https://sso/logout');
+    expect(mockLocation.href).toBe('https://example.com/dashboard');
+    expect(mockSession.handleUnauthorized).toHaveBeenCalledWith('https://sso/logout');
   });
 
   it('extracts logoutUrl from response body for expired-token 401 when not cached', async () => {
@@ -145,8 +148,8 @@ describe('bootstrap', () => {
     const resp = await bootstrapRequest('/api/getLoginInfo');
 
     expect(resp.status).toBe(401);
-    expect(mockSession.setLogoutUrl).toHaveBeenCalledWith('https://sso/logout-from-body');
-    expect(mockLocation.href).toBe('https://sso/logout-from-body');
+    expect(mockSession.handleUnauthorized).toHaveBeenCalledWith('https://sso/logout-from-body');
+    expect(mockLocation.href).toBe('https://example.com/dashboard');
   });
 
   it('skips redirect on 401 when no logoutUrl available anywhere', async () => {

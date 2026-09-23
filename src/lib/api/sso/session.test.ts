@@ -112,7 +112,7 @@ describe('session', () => {
       hydrateFromUrl();
 
       expect(getAuthHeader()).toBe('raw-token-value');
-      expect(store['sso_token']).toBe('raw-token-value');
+      expect(store['sso:test-service:token']).toBe('raw-token-value');
     });
 
     it('preserves Bearer prefix if already present', async () => {
@@ -152,7 +152,7 @@ describe('session', () => {
 
     it('restores query params captured before SSO login callback', async () => {
       const store = setupBrowserMocks('some-token');
-      store.sessionStore['sso_login_return_search'] = 'customerCode=C001&tab=follow';
+      store.sessionStore['sso:test-service:login_return_search'] = 'customerCode=C001&tab=follow';
       const { hydrateFromUrl } = await import('./session');
 
       hydrateFromUrl();
@@ -162,12 +162,12 @@ describe('session', () => {
         '',
         'https://example.com/dashboard?token=some-token&customerCode=C001&tab=follow'
       );
-      expect(store.sessionStore['sso_login_return_search']).toBeUndefined();
+      expect(store.sessionStore['sso:test-service:login_return_search']).toBeUndefined();
     });
 
     it('does not override callback query params when restoring preserved login query', async () => {
       const store = setupBrowserMocks('some-token', 'tab=current');
-      store.sessionStore['sso_login_return_search'] = 'tab=follow&customerCode=C001';
+      store.sessionStore['sso:test-service:login_return_search'] = 'tab=follow&customerCode=C001';
       const { hydrateFromUrl } = await import('./session');
 
       hydrateFromUrl();
@@ -203,19 +203,19 @@ describe('session', () => {
 
       preserveLoginQueryFromCurrentUrl();
 
-      expect(store.sessionStore['sso_login_return_search']).toBe(
-        'customerCode=C001&tab=follow&token=stale'
+      expect(store.sessionStore['sso:test-service:login_return_search']).toBe(
+        'customerCode=C001&tab=follow'
       );
     });
 
     it('clears preserved login query when current URL has no non-token query', async () => {
       const store = setupBrowserMocks();
-      store.sessionStore['sso_login_return_search'] = 'customerCode=C001';
+      store.sessionStore['sso:test-service:login_return_search'] = 'customerCode=C001';
       const { preserveLoginQueryFromCurrentUrl } = await import('./session');
 
       preserveLoginQueryFromCurrentUrl();
 
-      expect(store.sessionStore['sso_login_return_search']).toBeUndefined();
+      expect(store.sessionStore['sso:test-service:login_return_search']).toBeUndefined();
     });
   });
 
@@ -227,7 +227,7 @@ describe('session', () => {
       setAuthHeader('Bearer my-token');
 
       expect(getAuthHeader()).toBe('my-token');
-      expect(store['sso_token']).toBe('my-token');
+      expect(store['sso:test-service:token']).toBe('my-token');
     });
 
     it('normalizes bare token by adding Bearer prefix', async () => {
@@ -237,7 +237,7 @@ describe('session', () => {
       setAuthHeader('bare-token');
 
       expect(getAuthHeader()).toBe('bare-token');
-      expect(store['sso_token']).toBe('bare-token');
+      expect(store['sso:test-service:token']).toBe('bare-token');
     });
 
     it('normalizes lowercase bearer prefix', async () => {
@@ -247,7 +247,7 @@ describe('session', () => {
       setAuthHeader('bearer lowercase-token');
 
       expect(getAuthHeader()).toBe('lowercase-token');
-      expect(store['sso_token']).toBe('lowercase-token');
+      expect(store['sso:test-service:token']).toBe('lowercase-token');
     });
 
     it('rejects empty string', async () => {
@@ -257,7 +257,7 @@ describe('session', () => {
       setAuthHeader('');
 
       expect(getAuthHeader()).toBeNull();
-      expect(store['sso_token']).toBeUndefined();
+      expect(store['sso:test-service:token']).toBeUndefined();
     });
 
     it('rejects whitespace-only string', async () => {
@@ -267,7 +267,7 @@ describe('session', () => {
       setAuthHeader('   ');
 
       expect(getAuthHeader()).toBeNull();
-      expect(store['sso_token']).toBeUndefined();
+      expect(store['sso:test-service:token']).toBeUndefined();
     });
 
     it('returns null when no token stored', async () => {
@@ -302,7 +302,7 @@ describe('session', () => {
 
       expect(getAuthHeader()).toBeNull();
       expect(getLogoutUrl()).toBeNull();
-      expect(window.location.href).toBe('https://example.com');
+      expect(window.location.href).toBe('https://example.com/dashboard');
     });
 
     it('prefers explicit redirect url over cached logout url', async () => {
@@ -343,9 +343,9 @@ describe('session', () => {
       expect(getAuthHeader()).toBeNull();
       expect(getLoginUserId()).toBeNull();
       expect(getLogoutUrl()).toBeNull();
-      expect(store['sso_token']).toBeUndefined();
-      expect(store['sso_user_id']).toBeUndefined();
-      expect(store['sso_logout_url']).toBeUndefined();
+      expect(store['sso:test-service:token']).toBeUndefined();
+      expect(store['sso:test-service:user_id']).toBeUndefined();
+      expect(store['sso:test-service:logout_url']).toBeUndefined();
     });
   });
 
@@ -357,7 +357,7 @@ describe('session', () => {
       setLoginUserId(' 10086 ');
 
       expect(getLoginUserId()).toBe('10086');
-      expect(store['sso_user_id']).toBe('10086');
+      expect(store['sso:test-service:user_id']).toBe('10086');
     });
 
     it('rejects empty login user id', async () => {
@@ -367,7 +367,7 @@ describe('session', () => {
       setLoginUserId('   ');
 
       expect(getLoginUserId()).toBeNull();
-      expect(store['sso_user_id']).toBeUndefined();
+      expect(store['sso:test-service:user_id']).toBeUndefined();
     });
   });
 
@@ -390,15 +390,23 @@ describe('session', () => {
   });
 
   describe('handleUnauthorized', () => {
-    it('clears auth and redirects to logout url if available', async () => {
+    it('clears auth immediately and waits for confirmation before redirecting', async () => {
       setupBrowserMocks();
-      const { setAuthHeader, setLogoutUrl, handleUnauthorized, getAuthHeader, getLogoutUrl } =
-        await import('./session');
+      const {
+        setAuthHeader,
+        setLogoutUrl,
+        handleUnauthorized,
+        confirmSessionExpired,
+        getAuthHeader,
+        getLogoutUrl
+      } = await import('./session');
 
       setAuthHeader('Bearer token');
       setLogoutUrl('https://sso/logout');
 
       handleUnauthorized();
+      expect(window.location.href).toBe('https://example.com/dashboard');
+      confirmSessionExpired();
 
       expect(getAuthHeader()).toBeNull();
       expect(getLogoutUrl()).toBeNull();

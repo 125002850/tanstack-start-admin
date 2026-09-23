@@ -3,6 +3,9 @@ import { mkdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { chromium } from '@playwright/test'
+import { getSsoTokenStorageKey } from './sso-storage-key.mjs'
+
+const tokenStorageKey = getSsoTokenStorageKey()
 
 import {
   installSsoLoginRedirectPatch,
@@ -219,9 +222,9 @@ async function waitForLocalToken(page, appOrigin, remoteAppPrefix, localAppPrefi
 
     const token = await page
       .evaluate(
-        (origin) =>
-          window.location.origin === origin ? localStorage.getItem('sso_token') : null,
-        appOrigin
+        ({ origin, key }) =>
+          window.location.origin === origin && !!localStorage.getItem(key),
+        { origin: appOrigin, key: tokenStorageKey }
       )
       .catch(() => null)
 

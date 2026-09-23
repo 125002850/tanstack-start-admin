@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { ssoTokenStorageKey } from './support/sso-storage';
 
 import {
   installSsoLoginRedirectPatch,
@@ -27,12 +28,13 @@ test.describe('@workspace-v2 @manual-sso SSO login redirect', () => {
     await installSsoLoginRedirectPatch(context);
 
     await page.goto(appUrl('/auth/sign-in'), { waitUntil: 'domcontentloaded' });
-    await page.evaluate(() => {
-      localStorage.removeItem('sso_token');
-      localStorage.removeItem('sso_user_id');
-      localStorage.removeItem('sso_logout_url');
+    await page.evaluate((key) => {
+      const prefix = key.slice(0, -'token'.length);
+      localStorage.removeItem(key);
+      localStorage.removeItem(`${prefix}user_id`);
+      localStorage.removeItem(`${prefix}logout_url`);
       sessionStorage.clear();
-    });
+    }, ssoTokenStorageKey);
 
     await page.goto(appUrl('/dashboard/overview'), { waitUntil: 'domcontentloaded' });
 

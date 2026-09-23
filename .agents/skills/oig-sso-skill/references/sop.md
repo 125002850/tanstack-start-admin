@@ -76,3 +76,7 @@ PLAYWRIGHT_AI_BASE_URL=http://localhost:3000 bash .agents/skills/oig-sso-skill/s
 PLAYWRIGHT_AI_GREP='@workspace-v2' bash .agents/skills/oig-sso-skill/scripts/run-ai-e2e.sh
 PLAYWRIGHT_SSO_ENTRY_URL=https://caweb-auth-master.ksout.oigit.com/login/loginView?clientId=2064249343121747970 bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh
 ```
+
+## 服务隔离存储
+
+录制脚本通过 `scripts/sso-storage-key.mjs` 从本工作树环境配置读取 serviceCode，写入 `sso:<serviceCode>:token`。停止使用旧公共 token key；调整 serviceCode 后必须重新录制登录态。测试、开发和生产构建必须使用对应环境的 serviceCode，禁止跨系统复用存储文件。

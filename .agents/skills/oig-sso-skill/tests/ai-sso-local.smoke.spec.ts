@@ -1,4 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { getSsoTokenStorageKey } from '../scripts/sso-storage-key.mjs';
+
+const tokenStorageKey = getSsoTokenStorageKey();
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -19,7 +22,7 @@ test('@ai-sso authenticated storage reaches local dashboard on port 3000', async
   await expect(page.getByText('总收入')).toBeVisible({ timeout: 15_000 });
   await expect
     .poll(async () =>
-      page.evaluate(() => (localStorage.getItem('sso_token') ? 'present' : 'missing'))
+      page.evaluate((key) => (localStorage.getItem(key) ? 'present' : 'missing'), tokenStorageKey)
     )
     .toBe('present');
 });

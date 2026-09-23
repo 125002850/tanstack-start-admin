@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    env: { VITE_APP_SSO_SERVICE_CODE: 'test-service' },
     setupFiles: ['src/test/setup.ts'],
     exclude: ['.agents/**', '.claude/**', 'e2e', 'node_modules'],
     clearMocks: true,

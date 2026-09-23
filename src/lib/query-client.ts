@@ -7,6 +7,7 @@ import {
   setQueryClient as setCoreQueryClient
 } from '@oig/react-query-generator/core';
 import { toast } from 'sonner';
+import { SessionExpiredError, sessionExpiryStore } from './api/sso/session-expiry';
 
 import {
   HTTP_STATUS_BAD_GATEWAY,
@@ -130,6 +131,11 @@ function getQueryRetryDelay(attemptIndex: number, error: unknown): number {
 
 function showErrorToast(error: unknown) {
   if (isApiRequestAbort(error)) return;
+  if (
+    error instanceof SessionExpiredError ||
+    (getErrorStatus(error) === 401 && sessionExpiryStore.getState().expired)
+  )
+    return;
   toast.error(normalizeApiError(error).message);
 }
 

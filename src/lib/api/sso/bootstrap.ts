@@ -1,14 +1,13 @@
 import { createAuthHeaders, refreshTokenFromResponse } from './set-headers';
-import { getLogoutUrl, preserveLoginQueryFromCurrentUrl, setLogoutUrl } from './session';
+import {
+  clearAuth,
+  getLogoutUrl,
+  handleUnauthorized,
+  preserveLoginQueryFromCurrentUrl,
+  setLogoutUrl
+} from './session';
+import { assertSessionActive, sessionExpiryStore } from './session-expiry';
 import { HTTP_STATUS_UNAUTHORIZED } from '../../http-status';
-
-const TOKEN_KEY = 'sso_token';
-
-function removeToken() {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-  } catch {}
-}
 
 export interface SsoRedirectUrls {
   loginUrl?: string;
@@ -48,6 +47,7 @@ async function extractSsoRedirectUrlsFromBody(response: Response): Promise<SsoRe
 }
 
 export async function bootstrapRequest(url: string, init?: RequestInit): Promise<Response> {
+  assertSessionActive();
   const headers = createAuthHeaders(init?.headers);
   const hasAuthHeader = !!headers.get('authorization');
   const response = await fetch(url, {
@@ -56,29 +56,27 @@ export async function bootstrapRequest(url: string, init?: RequestInit): Promise
   });
 
   if (response.status === HTTP_STATUS_UNAUTHORIZED) {
-    removeToken();
-
     const cachedLogoutUrl = getLogoutUrl();
     const redirectUrls = await extractSsoRedirectUrlsFromBody(response);
 
-    if (redirectUrls.logoutUrl) {
-      setLogoutUrl(redirectUrls.logoutUrl);
+    if (hasAuthHeader) {
+      handleUnauthorized(redirectUrls.logoutUrl ?? cachedLogoutUrl);
+      return response;
     }
-
-    const redirectUrl = hasAuthHeader
-      ? (redirectUrls.logoutUrl ?? cachedLogoutUrl)
-      : (redirectUrls.loginUrl ?? redirectUrls.logoutUrl ?? cachedLogoutUrl);
-
+    // 其他并发请求已判定会话失效时，不绕过确认框自动跳转。
+    if (sessionExpiryStore.getState().expired) return response;
+    clearAuth();
+    if (redirectUrls.logoutUrl) setLogoutUrl(redirectUrls.logoutUrl);
+    const redirectUrl = redirectUrls.loginUrl ?? redirectUrls.logoutUrl ?? cachedLogoutUrl;
     if (redirectUrl) {
-      if (!hasAuthHeader) {
-        preserveLoginQueryFromCurrentUrl();
-      }
+      preserveLoginQueryFromCurrentUrl();
       window.location.href = redirectUrl;
     }
 
     return response;
   }
 
+  assertSessionActive();
   refreshTokenFromResponse(response);
   return response;
 }

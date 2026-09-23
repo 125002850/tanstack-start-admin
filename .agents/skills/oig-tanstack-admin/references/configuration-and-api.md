@@ -103,7 +103,7 @@ export function isDataTableVirtualizationEnabled(): boolean {
 
 - generated API、业务 query/mutation 和页面代码必须复用共享 transport，禁止在边界外散落 `fetch`。
 - 当前仓库允许直接调用 `fetch` 的运行时边界只有 `src/lib/api/sso/bootstrap.ts`；新增例外前必须同步调整 API adoption 契约测试。
-- 首次登录或缺少 token 的 401 由 `bootstrap.ts` 跳转 `loginUrl`；已有 token 失效后的 401 优先跳转 `logoutUrl`。页面层不得复制清 token 或重定向逻辑。
+- 首次登录或缺少 token 的 401 由 `bootstrap.ts` 跳转 `loginUrl`；已有 token 失效后统一清理当前服务凭据并显示不可关闭的确认框，确认后跳转 `logoutUrl`。并发 401 合并提示，失效后阻止请求及迟到响应刷新 token。页面层不得复制清 token 或重定向逻辑。
 - `transport.ts` 的 request middleware 必须统一调用 `createAuthHeaders()`；页面和 generated client 不得重复拼装 SSO 头或注册 middleware。
 - 共享 middleware 配置必须使用 `setTransportMiddlewares()` 的替换语义，禁止在启动路径使用 `registerTransportMiddleware()`，避免 HMR 或重复初始化累加执行。
 - SSO 响应返回新的 `Authorization` 时，由 `refreshTokenFromResponse()` 统一更新本地会话。
@@ -126,3 +126,10 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 原生 fetch / XMLHttpRequest / bootstrapRequest 的允许边界由 `src/test/contracts/openapi-adoption.test.ts` 检查；新业务功能使用生成客户端，不新增手写业务 transport。
 - 接口或类型缺失时，先核对后端 Controller/DTO、服务导出的 OpenAPI 和本地 spec。修复后端契约或同步服务版本后，再执行 `pnpm api`；单独 `pnpm codegen` 不会更新后端契约。
 - 禁止手改 spec、generated 文件、生成后 patch 或用类型断言补造契约。后端不可用时报告阻塞；保留模板自身的 IAM/SSO 认证边界与 operationId。
+
+## SSO 存储隔离
+
+- `VITE_APP_SSO_SERVICE_CODE` 必填；同源独立系统必须配置不同 code。token、用户 ID、退出地址和回跳参数使用 `sso:<编码后的 serviceCode>:` 前缀，禁止读写旧公共 key。
+- 升级后旧公共登录缓存不迁移，用户重新通过 SSO 换票。回跳只恢复业务查询参数，忽略暂存的旧 token。
+- 会话失效状态由 `sessionExpiryStore` 统一维护；确认退出前不允许 Escape/遮罩关闭提示。无退出地址时清除当前 URL 的 token 后重新进入当前页面。
+- E2E 与登录录制脚本必须通过共享 storage-key helper 计算隔离 key；UI 测试使用构建时同一 serviceCode。

@@ -1,4 +1,5 @@
 import { Matches, RouterContextProvider } from '@tanstack/react-router';
+import { SessionExpiredDialog } from './features/auth/components/session-expired-dialog';
 import { createRoot } from 'react-dom/client';
 import { RouterProgressBar } from './components/layout/router-progress';
 import { configureApiTransport } from './lib/api/transport';
@@ -14,5 +15,6 @@ root.render(
   <RouterContextProvider router={router}>
     <RouterProgressBar />
     <Matches />
+    <SessionExpiredDialog />
   </RouterContextProvider>
 );

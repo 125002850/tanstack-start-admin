@@ -37,7 +37,7 @@
 
 ## 功能特性
 
-- 企业 SSO 登录、回跳会话恢复、统一登出与 401 处理
+- 企业 SSO 登录、按服务隔离登录缓存、回跳会话恢复与会话失效确认退出
 - 基于 SSO `menuData.code` 的导航过滤和 route 访问控制
 - 后台布局骨架（侧边栏、顶部栏、内容区域）
 - 数据概览页与基于 Suspense 的独立加载区块
@@ -158,6 +158,8 @@ src/
 2. `/dashboard` loader 调用 `ensureSsoLoginInfo()`；`bootstrapRequest()` 获取登录信息，并在未登录或会话过期时跳转 SSO 提供的登录/登出地址。
 3. `src/lib/api/transport.ts` 为 generated client 注入 SSO 服务头、`Authorization` 和 `X-User-Id`，并从响应头刷新 token。
 4. 侧边栏、KBar 和声明了 `nav.menuKey` 的 route 使用同一份可见 `menuData.code` 集合，分别完成菜单过滤与访问校验。
+
+`VITE_APP_SSO_SERVICE_CODE` 必须配置且同源独立系统之间不能重复。升级隔离存储后，旧公共登录缓存不再读取，需要重新通过 SSO 登录。
 
 SSO 账号、密码、ticket、token 和环境专属地址不得写入 tracked 文件。AI Playwright 登录态准备与本地回跳流程由 [`oig-sso-skill`](.agents/skills/oig-sso-skill/SKILL.md) 维护。
 

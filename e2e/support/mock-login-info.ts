@@ -1,3 +1,4 @@
+import { ssoTokenStorageKey } from './sso-storage';
 import type { Page } from '@playwright/test';
 
 const loginInfoResponse = {
@@ -19,9 +20,9 @@ const loginInfoResponse = {
 };
 
 export async function mockLoginInfo(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('sso_token', 'workspace-e2e-token');
-  });
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, 'workspace-e2e-token');
+  }, ssoTokenStorageKey);
 
   await page.route('**/api/getLoginInfo', async (route) => {
     await route.fulfill({
