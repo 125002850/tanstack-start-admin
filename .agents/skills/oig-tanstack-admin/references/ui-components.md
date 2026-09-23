@@ -145,6 +145,8 @@ export default function XxxRoutePage() {
 
 ## 业务状态展示与操作
 
-- 状态徽标只展示状态，不承担点击修改。成功/可用使用 success，处理中使用 info，失败使用 destructive，停用使用 secondary，未知值使用 outline；展示名称继续来自本项目字典契约。
+- 状态徽标只展示状态，不承担点击修改。成功/可用使用 `success`，处理中使用 `info`，警告/异常待处理使用 `warning`，失败使用 `destructive`，停用等中性状态使用 `secondary`，未知值使用 `outline`；展示名称继续来自本项目字典契约。业务状态到语义的映射由对应 feature 维护，禁止根据字段名或数值猜测。
+- 状态 Badge 直接复用现有 Badge 的主题配色：`success`、`info`、`warning` 使用 `primary / primary-foreground`，与默认 Badge 一致；`secondary` 使用 `secondary / secondary-foreground`，`destructive` 使用 `destructive / destructive-foreground`，未知状态保持 `outline`。通过文字区分具体业务语义，不额外维护状态专用色板，不硬编码颜色或按主题名指定黑白文字；背景和文字均随现有主题及明暗模式变化。
+- 状态展示复用 `Badge` 与表格 `columnDsl.badge`，禁止业务页面另写状态色 CSS。列表、详情及筛选选项使用一致文案。
 - 启停或生命周期变化移到明确的操作入口，确认后执行；异步期间禁用重复操作。禁止将业务系统的枚举 desc 或硬编码名称替代模板字典。
 - 主题按钮与 KBar 使用 `useThemeMode`，根据 resolvedTheme 切换明暗；设置为 system 后继续响应系统偏好。
