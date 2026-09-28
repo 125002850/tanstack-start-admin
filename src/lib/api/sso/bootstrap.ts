@@ -1,3 +1,4 @@
+import { LoginRequiredError, isUnauthorizedResponse } from './errors';
 import { createAuthHeaders, refreshTokenFromResponse } from './set-headers';
 import {
   clearAuth,
@@ -6,7 +7,7 @@ import {
   preserveLoginQueryFromCurrentUrl,
   setLogoutUrl
 } from './session';
-import { assertSessionActive, sessionExpiryStore } from './session-expiry';
+import { assertSessionActive, sessionExpiryStore, SessionExpiredError } from './session-expiry';
 import { HTTP_STATUS_UNAUTHORIZED } from '../../http-status';
 
 export interface SsoRedirectUrls {
@@ -37,10 +38,9 @@ export function collectSsoRedirectUrls(
   return urls;
 }
 
-async function extractSsoRedirectUrlsFromBody(response: Response): Promise<SsoRedirectUrls> {
+async function readResponseBody(response: Response): Promise<unknown> {
   try {
-    const body = await response.clone().json();
-    return collectSsoRedirectUrls(body);
+    return await response.clone().json();
   } catch {
     return {};
   }
@@ -55,16 +55,23 @@ export async function bootstrapRequest(url: string, init?: RequestInit): Promise
     headers
   });
 
-  if (response.status === HTTP_STATUS_UNAUTHORIZED) {
+  const body =
+    response.status === HTTP_STATUS_UNAUTHORIZED || response.ok
+      ? await readResponseBody(response)
+      : null;
+  if (
+    response.status === HTTP_STATUS_UNAUTHORIZED ||
+    (response.ok && isUnauthorizedResponse(body))
+  ) {
     const cachedLogoutUrl = getLogoutUrl();
-    const redirectUrls = await extractSsoRedirectUrlsFromBody(response);
+    const redirectUrls = collectSsoRedirectUrls(body);
 
     if (hasAuthHeader) {
       handleUnauthorized(redirectUrls.logoutUrl ?? cachedLogoutUrl);
-      return response;
+      throw new SessionExpiredError();
     }
     // 其他并发请求已判定会话失效时，不绕过确认框自动跳转。
-    if (sessionExpiryStore.getState().expired) return response;
+    if (sessionExpiryStore.getState().expired) throw new SessionExpiredError();
     clearAuth();
     if (redirectUrls.logoutUrl) setLogoutUrl(redirectUrls.logoutUrl);
     const redirectUrl = redirectUrls.loginUrl ?? redirectUrls.logoutUrl ?? cachedLogoutUrl;
@@ -73,7 +80,7 @@ export async function bootstrapRequest(url: string, init?: RequestInit): Promise
       window.location.href = redirectUrl;
     }
 
-    return response;
+    throw new LoginRequiredError(redirectUrl || undefined);
   }
 
   assertSessionActive();

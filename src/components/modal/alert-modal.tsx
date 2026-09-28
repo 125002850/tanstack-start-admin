@@ -39,7 +39,7 @@ export function AlertModal({
         <Button disabled={loading} variant='outline' onClick={onClose}>
           {cancelText}
         </Button>
-        <Button disabled={loading} variant='destructive' onClick={onConfirm}>
+        <Button isLoading={loading} variant='destructive' onClick={onConfirm}>
           {confirmText}
         </Button>
       </div>

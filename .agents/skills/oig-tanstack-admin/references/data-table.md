@@ -251,3 +251,8 @@ interface AuditFields {
 - 固定单多选统一复用 ChoiceCombobox，支持 keywords、icon 和 count。必选查询使用受控 `value/onValueChange` 与 `clearable={false}`。
 - Toolbar 的 `leadingFilters` 放前置查询控件，`onResetFilters` 用于恢复业务默认查询范围；不传时仍清空列筛选。
 - 普通确认操作使用 `rowActions.confirm`，title/description 可按行计算；`confirmDelete` 保持兼容。状态徽标只读，状态变更使用带确认的操作入口。
+
+## 缓存列顺序升级
+
+- 恢复非空列顺序缓存时，新增列按声明顺序以前一个已存在列为锚点回填，保留已有列的用户相对顺序；没有前置锚点时插入开头。
+- 回填只处理列顺序，不清除列宽、显隐和排序偏好；业务列应提供稳定的 `id` 或 `accessorKey`。

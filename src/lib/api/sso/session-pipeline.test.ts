@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
 const client = createDefaultApiClientCustomInstance('https://example.com');
 beforeEach(() => {
+  vi.clearAllMocks();
   localStorage.clear();
   sessionExpiryStore.setState({ expired: false, logoutUrl: null, redirecting: false });
   vi.stubGlobal('window', { location: { href: 'https://example.com/dashboard' } });
@@ -75,7 +76,7 @@ it('first entry ignores legacy token and follows login URL without showing expir
       new Response(JSON.stringify({ data: { loginUrl: 'https://sso/login' } }), { status: 401 })
     );
   vi.stubGlobal('fetch', fetcher);
-  await bootstrapRequest('/api/getLoginInfo');
+  await expect(bootstrapRequest('/api/getLoginInfo')).rejects.toMatchObject({ status: 401 });
   expect(fetcher.mock.calls[0][1].headers.has('authorization')).toBe(false);
   expect(sessionExpiryStore.getState().expired).toBe(false);
   expect(window.location.href).toBe('https://sso/login');
@@ -91,7 +92,7 @@ it('expired bootstrap waits for confirmation and retains response logout URL', a
       })
     )
   );
-  await bootstrapRequest('/api/getLoginInfo');
+  await expect(bootstrapRequest('/api/getLoginInfo')).rejects.toMatchObject({ status: 401 });
   expect(sessionExpiryStore.getState()).toMatchObject({
     expired: true,
     logoutUrl: 'https://sso/response-logout'
@@ -105,4 +106,76 @@ it('403 does not invalidate the session', async () => {
   await expect(client('/api/forbidden')).rejects.toMatchObject({ status: 403 });
   expect(sessionExpiryStore.getState().expired).toBe(false);
   expect(getAuthHeader()).toBe('valid');
+});
+
+for (const field of ['code', 'rspCode']) {
+  it(`handles HTTP 200 with ${field}=401 before restoring credentials`, async () => {
+    setAuthHeader('expired');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ [field]: '401', success: false }), {
+          headers: { 'content-type': 'application/json', authorization: 'must-not-restore' }
+        })
+      )
+    );
+    await expect(client('/api/orders')).rejects.toBeInstanceOf(SessionExpiredError);
+    expect(sessionExpiryStore.getState().expired).toBe(true);
+    expect(getAuthHeader()).toBeNull();
+  });
+}
+
+it('missing login URL produces a login-required error without retry or expiry dialog', async () => {
+  const fetcher = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+  vi.stubGlobal('fetch', fetcher);
+  await expect(
+    getQueryClient().fetchQuery({
+      queryKey: ['missing-login-url'],
+      queryFn: () => bootstrapRequest('/api/getLoginInfo')
+    })
+  ).rejects.toMatchObject({ name: 'LoginRequiredError', redirectUrl: undefined });
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(sessionExpiryStore.getState().expired).toBe(false);
+  expect(toast.error).not.toHaveBeenCalled();
+});
+
+it('bootstrap business 401 does not restore token or require an immediate logout', async () => {
+  setAuthHeader('expired');
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          rspCode: '401',
+          success: false,
+          data: { logoutUrl: 'https://sso/logout' }
+        }),
+        { headers: { 'content-type': 'application/json', authorization: 'must-not-restore' } }
+      )
+    )
+  );
+  await expect(bootstrapRequest('/api/getLoginInfo')).rejects.toBeInstanceOf(SessionExpiredError);
+  expect(sessionExpiryStore.getState()).toMatchObject({
+    expired: true,
+    logoutUrl: 'https://sso/logout'
+  });
+  expect(getAuthHeader()).toBeNull();
+  expect(window.location.href).toBe('https://example.com/dashboard');
+});
+
+it('business 403 and other failures do not invalidate the session', async () => {
+  setAuthHeader('valid');
+  for (const code of [403, 500, '401-invalid']) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ code, success: false }), {
+          headers: { 'content-type': 'application/json' }
+        })
+      )
+    );
+    await client('/api/orders');
+    expect(sessionExpiryStore.getState().expired).toBe(false);
+    expect(getAuthHeader()).toBe('valid');
+  }
 });

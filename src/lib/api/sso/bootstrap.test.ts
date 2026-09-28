@@ -105,9 +105,7 @@ describe('bootstrap', () => {
     );
 
     const { bootstrapRequest } = await import('./bootstrap');
-    const resp = await bootstrapRequest('/api/getLoginInfo');
-
-    expect(resp.status).toBe(401);
+    await expect(bootstrapRequest('/api/getLoginInfo')).rejects.toMatchObject({ status: 401 });
     expect(mockSession.setLogoutUrl).toHaveBeenCalledWith('https://sso/logout');
     expect(mockSession.preserveLoginQueryFromCurrentUrl).toHaveBeenCalledOnce();
     expect(mockLocation.href).toBe('https://sso/login');
@@ -120,9 +118,7 @@ describe('bootstrap', () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response('Unauthorized', { status: 401 }));
 
     const { bootstrapRequest } = await import('./bootstrap');
-    const resp = await bootstrapRequest('/api/getLoginInfo');
-
-    expect(resp.status).toBe(401);
+    await expect(bootstrapRequest('/api/getLoginInfo')).rejects.toMatchObject({ status: 401 });
     expect(mockSession.preserveLoginQueryFromCurrentUrl).not.toHaveBeenCalled();
     expect(mockLocation.href).toBe('https://example.com/dashboard');
     expect(mockSession.handleUnauthorized).toHaveBeenCalledWith('https://sso/logout');
@@ -145,9 +141,7 @@ describe('bootstrap', () => {
     );
 
     const { bootstrapRequest } = await import('./bootstrap');
-    const resp = await bootstrapRequest('/api/getLoginInfo');
-
-    expect(resp.status).toBe(401);
+    await expect(bootstrapRequest('/api/getLoginInfo')).rejects.toMatchObject({ status: 401 });
     expect(mockSession.handleUnauthorized).toHaveBeenCalledWith('https://sso/logout-from-body');
     expect(mockLocation.href).toBe('https://example.com/dashboard');
   });
@@ -159,9 +153,7 @@ describe('bootstrap', () => {
     globalThis.fetch = vi.fn().mockResolvedValue(new Response('Unauthorized', { status: 401 }));
 
     const { bootstrapRequest } = await import('./bootstrap');
-    const resp = await bootstrapRequest('/api/getLoginInfo');
-
-    expect(resp.status).toBe(401);
+    await expect(bootstrapRequest('/api/getLoginInfo')).rejects.toMatchObject({ status: 401 });
     expect(mockLocation.href).toBe('https://example.com/dashboard');
   });
 });

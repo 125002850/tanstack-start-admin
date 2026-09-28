@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+import { handleFormSubmitError } from '@/lib/query-client';
+
 import { AlertModal } from '@/components/modal/alert-modal';
 
 type ConfirmTextResolver<TArgs extends unknown[]> = string | ((...args: TArgs) => string);
@@ -49,16 +51,18 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
   }, [isLoading]);
 
   const handleConfirm = React.useCallback(async () => {
-    if (!pendingAction) return;
+    if (!pendingAction || isLoading) return;
 
     setIsLoading(true);
     try {
       await pendingAction.options.run(...pendingAction.args);
       setPendingAction(null);
+    } catch (error) {
+      handleFormSubmitError(error);
     } finally {
       setIsLoading(false);
     }
-  }, [pendingAction]);
+  }, [pendingAction, isLoading]);
 
   const confirmDialog = pendingAction ? (
     <AlertModal

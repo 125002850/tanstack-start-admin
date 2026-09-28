@@ -1,3 +1,4 @@
+import { LoginRequiredError } from './api/sso/errors';
 import { QueryCache, QueryClient, MutationCache } from '@tanstack/react-query';
 import {
   BizError,
@@ -132,6 +133,7 @@ function getQueryRetryDelay(attemptIndex: number, error: unknown): number {
 function showErrorToast(error: unknown) {
   if (isApiRequestAbort(error)) return;
   if (
+    error instanceof LoginRequiredError ||
     error instanceof SessionExpiredError ||
     (getErrorStatus(error) === 401 && sessionExpiryStore.getState().expired)
   )

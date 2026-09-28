@@ -127,6 +127,12 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 接口或类型缺失时，先核对后端 Controller/DTO、服务导出的 OpenAPI 和本地 spec。修复后端契约或同步服务版本后，再执行 `pnpm api`；单独 `pnpm codegen` 不会更新后端契约。
 - 禁止手改 spec、generated 文件、生成后 patch 或用类型断言补造契约。后端不可用时报告阻塞；保留模板自身的 IAM/SSO 认证边界与 operationId。
 
+## SSO 错误呈现
+
+- bootstrap 与共享 transport 同时识别 HTTP 401 和成功 HTTP 响应中明确的 `code` / `rspCode` 401，必须在刷新响应凭据前处理；403 不触发会话失效。
+- 首次无凭据的登录引导使用 `LoginRequiredError`，与已登录会话的 `SessionExpiredError` 区分。缺少登录地址时提供重试，不伪装成 500，也不触发退出确认。
+- 全局路由和 dashboard 共用 `RouteErrorPage`；会话失效交给全局确认框，首次登录不重复 toast，未知异常统一使用安全错误归一化器。
+
 ## SSO 存储隔离
 
 - `VITE_APP_SSO_SERVICE_CODE` 必填；同源独立系统必须配置不同 code。token、用户 ID、退出地址和回跳参数使用 `sso:<编码后的 serviceCode>:` 前缀，禁止读写旧公共 key。

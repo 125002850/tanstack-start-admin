@@ -1,15 +1,11 @@
-import {
-  createRouter as createTanStackRouter,
-  type ErrorComponentProps
-} from '@tanstack/react-router';
+import { RouteErrorPage } from '@/components/layout/route-error-page';
+import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routerWithQueryClient } from '@tanstack/react-router-with-query';
 import { Icons } from '@/components/icons';
 import { DefaultErrorPage } from '@/components/layout/default-error-page';
 import { getQueryClient } from '@/lib/query-client';
 import { hydrateFromUrl } from '@/lib/api/sso/session';
 import { resolveDashboardHomeHref } from '@/lib/router/dashboard-home';
-import { isRouteAccessForbiddenError } from '@/lib/router/route-access';
-import { RouteAccessForbiddenPage } from '@/features/auth/components/route-access-forbidden-page';
 import { routeTree } from './routeTree.gen';
 
 const DEFAULT_PENDING_MS = 2500;
@@ -25,32 +21,6 @@ function getRouterBasepath(): string | undefined {
   const normalized = `/${pathname.replace(/^\/+|\/+$/g, '')}`;
 
   return normalized === '/' ? undefined : normalized;
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
-  return '页面加载时遇到未知异常。';
-}
-
-function DefaultRouterErrorComponent({ error, reset }: ErrorComponentProps) {
-  if (isRouteAccessForbiddenError(error)) {
-    return <RouteAccessForbiddenPage message={error.message} />;
-  }
-
-  return (
-    <DefaultErrorPage
-      code='500'
-      title='系统异常'
-      description='页面加载时遇到异常，当前操作未能继续。'
-      alertTitle='运行异常'
-      alertDescription={getErrorMessage(error)}
-      action={{
-        label: '重试',
-        icon: Icons.rotateClockwise,
-        onClick: reset
-      }}
-    />
-  );
 }
 
 function DefaultRouterNotFoundComponent() {
@@ -83,7 +53,7 @@ export function createRouter() {
     defaultPreloadStaleTime: 0,
     defaultPendingMs: DEFAULT_PENDING_MS,
     context: { queryClient },
-    defaultErrorComponent: DefaultRouterErrorComponent,
+    defaultErrorComponent: RouteErrorPage,
     defaultNotFoundComponent: DefaultRouterNotFoundComponent
   });
 

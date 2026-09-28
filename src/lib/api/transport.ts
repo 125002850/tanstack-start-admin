@@ -1,10 +1,11 @@
+import { isUnauthorizedResponse } from './sso/errors';
 import {
   HttpError,
   setTransportMiddlewares,
   type TransportMiddleware
 } from '@oig/react-query-generator/core';
 
-import { assertSessionActive } from './sso/session-expiry';
+import { assertSessionActive, SessionExpiredError } from './sso/session-expiry';
 import { handleUnauthorized } from './sso/session';
 import { createAuthHeaders, refreshTokenFromResponse } from './sso/set-headers';
 import { HTTP_STATUS_UNAUTHORIZED } from '../http-status';
@@ -24,6 +25,10 @@ const sessionMiddleware: TransportMiddleware = async (context, next) => {
   try {
     const response = await next(context);
     assertSessionActive();
+    if (isUnauthorizedResponse(response.data)) {
+      handleUnauthorized();
+      throw new SessionExpiredError();
+    }
     refreshTokenFromResponse(response);
     return response;
   } catch (error) {

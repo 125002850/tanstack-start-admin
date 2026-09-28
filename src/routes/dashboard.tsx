@@ -1,15 +1,7 @@
-import { useStore } from 'zustand';
-import { sessionExpiryStore } from '@/lib/api/sso/session-expiry';
+import { RouteErrorPage } from '@/components/layout/route-error-page';
 import { QueryClientProvider } from '@tanstack/react-query';
-import {
-  createFileRoute,
-  Outlet,
-  useRouter,
-  type ErrorComponentProps
-} from '@tanstack/react-router';
-import { Icons } from '@/components/icons';
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
 import KBar from '@/components/kbar';
-import { DefaultErrorPage } from '@/components/layout/default-error-page';
 import AppSidebar from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
 import { InfoSidebar } from '@/components/layout/info-sidebar';
@@ -21,11 +13,7 @@ import { useWorkspaceDevtools } from '@/features/workspace-tabs/lib/workspace-de
 import { isWorkspaceTabsEnabled } from '@/config/workspace-tabs';
 import { useDashboardRouteTagSync } from '@/features/workspace-tabs/hooks/use-dashboard-route-tag-sync';
 import { ensureSsoLoginInfo } from '@/lib/api/sso/queries';
-import { isLoginForbiddenError } from '@/lib/api/sso/errors';
-import { LoginForbiddenPage } from '@/features/auth/components/login-forbidden-page';
 import { baseConfig } from '@/config';
-import { isRouteAccessForbiddenError } from '@/lib/router/route-access';
-import { RouteAccessForbiddenPage } from '@/features/auth/components/route-access-forbidden-page';
 
 const meta = defineRouteMeta({
   label: '工作台',
@@ -46,42 +34,9 @@ export const Route = createFileRoute('/dashboard')({
     ]
   }),
   loader: ({ context }) => ensureSsoLoginInfo(context.queryClient),
-  errorComponent: DashboardErrorComponent,
+  errorComponent: RouteErrorPage,
   component: DashboardLayout
 });
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
-  return '页面加载时遇到未知异常。';
-}
-
-function DashboardErrorComponent({ error, reset }: ErrorComponentProps) {
-  const expired = useStore(sessionExpiryStore, (state) => state.expired);
-  // 登录失效由路由树外的全局确认框接管，避免同时误报 500。
-  if (expired) return null;
-  if (isLoginForbiddenError(error)) {
-    return <LoginForbiddenPage message={error.message} logoutUrl={error.logoutUrl} />;
-  }
-
-  if (isRouteAccessForbiddenError(error)) {
-    return <RouteAccessForbiddenPage message={error.message} />;
-  }
-
-  return (
-    <DefaultErrorPage
-      code='500'
-      title='系统异常'
-      description='工作台加载时遇到异常，当前页面暂时不可用。'
-      alertTitle='运行异常'
-      alertDescription={getErrorMessage(error)}
-      action={{
-        label: '重试',
-        icon: Icons.rotateClockwise,
-        onClick: reset
-      }}
-    />
-  );
-}
 
 function DashboardLayout() {
   const router = useRouter();

@@ -97,7 +97,12 @@ export function DictionaryTypeSheet({
   }, [createForm, editForm]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!createForm.state.isSubmitting && !editForm.state.isSubmitting) onOpenChange(nextOpen);
+      }}
+    >
       <SheetContent
         autoFocusFirstField
         onAfterClose={resetForms}

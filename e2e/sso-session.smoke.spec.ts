@@ -66,3 +66,28 @@ test('@workspace-v2 业务接口 401 显示一个全局提示且不自动退出'
   await expect(page).toHaveURL(/\/dashboard\/system-management\/dictionaries$/);
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
 });
+
+for (const field of ['code', 'rspCode']) {
+  test(`@workspace-v2 HTTP 200 的 ${field}=401 统一显示失效确认`, async ({ page }) => {
+    await mockLoginInfo(page);
+    await page.route('**/api/getLoginInfo', (route) =>
+      route.fulfill({ json: { [field]: '401' }, headers: { Authorization: 'must-not-restore' } })
+    );
+    await page.goto('/dashboard/overview');
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '系统异常' })).toHaveCount(0);
+    await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
+    expect(await page.evaluate((key) => localStorage.getItem(key), ssoTokenStorageKey)).toBeNull();
+  });
+}
+
+test('@workspace-v2 首次登录缺少地址时显示重试而不是 500', async ({ page }) => {
+  await mockLoginInfo(page);
+  await page.addInitScript((key) => localStorage.removeItem(key), ssoTokenStorageKey);
+  await page.route('**/api/getLoginInfo', (route) => route.fulfill({ status: 401, json: {} }));
+  await page.goto('/dashboard/overview');
+  await expect(page.getByText('暂时无法登录', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '重试', exact: true })).toBeVisible();
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
+});

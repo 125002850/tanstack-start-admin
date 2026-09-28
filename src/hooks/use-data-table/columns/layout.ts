@@ -39,6 +39,66 @@ export function normalizeGeneratedColumnOrder(
   return [...leadingIds, ...columnOrder.filter((columnId) => !leadingIds.includes(columnId))];
 }
 
+/**
+ * 按声明顺序解析列 ID，规则与 dsl 层保持一致：优先 `id`，其次 `accessorKey`。
+ * 无法解析出稳定 ID 的列（未显式声明 id 的 accessorFn 列）不参与列顺序回填。
+ */
+export function getDeclaredColumnIds<TData>(columns: Array<ColumnDef<TData>>): Array<string> {
+  const declaredIds: Array<string> = [];
+
+  for (const column of columns) {
+    if (typeof column.id === 'string' && column.id.length > 0) {
+      declaredIds.push(column.id);
+      continue;
+    }
+
+    if (
+      'accessorKey' in column &&
+      typeof column.accessorKey === 'string' &&
+      column.accessorKey.length > 0
+    ) {
+      declaredIds.push(column.accessorKey);
+    }
+  }
+
+  return declaredIds;
+}
+
+/**
+ * 把缓存列顺序里缺失的声明列按声明位置回填。
+ *
+ * TanStack 在 `columnOrder` 非空时，会把缓存中找不到的列一律追加到最右侧，
+ * 于是缓存写入后才新增的列会跑到表格末尾，而不是声明的位置。
+ * 这里以声明顺序为锚点回填：缺失列插到「声明顺序中它前面第一个已存在的列」之后，
+ * 已存在列的相对顺序完全保持用户自定义的结果。
+ */
+export function mergeDataTableColumnOrder(
+  columnOrder: Array<string>,
+  declaredColumnIds: Array<string>
+): Array<string> {
+  if (declaredColumnIds.every((columnId) => columnOrder.includes(columnId))) {
+    return columnOrder;
+  }
+
+  const merged = [...columnOrder];
+  // 锚点是声明顺序里上一个已落位列在 merged 中的下标；-1 表示锚点缺失列之前还没有任何列。
+  let anchorIndex = -1;
+
+  for (const columnId of declaredColumnIds) {
+    const existingIndex = merged.indexOf(columnId);
+
+    if (existingIndex >= 0) {
+      anchorIndex = existingIndex;
+      continue;
+    }
+
+    merged.splice(anchorIndex + 1, 0, columnId);
+    anchorIndex += 1;
+  }
+
+  return merged;
+}
+
 /** 判断业务列里是否已经包含操作列。 */
 export function hasActionsColumn<TData>(columns: Array<ColumnDef<TData>>): boolean {
   return columns.some((column) => column.id === DATA_TABLE_ACTIONS_COLUMN_ID);
