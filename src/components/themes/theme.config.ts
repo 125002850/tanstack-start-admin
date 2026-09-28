@@ -30,7 +30,7 @@ export const THEMES = [
     value: 'notebook'
   },
   {
-    name: '浅春',
+    name: '新绿',
     value: 'light-green'
   },
   {
