@@ -30,6 +30,7 @@ import type {
 } from '@/types/data-table';
 
 import { omitFixedWidthColumnSizing } from './column-sizing';
+import { mergeDataTableColumnOrder } from './columns/layout';
 import type { UseDataTableProps } from './types';
 
 /** 管理表格内部状态，保持 useDataTable 入口只负责装配。 */
@@ -42,6 +43,7 @@ export function useTableState<TData>({
   resolvedStorageMode,
   resolvedColumnOrderStorageMode,
   resolvedSortingStorageMode,
+  declaredColumnIds,
   normalizeColumnOrder,
   externalOnColumnOrderChange,
   fixedWidthColumnSizing
@@ -54,6 +56,8 @@ export function useTableState<TData>({
   resolvedStorageMode: ColumnResizeStorageMode;
   resolvedColumnOrderStorageMode: ColumnOrderStorageMode;
   resolvedSortingStorageMode: SortingStorageMode;
+  /** 当前声明的列 ID（含工具列），用于把缓存顺序里缺失的新增列回填到声明位置。 */
+  declaredColumnIds: Array<string>;
   normalizeColumnOrder: (columnOrder: ColumnOrderState | undefined) => ColumnOrderState | undefined;
   externalOnColumnOrderChange: UseDataTableProps<TData>['onColumnOrderChange'];
   fixedWidthColumnSizing: ColumnSizingState;
@@ -76,7 +80,12 @@ export function useTableState<TData>({
     const cachedOrder = tableId
       ? loadDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode)
       : [];
-    const initialOrder = cachedOrder.length > 0 ? cachedOrder : initialColumnOrderRef.current;
+    const initialOrder =
+      cachedOrder.length > 0
+        ? // 缓存写入后新增的列不在缓存里，必须先按声明位置回填，
+          // 否则 TanStack 会把它们追加到表格最右侧。
+          mergeDataTableColumnOrder(cachedOrder, declaredColumnIds)
+        : initialColumnOrderRef.current;
 
     return normalizeColumnOrder(initialOrder) ?? [];
   });

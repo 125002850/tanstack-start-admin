@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import * as React from 'react';
 
 import { useConfirmAction } from '@/hooks/use-confirm-action';
@@ -64,4 +64,33 @@ describe('useConfirmAction', () => {
     });
     expect(onRun).not.toHaveBeenCalled();
   });
+});
+
+it('blocks repeated confirmation and closing, then retains failed actions for retry', async () => {
+  let reject!: (error: Error) => void;
+  const onRun = vi
+    .fn()
+    .mockImplementationOnce(
+      () =>
+        new Promise<void>((_, fail) => {
+          reject = fail;
+        })
+    )
+    .mockResolvedValue(undefined);
+  render(<ConfirmActionHarness onRun={onRun} />);
+  fireEvent.click(screen.getByRole('button', { name: '打开确认' }));
+  const confirm = screen.getByRole('button', { name: '删除' });
+  fireEvent.click(confirm);
+  expect(confirm).toHaveAttribute('aria-busy', 'true');
+  expect(confirm).toBeDisabled();
+  fireEvent.click(confirm);
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  expect(onRun).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  await act(async () => reject(new Error('delete failed')));
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  fireEvent.click(confirm);
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(onRun).toHaveBeenCalledTimes(2);
 });

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -299,6 +299,72 @@ describe('DictionaryManagementPage', () => {
   afterEach(() => {
     cleanup();
     globalThis.ResizeObserver = originalResizeObserver;
+  });
+
+  it('keeps the item editor and entered values after a failed save', async () => {
+    serviceMocks.systemDictGlobalTypesListAll.mockResolvedValue(PAGE_ONE_TYPES.slice(0, 1));
+    serviceMocks.systemDictGlobalItemsByType.mockResolvedValue({
+      total: 1,
+      list: ITEMS_BY_TYPE.payment
+    });
+    const save = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('save failed'))
+      .mockResolvedValue(undefined);
+    serviceMocks.systemDictGlobalItemCreateMutationOptions.mockReturnValue({ mutationFn: save });
+    const user = userEvent.setup();
+    render(<DictionaryManagementPage />, { wrapper: createWrapper() });
+    await screen.findByText('已支付');
+    await user.click(screen.getByRole('button', { name: '新增字典项' }));
+    await user.type(screen.getByRole('textbox', { name: /字典项编码/ }), 'pending');
+    await user.type(screen.getByRole('textbox', { name: /字典项名称/ }), '待支付');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole('button', { name: '创建' })).toBeEnabled());
+    expect(screen.getByRole('dialog', { name: '新增字典项' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /字典项名称/ })).toHaveValue('待支付');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '新增字典项' })).not.toBeInTheDocument()
+    );
+  });
+
+  it('keeps the type editor and entered values after a failed save', async () => {
+    serviceMocks.systemDictGlobalTypesListAll.mockResolvedValue(PAGE_ONE_TYPES.slice(0, 1));
+    serviceMocks.systemDictGlobalItemsByType.mockResolvedValue({
+      total: 1,
+      list: ITEMS_BY_TYPE.payment
+    });
+    let reject!: (error: Error) => void;
+    const save = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((_, fail) => {
+            reject = fail;
+          })
+      )
+      .mockResolvedValue(undefined);
+    serviceMocks.systemDictGlobalTypeCreateMutationOptions.mockReturnValue({ mutationFn: save });
+    const user = userEvent.setup();
+    render(<DictionaryManagementPage />, { wrapper: createWrapper() });
+    await screen.findByText('已支付');
+    await user.click(screen.getByRole('button', { name: '新增字典类型' }));
+    await user.type(screen.getByRole('textbox', { name: /字典类型编码/ }), 'pending');
+    await user.type(screen.getByRole('textbox', { name: /字典类型名称/ }), '待支付');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: '创建' })).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: '新增字典类型' })).toBeInTheDocument();
+    await act(async () => reject(new Error('save failed')));
+    await waitFor(() => expect(screen.getByRole('button', { name: '创建' })).toBeEnabled());
+    expect(screen.getByRole('dialog', { name: '新增字典类型' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /字典类型名称/ })).toHaveValue('待支付');
+    await user.click(screen.getByRole('button', { name: '创建' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '新增字典类型' })).not.toBeInTheDocument()
+    );
   });
 
   it('stretches both desktop columns to the remaining page height', async () => {

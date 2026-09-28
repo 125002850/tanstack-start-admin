@@ -1,3 +1,4 @@
+import { normalizeApiError } from '@/lib/api/error-normalizer';
 import {
   createRouter as createTanStackRouter,
   type ErrorComponentProps
@@ -25,8 +26,7 @@ function getRouterBasepath(): string | undefined {
 }
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
-  return '页面加载时遇到未知异常。';
+  return normalizeApiError(error).message;
 }
 
 function DefaultRouterErrorComponent({ error, reset }: ErrorComponentProps) {

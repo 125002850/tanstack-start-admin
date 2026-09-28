@@ -34,6 +34,7 @@ import {
 import { findExpandedRow, getStableExpandPanelId } from './expand';
 import type { DataTableRuntimeConfiguredTableOption, UseDataTableProps } from './types';
 import {
+  getDeclaredColumnIds,
   hasActionsColumn,
   normalizeActionColumn,
   normalizeGeneratedColumnOrder,
@@ -293,6 +294,10 @@ export function useDataTableRuntime<TData>(
     () => (props.sortingStorage ?? dataTableConfig.sortingStorage) as SortingStorageMode,
     [props.sortingStorage]
   );
+  const declaredColumnIds = React.useMemo(
+    () => getDeclaredColumnIds(resolvedColumns),
+    [resolvedColumns]
+  );
   const normalizeColumnOrder = React.useCallback(
     (columnOrder: Array<string> | undefined) =>
       normalizeGeneratedColumnOrder(columnOrder, {
@@ -331,6 +336,7 @@ export function useDataTableRuntime<TData>(
     resolvedStorageMode,
     resolvedColumnOrderStorageMode,
     resolvedSortingStorageMode,
+    declaredColumnIds,
     normalizeColumnOrder,
     externalOnColumnOrderChange,
     fixedWidthColumnSizing

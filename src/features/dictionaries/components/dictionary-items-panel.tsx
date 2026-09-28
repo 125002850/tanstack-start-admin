@@ -32,7 +32,7 @@ interface DictionaryItemsPanelProps {
   record: DictionaryTypeRecord | null;
   onTotalChange: (total: number) => void;
   onItemSubmit: (payload: DictionaryItemMutationPayload) => Promise<void>;
-  onDelete: (item: DictionaryItemRecord) => void;
+  onDelete: (item: DictionaryItemRecord) => Promise<void>;
   onBulkDelete: (payload: { ids: number[] }) => Promise<void>;
   onToggleItemStatus: (record: DictionaryItemRecord) => void;
 }

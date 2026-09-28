@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/sheet';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -21,6 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+
+import { handleFormSubmitError } from '@/lib/query-client';
 
 import { DictStatus, STATUS_OPTIONS } from '@/constants/enums';
 import { emptyStringToUndefined } from '@/lib/api/request-values';
@@ -42,7 +43,7 @@ type DictionaryItemSheetProps = {
   dictTypeCode: string;
   item?: DictionaryItemRecord | null;
   onSubmit: (payload: DictionaryItemMutationPayload) => Promise<void>;
-  onDelete?: (item: DictionaryItemRecord) => void;
+  onDelete?: (item: DictionaryItemRecord) => Promise<void>;
 };
 
 export function DictionaryItemSheet({
@@ -54,6 +55,7 @@ export function DictionaryItemSheet({
   onDelete
 }: DictionaryItemSheetProps) {
   const isEdit = !!item;
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const form = useAppForm({
@@ -90,7 +92,12 @@ export function DictionaryItemSheet({
   }, [form]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!form.state.isSubmitting && !isDeleting) onOpenChange(nextOpen);
+      }}
+    >
       <SheetContent
         autoFocusFirstField
         onAfterClose={resetState}
@@ -151,13 +158,27 @@ export function DictionaryItemSheet({
 
         <SheetFooter className='flex-row justify-end gap-2'>
           {isEdit && onDelete && (
-            <Button type='button' variant='destructive' onClick={() => setDeleteDialogOpen(true)}>
-              删除
-            </Button>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+              {(submitting) => (
+                <Button
+                  type='button'
+                  variant='destructive'
+                  disabled={submitting || isDeleting}
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  删除
+                </Button>
+              )}
+            </form.Subscribe>
           )}
           <form.Subscribe selector={(state) => state.isSubmitting}>
             {(submitting) => (
-              <Button type='submit' form='dictionary-item-sheet-form' isLoading={submitting}>
+              <Button
+                type='submit'
+                form='dictionary-item-sheet-form'
+                disabled={isDeleting}
+                isLoading={submitting}
+              >
                 {isEdit ? '保存修改' : '创建'}
               </Button>
             )}
@@ -166,7 +187,12 @@ export function DictionaryItemSheet({
       </SheetContent>
 
       {isEdit && item && onDelete && (
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialog
+          open={deleteDialogOpen}
+          onOpenChange={(nextOpen) => {
+            if (!isDeleting) setDeleteDialogOpen(nextOpen);
+          }}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>确认删除</AlertDialogTitle>
@@ -175,15 +201,26 @@ export function DictionaryItemSheet({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  onDelete(item);
-                  onOpenChange(false);
+              <AlertDialogCancel disabled={isDeleting}>取消</AlertDialogCancel>
+              <Button
+                variant='destructive'
+                isLoading={isDeleting}
+                onClick={async () => {
+                  if (isDeleting) return;
+                  setIsDeleting(true);
+                  try {
+                    await onDelete(item);
+                    setDeleteDialogOpen(false);
+                    onOpenChange(false);
+                  } catch (error) {
+                    handleFormSubmitError(error);
+                  } finally {
+                    setIsDeleting(false);
+                  }
                 }}
               >
                 删除
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

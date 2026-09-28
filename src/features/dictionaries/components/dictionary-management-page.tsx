@@ -93,66 +93,49 @@ function DictionaryManagementContent() {
 
   const handleTypeSubmit = React.useCallback(
     async (payload: DictionaryTypeMutationPayload) => {
-      try {
-        if (!('id' in payload)) {
-          await createTypeMutation.mutateAsync(payload);
-          toast.success('字典类型已创建');
-        } else {
-          await updateTypeMutation.mutateAsync(payload);
-          toast.success('字典类型已更新');
-        }
-        setSheetState(null);
-      } catch {
-        toast.error('id' in payload ? '字典类型更新失败' : '字典类型创建失败');
+      if (!('id' in payload)) {
+        await createTypeMutation.mutateAsync(payload);
+        toast.success('字典类型已创建');
+      } else {
+        await updateTypeMutation.mutateAsync(payload);
+        toast.success('字典类型已更新');
       }
+      setSheetState(null);
     },
     [createTypeMutation, updateTypeMutation]
   );
 
   const handleItemSubmit = React.useCallback(
     async (payload: DictionaryItemMutationPayload) => {
-      try {
-        if ('id' in payload) {
-          await updateItemMutation.mutateAsync(payload);
-          await invalidateDictionaryItems();
-          toast.success('字典项已更新');
-          return;
-        }
-
-        await createItemMutation.mutateAsync(payload);
+      if ('id' in payload) {
+        await updateItemMutation.mutateAsync(payload);
         await invalidateDictionaryItems();
-        toast.success('字典项已新增');
-      } catch {
-        toast.error('id' in payload ? '字典项更新失败' : '字典项新增失败');
+        toast.success('字典项已更新');
+        return;
       }
+
+      await createItemMutation.mutateAsync(payload);
+      await invalidateDictionaryItems();
+      toast.success('字典项已新增');
     },
     [createItemMutation, invalidateDictionaryItems, updateItemMutation]
   );
 
   const handleDelete = React.useCallback(
     async (item: DictionaryItemRecord) => {
-      try {
-        if (item.id === undefined) throw new Error('Missing dictionary item id');
-        await deleteItemMutation.mutateAsync({ ids: [item.id] });
-        await invalidateDictionaryItems();
-        toast.success('字典项已删除');
-      } catch {
-        toast.error('字典项删除失败');
-      }
+      if (item.id === undefined) throw new Error('Missing dictionary item id');
+      await deleteItemMutation.mutateAsync({ ids: [item.id] });
+      await invalidateDictionaryItems();
+      toast.success('字典项已删除');
     },
     [deleteItemMutation, invalidateDictionaryItems]
   );
 
   const handleBulkDelete = React.useCallback(
     async (payload: { ids: number[] }) => {
-      try {
-        await deleteItemMutation.mutateAsync(payload);
-        await invalidateDictionaryItems();
-        toast.success('已批量删除字典项');
-      } catch (error) {
-        toast.error('批量删除字典项失败');
-        throw error;
-      }
+      await deleteItemMutation.mutateAsync(payload);
+      await invalidateDictionaryItems();
+      toast.success('已批量删除字典项');
     },
     [deleteItemMutation, invalidateDictionaryItems]
   );
@@ -203,14 +186,9 @@ function DictionaryManagementContent() {
       confirmText: '删除',
       cancelText: '取消',
       run: async () => {
-        try {
-          if (selectedType.id === undefined) throw new Error('Missing dictionary type id');
-          await deleteTypeMutation.mutateAsync({ id: selectedType.id });
-          toast.success('字典类型已删除');
-        } catch (error) {
-          toast.error('字典类型删除失败');
-          throw error;
-        }
+        if (selectedType.id === undefined) throw new Error('Missing dictionary type id');
+        await deleteTypeMutation.mutateAsync({ id: selectedType.id });
+        toast.success('字典类型已删除');
       }
     })();
   }, [selectedType, selectedTypeItemTotal, deleteTypeMutation, withTypeDeleteConfirm]);

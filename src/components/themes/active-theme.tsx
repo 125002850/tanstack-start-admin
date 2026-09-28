@@ -1,14 +1,25 @@
-import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState
+} from 'react';
 
-import { DEFAULT_THEME } from './theme.config';
+import { DEFAULT_THEME, THEMES } from './theme.config';
 
-const COOKIE_NAME = 'active_theme';
+const STORAGE_KEY = 'active_theme';
 
-function setThemeCookie(theme: string) {
+function persistTheme(theme: string) {
   if (typeof window === 'undefined') return;
 
-  document.cookie = `${COOKIE_NAME}=${theme}; path=/; max-age=31536000; SameSite=Lax; ${window.location.protocol === 'https:' ? 'Secure;' : ''}`;
-  localStorage.setItem(COOKIE_NAME, theme);
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // 存储不可用时，仍允许当前页面切换主题。
+  }
 }
 
 type ThemeContextType = {
@@ -26,14 +37,39 @@ export function ActiveThemeProvider({
   initialTheme?: string;
 }) {
   const themeToUse = initialTheme || DEFAULT_THEME;
-  const [activeTheme, setActiveTheme] = useState<string>(themeToUse);
+  const [activeTheme, setActiveThemeState] = useState<string>(themeToUse);
+  const setActiveTheme = useCallback((theme: string) => {
+    setActiveThemeState(theme);
+    persistTheme(theme);
+  }, []);
+  const themeContextValue = useMemo(
+    () => ({ activeTheme, setActiveTheme }),
+    [activeTheme, setActiveTheme]
+  );
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY && event.key !== null) return;
+      try {
+        if (event.storageArea !== localStorage) return;
+        // 读取最新值，避免排队中的旧事件覆盖较新的主题；同步时不写回存储。
+        const theme = localStorage.getItem(STORAGE_KEY);
+        setActiveThemeState(
+          theme && THEMES.some((item) => item.value === theme) ? theme : DEFAULT_THEME
+        );
+      } catch {
+        // 无法读取时保留当前主题。
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   useEffect(() => {
     // Only update if theme has changed
     const currentTheme = document.documentElement.getAttribute('data-theme');
     if (currentTheme !== activeTheme) {
-      setThemeCookie(activeTheme);
-
       // Remove existing data-theme attribute
       document.documentElement.removeAttribute('data-theme');
 
@@ -48,17 +84,10 @@ export function ActiveThemeProvider({
       if (activeTheme) {
         document.documentElement.setAttribute('data-theme', activeTheme);
       }
-    } else {
-      // Still update cookie in case it's missing
-      setThemeCookie(activeTheme);
     }
   }, [activeTheme]);
 
-  return (
-    <ThemeContext.Provider value={{ activeTheme, setActiveTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={themeContextValue}>{children}</ThemeContext.Provider>;
 }
 
 export function useThemeConfig() {

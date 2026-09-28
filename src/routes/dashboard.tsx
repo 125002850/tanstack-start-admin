@@ -1,3 +1,4 @@
+import { normalizeApiError } from '@/lib/api/error-normalizer';
 import * as React from 'react';
 import {
   createFileRoute,
@@ -83,8 +84,7 @@ export const Route = createFileRoute('/dashboard')({
 });
 
 function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
-  return '页面加载时遇到未知异常。';
+  return normalizeApiError(error).message;
 }
 
 function DashboardErrorComponent({ error, reset }: ErrorComponentProps) {
