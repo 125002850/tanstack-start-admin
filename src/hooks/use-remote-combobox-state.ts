@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery, type UseQueryResult } from '@tanstack/react
 type UseRemoteComboboxStateOptions<TItem, TRequest, TData> = {
   open: boolean;
   disabled?: boolean;
+  preload?: boolean;
   debounceMs: number;
   pageSize: number;
   buildRequest: (params: { keyword: string; pageNo: number; pageSize: number }) => TRequest;
@@ -48,6 +49,7 @@ function mergeByKey<TItem>(
 export function useRemoteComboboxState<TItem, TRequest, TData>({
   open,
   disabled = false,
+  preload = false,
   debounceMs,
   pageSize,
   buildRequest,
@@ -99,9 +101,11 @@ export function useRemoteComboboxState<TItem, TRequest, TData>({
     appliedPageRef.current = 0;
     requestedPageRef.current = 1;
     setPageNo(1);
-    setItems([]);
-    setTotal(0);
-  }, [open]);
+    if (!preload) {
+      setItems([]);
+      setTotal(0);
+    }
+  }, [open, preload]);
 
   const request = React.useMemo(
     () =>
@@ -119,12 +123,12 @@ export function useRemoteComboboxState<TItem, TRequest, TData>({
 
   const query = useQuery({
     ...baseQueryOptions,
-    enabled: open && !disabled,
+    enabled: !disabled && (preload || open),
     placeholderData: keepPreviousData
   } as never) as UseQueryResult<TData, unknown>;
 
   React.useEffect(() => {
-    if (!query.data || query.isPlaceholderData) return;
+    if ((!open && !preload) || !query.data || query.isPlaceholderData) return;
 
     const nextItems = getItemsRef.current(query.data);
     appliedPageRef.current = pageNo;
@@ -132,7 +136,7 @@ export function useRemoteComboboxState<TItem, TRequest, TData>({
     setItems((current) =>
       pageNo === 1 ? nextItems : mergeByKey(current, nextItems, getItemKeyRef.current)
     );
-  }, [pageNo, query.data, query.isPlaceholderData]);
+  }, [open, pageNo, preload, query.data, query.isPlaceholderData]);
 
   const isError = query.isError;
   const isFetching = query.isFetching;
