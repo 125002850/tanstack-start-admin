@@ -11,11 +11,11 @@ import { useRouter } from '@tanstack/react-router';
 const MAX_VISIBLE = 5;
 
 const actionRoutes: Record<string, string> = {
-  view: '/dashboard/overview',
-  'view-dictionaries': '/dashboard/system-management/dictionaries',
-  billing: '/dashboard/overview',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
+  view: '/overview',
+  'view-dictionaries': '/system-management/dictionaries',
+  billing: '/overview',
+  open: '/kanban',
+  'open-chat': '/chat'
 };
 
 export function NotificationCenter() {
@@ -39,7 +39,7 @@ export function NotificationCenter() {
       </PopoverTrigger>
       <PopoverContent align='end' className='w-[calc(100vw-2rem)] p-0 sm:w-[380px]' sideOffset={8}>
         <div className='flex items-center justify-between px-4 py-3'>
-          <Link to='/dashboard/notifications' className='group flex items-center gap-1'>
+          <Link to='/notifications' className='group flex items-center gap-1'>
             <h4 className='text-sm font-semibold group-hover:underline'>通知</h4>
             <Icons.chevronRight className='text-muted-foreground h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5' />
           </Link>

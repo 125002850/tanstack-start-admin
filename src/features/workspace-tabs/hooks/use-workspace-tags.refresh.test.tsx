@@ -15,7 +15,7 @@ let client: QueryClient;
 vi.mock('@tanstack/react-router', () => ({
   useRouter: () => ({
     state: mocks.state,
-    latestLocation: { href: '/dashboard/target' },
+    latestLocation: { href: '/target' },
     buildLocation: ({ to }: { to: string }) => ({ href: to }),
     subscribe: mocks.subscribe,
     navigate: mocks.navigate,
@@ -24,8 +24,8 @@ vi.mock('@tanstack/react-router', () => ({
   })
 }));
 vi.mock('sonner', () => ({ toast: { error: mocks.error } }));
-const target = { id: '/dashboard/target', href: '/dashboard/target', title: 'Target' };
-const other = { id: '/dashboard/other', href: '/dashboard/other', title: 'Other' };
+const target = { id: '/target', href: '/target', title: 'Target' };
+const other = { id: '/other', href: '/other', title: 'Other' };
 const subscriptions: Array<() => void> = [];
 
 beforeEach(() => {

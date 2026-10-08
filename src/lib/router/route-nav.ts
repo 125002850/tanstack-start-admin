@@ -30,7 +30,7 @@ export function buildNavGroupsFromRoutes<TRoutes extends object>(routesById: TRo
 
   for (const route of Object.values(routesById) as RouteNavSource[]) {
     const { fullPath, id } = route;
-    if (!fullPath || !fullPath.startsWith('/dashboard')) continue;
+    if (!fullPath || !id.startsWith('/_app/')) continue;
 
     const meta = getAppRouteStaticData(route);
     if (!meta?.nav?.visible) continue;

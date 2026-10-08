@@ -16,9 +16,9 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/system-management/')({
+export const Route = createFileRoute('/_app/system-management/')({
   ...meta,
   beforeLoad: ({ location }) => {
-    throw redirect(createRedirectWithSearch('/dashboard/system-management/dictionaries', location));
+    throw redirect(createRedirectWithSearch('/system-management/dictionaries', location));
   }
 });

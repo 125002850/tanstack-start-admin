@@ -5,7 +5,7 @@ import { HTTP_STATUS_FORBIDDEN } from '@/lib/http-status';
 
 import { collectVisibleMenuKeys, normalizeMenuKey } from './nav-permissions';
 
-interface MenuPermissionBeforeLoadContext {
+export interface RouteBeforeLoadContext {
   context: {
     queryClient: QueryClient;
   };
@@ -15,8 +15,8 @@ export class RouteAccessForbiddenError extends Error {
   readonly status = HTTP_STATUS_FORBIDDEN;
   readonly menuKey: string;
 
-  constructor(menuKey: string) {
-    super('当前账号没有访问该页面的权限');
+  constructor(menuKey: string, message = '当前账号没有访问该页面的权限') {
+    super(message);
     this.name = 'RouteAccessForbiddenError';
     this.menuKey = menuKey;
   }
@@ -43,6 +43,16 @@ export async function ensureMenuPermission(queryClient: QueryClient, menuKey: st
 }
 
 export function createMenuPermissionBeforeLoad(menuKey: string) {
-  return ({ context }: MenuPermissionBeforeLoadContext) =>
+  return ({ context }: RouteBeforeLoadContext) =>
     ensureMenuPermission(context.queryClient, menuKey);
+}
+
+export function ensureFeatureAvailable(enabled: boolean, featureKey: string) {
+  if (!enabled) {
+    throw new RouteAccessForbiddenError(`feature:${featureKey}`, '当前功能暂未开放');
+  }
+}
+
+export function createFeatureAvailabilityBeforeLoad(enabled: boolean, featureKey: string) {
+  return (_context: RouteBeforeLoadContext) => ensureFeatureAvailable(enabled, featureKey);
 }

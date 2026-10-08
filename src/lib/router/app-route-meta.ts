@@ -1,7 +1,10 @@
 import type { Icons } from '@/components/icons';
 import type { InfobarContent } from '@/components/ui/infobar';
 
-import { createMenuPermissionBeforeLoad } from './route-access';
+import {
+  createFeatureAvailabilityBeforeLoad,
+  createMenuPermissionBeforeLoad
+} from './route-access';
 
 export const NAV_GROUP_META = {
   overview: { label: '概览', order: 10 },
@@ -55,18 +58,25 @@ export interface AppRouteStaticData {
   nav?: AppNavStaticData;
   page?: AppPageData;
   workspace?: AppRouteWorkspaceData;
+  feature?: { key: string; enabled: boolean };
 }
 
 export function defineRouteMeta<T extends AppRouteStaticData>(data: T) {
   const menuKey = data.nav?.menuKey;
+  const disabledFeature = data.feature?.enabled === false ? data.feature : undefined;
 
   return {
-    staticData: data,
+    staticData:
+      disabledFeature && data.nav ? { ...data, nav: { ...data.nav, visible: false } } : data,
     // Keep the common case declarative: route-local metadata plus a default document title.
     head: (): { meta: [{ title: string }] } => ({
       meta: [{ title: data.title ?? data.label }]
     }),
-    ...(menuKey ? { beforeLoad: createMenuPermissionBeforeLoad(menuKey) } : {})
+    ...(disabledFeature
+      ? { beforeLoad: createFeatureAvailabilityBeforeLoad(false, disabledFeature.key) }
+      : menuKey
+        ? { beforeLoad: createMenuPermissionBeforeLoad(menuKey) }
+        : {})
   };
 }
 

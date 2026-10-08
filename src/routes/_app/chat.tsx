@@ -17,7 +17,7 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/chat')({
+export const Route = createFileRoute('/_app/chat')({
   ...meta,
   component: ChatPage
 });

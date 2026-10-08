@@ -1,4 +1,4 @@
-const DASHBOARD_HOME_HREF = '/dashboard/overview';
+const DASHBOARD_HOME_HREF = '/overview';
 
 export function resolveDashboardHomeHref(): string {
   return DASHBOARD_HOME_HREF;

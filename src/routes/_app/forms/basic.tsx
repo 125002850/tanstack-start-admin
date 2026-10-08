@@ -12,13 +12,13 @@ const meta = defineRouteMeta({
     visible: false,
     group: 'components',
     order: 11,
-    parentId: '/dashboard/forms',
+    parentId: '/forms',
     icon: 'forms',
     shortcut: ['f', 'f']
   }
 });
 
-export const Route = createFileRoute('/dashboard/forms/basic')({
+export const Route = createFileRoute('/_app/forms/basic')({
   ...meta,
   component: BasicFormPage
 });

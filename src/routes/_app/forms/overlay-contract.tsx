@@ -12,12 +12,12 @@ const meta = defineRouteMeta({
     visible: false,
     group: 'components',
     order: 14,
-    parentId: '/dashboard/forms',
+    parentId: '/forms',
     icon: 'forms'
   }
 });
 
-export const Route = createFileRoute('/dashboard/forms/overlay-contract')({
+export const Route = createFileRoute('/_app/forms/overlay-contract')({
   ...meta,
   component: OverlayContractPage
 });

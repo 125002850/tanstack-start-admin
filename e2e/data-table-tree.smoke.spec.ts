@@ -4,7 +4,7 @@ import { mockLoginInfo } from './support/mock-login-info';
 test.beforeEach(async ({ context, page }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await mockLoginInfo(page);
-  await page.goto('/dashboard/examples/data-table-tree');
+  await page.goto('/examples/data-table-tree');
   await expect(page.getByTestId('data-table-tree-example')).toBeVisible();
 });
 

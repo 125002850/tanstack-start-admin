@@ -13,7 +13,7 @@ const meta = defineRouteMeta({
   nav: { visible: false, group: 'examples', order: 11, icon: 'code' }
 });
 
-export const Route = createFileRoute('/dashboard/examples/data-table-tree')({
+export const Route = createFileRoute('/_app/examples/data-table-tree')({
   ...meta,
   component: DataTableTreeRoutePage
 });

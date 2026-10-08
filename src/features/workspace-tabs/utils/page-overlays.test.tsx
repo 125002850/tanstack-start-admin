@@ -26,7 +26,7 @@ describe('workspace page overlays', () => {
 
   it('closes an open tooltip before switching workspace pages', async () => {
     const user = userEvent.setup();
-    const tabId = '/dashboard/tooltip';
+    const tabId = '/tooltip';
 
     render(
       <div
@@ -60,7 +60,7 @@ describe('workspace page overlays', () => {
   });
 
   it('waits for a closed popover portal to finish its exit before settling', async () => {
-    const tabId = '/dashboard/animated-popover';
+    const tabId = '/animated-popover';
     let finishExitAnimation: (() => void) | undefined;
 
     function AnimatedPopover() {
@@ -131,7 +131,7 @@ describe('workspace page overlays', () => {
   });
 
   it('detects a popover already closed by pointerdown before the workspace click handler runs', async () => {
-    const tabId = '/dashboard/pointerdown-closed-popover';
+    const tabId = '/pointerdown-closed-popover';
     let beginExitAnimation: (() => void) | undefined;
     let finishExitAnimation: (() => void) | undefined;
 
@@ -192,7 +192,7 @@ describe('workspace page overlays', () => {
   });
 
   it('does not claim an unrelated closed portal after a captured overlay has settled', () => {
-    const tabId = '/dashboard/captured-overlay';
+    const tabId = '/captured-overlay';
     let finishExitAnimation: (() => void) | undefined;
 
     function CapturedOverlay() {
@@ -244,7 +244,7 @@ describe('workspace page overlays', () => {
   });
 
   it('skips the compatibility scan when pointerdown captured no open overlay', () => {
-    const tabId = '/dashboard/empty-overlay-capture';
+    const tabId = '/empty-overlay-capture';
 
     render(
       <div
@@ -271,7 +271,7 @@ describe('workspace page overlays', () => {
   });
 
   it('does not wait for persistent content controlled by a regular tab', () => {
-    const tabId = '/dashboard/calendar';
+    const tabId = '/calendar';
 
     render(
       <div
@@ -294,7 +294,7 @@ describe('workspace page overlays', () => {
   });
 
   it('does not treat an expanded accordion as a portal overlay', () => {
-    const tabId = '/dashboard/accordion';
+    const tabId = '/accordion';
 
     render(
       <div
@@ -324,7 +324,7 @@ describe('workspace page overlays', () => {
   });
 
   it('closes nested portal layers from top to bottom before settling', async () => {
-    const tabId = '/dashboard/nested-overlays';
+    const tabId = '/nested-overlays';
     const escapeOrder: string[] = [];
 
     function NestedOverlays() {
@@ -377,7 +377,7 @@ describe('workspace page overlays', () => {
   });
 
   it('falls back to an explicit DOM close control when Escape does not close the layer', async () => {
-    const tabId = '/dashboard/blocking-dialog';
+    const tabId = '/blocking-dialog';
 
     function BlockingDialog() {
       const [open, setOpen] = React.useState(true);
@@ -412,7 +412,7 @@ describe('workspace page overlays', () => {
 
   it('warns once in dev when the DOM fallback closes an unregistered overlay', async () => {
     const warnMock = vi.mocked(console.warn);
-    const tabId = '/dashboard/unregistered-popover';
+    const tabId = '/unregistered-popover';
     let reopenPopover: (() => void) | undefined;
 
     function UnregisteredPopover() {

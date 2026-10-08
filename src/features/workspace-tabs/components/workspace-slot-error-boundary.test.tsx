@@ -26,7 +26,7 @@ describe('WorkspaceSlotErrorBoundary', () => {
 
     render(
       <WorkspaceSlotErrorBoundary
-        tagId='/dashboard/system-management/dictionaries'
+        tagId='/system-management/dictionaries'
         fallback={(caughtError) => <div>页面模块加载失败：{caughtError.message}</div>}
       >
         <BrokenChild error={error} />
@@ -38,7 +38,7 @@ describe('WorkspaceSlotErrorBoundary', () => {
 
   it('preserves the configured fallback for unrelated errors', () => {
     render(
-      <WorkspaceSlotErrorBoundary tagId='/dashboard/overview' fallback={<div>通用页面错误</div>}>
+      <WorkspaceSlotErrorBoundary tagId='/overview' fallback={<div>通用页面错误</div>}>
         <BrokenChild error={new Error('chart rendering failed')} />
       </WorkspaceSlotErrorBoundary>
     );

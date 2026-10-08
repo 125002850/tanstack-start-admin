@@ -21,7 +21,7 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/overview')({
+export const Route = createFileRoute('/_app/overview')({
   ...meta,
   component: OverviewPage
 });

@@ -14,12 +14,12 @@ const meta = defineRouteMeta({
     visible: false,
     group: 'components',
     order: 13,
-    parentId: '/dashboard/forms',
+    parentId: '/forms',
     icon: 'forms'
   }
 });
 
-export const Route = createFileRoute('/dashboard/forms/sheet-form')({
+export const Route = createFileRoute('/_app/forms/sheet-form')({
   ...meta,
   component: SheetFormPage
 });

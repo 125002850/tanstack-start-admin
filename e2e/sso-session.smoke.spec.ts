@@ -18,11 +18,11 @@ test('@workspace-v2 SSO 初始化 401 必须确认后退出，Esc 和遮罩不�
   await page.route(`**${logoutPath}`, (route) =>
     route.fulfill({ contentType: 'text/html', body: '<h1>已退出</h1>' })
   );
-  await page.goto('/dashboard/overview');
+  await page.goto('/overview');
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible();
   await expect(page.getByRole('heading', { name: '系统异常' })).toHaveCount(0);
-  await expect(page).toHaveURL(/\/dashboard\/overview$/);
+  await expect(page).toHaveURL(/\/overview$/);
   await page.keyboard.press('Escape');
   await page.locator('[data-slot="alert-dialog-overlay"]').click({ position: { x: 5, y: 5 } });
   await expect(dialog).toBeVisible();
@@ -49,7 +49,7 @@ test('@workspace-v2 旧公共 token 不影响本项目无 token 时自动换票'
   await page.route('**/sso-test-login', (route) =>
     route.fulfill({ contentType: 'text/html', body: '<h1>SSO 换票</h1>' })
   );
-  await page.goto('/dashboard/overview?tab=orders');
+  await page.goto('/overview?tab=orders');
   await expect(page).toHaveURL(`${baseURL}/sso-test-login`);
   expect(authHeader).toBeUndefined();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
@@ -60,10 +60,10 @@ test('@workspace-v2 业务接口 401 显示一个全局提示且不自动退出'
   await page.route('**/api/system/dict/global/types/list-all', (route) =>
     route.fulfill({ status: 401, json: { message: 'Unauthorized' } })
   );
-  await page.goto('/dashboard/system-management/dictionaries');
+  await page.goto('/system-management/dictionaries');
   await expect(page.getByRole('alertdialog')).toHaveCount(1);
   await expect(page.getByRole('alertdialog')).toBeVisible();
-  await expect(page).toHaveURL(/\/dashboard\/system-management\/dictionaries$/);
+  await expect(page).toHaveURL(/\/system-management\/dictionaries$/);
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
 });
 
@@ -73,7 +73,7 @@ for (const field of ['code', 'rspCode']) {
     await page.route('**/api/getLoginInfo', (route) =>
       route.fulfill({ json: { [field]: '401' }, headers: { Authorization: 'must-not-restore' } })
     );
-    await page.goto('/dashboard/overview');
+    await page.goto('/overview');
     await expect(page.getByRole('alertdialog')).toBeVisible();
     await expect(page.getByRole('heading', { name: '系统异常' })).toHaveCount(0);
     await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
@@ -85,7 +85,7 @@ test('@workspace-v2 首次登录缺少地址时显示重试而不是 500', async
   await mockLoginInfo(page);
   await page.addInitScript((key) => localStorage.removeItem(key), ssoTokenStorageKey);
   await page.route('**/api/getLoginInfo', (route) => route.fulfill({ status: 401, json: {} }));
-  await page.goto('/dashboard/overview');
+  await page.goto('/overview');
   await expect(page.getByText('暂时无法登录', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '重试', exact: true })).toBeVisible();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);

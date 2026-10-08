@@ -14,7 +14,7 @@ function Probe({ open, close }: { open: boolean; close: () => void }) {
   return null;
 }
 
-const registerOverlay = (close: () => void) => registerWorkspaceOverlay('/dashboard/a', close);
+const registerOverlay = (close: () => void) => registerWorkspaceOverlay('/a', close);
 
 function renderInWorkspace(ui: React.ReactNode) {
   return render(
@@ -33,7 +33,7 @@ describe('useWorkspaceOverlay', () => {
 
     renderInWorkspace(<Probe open close={close} />);
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(1);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(1);
     expect(close).toHaveBeenCalledTimes(1);
   });
 
@@ -47,7 +47,7 @@ describe('useWorkspaceOverlay', () => {
       </OverlayLifecycleProvider>
     );
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(0);
     expect(close).not.toHaveBeenCalled();
   });
 
@@ -57,7 +57,7 @@ describe('useWorkspaceOverlay', () => {
 
     unmount();
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(0);
   });
 
   it('no-ops without an overlay lifecycle provider', () => {
@@ -65,7 +65,7 @@ describe('useWorkspaceOverlay', () => {
 
     render(<Probe open close={close} />);
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(0);
     expect(close).not.toHaveBeenCalled();
   });
 });

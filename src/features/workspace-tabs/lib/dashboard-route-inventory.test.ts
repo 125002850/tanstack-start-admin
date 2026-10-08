@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
 
-const routeModules = import.meta.glob('/src/routes/dashboard/**/*.tsx', {
+const routeModules = import.meta.glob('/src/routes/_app/**/*.tsx', {
   eager: true
 });
-const routeSources = import.meta.glob<string>('/src/routes/dashboard/**/*.tsx', {
+const routeSources = import.meta.glob<string>('/src/routes/_app/**/*.tsx', {
   eager: true,
   query: '?raw',
   import: 'default'
 });
 
 function extractRoutePath(filePath: string): string {
-  let path = filePath.replace('/src/routes/dashboard/', '/dashboard/').replace('.tsx', '');
+  let path = filePath.replace('/src/routes/_app/', '/').replace('.tsx', '');
 
   if (path.endsWith('/index')) {
     path = path.replace(/\/index$/, '/');
@@ -82,41 +82,40 @@ const allPaths = Object.keys(routeModules);
 // - dashboard/index: 重定向路由，无实际页面内容
 // - examples/data-table-editing: 大数据虚拟表格压测页，离开后释放 500 行当前页实例
 const keepAliveFalsePaths = new Set([
-  '/src/routes/dashboard/system-management/index.tsx',
-  '/src/routes/dashboard/forms/index.tsx',
-  '/src/routes/dashboard/index.tsx',
-  '/src/routes/dashboard/examples/data-table-editing.tsx'
+  '/src/routes/_app/system-management/index.tsx',
+  '/src/routes/_app/forms/index.tsx',
+  '/src/routes/_app/examples/data-table-editing.tsx'
 ]);
 
 const standardWorkspacePageRoutePaths = new Set([
-  '/src/routes/dashboard/overview.tsx',
-  '/src/routes/dashboard/kanban.tsx',
-  '/src/routes/dashboard/notifications.tsx',
-  '/src/routes/dashboard/elements/icons.tsx',
-  '/src/routes/dashboard/elements/data-table-editable-choice.tsx',
-  '/src/routes/dashboard/examples/data-table-editing.tsx',
-  '/src/routes/dashboard/forms/basic.tsx',
-  '/src/routes/dashboard/forms/multi-step.tsx',
-  '/src/routes/dashboard/forms/sheet-form.tsx',
-  '/src/routes/dashboard/forms/advanced.tsx',
-  '/src/routes/dashboard/forms/overlay-contract.tsx',
-  '/src/routes/dashboard/system-management/dictionaries.tsx',
-  '/src/routes/dashboard/system-management/export-center.tsx'
+  '/src/routes/_app/overview.tsx',
+  '/src/routes/_app/kanban.tsx',
+  '/src/routes/_app/notifications.tsx',
+  '/src/routes/_app/elements/icons.tsx',
+  '/src/routes/_app/elements/data-table-editable-choice.tsx',
+  '/src/routes/_app/examples/data-table-editing.tsx',
+  '/src/routes/_app/forms/basic.tsx',
+  '/src/routes/_app/forms/multi-step.tsx',
+  '/src/routes/_app/forms/sheet-form.tsx',
+  '/src/routes/_app/forms/advanced.tsx',
+  '/src/routes/_app/forms/overlay-contract.tsx',
+  '/src/routes/_app/system-management/dictionaries.tsx',
+  '/src/routes/_app/system-management/export-center.tsx'
 ]);
 
 // Hidden development/demo routes remain addressable for deep links and local UI checks,
 // but they must not become visible business navigation or KBar entries.
 const hiddenDevelopmentDemoRoutePaths = new Set([
-  '/src/routes/dashboard/chat.tsx',
-  '/src/routes/dashboard/kanban.tsx',
-  '/src/routes/dashboard/notifications.tsx',
-  '/src/routes/dashboard/elements/icons.tsx',
-  '/src/routes/dashboard/elements/data-table-editable-choice.tsx',
-  '/src/routes/dashboard/forms/basic.tsx',
-  '/src/routes/dashboard/forms/multi-step.tsx',
-  '/src/routes/dashboard/forms/sheet-form.tsx',
-  '/src/routes/dashboard/forms/advanced.tsx',
-  '/src/routes/dashboard/forms/overlay-contract.tsx'
+  '/src/routes/_app/chat.tsx',
+  '/src/routes/_app/kanban.tsx',
+  '/src/routes/_app/notifications.tsx',
+  '/src/routes/_app/elements/icons.tsx',
+  '/src/routes/_app/elements/data-table-editable-choice.tsx',
+  '/src/routes/_app/forms/basic.tsx',
+  '/src/routes/_app/forms/multi-step.tsx',
+  '/src/routes/_app/forms/sheet-form.tsx',
+  '/src/routes/_app/forms/advanced.tsx',
+  '/src/routes/_app/forms/overlay-contract.tsx'
 ]);
 
 function normalizeSource(source: string): string {
@@ -128,23 +127,22 @@ describe('dashboard route inventory', () => {
     const routePaths = allPaths.map(extractRoutePath).toSorted();
     expect(routePaths).toEqual(
       expect.arrayContaining([
-        '/dashboard/',
-        '/dashboard/overview',
-        '/dashboard/chat',
-        '/dashboard/kanban',
-        '/dashboard/notifications',
-        '/dashboard/elements/icons',
-        '/dashboard/elements/data-table-editable-choice',
-        '/dashboard/examples/data-table-editing',
-        '/dashboard/system-management/',
-        '/dashboard/system-management/dictionaries',
-        '/dashboard/system-management/export-center',
-        '/dashboard/forms/',
-        '/dashboard/forms/basic',
-        '/dashboard/forms/multi-step',
-        '/dashboard/forms/sheet-form',
-        '/dashboard/forms/advanced',
-        '/dashboard/forms/overlay-contract'
+        '/overview',
+        '/chat',
+        '/kanban',
+        '/notifications',
+        '/elements/icons',
+        '/elements/data-table-editable-choice',
+        '/examples/data-table-editing',
+        '/system-management/',
+        '/system-management/dictionaries',
+        '/system-management/export-center',
+        '/forms/',
+        '/forms/basic',
+        '/forms/multi-step',
+        '/forms/sheet-form',
+        '/forms/advanced',
+        '/forms/overlay-contract'
       ])
     );
   });
@@ -179,8 +177,7 @@ describe('dashboard route inventory', () => {
   });
 
   it('system-management dictionaries route participates in workspace tabs', () => {
-    const dictionariesRoute =
-      routeModules['/src/routes/dashboard/system-management/dictionaries.tsx'];
+    const dictionariesRoute = routeModules['/src/routes/_app/system-management/dictionaries.tsx'];
     expect(dictionariesRoute).toBeDefined();
     expect(getTagEnabled(dictionariesRoute)).not.toBe(false);
     expect(getNav(dictionariesRoute)).toMatchObject({
@@ -191,7 +188,7 @@ describe('dashboard route inventory', () => {
   });
 
   it('redirect group roots are hidden from navigation', () => {
-    const routeFiles = ['/src/routes/dashboard/system-management/index.tsx'];
+    const routeFiles = ['/src/routes/_app/system-management/index.tsx'];
 
     for (const routeFile of routeFiles) {
       const route = routeModules[routeFile];
@@ -218,7 +215,7 @@ describe('dashboard route inventory', () => {
   });
 
   it('exposes the table editing demo in the examples navigation group', () => {
-    const route = routeModules['/src/routes/dashboard/examples/data-table-editing.tsx'];
+    const route = routeModules['/src/routes/_app/examples/data-table-editing.tsx'];
     expect(route).toBeDefined();
     expect(getTitle(route)).toBe('示例：表格编辑');
     expect(getNav(route)).toMatchObject({
@@ -230,8 +227,8 @@ describe('dashboard route inventory', () => {
 
   it('system management routes are top-level items in their group', () => {
     const expectations = [
-      ['/src/routes/dashboard/system-management/dictionaries.tsx', 'systemManagement'],
-      ['/src/routes/dashboard/system-management/export-center.tsx', 'systemManagement']
+      ['/src/routes/_app/system-management/dictionaries.tsx', 'systemManagement'],
+      ['/src/routes/_app/system-management/export-center.tsx', 'systemManagement']
     ] as const;
 
     for (const [routeFile, group] of expectations) {
@@ -276,7 +273,7 @@ describe('dashboard route inventory', () => {
       ).not.toMatch(/<WorkspacePage(?:Boundary|Route)\b[^>]*(?:keepAlive|closable)=/);
     }
 
-    expect(getClosable(routeModules['/src/routes/dashboard/overview.tsx'])).toBe(false);
+    expect(getClosable(routeModules['/src/routes/_app/overview.tsx'])).toBe(false);
   });
 
   it('dashboard workspace route components derive tabId from the current route path', () => {
@@ -307,7 +304,7 @@ describe('dashboard route inventory', () => {
   });
 
   it('dictionaries route uses WorkspacePageRoute with the management page body', () => {
-    const source = routeSources['/src/routes/dashboard/system-management/dictionaries.tsx'];
+    const source = routeSources['/src/routes/_app/system-management/dictionaries.tsx'];
     expect(source).toBeDefined();
 
     const normalizedSource = normalizeSource(source);
@@ -317,7 +314,7 @@ describe('dashboard route inventory', () => {
   });
 
   it('export center route uses WorkspacePageRoute with the management page body', () => {
-    const source = routeSources['/src/routes/dashboard/system-management/export-center.tsx'];
+    const source = routeSources['/src/routes/_app/system-management/export-center.tsx'];
     expect(source).toBeDefined();
 
     const normalizedSource = normalizeSource(source);

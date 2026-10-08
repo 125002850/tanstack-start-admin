@@ -20,7 +20,7 @@ for (const systemMode of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: systemMode, reducedMotion: 'reduce' });
     await page.addInitScript(() => localStorage.setItem('theme', 'system'));
     await mockLoginInfo(page);
-    await page.goto('/dashboard/overview');
+    await page.goto('/overview');
     const toggle = page.getByRole('button', { name: '切换主题模式' });
     await expect(toggle).toBeVisible();
     await expectMode(page, 'system', systemMode);

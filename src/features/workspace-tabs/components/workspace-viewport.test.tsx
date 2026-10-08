@@ -39,7 +39,7 @@ function makePageDescriptor(
   overrides: Partial<WorkspacePageDescriptor> = {}
 ): WorkspacePageDescriptor {
   return {
-    tabId: '/dashboard/test',
+    tabId: '/test',
     initialTitle: 'Test Page',
     keepAlive: true,
     closable: true,
@@ -80,22 +80,22 @@ describe('WorkspaceViewport', () => {
   describe('V2 page descriptors', () => {
     it('renders the active tab visibly (not via Activity hidden)', () => {
       const desc = makePageDescriptor({
-        tabId: '/dashboard/active',
+        tabId: '/active',
         render: () => React.createElement('div', { 'data-testid': 'active-content' }, 'Active')
       });
       setStoreState(
         {
-          '/dashboard/active': {
-            id: '/dashboard/active',
+          '/active': {
+            id: '/active',
             keepAlive: true,
-            href: '/dashboard/active',
+            href: '/active',
             title: 'Active',
             closable: true
           }
         },
-        '/dashboard/active',
+        '/active',
         [],
-        { pageDescriptors: { '/dashboard/active': desc } }
+        { pageDescriptors: { '/active': desc } }
       );
 
       const { getByTestId } = render(React.createElement(WorkspaceViewport));
@@ -106,7 +106,7 @@ describe('WorkspaceViewport', () => {
     });
 
     it('provides overlay lifecycle registration for each workspace page', () => {
-      const tabId = '/dashboard/overlay';
+      const tabId = '/overlay';
       const close = vi.fn();
       const desc = makePageDescriptor({
         tabId,
@@ -142,31 +142,31 @@ describe('WorkspaceViewport', () => {
       );
       setStoreState(
         {
-          '/dashboard/active': {
-            id: '/dashboard/active',
+          '/active': {
+            id: '/active',
             keepAlive: true,
-            href: '/dashboard/active',
+            href: '/active',
             title: 'Active',
             closable: true
           },
-          '/dashboard/inactive': {
-            id: '/dashboard/inactive',
+          '/inactive': {
+            id: '/inactive',
             keepAlive: true,
-            href: '/dashboard/inactive',
+            href: '/inactive',
             title: 'Inactive',
             closable: true
           }
         },
-        '/dashboard/active',
+        '/active',
         [],
         {
           pageDescriptors: {
-            '/dashboard/active': makePageDescriptor({
-              tabId: '/dashboard/active',
+            '/active': makePageDescriptor({
+              tabId: '/active',
               render: renderActive
             }),
-            '/dashboard/inactive': makePageDescriptor({
-              tabId: '/dashboard/inactive',
+            '/inactive': makePageDescriptor({
+              tabId: '/inactive',
               render: renderInactive
             })
           }
@@ -178,7 +178,7 @@ describe('WorkspaceViewport', () => {
       expect(renderInactive).toHaveBeenCalledTimes(1);
 
       act(() => {
-        useWorkspaceTabStore.setState({ activeId: '/dashboard/inactive' });
+        useWorkspaceTabStore.setState({ activeId: '/inactive' });
       });
 
       expect(renderActive).toHaveBeenCalledTimes(1);
@@ -189,34 +189,34 @@ describe('WorkspaceViewport', () => {
 
     it('renders inactive keep-alive tabs via Activity hidden', () => {
       const activeDesc = makePageDescriptor({
-        tabId: '/dashboard/active',
+        tabId: '/active',
         render: () => React.createElement('div', { 'data-testid': 'active-content' }, 'Active')
       });
       const inactiveDesc = makePageDescriptor({
-        tabId: '/dashboard/inactive',
+        tabId: '/inactive',
         render: () => React.createElement('div', { 'data-testid': 'inactive-content' }, 'Inactive')
       });
       setStoreState(
         {
-          '/dashboard/active': {
-            id: '/dashboard/active',
+          '/active': {
+            id: '/active',
             keepAlive: true,
-            href: '/dashboard/active',
+            href: '/active',
             title: 'Active',
             closable: true
           },
-          '/dashboard/inactive': {
-            id: '/dashboard/inactive',
+          '/inactive': {
+            id: '/inactive',
             keepAlive: true,
-            href: '/dashboard/inactive',
+            href: '/inactive',
             title: 'Inactive',
             closable: true
           }
         },
-        '/dashboard/active',
+        '/active',
         [],
         {
-          pageDescriptors: { '/dashboard/active': activeDesc, '/dashboard/inactive': inactiveDesc }
+          pageDescriptors: { '/active': activeDesc, '/inactive': inactiveDesc }
         }
       );
 
@@ -228,34 +228,34 @@ describe('WorkspaceViewport', () => {
 
     it('does NOT render inactive non-keep-alive tabs', () => {
       const activeDesc = makePageDescriptor({
-        tabId: '/dashboard/active',
+        tabId: '/active',
         render: () => React.createElement('div', { 'data-testid': 'active-content' }, 'Active')
       });
       const nonKeepDesc = makePageDescriptor({
-        tabId: '/dashboard/nonkeep',
+        tabId: '/nonkeep',
         keepAlive: false,
         render: () => React.createElement('div', { 'data-testid': 'nonkeep-content' }, 'NonKeep')
       });
       setStoreState(
         {
-          '/dashboard/active': {
-            id: '/dashboard/active',
+          '/active': {
+            id: '/active',
             keepAlive: true,
-            href: '/dashboard/active',
+            href: '/active',
             title: 'Active',
             closable: true
           },
-          '/dashboard/nonkeep': {
-            id: '/dashboard/nonkeep',
+          '/nonkeep': {
+            id: '/nonkeep',
             keepAlive: false,
-            href: '/dashboard/nonkeep',
+            href: '/nonkeep',
             title: 'NonKeep',
             closable: true
           }
         },
-        '/dashboard/active',
+        '/active',
         [],
-        { pageDescriptors: { '/dashboard/active': activeDesc, '/dashboard/nonkeep': nonKeepDesc } }
+        { pageDescriptors: { '/active': activeDesc, '/nonkeep': nonKeepDesc } }
       );
 
       const { queryByTestId, getByTestId } = render(React.createElement(WorkspaceViewport));
@@ -265,32 +265,32 @@ describe('WorkspaceViewport', () => {
 
     it('skips tabs with disabled keep-alive (slot error recovery)', () => {
       const desc = makePageDescriptor({
-        tabId: '/dashboard/broken',
+        tabId: '/broken',
         render: () => React.createElement('div', { 'data-testid': 'broken-content' }, 'Broken')
       });
       setStoreState(
         {
-          '/dashboard/active': {
-            id: '/dashboard/active',
+          '/active': {
+            id: '/active',
             keepAlive: true,
-            href: '/dashboard/active',
+            href: '/active',
             title: 'Active',
             closable: true
           },
-          '/dashboard/broken': {
-            id: '/dashboard/broken',
+          '/broken': {
+            id: '/broken',
             keepAlive: true,
-            href: '/dashboard/broken',
+            href: '/broken',
             title: 'Broken',
             closable: true
           }
         },
-        '/dashboard/active',
-        ['/dashboard/broken'],
+        '/active',
+        ['/broken'],
         {
           pageDescriptors: {
-            '/dashboard/active': makePageDescriptor({ tabId: '/dashboard/active' }),
-            '/dashboard/broken': desc
+            '/active': makePageDescriptor({ tabId: '/active' }),
+            '/broken': desc
           }
         }
       );
@@ -302,7 +302,7 @@ describe('WorkspaceViewport', () => {
     it('renders errorFallback from descriptor when render throws', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const desc = makePageDescriptor({
-        tabId: '/dashboard/fallback',
+        tabId: '/fallback',
         // Pass a render function that throws — the error boundary wrapper catches it
         render: () => {
           throw new Error('test error');
@@ -315,17 +315,17 @@ describe('WorkspaceViewport', () => {
       });
       setStoreState(
         {
-          '/dashboard/fallback': {
-            id: '/dashboard/fallback',
+          '/fallback': {
+            id: '/fallback',
             keepAlive: true,
-            href: '/dashboard/fallback',
+            href: '/fallback',
             title: 'Fallback',
             closable: true
           }
         },
-        '/dashboard/fallback',
+        '/fallback',
         [],
-        { pageDescriptors: { '/dashboard/fallback': desc } }
+        { pageDescriptors: { '/fallback': desc } }
       );
 
       try {
@@ -336,9 +336,7 @@ describe('WorkspaceViewport', () => {
         // Error boundary should catch it; if not caught, test still verifies below
       }
       // Verify that keepAlive was disabled (error boundary behavior)
-      expect(useWorkspaceTabStore.getState().disabledKeepAliveIds.has('/dashboard/fallback')).toBe(
-        true
-      );
+      expect(useWorkspaceTabStore.getState().disabledKeepAliveIds.has('/fallback')).toBe(true);
       consoleSpy.mockRestore();
     });
 
@@ -348,24 +346,24 @@ describe('WorkspaceViewport', () => {
         "The requested module '/src/example.ts' does not provide an export named 'example'"
       );
       const desc = makePageDescriptor({
-        tabId: '/dashboard/fallback',
+        tabId: '/fallback',
         render: () => {
           throw moduleError;
         }
       });
       setStoreState(
         {
-          '/dashboard/fallback': {
-            id: '/dashboard/fallback',
+          '/fallback': {
+            id: '/fallback',
             keepAlive: true,
-            href: '/dashboard/fallback',
+            href: '/fallback',
             title: 'Fallback',
             closable: true
           }
         },
-        '/dashboard/fallback',
+        '/fallback',
         [],
-        { pageDescriptors: { '/dashboard/fallback': desc } }
+        { pageDescriptors: { '/fallback': desc } }
       );
 
       render(React.createElement(WorkspaceViewport));
@@ -381,15 +379,15 @@ describe('WorkspaceViewport', () => {
       // Tab exists but no page descriptor — should not crash, just render nothing
       setStoreState(
         {
-          '/dashboard/orphan': {
-            id: '/dashboard/orphan',
+          '/orphan': {
+            id: '/orphan',
             keepAlive: true,
-            href: '/dashboard/orphan',
+            href: '/orphan',
             title: 'Orphan',
             closable: true
           }
         },
-        '/dashboard/orphan',
+        '/orphan',
         [],
         { pageDescriptors: {} }
       );
@@ -401,43 +399,43 @@ describe('WorkspaceViewport', () => {
 
     it('renders multiple V2 pages with correct visibility', () => {
       const tabs = {
-        '/dashboard/a': {
-          id: '/dashboard/a',
+        '/a': {
+          id: '/a',
           keepAlive: true,
-          href: '/dashboard/a',
+          href: '/a',
           title: 'A',
           closable: true
         },
-        '/dashboard/b': {
-          id: '/dashboard/b',
+        '/b': {
+          id: '/b',
           keepAlive: true,
-          href: '/dashboard/b',
+          href: '/b',
           title: 'B',
           closable: true
         },
-        '/dashboard/c': {
-          id: '/dashboard/c',
+        '/c': {
+          id: '/c',
           keepAlive: true,
-          href: '/dashboard/c',
+          href: '/c',
           title: 'C',
           closable: true
         }
       };
       const descs = {
-        '/dashboard/a': makePageDescriptor({
-          tabId: '/dashboard/a',
+        '/a': makePageDescriptor({
+          tabId: '/a',
           render: () => React.createElement('div', { 'data-testid': 'screen-a' }, 'A')
         }),
-        '/dashboard/b': makePageDescriptor({
-          tabId: '/dashboard/b',
+        '/b': makePageDescriptor({
+          tabId: '/b',
           render: () => React.createElement('div', { 'data-testid': 'screen-b' }, 'B')
         }),
-        '/dashboard/c': makePageDescriptor({
-          tabId: '/dashboard/c',
+        '/c': makePageDescriptor({
+          tabId: '/c',
           render: () => React.createElement('div', { 'data-testid': 'screen-c' }, 'C')
         })
       };
-      setStoreState(tabs, '/dashboard/b', [], { pageDescriptors: descs });
+      setStoreState(tabs, '/b', [], { pageDescriptors: descs });
 
       const { getByTestId } = render(React.createElement(WorkspaceViewport));
 

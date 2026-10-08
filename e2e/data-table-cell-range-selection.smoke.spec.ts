@@ -2,8 +2,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { mockLoginInfo } from './support/mock-login-info';
 
-const DICTIONARY_ROUTE = '/dashboard/system-management/dictionaries';
-const EDITING_ROUTE = '/dashboard/examples/data-table-editing';
+const DICTIONARY_ROUTE = '/system-management/dictionaries';
+const EDITING_ROUTE = '/examples/data-table-editing';
 
 function apiEnvelope<T>(data: T) {
   return { code: 200, msg: 'ok', data };

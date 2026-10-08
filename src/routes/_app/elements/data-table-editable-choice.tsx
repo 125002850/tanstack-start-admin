@@ -20,7 +20,7 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/elements/data-table-editable-choice')({
+export const Route = createFileRoute('/_app/elements/data-table-editable-choice')({
   ...meta,
   component: DataTableEditableChoicePage
 });

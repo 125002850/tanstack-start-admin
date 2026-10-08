@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const DICTIONARIES_ROUTE = '/dashboard/system-management/dictionaries';
+const DICTIONARIES_ROUTE = '/system-management/dictionaries';
 
 test.describe('@workspace-v2 route menu permissions', () => {
   test('shows 403 when a direct route is absent from SSO menuData', async ({ page }) => {
@@ -38,7 +38,7 @@ test.describe('@workspace-v2 route menu permissions', () => {
     await expect(page.getByText('HTTP 错误代码：403')).toBeAttached();
     await expect(page.getByRole('link', { name: '返回工作台' })).toHaveAttribute(
       'href',
-      '/dashboard/overview'
+      '/overview'
     );
     await expect(page.getByRole('heading', { name: '字典类型' })).toHaveCount(0);
   });

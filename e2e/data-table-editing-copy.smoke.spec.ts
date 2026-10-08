@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { mockLoginInfo } from './support/mock-login-info';
 
-const EDITING_ROUTE = '/dashboard/examples/data-table-editing';
+const EDITING_ROUTE = '/examples/data-table-editing';
 
 function cell(page: Page, columnId: string): Locator {
   return page.locator(`td[data-cell-column-id="${columnId}"]`).first();

@@ -14,12 +14,12 @@ const meta = defineRouteMeta({
     visible: false,
     group: 'components',
     order: 14,
-    parentId: '/dashboard/forms',
+    parentId: '/forms',
     icon: 'forms'
   }
 });
 
-export const Route = createFileRoute('/dashboard/forms/advanced')({
+export const Route = createFileRoute('/_app/forms/advanced')({
   ...meta,
   component: AdvancedFormPage
 });

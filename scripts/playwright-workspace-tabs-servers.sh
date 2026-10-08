@@ -71,8 +71,8 @@ DEFAULT_PID=$!
 ) >/tmp/playwright-workspace-rollback.log 2>&1 &
 ROLLBACK_PID=$!
 
-wait_for_http "http://127.0.0.1:${DEFAULT_PORT}/dashboard/overview"
-wait_for_http "http://127.0.0.1:${ROLLBACK_PORT}/dashboard/overview"
+wait_for_http "http://127.0.0.1:${DEFAULT_PORT}/overview"
+wait_for_http "http://127.0.0.1:${ROLLBACK_PORT}/overview"
 
 # Keep the wrapper alive until Playwright stops it. If one server exits early,
 # do not proactively tear down the sibling process for the other project.

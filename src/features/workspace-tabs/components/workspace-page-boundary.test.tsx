@@ -35,12 +35,12 @@ function getDescriptors() {
 }
 
 describe('WorkspacePageBoundary', () => {
-  let pathname = '/dashboard/users';
+  let pathname = '/users';
   let searchStr = '';
   let matches: unknown[] = [{ options: { staticData: { label: '用户' } } }];
 
   beforeEach(() => {
-    pathname = '/dashboard/users';
+    pathname = '/users';
     searchStr = '';
     matches = [{ options: { staticData: { label: '用户' } } }];
     resetStore();
@@ -67,33 +67,33 @@ describe('WorkspacePageBoundary', () => {
     const { container } = render(<WorkspacePageBoundary render={() => <div>Users</div>} />);
 
     expect(container.innerHTML).toBe('');
-    expect(getDescriptors()['/dashboard/users']).toMatchObject({
-      tabId: '/dashboard/users',
+    expect(getDescriptors()['/users']).toMatchObject({
+      tabId: '/users',
       initialTitle: '用户'
     });
   });
 
   it('keeps explicit tabId and initialTitle overrides', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
-    pathname = '/dashboard/items/new';
+    pathname = '/items/new';
     matches = [{ options: { staticData: { label: '新增条目' } } }];
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/items/new': { options: { staticData: { label: '新增条目' } } }
+        '/items/new': { options: { staticData: { label: '新增条目' } } }
       }
     });
 
     render(
       <WorkspacePageBoundary
-        tabId='/dashboard/items/new'
+        tabId='/items/new'
         initialTitle='新增条目'
         keepAlive={false}
         render={() => <div>Item</div>}
       />
     );
 
-    expect(getDescriptors()['/dashboard/items/new']).toMatchObject({
-      tabId: '/dashboard/items/new',
+    expect(getDescriptors()['/items/new']).toMatchObject({
+      tabId: '/items/new',
       initialTitle: '新增条目',
       keepAlive: false
     });
@@ -102,20 +102,20 @@ describe('WorkspacePageBoundary', () => {
   it('normalizes an explicit tabId with a trailing slash', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
 
-    render(<WorkspacePageBoundary tabId='/dashboard/users/' render={() => <div>Users</div>} />);
+    render(<WorkspacePageBoundary tabId='/users/' render={() => <div>Users</div>} />);
 
-    expect(getDescriptors()['/dashboard/users']).toMatchObject({
-      tabId: '/dashboard/users',
+    expect(getDescriptors()['/users']).toMatchObject({
+      tabId: '/users',
       initialTitle: '用户'
     });
-    expect(getDescriptors()['/dashboard/users/']).toBeUndefined();
+    expect(getDescriptors()['/users/']).toBeUndefined();
   });
 
   it('prefers route workspace metadata over legacy lifecycle props', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/users': {
+        '/users': {
           options: {
             staticData: {
               label: '用户',
@@ -128,14 +128,14 @@ describe('WorkspacePageBoundary', () => {
 
     render(
       <WorkspacePageBoundary
-        tabId='/dashboard/users'
+        tabId='/users'
         keepAlive={false}
         closable={true}
         render={() => <div>Users</div>}
       />
     );
 
-    expect(getDescriptors()['/dashboard/users']).toMatchObject({
+    expect(getDescriptors()['/users']).toMatchObject({
       keepAlive: true,
       closable: false
     });
@@ -154,7 +154,7 @@ describe('WorkspacePageBoundary', () => {
     expect(renderPage).not.toHaveBeenCalled();
     expect(renderDisabled).not.toHaveBeenCalled();
 
-    const descriptor = getDescriptors()['/dashboard/users'];
+    const descriptor = getDescriptors()['/users'];
     expect(descriptor).toBeDefined();
 
     const descriptorView = render(<>{descriptor.render()}</>);
@@ -169,13 +169,13 @@ describe('WorkspacePageBoundary', () => {
     const replacementRender = vi.fn(() => <div>Replacement users</div>);
 
     const routeView = render(<WorkspacePageBoundary render={firstRender} />);
-    const cachedDescriptor = getDescriptors()['/dashboard/users'];
+    const cachedDescriptor = getDescriptors()['/users'];
     expect(cachedDescriptor).toBeDefined();
 
     routeView.unmount();
     render(<WorkspacePageBoundary render={replacementRender} />);
 
-    expect(getDescriptors()['/dashboard/users']).toBe(cachedDescriptor);
+    expect(getDescriptors()['/users']).toBe(cachedDescriptor);
     const descriptorView = render(<>{cachedDescriptor!.render()}</>);
     expect(descriptorView.getByText('Cached users')).toBeTruthy();
     expect(replacementRender).not.toHaveBeenCalled();
@@ -187,14 +187,14 @@ describe('WorkspacePageBoundary', () => {
     const replacementRender = vi.fn(() => <div>September users</div>);
 
     const routeView = render(<WorkspacePageBoundary render={firstRender} />);
-    const cachedDescriptor = getDescriptors()['/dashboard/users'];
+    const cachedDescriptor = getDescriptors()['/users'];
     expect(cachedDescriptor).toBeDefined();
 
     routeView.unmount();
     searchStr = '?month=2026-09';
     render(<WorkspacePageBoundary render={replacementRender} />);
 
-    const refreshedDescriptor = getDescriptors()['/dashboard/users'];
+    const refreshedDescriptor = getDescriptors()['/users'];
     expect(refreshedDescriptor).not.toBe(cachedDescriptor);
     const descriptorView = render(<>{refreshedDescriptor!.render()}</>);
     expect(descriptorView.getByText('September users')).toBeTruthy();
@@ -205,23 +205,23 @@ describe('WorkspacePageBoundary', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/users': { options: { staticData: { label: '用户' } } },
-        '/dashboard/departments': { options: { staticData: { label: '部门' } } }
+        '/users': { options: { staticData: { label: '用户' } } },
+        '/departments': { options: { staticData: { label: '部门' } } }
       }
     });
 
     const outgoingRoute = render(<WorkspacePageBoundary render={() => <div>Users content</div>} />);
-    expect(getDescriptors()['/dashboard/users']).toBeDefined();
+    expect(getDescriptors()['/users']).toBeDefined();
 
-    pathname = '/dashboard/departments';
+    pathname = '/departments';
     outgoingRoute.rerender(<WorkspacePageBoundary render={() => <div>Users content</div>} />);
 
-    expect(getDescriptors()['/dashboard/departments']).toBeUndefined();
+    expect(getDescriptors()['/departments']).toBeUndefined();
 
     outgoingRoute.unmount();
     render(<WorkspacePageBoundary render={() => <div>Departments content</div>} />);
 
-    const departmentsDescriptor = getDescriptors()['/dashboard/departments'];
+    const departmentsDescriptor = getDescriptors()['/departments'];
     expect(departmentsDescriptor).toBeDefined();
     const descriptorView = render(<>{departmentsDescriptor!.render()}</>);
     expect(descriptorView.getByText('Departments content')).toBeTruthy();
@@ -231,55 +231,55 @@ describe('WorkspacePageBoundary', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/users': { options: { staticData: { label: '用户' } } },
-        '/dashboard/overview': { options: { staticData: { label: '仪表盘' } } }
+        '/users': { options: { staticData: { label: '用户' } } },
+        '/overview': { options: { staticData: { label: '仪表盘' } } }
       }
     });
 
     const { rerender } = render(
-      <WorkspacePageBoundary tabId='/dashboard/users' render={() => <div>Users</div>} />
+      <WorkspacePageBoundary tabId='/users' render={() => <div>Users</div>} />
     );
 
-    expect(getDescriptors()['/dashboard/users']).toMatchObject({
-      tabId: '/dashboard/users',
+    expect(getDescriptors()['/users']).toMatchObject({
+      tabId: '/users',
       initialTitle: '用户'
     });
 
     useWorkspaceTabStore.getState().openOrActivate({
-      id: '/dashboard/users',
-      href: '/dashboard/users',
+      id: '/users',
+      href: '/users',
       title: '用户',
       closable: true,
       keepAlive: true
     });
-    useWorkspaceTabStore.getState().close('/dashboard/users');
+    useWorkspaceTabStore.getState().close('/users');
 
-    pathname = '/dashboard/overview';
+    pathname = '/overview';
     matches = [{ options: { staticData: { label: '仪表盘' } } }];
 
-    rerender(<WorkspacePageBoundary tabId='/dashboard/users' render={() => <div>Users</div>} />);
+    rerender(<WorkspacePageBoundary tabId='/users' render={() => <div>Users</div>} />);
 
-    expect(getDescriptors()['/dashboard/users']).toBeUndefined();
-    expect(useWorkspaceTabStore.getState().tabs['/dashboard/users']).toBeUndefined();
+    expect(getDescriptors()['/users']).toBeUndefined();
+    expect(useWorkspaceTabStore.getState().tabs['/users']).toBeUndefined();
   });
 
   it('normalizes the implicit tabId when pathname has a trailing slash', () => {
     vi.mocked(isWorkspaceTabsEnabled).mockReturnValue(true);
-    pathname = '/dashboard/items/';
+    pathname = '/items/';
     matches = [{ options: { staticData: { label: '条目' } } }];
     mockUseRouter.mockReturnValue({
       routesByPath: {
-        '/dashboard/items/': { options: { staticData: { label: '条目' } } }
+        '/items/': { options: { staticData: { label: '条目' } } }
       }
     });
 
     render(<WorkspacePageBoundary render={() => <div>Items</div>} />);
 
-    expect(getDescriptors()['/dashboard/items']).toMatchObject({
-      tabId: '/dashboard/items',
+    expect(getDescriptors()['/items']).toMatchObject({
+      tabId: '/items',
       initialTitle: '条目'
     });
-    expect(getDescriptors()['/dashboard/items/']).toBeUndefined();
+    expect(getDescriptors()['/items/']).toBeUndefined();
   });
 
   it('renders content directly when workspace tabs are disabled', () => {
@@ -320,7 +320,7 @@ describe('WorkspacePageBoundary', () => {
 
     expect(container.innerHTML).toBe('');
 
-    const descriptor = getDescriptors()['/dashboard/users'];
+    const descriptor = getDescriptors()['/users'];
     expect(descriptor).toBeDefined();
 
     const descriptorView = render(<>{descriptor.render()}</>);
@@ -336,7 +336,7 @@ describe('WorkspacePageBoundary', () => {
       />
     );
 
-    const descriptor = getDescriptors()['/dashboard/users'];
+    const descriptor = getDescriptors()['/users'];
     const descriptorView = render(<>{descriptor.render()}</>);
 
     expect(descriptorView.container.firstElementChild).toHaveClass('min-h-0', 'overflow-hidden');

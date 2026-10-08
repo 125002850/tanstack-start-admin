@@ -15,9 +15,9 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/forms/')({
+export const Route = createFileRoute('/_app/forms/')({
   ...meta,
   beforeLoad: ({ location }) => {
-    throw redirect(createRedirectWithSearch('/dashboard/forms/basic', location));
+    throw redirect(createRedirectWithSearch('/forms/basic', location));
   }
 });

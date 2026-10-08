@@ -22,7 +22,7 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/examples/data-table-editing')({
+export const Route = createFileRoute('/_app/examples/data-table-editing')({
   ...meta,
   component: DataTableEditingRoutePage
 });

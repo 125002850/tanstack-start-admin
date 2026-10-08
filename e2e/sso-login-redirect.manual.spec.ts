@@ -36,7 +36,7 @@ test.describe('@workspace-v2 @manual-sso SSO login redirect', () => {
       sessionStorage.clear();
     }, ssoTokenStorageKey);
 
-    await page.goto(appUrl('/dashboard/overview'), { waitUntil: 'domcontentloaded' });
+    await page.goto(appUrl('/overview'), { waitUntil: 'domcontentloaded' });
 
     await expect(page).toHaveURL(
       new RegExp(`^${escapeRegExp(SSO_LOGIN_VIEW_ORIGIN)}/login/loginView\\?clientId=`),

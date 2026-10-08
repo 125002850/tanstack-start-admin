@@ -8,11 +8,11 @@ vi.mock('@tanstack/react-router', () => ({
   useRouter: () => ({
     navigate: vi.fn(),
     routesById: {},
-    state: { location: { pathname: '/dashboard/overview' } }
+    state: { location: { pathname: '/overview' } }
   }),
   Link: ({ children, to }: { children: React.ReactNode; to: string }) =>
     React.createElement('a', { href: to }, children),
-  useLocation: () => ({ pathname: '/dashboard/overview' })
+  useLocation: () => ({ pathname: '/overview' })
 }));
 
 const mockLogout = vi.fn();

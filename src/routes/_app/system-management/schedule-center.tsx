@@ -21,7 +21,7 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/system-management/schedule-center')({
+export const Route = createFileRoute('/_app/system-management/schedule-center')({
   ...meta,
   component: ScheduleCenterPage
 });

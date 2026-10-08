@@ -14,12 +14,12 @@ const meta = defineRouteMeta({
     visible: false,
     group: 'components',
     order: 12,
-    parentId: '/dashboard/forms',
+    parentId: '/forms',
     icon: 'forms'
   }
 });
 
-export const Route = createFileRoute('/dashboard/forms/multi-step')({
+export const Route = createFileRoute('/_app/forms/multi-step')({
   ...meta,
   component: MultiStepFormPage
 });

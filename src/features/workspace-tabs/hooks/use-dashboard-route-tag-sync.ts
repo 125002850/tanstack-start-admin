@@ -16,8 +16,8 @@ export function normalizeRoutePath(path: string): string {
 }
 
 /**
- * Convert a TanStack Router route path (e.g. "/dashboard/items/$itemId")
- * into a regex for matching against actual pathnames (e.g. "/dashboard/items/123").
+ * Convert a TanStack Router route path (e.g. "/items/$itemId")
+ * into a regex for matching against actual pathnames (e.g. "/items/123").
  */
 function compileRoutePattern(routePath: string): RegExp {
   const normalizedRoutePath = normalizeRoutePath(routePath);
@@ -166,14 +166,8 @@ export function useDashboardRouteTagSync(enabled = true) {
     if (fullHref === prevHref.current) return;
     prevHref.current = fullHref;
 
-    // Only track dashboard sub-routes
-    if (!normalizedPathname.startsWith('/dashboard')) {
-      clearActiveWorkspaceRoute();
-      return;
-    }
-
-    // Skip the layout route itself
-    if (normalizedPathname === '/dashboard') {
+    const isAppRoute = router.state.matches.some((match) => match.routeId === '/_app');
+    if (!isAppRoute) {
       clearActiveWorkspaceRoute();
       return;
     }

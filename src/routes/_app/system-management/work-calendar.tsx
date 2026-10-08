@@ -32,7 +32,7 @@ const searchSchema = z.object({
   year: z.coerce.number().int().min(WORK_CALENDAR_MIN_YEAR).max(WORK_CALENDAR_MAX_YEAR).optional()
 });
 
-export const Route = createFileRoute('/dashboard/system-management/work-calendar')({
+export const Route = createFileRoute('/_app/system-management/work-calendar')({
   ...meta,
   validateSearch: searchSchema,
   component: WorkCalendarRoutePage

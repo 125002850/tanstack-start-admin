@@ -6,8 +6,8 @@ describe('route nav', () => {
   it('carries route menuKey into nav items', () => {
     const groups = buildNavGroupsFromRoutes({
       dictionaries: {
-        id: '/dashboard/system-management/dictionaries',
-        fullPath: '/dashboard/system-management/dictionaries',
+        id: '/_app/system-management/dictionaries',
+        fullPath: '/system-management/dictionaries',
         options: {
           staticData: {
             label: '字典管理',

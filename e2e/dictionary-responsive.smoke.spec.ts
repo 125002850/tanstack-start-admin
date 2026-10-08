@@ -26,11 +26,27 @@ for (const width of [390, 768, 1280, 1440]) {
         }
       })
     );
-    await page.goto('/dashboard/system-management/dictionaries');
+    await page.goto('/system-management/dictionaries');
     await expectHorizontallyVisible(page.getByRole('button', { name: '新增字典类型' }));
     if (width === 390) {
       await page.screenshot({ path: test.info().outputPath('responsive-layout.png') });
     }
+
+    const typeCard = page
+      .getByText('字典类型', { exact: true })
+      .locator('xpath=ancestor::*[@data-slot="card"][1]');
+    const typeList = typeCard.locator('.overflow-y-auto');
+    await typeList.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => typeList.evaluate((node) => node.scrollHeight > node.clientHeight))
+      .toBe(true);
+    const listBox = await typeList.boundingBox();
+    expect(listBox).not.toBeNull();
+    // 从列表右侧留白滚动，避开长编码 tooltip 的浮层。
+    await typeList.hover({ position: { x: listBox!.width - 2, y: 10 } });
+    await page.mouse.wheel(0, 10000);
+    await expect.poll(() => typeList.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+    await expect(typeList.getByRole('button', { name: /窄屏回归字典 30/ })).toBeInViewport();
 
     await expectHorizontallyVisible(page.getByPlaceholder('搜索 编码 / 名称'));
     await expectHorizontallyVisible(page.getByRole('button', { name: '编辑', exact: true }));
@@ -67,7 +83,7 @@ test('@workspace-v2 dictionary failed save keeps input and allows retry', async 
           : { code: 200, msg: 'ok', data: null }
     });
   });
-  await page.goto('/dashboard/system-management/dictionaries');
+  await page.goto('/system-management/dictionaries');
   await page.getByRole('button', { name: '新增字典项', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '新增字典项' });
   await dialog.getByRole('textbox', { name: /字典项编码/ }).fill('regression');
@@ -110,7 +126,7 @@ test('@workspace-v2 dictionary type failed save keeps input and allows retry', a
           : { code: 200, msg: 'ok', data: null }
     });
   });
-  await page.goto('/dashboard/system-management/dictionaries');
+  await page.goto('/system-management/dictionaries');
   await page.getByRole('button', { name: '新增字典类型', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '新增字典类型' });
   await dialog.getByRole('textbox', { name: /字典类型编码/ }).fill('regression');

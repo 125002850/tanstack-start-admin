@@ -190,7 +190,7 @@ describe('project architecture contracts', () => {
   });
 
   it('does not keep unused page metadata on dashboard routes', () => {
-    const violations = collectFiles(resolve(SRC_ROOT, 'routes/dashboard'), (path) =>
+    const violations = collectFiles(resolve(SRC_ROOT, 'routes/_app'), (path) =>
       path.endsWith('.tsx')
     )
       .filter((path) => /\bpage\s*:\s*\{/.test(readFileSync(path, 'utf8')))
@@ -210,7 +210,7 @@ describe('project architecture contracts', () => {
   });
 
   it('requires workspace Screen routes to provide a disabled-mode render fallback', () => {
-    const violations = collectFiles(resolve(SRC_ROOT, 'routes/dashboard'), (path) =>
+    const violations = collectFiles(resolve(SRC_ROOT, 'routes/_app'), (path) =>
       path.endsWith('.tsx')
     )
       .filter((path) => {
@@ -298,6 +298,8 @@ describe('project architecture contracts', () => {
       '@/components/data-table/row-detail/data-table-detail',
       '@/components/data-table/columns/data-table-column-factory',
       '@/components/data-table/toolbar/data-table-toolbar',
+      // Shared standalone trigger for business choice filters (no table runtime dependency).
+      '@/components/data-table/filters/data-table-filter-trigger',
       '@/hooks/use-data-table',
       '@/types/data-table'
     ]);

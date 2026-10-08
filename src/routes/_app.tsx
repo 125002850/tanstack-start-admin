@@ -21,7 +21,7 @@ const meta = defineRouteMeta({
   workspace: { tagEnabled: false, keepAlive: false }
 });
 
-export const Route = createFileRoute('/dashboard')({
+export const Route = createFileRoute('/_app')({
   ...meta,
   head: () => ({
     meta: [
@@ -35,10 +35,10 @@ export const Route = createFileRoute('/dashboard')({
   }),
   loader: ({ context }) => ensureSsoLoginInfo(context.queryClient),
   errorComponent: RouteErrorPage,
-  component: DashboardLayout
+  component: AppLayout
 });
 
-function DashboardLayout() {
+function AppLayout() {
   const router = useRouter();
   const queryClient = router.options.context.queryClient;
   const workspaceEnabled = isWorkspaceTabsEnabled();
