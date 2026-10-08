@@ -187,7 +187,7 @@ export async function logout(redirect = true): Promise<void> {
   await requestLogout();
   clearIamSession();
   if (redirect && isBrowser()) {
-    window.location.href = buildSignInHref('/dashboard/overview');
+    window.location.href = buildSignInHref('/overview');
   }
 }
 

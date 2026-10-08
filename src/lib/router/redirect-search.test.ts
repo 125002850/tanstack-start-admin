@@ -9,8 +9,8 @@ describe('createRedirectWithSearch', () => {
       source: 'auth'
     };
 
-    expect(createRedirectWithSearch('/dashboard/overview', { search })).toEqual({
-      to: '/dashboard/overview',
+    expect(createRedirectWithSearch('/overview', { search })).toEqual({
+      to: '/overview',
       search
     });
   });

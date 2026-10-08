@@ -57,7 +57,7 @@ const MENU_TREE: MenuNode[] = [
         menuKey: 'iam_staff',
         menuName: '员工管理',
         menuType: 'MENU',
-        routePath: '/dashboard/basic-settings/staff',
+        routePath: '/basic-settings/staff',
         status: 'ENABLED',
         createById: 100,
         createByName: '创建人',
@@ -86,7 +86,7 @@ const MENU_TREE: MenuNode[] = [
         menuKey: 'iam_role',
         menuName: '角色管理',
         menuType: 'MENU',
-        routePath: '/dashboard/basic-settings/role',
+        routePath: '/basic-settings/role',
         status: 'ENABLED',
         children: []
       }
@@ -133,7 +133,7 @@ describe('MenuManagementPage', () => {
     await user.click(await within(tree).findByRole('button', { name: '选择 员工管理' }));
 
     await waitFor(() => {
-      expect(within(details).getByText('/dashboard/basic-settings/staff')).toBeInTheDocument();
+      expect(within(details).getByText('/basic-settings/staff')).toBeInTheDocument();
     });
     expect(screen.getByText('iam_staff_create')).toBeInTheDocument();
     expect(screen.getByText('iam:staff:create')).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe('MenuManagementPage', () => {
     await user.click(within(tree).getByRole('button', { name: '选择 角色管理' }));
 
     await waitFor(() => {
-      expect(within(details).getByText('/dashboard/basic-settings/role')).toBeInTheDocument();
+      expect(within(details).getByText('/basic-settings/role')).toBeInTheDocument();
     });
     expect(screen.getByText('当前菜单暂无按钮权限')).toBeInTheDocument();
     expect(screen.queryByText('iam:staff:create')).not.toBeInTheDocument();

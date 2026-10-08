@@ -1,4 +1,4 @@
-const DEFAULT_DASHBOARD_HREF = '/dashboard/overview';
+const DEFAULT_DASHBOARD_HREF = '/overview';
 
 export function getCurrentInternalHref(): string {
   if (typeof window === 'undefined') return DEFAULT_DASHBOARD_HREF;

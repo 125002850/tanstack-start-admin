@@ -7,11 +7,11 @@ import { useRouter } from '@tanstack/react-router';
 import { useNotificationStore } from '../utils/store';
 
 const actionRoutes: Record<string, string> = {
-  view: '/dashboard/overview',
-  'view-dictionaries': '/dashboard/system-management/dictionaries',
-  billing: '/dashboard/overview',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
+  view: '/overview',
+  'view-dictionaries': '/system-management/dictionaries',
+  billing: '/overview',
+  open: '/kanban',
+  'open-chat': '/chat'
 };
 
 export function NotificationsManagementPage() {

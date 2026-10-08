@@ -119,7 +119,7 @@ function isItemVisible(
   treeLookup?: Map<string, ResolvedMenuNode>
 ): boolean {
   const nav = meta.nav;
-  if (!nav) return false;
+  if (!nav || meta.feature?.enabled === false) return false;
 
   if (nav.isContainer) return false;
 
@@ -141,7 +141,7 @@ export function buildNavGroupsFromRoutes<TRoutes extends object>(
 
   for (const route of Object.values(routesById) as RouteNavSource[]) {
     const { fullPath, id } = route;
-    if (!fullPath || !fullPath.startsWith('/dashboard')) continue;
+    if (!fullPath || !id.startsWith('/_app/')) continue;
 
     const meta = getAppRouteStaticData(route);
     if (!meta?.nav) continue;

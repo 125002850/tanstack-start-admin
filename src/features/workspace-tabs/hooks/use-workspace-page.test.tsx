@@ -111,9 +111,9 @@ describe('useWorkspacePage', () => {
   });
 
   it('returns tabId from context (injected by ActivityHost)', () => {
-    const { getByTestId } = renderWithProvider('/dashboard/system-management/dictionaries');
+    const { getByTestId } = renderWithProvider('/system-management/dictionaries');
     expect(getByTestId('active').textContent).toBe('true');
-    expect(getByTestId('tab-id').textContent).toBe('/dashboard/system-management/dictionaries');
+    expect(getByTestId('tab-id').textContent).toBe('/system-management/dictionaries');
   });
 
   it('returns active=true, empty string and no-op updateLifecycle when no provider is in the tree', () => {
@@ -129,8 +129,8 @@ describe('useWorkspacePage', () => {
   it('does not re-render lifecycle-only consumers when workspace activity changes', () => {
     const onRender = vi.fn();
     const lifecycleValue = {
-      tabId: '/dashboard/test-page',
-      updateLifecycle: makeUpdateLifecycle('/dashboard/test-page')
+      tabId: '/test-page',
+      updateLifecycle: makeUpdateLifecycle('/test-page')
     };
     const renderTree = (active: boolean) => (
       <WorkspacePageActiveContext.Provider value={active}>
@@ -148,123 +148,117 @@ describe('useWorkspacePage', () => {
 
   it('no-op updateLifecycle when context is null does not write to store', () => {
     const store = useWorkspaceTabStore.getState();
-    store.registerPageDescriptor('/dashboard/test-page', makeDescriptor('/dashboard/test-page'));
+    store.registerPageDescriptor('/test-page', makeDescriptor('/test-page'));
 
     const { getByTestId } = render(React.createElement(TestHarness));
     act(() => {
       getByTestId('set-title').click();
     });
 
-    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/test-page'];
+    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/test-page'];
     expect(lifecycle?.title).not.toBe('Updated Title');
   });
 
   it('updateLifecycle updates title in store', () => {
     const store = useWorkspaceTabStore.getState();
     store.openOrActivate({
-      id: '/dashboard/test-page',
-      href: '/dashboard/test-page',
+      id: '/test-page',
+      href: '/test-page',
       title: 'Base Title',
       closable: true,
       keepAlive: true
     });
-    store.registerPageDescriptor('/dashboard/test-page', makeDescriptor('/dashboard/test-page'));
+    store.registerPageDescriptor('/test-page', makeDescriptor('/test-page'));
 
-    const { getByTestId } = renderWithProvider('/dashboard/test-page');
+    const { getByTestId } = renderWithProvider('/test-page');
     act(() => {
       getByTestId('set-title').click();
     });
 
-    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/test-page'];
+    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/test-page'];
     expect(lifecycle?.title).toBe('Updated Title');
-    expect(useWorkspaceTabStore.getState().tabs['/dashboard/test-page']?.title).toBe('Base Title');
+    expect(useWorkspaceTabStore.getState().tabs['/test-page']?.title).toBe('Base Title');
   });
 
   it('updateLifecycle updates dirty flag in store', () => {
     const store = useWorkspaceTabStore.getState();
-    store.registerPageDescriptor('/dashboard/test-page', makeDescriptor('/dashboard/test-page'));
+    store.registerPageDescriptor('/test-page', makeDescriptor('/test-page'));
 
-    const { getByTestId } = renderWithProvider('/dashboard/test-page');
+    const { getByTestId } = renderWithProvider('/test-page');
     act(() => {
       getByTestId('set-dirty').click();
     });
 
-    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/test-page'];
+    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/test-page'];
     expect(lifecycle?.dirty).toBe(true);
   });
 
   it('updateLifecycle stores closeGuard', () => {
     const store = useWorkspaceTabStore.getState();
-    store.registerPageDescriptor('/dashboard/test-page', makeDescriptor('/dashboard/test-page'));
+    store.registerPageDescriptor('/test-page', makeDescriptor('/test-page'));
 
-    const { getByTestId } = renderWithProvider('/dashboard/test-page');
+    const { getByTestId } = renderWithProvider('/test-page');
     act(() => {
       getByTestId('set-guard').click();
     });
 
-    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/test-page'];
+    const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots['/test-page'];
     expect(lifecycle?.closeGuard).toBeDefined();
     expect(typeof lifecycle?.closeGuard).toBe('function');
   });
 
   it('different provider values target different tabs', () => {
     const s = useWorkspaceTabStore.getState();
-    s.registerPageDescriptor('/dashboard/page-a', makeDescriptor('/dashboard/page-a'));
-    s.registerPageDescriptor('/dashboard/page-b', makeDescriptor('/dashboard/page-b'));
+    s.registerPageDescriptor('/page-a', makeDescriptor('/page-a'));
+    s.registerPageDescriptor('/page-b', makeDescriptor('/page-b'));
 
-    const { getByTestId: getA } = renderWithProvider('/dashboard/page-a');
+    const { getByTestId: getA } = renderWithProvider('/page-a');
     act(() => {
       getA('set-title').click();
     });
-    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/page-a']?.title).toBe(
+    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/page-a']?.title).toBe(
       'Updated Title'
     );
-    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/page-b']?.title).not.toBe(
+    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/page-b']?.title).not.toBe(
       'Updated Title'
     );
 
     cleanup();
 
-    const { getByTestId: getB } = renderWithProvider('/dashboard/page-b');
+    const { getByTestId: getB } = renderWithProvider('/page-b');
     act(() => {
       getB('set-dirty').click();
     });
-    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/dashboard/page-b']?.dirty).toBe(
-      true
-    );
+    expect(useWorkspaceTabStore.getState().lifecycleSnapshots['/page-b']?.dirty).toBe(true);
   });
 
   it('hidden keep-alive page still writes lifecycle to its own tab', () => {
     const s = useWorkspaceTabStore.getState();
     s.registerPageDescriptor(
-      '/dashboard/system-management/export-center',
-      makeDescriptor('/dashboard/system-management/export-center')
+      '/system-management/export-center',
+      makeDescriptor('/system-management/export-center')
     );
     s.registerPageDescriptor(
-      '/dashboard/system-management/dictionaries',
-      makeDescriptor('/dashboard/system-management/dictionaries')
+      '/system-management/dictionaries',
+      makeDescriptor('/system-management/dictionaries')
     );
 
-    // Exports is hidden (keep-alive) — provider still injects /dashboard/system-management/export-center
-    const { getByTestId } = renderWithProvider('/dashboard/system-management/export-center');
+    // Exports is hidden (keep-alive) — provider still injects /system-management/export-center
+    const { getByTestId } = renderWithProvider('/system-management/export-center');
     act(() => {
       getByTestId('set-title').click();
     });
 
     expect(
-      useWorkspaceTabStore.getState().lifecycleSnapshots[
-        '/dashboard/system-management/export-center'
-      ]?.title
+      useWorkspaceTabStore.getState().lifecycleSnapshots['/system-management/export-center']?.title
     ).toBe('Updated Title');
     expect(
-      useWorkspaceTabStore.getState().lifecycleSnapshots[
-        '/dashboard/system-management/dictionaries'
-      ]?.title
+      useWorkspaceTabStore.getState().lifecycleSnapshots['/system-management/dictionaries']?.title
     ).not.toBe('Updated Title');
   });
 
   it('reads active=false from provider when page is hidden', () => {
-    const updateLifecycle = makeUpdateLifecycle('/dashboard/system-management/export-center');
+    const updateLifecycle = makeUpdateLifecycle('/system-management/export-center');
     const { getByTestId } = render(
       React.createElement(
         WorkspacePageActiveContext.Provider,
@@ -273,7 +267,7 @@ describe('useWorkspacePage', () => {
           WorkspacePageLifecycleContext.Provider,
           {
             value: {
-              tabId: '/dashboard/system-management/export-center',
+              tabId: '/system-management/export-center',
               updateLifecycle
             }
           },
@@ -283,6 +277,6 @@ describe('useWorkspacePage', () => {
     );
 
     expect(getByTestId('active').textContent).toBe('false');
-    expect(getByTestId('tab-id').textContent).toBe('/dashboard/system-management/export-center');
+    expect(getByTestId('tab-id').textContent).toBe('/system-management/export-center');
   });
 });

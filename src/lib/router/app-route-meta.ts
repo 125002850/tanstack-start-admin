@@ -66,11 +66,15 @@ export interface AppRouteStaticData {
   requiredAnyPermissions?: string[];
   page?: AppPageData;
   workspace?: AppRouteWorkspaceData;
+  feature?: { key: string; enabled: boolean };
 }
 
 export function defineRouteMeta<T extends AppRouteStaticData>(data: T) {
   return {
-    staticData: data,
+    staticData:
+      data.feature?.enabled === false && data.nav
+        ? { ...data, nav: { ...data.nav, visible: false } }
+        : data,
     head: (): { meta: [{ title: string }] } => ({
       meta: [{ title: data.title ?? data.label ?? '' }]
     })

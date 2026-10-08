@@ -41,7 +41,7 @@ vi.mock('@/features/workspace-tabs/hooks/use-workspace-tags', () => ({
       },
       close: (id: string) => {
         const tab = store.tabs[id];
-        if (!tab || tab.href === '/dashboard/overview') return;
+        if (!tab || tab.href === '/overview') return;
         store.close(id);
       },
       closeOther: store.closeOther,
@@ -92,14 +92,14 @@ function openTab(
 }
 
 function setupHomeAndChat() {
-  openTab('/dashboard/overview', '仪表盘', { closable: false });
-  openTab('/dashboard/chat', 'Chat');
+  openTab('/overview', '仪表盘', { closable: false });
+  openTab('/chat', 'Chat');
 }
 
 function setupThreeTabs() {
-  openTab('/dashboard/overview', '仪表盘', { closable: false });
-  openTab('/dashboard/system-management/dictionaries', 'Dictionaries');
-  openTab('/dashboard/chat', 'Chat');
+  openTab('/overview', '仪表盘', { closable: false });
+  openTab('/system-management/dictionaries', 'Dictionaries');
+  openTab('/chat', 'Chat');
 }
 
 function setViewportMetrics(
@@ -147,7 +147,7 @@ describe('TagsBar', () => {
   });
 
   it('marks the active tab with aria-selected', () => {
-    openTab('/dashboard/overview', '仪表盘', { closable: false });
+    openTab('/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
 
     const tab = screen.getByRole('tab', { name: /仪表盘/ });
@@ -159,7 +159,7 @@ describe('TagsBar', () => {
   });
 
   it('uses a native horizontal scroll viewport with hidden scrollbars', () => {
-    openTab('/dashboard/overview', '仪表盘', { closable: false });
+    openTab('/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
 
     const tablist = screen.getByRole('tablist', { name: 'Workspace tabs' });
@@ -198,7 +198,7 @@ describe('TagsBar', () => {
   });
 
   it('scrolls a newly opened active tab after its visual item is mounted', async () => {
-    openTab('/dashboard/overview', '仪表盘', { closable: false });
+    openTab('/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
 
     const scrollIntoView = vi.mocked(HTMLElement.prototype.scrollIntoView);
@@ -206,7 +206,7 @@ describe('TagsBar', () => {
     scrollIntoView.mockClear();
 
     act(() => {
-      openTab('/dashboard/chat', 'Chat');
+      openTab('/chat', 'Chat');
     });
 
     const newTab = await screen.findByRole('tab', { name: /Chat/ });
@@ -263,15 +263,15 @@ describe('TagsBar', () => {
   });
 
   it('home tab has no close button', () => {
-    openTab('/dashboard/overview', '仪表盘', { closable: false });
+    openTab('/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
 
     expect(screen.queryByRole('button', { name: '关闭：仪表盘' })).not.toBeInTheDocument();
   });
 
   it('uses sibling native close buttons with an accessible 24px target', () => {
-    openTab('/dashboard/system-management/dictionaries', 'Dictionaries');
-    openTab('/dashboard/chat', 'Chat');
+    openTab('/system-management/dictionaries', 'Dictionaries');
+    openTab('/chat', 'Chat');
     render(<TagsBar />);
 
     const inactiveClose = screen.getByRole('button', { name: '关闭：Dictionaries' });
@@ -283,9 +283,7 @@ describe('TagsBar', () => {
     expect(activeClose.closest('[role="tab"]')).toBeNull();
 
     fireEvent.click(inactiveClose);
-    expect(
-      useWorkspaceTabStore.getState().tabs['/dashboard/system-management/dictionaries']
-    ).toBeUndefined();
+    expect(useWorkspaceTabStore.getState().tabs['/system-management/dictionaries']).toBeUndefined();
   });
 
   it('uses the tab surface as the drag activator without rendering a handle', () => {
@@ -302,7 +300,7 @@ describe('TagsBar', () => {
 
   it('Alt+Arrow reorders movable tabs and keeps the home tab fixed', () => {
     setupHomeAndChat();
-    openTab('/dashboard/system-management/dictionaries', 'Dictionaries');
+    openTab('/system-management/dictionaries', 'Dictionaries');
     render(<TagsBar />);
     const dictionaries = screen.getByRole('tab', { name: 'Dictionaries' });
     dictionaries.focus();
@@ -318,9 +316,7 @@ describe('TagsBar', () => {
       'Dictionaries',
       'Chat'
     ]);
-    expect(useWorkspaceTabStore.getState().activeId).toBe(
-      '/dashboard/system-management/dictionaries'
-    );
+    expect(useWorkspaceTabStore.getState().activeId).toBe('/system-management/dictionaries');
   });
 
   it('ArrowLeft and ArrowRight move focus across opened tabs', () => {
@@ -345,14 +341,14 @@ describe('TagsBar', () => {
     overview.focus();
     fireEvent.keyDown(overview, { key: 'Enter' });
 
-    expect(useWorkspaceTabStore.getState().activeId).toBe('/dashboard/overview');
+    expect(useWorkspaceTabStore.getState().activeId).toBe('/overview');
   });
 
   it('captures active page overlays on pointerdown and passes the snapshot to activation', async () => {
     const user = userEvent.setup();
     setupHomeAndChat();
     const snapshot: WorkspacePageOverlaySnapshot = {
-      tabId: '/dashboard/chat'
+      tabId: '/chat'
     };
     tagInteractionMocks.captureActivePageOverlays.mockReturnValue(snapshot);
     render(<TagsBar />);
@@ -360,11 +356,9 @@ describe('TagsBar', () => {
     const overview = screen.getByRole('tab', { name: /仪表盘/ });
     await user.click(overview);
 
-    expect(tagInteractionMocks.captureActivePageOverlays).toHaveBeenCalledWith(
-      '/dashboard/overview'
-    );
+    expect(tagInteractionMocks.captureActivePageOverlays).toHaveBeenCalledWith('/overview');
     expect(tagInteractionMocks.openOrActivate).toHaveBeenCalledWith(
-      expect.objectContaining({ id: '/dashboard/overview' }),
+      expect.objectContaining({ id: '/overview' }),
       snapshot
     );
     expect(tagInteractionMocks.captureActivePageOverlays.mock.invocationCallOrder[0]).toBeLessThan(
@@ -380,25 +374,25 @@ describe('TagsBar', () => {
     tabs[1]?.focus();
     fireEvent.keyDown(tabs[1]!, { key: 'Delete' });
 
-    expect(useWorkspaceTabStore.getState().tabs['/dashboard/chat']).toBeUndefined();
+    expect(useWorkspaceTabStore.getState().tabs['/chat']).toBeUndefined();
   });
 
   it('Delete does not close the home tab', () => {
-    openTab('/dashboard/overview', '仪表盘', { closable: false });
+    openTab('/overview', '仪表盘', { closable: false });
     render(<TagsBar />);
 
     const tab = screen.getByRole('tab', { name: /仪表盘/ });
     tab.focus();
     fireEvent.keyDown(tab, { key: 'Delete' });
 
-    expect(useWorkspaceTabStore.getState().tabs['/dashboard/overview']).toBeDefined();
+    expect(useWorkspaceTabStore.getState().tabs['/overview']).toBeDefined();
   });
 
   it('shows the dirty indicator when lifecycle marks a tab as dirty', () => {
-    openTab('/dashboard/chat', 'Chat');
+    openTab('/chat', 'Chat');
     useWorkspaceTabStore.setState({
       lifecycleSnapshots: {
-        '/dashboard/chat': { title: 'Chat', dirty: true }
+        '/chat': { title: 'Chat', dirty: true }
       }
     });
     render(<TagsBar />);
@@ -411,11 +405,7 @@ describe('TagsBar', () => {
     render(<TagsBar />);
 
     const ids = screen.getAllByRole('tab').map((tab) => tab.getAttribute('data-tab-id'));
-    expect(ids).toEqual([
-      '/dashboard/overview',
-      '/dashboard/system-management/dictionaries',
-      '/dashboard/chat'
-    ]);
+    expect(ids).toEqual(['/overview', '/system-management/dictionaries', '/chat']);
     expect(screen.getByRole('tab', { name: /仪表盘/ })).toHaveAttribute('data-pinned', 'home');
   });
 });

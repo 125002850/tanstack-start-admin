@@ -10,7 +10,7 @@ const HOME_ID = resolveDashboardHomeHref();
 function makeTab(overrides: Partial<WorkspaceTabOpenInput> = {}): WorkspaceTabOpenInput {
   return {
     id: 'tab-1',
-    href: '/dashboard/overview',
+    href: '/overview',
     title: 'Overview',
     closable: true,
     keepAlive: false,
@@ -122,13 +122,13 @@ describe('workspace-tags store', () => {
     });
 
     it('updates href and title on re-activation', () => {
-      const tab = makeTab({ href: '/dashboard/items' });
+      const tab = makeTab({ href: '/items' });
       useWorkspaceTabStore.getState().openOrActivate(tab);
       useWorkspaceTabStore
         .getState()
-        .openOrActivate(makeTab({ id: tab.id, href: '/dashboard/items?page=2', title: 'Updated' }));
+        .openOrActivate(makeTab({ id: tab.id, href: '/items?page=2', title: 'Updated' }));
       const updated = useWorkspaceTabStore.getState().tabs[tab.id];
-      expect(updated.href).toBe('/dashboard/items?page=2');
+      expect(updated.href).toBe('/items?page=2');
       expect(updated.title).toBe('Updated');
     });
 
@@ -147,7 +147,7 @@ describe('workspace-tags store', () => {
 
     it('pins home tab to the first position when it is opened after other tabs', () => {
       const store = useWorkspaceTabStore.getState();
-      store.openOrActivate(makeTab({ id: 'items', href: '/dashboard/items', title: 'Exports' }));
+      store.openOrActivate(makeTab({ id: 'items', href: '/items', title: 'Exports' }));
       store.openOrActivate(
         makeTab({ id: HOME_ID, href: HOME_ID, title: '仪表盘', closable: false })
       );
@@ -436,10 +436,10 @@ describe('workspace-tags store', () => {
       openRegisteredPage(
         'tab-1',
         { initialTitle: 'Exports' },
-        { href: '/dashboard/items?page=2', title: 'Exports' }
+        { href: '/items?page=2', title: 'Exports' }
       );
 
-      expect(getState().tabs['tab-1']?.href).toBe('/dashboard/items?page=2');
+      expect(getState().tabs['tab-1']?.href).toBe('/items?page=2');
     });
 
     it('does not duplicate tab in openedOrder when an open tab is re-registered', () => {

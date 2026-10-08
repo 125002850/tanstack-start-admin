@@ -14,18 +14,18 @@ const navGroups: NavGroup[] = [
       {
         id: 'overview',
         title: '概览',
-        url: '/dashboard/overview'
+        url: '/overview'
       },
       {
         id: 'dict',
         title: '字典管理',
-        url: '/dashboard/system-management/dictionaries',
+        url: '/system-management/dictionaries',
         menuKey: 'dict-management'
       },
       {
         id: 'report-summary',
         title: '报表汇总',
-        url: '/dashboard/reports/overview',
+        url: '/reports/overview',
         menuKey: 'report-summary'
       }
     ]

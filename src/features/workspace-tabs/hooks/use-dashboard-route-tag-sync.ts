@@ -161,12 +161,8 @@ export function useDashboardRouteTagSync(
     if (fullHref === prevHref.current && !treeLookup) return;
     prevHref.current = fullHref;
 
-    if (!normalizedPathname.startsWith('/dashboard')) {
-      clearActiveWorkspaceRoute();
-      return;
-    }
-
-    if (normalizedPathname === '/dashboard') {
+    const isAppRoute = router.state.matches.some((match) => match.routeId === '/_app');
+    if (!isAppRoute) {
       clearActiveWorkspaceRoute();
       return;
     }

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mockIamSession } from './support/mock-iam-session';
 
-const CONTRACT_ROUTE = '/dashboard/forms/overlay-contract';
+const CONTRACT_ROUTE = '/forms/overlay-contract';
 
 const popperWrapperSelector = '[data-radix-popper-content-wrapper]';
 const openOverlaySelector = [
@@ -34,7 +34,7 @@ async function switchToOverviewTab(page: Page, options?: { dispatchHiddenTabClic
   } else {
     await page.getByRole('tab', { name: /^仪表盘/ }).click();
   }
-  await expect(page).toHaveURL(/\/dashboard\/overview$/);
+  await expect(page).toHaveURL(/\/overview$/);
   await expect(page.getByRole('tab', { name: /^仪表盘/ })).toHaveAttribute('aria-selected', 'true');
 }
 

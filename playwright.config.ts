@@ -33,7 +33,7 @@ export default defineConfig({
         webServer: {
           command: 'bash scripts/playwright-workspace-tabs-servers.sh',
           timeout: 240_000,
-          url: 'http://127.0.0.1:3099/dashboard/overview',
+          url: 'http://127.0.0.1:3099/overview',
           reuseExistingServer: false
         }
       }),

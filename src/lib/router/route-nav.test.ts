@@ -7,8 +7,8 @@ describe('route nav', () => {
   it('uses the backend-aligned management groups as the static fallback', () => {
     const groups = buildNavGroupsFromRoutes({
       logs: {
-        id: '/dashboard/log-management/login',
-        fullPath: '/dashboard/log-management/login',
+        id: '/_app/log-management/login',
+        fullPath: '/log-management/login',
         options: {
           staticData: {
             label: '登录日志',
@@ -17,8 +17,8 @@ describe('route nav', () => {
         }
       },
       system: {
-        id: '/dashboard/system-management/dictionaries',
-        fullPath: '/dashboard/system-management/dictionaries',
+        id: '/_app/system-management/dictionaries',
+        fullPath: '/system-management/dictionaries',
         options: {
           staticData: {
             label: '字典管理',
@@ -27,8 +27,8 @@ describe('route nav', () => {
         }
       },
       basic: {
-        id: '/dashboard/basic-settings/staff',
-        fullPath: '/dashboard/basic-settings/staff',
+        id: '/_app/basic-settings/staff',
+        fullPath: '/basic-settings/staff',
         options: {
           staticData: {
             label: '员工管理',
@@ -44,8 +44,8 @@ describe('route nav', () => {
   it('maps the examples group to the static label and orders it before management groups', () => {
     const groups = buildNavGroupsFromRoutes({
       basic: {
-        id: '/dashboard/basic-settings/staff',
-        fullPath: '/dashboard/basic-settings/staff',
+        id: '/_app/basic-settings/staff',
+        fullPath: '/basic-settings/staff',
         options: {
           staticData: {
             label: '员工管理',
@@ -54,8 +54,8 @@ describe('route nav', () => {
         }
       },
       example: {
-        id: '/dashboard/examples/data-table-editing',
-        fullPath: '/dashboard/examples/data-table-editing',
+        id: '/_app/examples/data-table-editing',
+        fullPath: '/examples/data-table-editing',
         options: {
           staticData: {
             label: '表格编辑',
@@ -68,15 +68,15 @@ describe('route nav', () => {
     expect(groups.map((group) => group.label)).toEqual(['示例', '基础设置']);
     expect(groups[0]?.items[0]).toMatchObject({
       title: '表格编辑',
-      url: '/dashboard/examples/data-table-editing'
+      url: '/examples/data-table-editing'
     });
   });
 
   it('prefers an explicit route group over a stale backend ancestor group', () => {
     const routes = {
       staff: {
-        id: '/dashboard/basic-settings/staff',
-        fullPath: '/dashboard/basic-settings/staff',
+        id: '/_app/basic-settings/staff',
+        fullPath: '/basic-settings/staff',
         options: {
           staticData: {
             label: '员工管理',
@@ -119,8 +119,8 @@ describe('route nav', () => {
   it('uses an explicit route label instead of the backend menu name', () => {
     const routes = {
       staff: {
-        id: '/dashboard/basic-settings/staff',
-        fullPath: '/dashboard/basic-settings/staff',
+        id: '/_app/basic-settings/staff',
+        fullPath: '/basic-settings/staff',
         options: {
           staticData: {
             label: '组织架构',
@@ -163,8 +163,8 @@ describe('route nav', () => {
   it('carries route menuKey into nav items', () => {
     const groups = buildNavGroupsFromRoutes({
       dictionaries: {
-        id: '/dashboard/system-management/dictionaries',
-        fullPath: '/dashboard/system-management/dictionaries',
+        id: '/_app/system-management/dictionaries',
+        fullPath: '/system-management/dictionaries',
         options: {
           staticData: {
             label: '字典管理',
@@ -185,8 +185,8 @@ describe('route nav', () => {
   it('uses the local route icon and ignores backend icon values', () => {
     const routes = {
       staff: {
-        id: '/dashboard/basic-settings/staff',
-        fullPath: '/dashboard/basic-settings/staff',
+        id: '/_app/basic-settings/staff',
+        fullPath: '/basic-settings/staff',
         options: { staticData: { nav: { menuKey: 'iam_staff', icon: 'settings' } } }
       }
     };

@@ -65,9 +65,14 @@ export async function ensureDashboardRouteAccess({
   queryClient,
   matches
 }: DashboardRouteAccessOptions): Promise<IamMe> {
+  const routeData = getMatchedRouteStaticData(matches);
+  if (routeData.some((data) => data.feature?.enabled === false)) {
+    throw new PermissionDeniedError('当前功能暂未开放');
+  }
+
   const me = await ensureIamMe(queryClient);
 
-  for (const staticData of getMatchedRouteStaticData(matches)) {
+  for (const staticData of routeData) {
     ensureRouteStaticDataAccess(me, staticData);
   }
 

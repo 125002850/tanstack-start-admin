@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { mockIamSession } from './support/mock-iam-session';
 
-const EDITING_ROUTE = '/dashboard/examples/data-table-editing';
+const EDITING_ROUTE = '/examples/data-table-editing';
 
 interface RuntimeIssues {
   consoleErrors: string[];

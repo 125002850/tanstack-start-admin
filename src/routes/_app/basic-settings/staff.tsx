@@ -1,0 +1,31 @@
+import { createFileRoute, lazyRouteComponent } from '@tanstack/react-router';
+import { WorkspacePageRoute } from '@/features/workspace-tabs/components/workspace-page-route';
+import { defineRouteMeta } from '@/lib/router/app-route-meta';
+
+const StaffManagementPage = lazyRouteComponent(
+  () => import('@/features/iam/components/staff-management-page')
+);
+
+const meta = defineRouteMeta({
+  label: '组织架构',
+  title: '基础设置：组织架构',
+  nav: {
+    group: 'basicSettings',
+    menuKey: 'iam_staff',
+    icon: 'teams',
+    shortcut: ['b', 's']
+  },
+  workspace: {
+    refreshPolicy: 'query-invalidate',
+    keepAlive: true
+  }
+});
+
+export const Route = createFileRoute('/_app/basic-settings/staff')({
+  ...meta,
+  component: StaffPage
+});
+
+function StaffPage() {
+  return <WorkspacePageRoute contentSizing='contained' render={() => <StaffManagementPage />} />;
+}

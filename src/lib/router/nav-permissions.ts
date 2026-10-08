@@ -65,7 +65,7 @@ export function filterNavItemsByMenuKeys(
     }
 
     if (!item.items?.length) {
-      return [item];
+      return item.linkable === false ? [] : [item];
     }
 
     const filteredChildren = filterNavItemsByMenuKeys(item.items, allowedMenuKeys);

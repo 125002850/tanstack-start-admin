@@ -22,7 +22,10 @@ async function expectWorkspaceTabs(page: Page) {
 }
 
 async function openSidebarPage(page: Page, label: string, path: string) {
-  await page.getByRole('link', { name: label, exact: true }).click();
+  const link = page.getByRole('link', { name: label, exact: true });
+  if (!(await link.isVisible()))
+    await page.getByRole('button', { name: '系统管理', exact: true }).click();
+  await link.click();
   await expect(page).toHaveURL(new RegExp(`${path}$`));
   await expect(page.getByRole('tab', { name: new RegExp(`^${label}`) })).toHaveAttribute(
     'aria-selected',
@@ -44,7 +47,7 @@ async function dragTab(page: Page, source: Locator, target: Locator) {
 
   const sourceX = sourceBox.x + sourceBox.width / 2;
   const sourceY = sourceBox.y + sourceBox.height / 2;
-  const targetX = targetBox.x + targetBox.width / 4;
+  const targetX = targetBox.x + targetBox.width / 2;
   const targetY = targetBox.y + targetBox.height / 2;
 
   await page.mouse.move(sourceX, sourceY);
@@ -61,17 +64,17 @@ async function dragTab(page: Page, source: Locator, target: Locator) {
 }
 
 test('@preflight @workspace-v2 tags bar drag preflight is reachable', async ({ page }) => {
-  await page.goto('/dashboard/overview');
+  await page.goto('/overview');
   await expectWorkspaceTabs(page);
   await expect(page.locator('[data-slot="workspace-tag"][data-pinned="home"]')).toBeVisible();
   await expect(page.getByRole('tab', { name: /^仪表盘/ })).toBeVisible();
 });
 
 test('@workspace-v2 drag sorting keeps home first and preserves navigation', async ({ page }) => {
-  await page.goto('/dashboard/overview');
+  await page.goto('/overview');
   await expectWorkspaceTabs(page);
-  await openSidebarPage(page, '字典管理', '/dashboard/system-management/dictionaries');
-  await openSidebarPage(page, '导出中心', '/dashboard/system-management/export-center');
+  await openSidebarPage(page, '字典管理', '/system-management/dictionaries');
+  await openSidebarPage(page, '导出中心', '/system-management/export-center');
 
   expect(await tabTexts(page)).toEqual(['仪表盘', '字典管理', '导出中心']);
 
@@ -90,20 +93,20 @@ test('@workspace-v2 drag sorting keeps home first and preserves navigation', asy
 
   await dragTab(page, exportTab, dictionaryTab);
 
-  await expect(page).toHaveURL(/\/dashboard\/system-management\/export-center$/);
+  await expect(page).toHaveURL(/\/system-management\/export-center$/);
   await expect.poll(() => tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
 
   const dictionaryTabAfterDrag = page.getByRole('tab', { name: /^字典管理/ });
   await dictionaryTabAfterDrag.focus();
   await dictionaryTabAfterDrag.press('Enter');
-  await expect(page).toHaveURL(/\/dashboard\/system-management\/dictionaries$/);
+  await expect(page).toHaveURL(/\/system-management\/dictionaries$/);
 });
 
 test('@workspace-v2 drag sorting does not break close actions', async ({ page }) => {
-  await page.goto('/dashboard/overview');
+  await page.goto('/overview');
   await expectWorkspaceTabs(page);
-  await openSidebarPage(page, '字典管理', '/dashboard/system-management/dictionaries');
-  await openSidebarPage(page, '导出中心', '/dashboard/system-management/export-center');
+  await openSidebarPage(page, '字典管理', '/system-management/dictionaries');
+  await openSidebarPage(page, '导出中心', '/system-management/export-center');
 
   const exportTab = page.getByRole('tab', { name: /^导出中心/ });
   const dictionaryTab = page.getByRole('tab', { name: /^字典管理/ });
@@ -112,7 +115,7 @@ test('@workspace-v2 drag sorting does not break close actions', async ({ page })
   await expect.poll(() => tabTexts(page)).toEqual(['仪表盘', '导出中心', '字典管理']);
 
   const dictionaryShell = page.locator(
-    '[data-slot="workspace-tag-shell"][data-tab-id="/dashboard/system-management/dictionaries"]'
+    '[data-slot="workspace-tag-shell"][data-tab-id="/system-management/dictionaries"]'
   );
   await dictionaryShell.hover();
   await dictionaryShell.getByRole('button', { name: '关闭：字典管理' }).click();

@@ -1,3 +1,4 @@
+import { buildBusinessCenterNav } from '@/lib/router/business-center-nav';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Sheet,
@@ -37,7 +38,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -70,7 +70,7 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
   const hasChildren = Boolean(item.items?.length);
   const hasActiveChild =
     item.items?.some((subItem) => isRouteActive(pathname, subItem.url)) ?? false;
-  const isActive = isRouteActive(pathname, item.url) || hasActiveChild;
+  const isActive = (item.linkable !== false && isRouteActive(pathname, item.url)) || hasActiveChild;
   const isCollapsedDesktop = state === 'collapsed' && !isMobile;
   const [open, setOpen] = React.useState(() => hasActiveChild);
   const [flyoutOpen, setFlyoutOpen] = React.useState(false);
@@ -277,12 +277,7 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
   }
 
   return (
-    <Collapsible
-      asChild
-      open={hasActiveChild || open}
-      onOpenChange={setOpen}
-      className='group/collapsible'
-    >
+    <Collapsible asChild open={open} onOpenChange={setOpen} className='group/collapsible'>
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip={item.title} isActive={isActive}>
@@ -345,7 +340,7 @@ export default function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size='lg' asChild>
-              <Link to='/dashboard/overview'>
+              <Link to='/overview'>
                 <div className='bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-md'>
                   <Icons.logo className='size-4' />
                 </div>
@@ -359,16 +354,13 @@ export default function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className='overflow-x-hidden'>
-        {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label || 'ungrouped'} className='py-0'>
-            {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
-            <SidebarMenu>
-              {group.items.map((item) => (
-                <SidebarNavItem key={item.title} item={item} pathname={pathname} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+        <SidebarGroup className='py-0'>
+          <SidebarMenu>
+            {buildBusinessCenterNav(filteredGroups).map((item) => (
+              <SidebarNavItem key={item.id ?? item.title} item={item} pathname={pathname} />
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -420,9 +412,7 @@ export default function AppSidebar() {
                     <Icons.lock className='size-4' />
                     修改密码
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => router.navigate({ to: '/dashboard/notifications' })}
-                  >
+                  <DropdownMenuItem onClick={() => router.navigate({ to: '/notifications' })}>
                     <Icons.notification className='size-4' />
                     通知
                   </DropdownMenuItem>

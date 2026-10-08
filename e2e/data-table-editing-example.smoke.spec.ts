@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { mockIamSession } from './support/mock-iam-session';
 
-const EXAMPLE_ROUTE = '/dashboard/examples/data-table-editing';
+const EXAMPLE_ROUTE = '/examples/data-table-editing';
 const EDITOR_LABELS = [
   'text · input',
   'longText · textarea',

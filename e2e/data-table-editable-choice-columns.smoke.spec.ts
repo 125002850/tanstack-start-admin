@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { mockIamSession } from './support/mock-iam-session';
 
-const CONTRACT_ROUTE = '/dashboard/elements/data-table-editable-choice';
+const CONTRACT_ROUTE = '/elements/data-table-editable-choice';
 
 function cell(page: Page, columnId: string, index = 0): Locator {
   return page.locator(`td[data-cell-column-id="${columnId}"]`).nth(index);

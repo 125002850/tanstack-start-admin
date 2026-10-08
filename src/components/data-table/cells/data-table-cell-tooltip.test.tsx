@@ -137,7 +137,7 @@ describe('DataTableCellTooltipProvider', () => {
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(80);
 
     const user = userEvent.setup();
-    const tabId = '/dashboard/system-management/export-center';
+    const tabId = '/system-management/export-center';
     const value = 'FU20260617001-LONG-FOLLOW-UP-CODE';
 
     render(<WorkspaceOverlayRootTooltipHarness tabId={tabId} value={value} />);

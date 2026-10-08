@@ -151,4 +151,34 @@ describe('ensureDashboardRouteAccess', () => {
       })
     ).resolves.toBe(me);
   });
+  it('denies disabled features before loading the IAM session', async () => {
+    await expect(
+      ensureDashboardRouteAccess({
+        queryClient,
+        matches: [createMatch({ feature: { key: 'example', enabled: false } })]
+      })
+    ).rejects.toThrow('当前功能暂未开放');
+    expect(mockEnsureIamMe).not.toHaveBeenCalled();
+  });
+
+  it('keeps IAM menu permission checks when a feature is enabled', async () => {
+    const match = createMatch({
+      feature: { key: 'staff', enabled: true },
+      nav: { menuKey: 'iam_staff' }
+    });
+    mockEnsureIamMe.mockResolvedValue(
+      createMe({
+        menus: [createMenu({ permissionCode: 'system:staff:query' })]
+      })
+    );
+    await expect(
+      ensureDashboardRouteAccess({ queryClient, matches: [match] })
+    ).rejects.toBeInstanceOf(PermissionDeniedError);
+    const me = createMe({
+      menus: [createMenu({ permissionCode: 'system:staff:query' })],
+      permissions: ['system:staff:query']
+    });
+    mockEnsureIamMe.mockResolvedValue(me);
+    await expect(ensureDashboardRouteAccess({ queryClient, matches: [match] })).resolves.toBe(me);
+  });
 });

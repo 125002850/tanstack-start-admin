@@ -62,24 +62,24 @@ describe('nav permissions', () => {
           {
             id: 'overview',
             title: '概览',
-            url: '/dashboard/overview'
+            url: '/overview'
           },
           {
             id: 'system',
             title: '系统管理',
-            url: '/dashboard/system-management',
+            url: '/system-management',
             linkable: false,
             items: [
               {
                 id: 'dict',
                 title: '字典管理',
-                url: '/dashboard/system-management/dictionaries',
+                url: '/system-management/dictionaries',
                 menuKey: 'dict-management'
               },
               {
                 id: 'users',
                 title: '用户管理',
-                url: '/dashboard/system-management/users',
+                url: '/system-management/users',
                 menuKey: 'user-management'
               }
             ]
@@ -87,7 +87,7 @@ describe('nav permissions', () => {
           {
             id: 'report-summary',
             title: '报表汇总',
-            url: '/dashboard/reports/overview',
+            url: '/reports/overview',
             menuKey: 'report-summary'
           }
         ]
@@ -111,13 +111,13 @@ describe('nav permissions', () => {
             {
               id: 'system',
               title: '系统管理',
-              url: '/dashboard/system-management',
+              url: '/system-management',
               linkable: false,
               items: [
                 {
                   id: 'dict',
                   title: '字典管理',
-                  url: '/dashboard/system-management/dictionaries',
+                  url: '/system-management/dictionaries',
                   menuKey: 'dict-management'
                 }
               ]
@@ -130,4 +130,14 @@ describe('nav permissions', () => {
 
     expect(result).toEqual([]);
   });
+});
+
+it('removes initially empty containers but retains linkable leaf pages', () => {
+  const items = [
+    { id: 'empty', title: '空分组', url: '/empty', linkable: false },
+    { id: 'empty-array', title: '空分组', url: '/empty-array', linkable: false, items: [] },
+    { id: 'page', title: '页面', url: '/page' }
+  ];
+  const result = filterNavGroupsByMenuKeys([{ label: '分组', items }], new Set());
+  expect(result[0]?.items.map((item) => item.id)).toEqual(['page']);
 });

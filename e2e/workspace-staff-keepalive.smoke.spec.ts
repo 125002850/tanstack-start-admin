@@ -2,9 +2,9 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { mockIamSession } from './support/mock-iam-session';
 
-const STAFF_ROUTE = '/dashboard/basic-settings/staff';
-const DEPT_ROUTE = '/dashboard/basic-settings/dept';
-const ROLE_ROUTE = '/dashboard/basic-settings/role';
+const STAFF_ROUTE = '/basic-settings/staff';
+const DEPT_ROUTE = '/basic-settings/dept';
+const ROLE_ROUTE = '/basic-settings/role';
 
 function apiEnvelope<T>(data: T) {
   return { code: 200, msg: 'ok', data };
@@ -160,7 +160,7 @@ test('@workspace-v2 preserves staff filters when switching through dashboard hom
   });
 
   await page.getByRole('tab', { name: /^仪表盘/ }).click();
-  await expect(page).toHaveURL(/\/dashboard\/overview$/);
+  await expect(page).toHaveURL(/\/overview$/);
 
   const preservedInput = page.locator('[data-keep-alive-probe="staff-filter"]');
   await expect(preservedInput).toHaveCount(1);

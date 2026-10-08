@@ -25,7 +25,7 @@ function createStorageMock() {
   };
 }
 
-function createMockLocation(pathname = '/dashboard/overview', search = '?tab=active') {
+function createMockLocation(pathname = '/overview', search = '?tab=active') {
   const href = `https://example.com${pathname}${search}`;
   return {
     href,
@@ -95,6 +95,6 @@ describe('IAM session', () => {
     });
     expect(store.iam_refresh_token).toBeUndefined();
     expect(store.iam_access_token_expires_at).toBeUndefined();
-    expect(location.href).toBe('/auth/sign-in?redirect=%2Fdashboard%2Foverview%3Ftab%3Dactive');
+    expect(location.href).toBe('/auth/sign-in?redirect=%2Foverview%3Ftab%3Dactive');
   });
 });
