@@ -1,5 +1,4 @@
 import * as React from 'react';
-
 import { handleFormSubmitError } from '@/lib/query-client';
 
 import { AlertModal } from '@/components/modal/alert-modal';
@@ -36,22 +35,26 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
     null
   );
   const [isLoading, setIsLoading] = React.useState(false);
+  const runningRef = React.useRef(false);
 
   const withConfirm = React.useCallback(
     (options: ConfirmActionOptions<TArgs>) =>
       (...args: TArgs) => {
+        if (runningRef.current) return;
         setPendingAction({ args, options });
       },
     []
   );
 
   const handleClose = React.useCallback(() => {
-    if (isLoading) return;
+    if (runningRef.current) return;
     setPendingAction(null);
-  }, [isLoading]);
+  }, []);
 
   const handleConfirm = React.useCallback(async () => {
-    if (!pendingAction || isLoading) return;
+    if (!pendingAction || runningRef.current) return;
+
+    runningRef.current = true;
 
     setIsLoading(true);
     try {
@@ -60,9 +63,10 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
     } catch (error) {
       handleFormSubmitError(error);
     } finally {
+      runningRef.current = false;
       setIsLoading(false);
     }
-  }, [pendingAction, isLoading]);
+  }, [pendingAction]);
 
   const confirmDialog = pendingAction ? (
     <AlertModal

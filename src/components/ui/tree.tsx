@@ -14,6 +14,7 @@ export interface TreeItem {
   disabledReason?: string;
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
   endContent?: React.ReactNode;
+  onDoubleClick?: (e: React.MouseEvent) => void;
   children?: TreeItem[];
 }
 
@@ -306,6 +307,9 @@ function TreeNode({
             )}
             style={{ paddingLeft: `${depth}rem` }}
             onClick={handleSelect}
+            onDoubleClick={(event) => {
+              if (!node.item.disabled) node.item.onDoubleClick?.(event);
+            }}
             onFocus={() => onActiveValueChange(node.item.value)}
             onKeyDown={(event) => onItemKeyDown(event, node)}
           >
@@ -318,6 +322,7 @@ function TreeNode({
                 data-tree-expander=''
                 className='size-6 shrink-0 text-muted-foreground'
                 aria-label={expanded ? `收起${node.item.label}` : `展开${node.item.label}`}
+                onDoubleClick={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation();
                   onToggleExpanded(node.item.value);
@@ -493,6 +498,7 @@ export function Tree({
 
   const handleItemKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>, node: TreeItemModel) => {
+      if (event.target !== event.currentTarget) return;
       const currentIndex = visibleNodes.findIndex(
         (visibleNode) => visibleNode.item.value === node.item.value
       );

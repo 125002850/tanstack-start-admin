@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Tree, type TreeItem } from './tree';
 
@@ -176,4 +176,34 @@ describe('Tree', () => {
       )
     ).toThrow('Tree item value must be unique: duplicate');
   });
+});
+
+it('does not interpret a nested button Enter as row selection', () => {
+  const onValueChange = vi.fn();
+  render(<Tree items={ITEMS} selection={{ mode: 'single', value: null, onValueChange }} />);
+  const button = screen.getByRole('treeitem', { name: '总部' }).querySelector('button')!;
+  fireEvent.keyDown(button, { key: 'Enter' });
+  expect(onValueChange).not.toHaveBeenCalled();
+  expect(screen.getByRole('treeitem', { name: '总部' })).not.toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+});
+
+it('supports node double-click but ignores disabled nodes and expand buttons', () => {
+  const onDoubleClick = vi.fn();
+  render(
+    <Tree
+      selection={{ mode: 'single', value: null, onValueChange: () => {} }}
+      items={[
+        { value: 'root', label: '根', onDoubleClick, children: [{ value: 'child', label: '子' }] },
+        { value: 'disabled', label: '禁用', disabled: true, onDoubleClick }
+      ]}
+    />
+  );
+  fireEvent.doubleClick(screen.getByRole('treeitem', { name: '根' }));
+  expect(onDoubleClick).toHaveBeenCalledTimes(1);
+  fireEvent.doubleClick(screen.getByRole('button', { name: '收起根' }));
+  fireEvent.doubleClick(screen.getByRole('treeitem', { name: '禁用' }));
+  expect(onDoubleClick).toHaveBeenCalledTimes(1);
 });
