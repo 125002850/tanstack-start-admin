@@ -18,7 +18,12 @@ import {
 } from '@/lib/api/clients/service';
 import { nullableDateTime, nullableOperatorLabel, nullableText } from '@/lib/formatters/display';
 
-import { operationAuditEnumCode, operationAuditEnumLabel } from '../operation-audit-enum';
+import {
+  isOperationAuditFailed,
+  isOperationAuditSuccess,
+  operationAuditEnumCode,
+  operationAuditEnumLabel
+} from '../operation-audit-enum';
 
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   const displayValue = value === null || value === undefined || value === '' ? '-' : value;
@@ -79,7 +84,7 @@ export function OperationAuditDetailSheet({
   const status = detail?.resultStatus ?? data.resultStatus;
   const actionCode = operationAuditEnumCode(action);
   const statusCode = operationAuditEnumCode(status);
-  const failed = statusCode === 'failed';
+  const failed = isOperationAuditFailed(status);
   const operatorLabel = nullableOperatorLabel({
     id: detail?.operatorId ?? data.operatorId,
     name: detail?.operatorName ?? data.operatorName,
@@ -127,7 +132,11 @@ export function OperationAuditDetailSheet({
                   value={
                     <Badge
                       variant={
-                        failed ? 'destructive' : statusCode === 'success' ? 'success' : 'outline'
+                        failed
+                          ? 'destructive'
+                          : isOperationAuditSuccess(status)
+                            ? 'success'
+                            : 'outline'
                       }
                     >
                       {statusDictionary.getLabel(statusCode) ?? operationAuditEnumLabel(status)}
