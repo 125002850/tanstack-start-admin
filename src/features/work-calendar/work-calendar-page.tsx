@@ -1,5 +1,6 @@
 import { useDict } from '@/hooks/use-dict';
 import { DictionaryScope } from '@/components/dictionary/dictionary-scope';
+import { WorkCalendarYearDetailReqDTOView } from './model/work-calendar-page-model';
 import { Icons } from '@/components/icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAppForm } from '@/components/ui/tanstack-form';
 import {
   evaluateWorkCalendarDraftMutationOptions,
+  fetchWorkCalendarVersionDetailQueryKey,
+  fetchWorkCalendarVersionDetailQueryOptions,
+  listWorkCalendarVersionsQueryKey,
   fetchWorkCalendarYearDetailQueryKey,
   fetchWorkCalendarYearDetailQueryOptions,
   importWorkCalendarDraftMutationOptions,
@@ -18,6 +22,7 @@ import {
   type WorkCalendarYearDetailReqDTO,
   type WorkCalendarYearDetailRspDTO
 } from '@/lib/api/clients/service';
+import { SILENT_QUERY_META } from '@/lib/query-client';
 import { normalizeApiError } from '@/lib/api/error-normalizer';
 import { useStore } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -43,10 +48,7 @@ import {
   type WorkCalendarDateOverrideValue,
   type WorkCalendarDraftFormValue
 } from './model/work-calendar-model';
-import {
-  type WorkCalendarViewMode,
-  WorkCalendarYearDetailReqDTOView
-} from './model/work-calendar-page-model';
+import { type WorkCalendarViewMode } from './model/work-calendar-page-model';
 import {
   requireResponse,
   resolveWorkCalendarViewMode,
@@ -84,12 +86,25 @@ function WorkCalendarContent({ year, onYearChange }: WorkCalendarPageProps) {
   const [viewSelection, setViewSelection] = React.useState<{
     year: number;
     mode: WorkCalendarViewMode;
+    versionId?: number;
   } | null>(null);
   const requestedView = viewSelection?.year === year ? viewSelection.mode : undefined;
-  const detailRequest: WorkCalendarYearDetailReqDTO = requestedView
-    ? { year, view: requestedView }
-    : { year };
-  const query = useQuery(fetchWorkCalendarYearDetailQueryOptions(detailRequest));
+  const defaultQuery = useQuery({
+    ...fetchWorkCalendarYearDetailQueryOptions({ year }),
+    meta: SILENT_QUERY_META
+  });
+  const resolvedView = requestedView ?? (defaultQuery.data?.activeVersion ? 'active' : undefined);
+  const versionId = viewSelection?.year === year ? viewSelection.versionId : undefined;
+  const detailRequest: WorkCalendarYearDetailReqDTO =
+    resolvedView && resolvedView !== 'history' ? { year, view: resolvedView } : { year };
+  const detailOptions =
+    versionId !== undefined
+      ? fetchWorkCalendarVersionDetailQueryOptions({ year, versionId })
+      : fetchWorkCalendarYearDetailQueryOptions(detailRequest);
+  const query = useQuery({
+    ...detailOptions,
+    meta: SILENT_QUERY_META
+  });
 
   if (query.isLoading && !query.data) {
     return <WorkCalendarPageSkeleton />;
@@ -138,14 +153,16 @@ function WorkCalendarContent({ year, onYearChange }: WorkCalendarPageProps) {
 
   return (
     <WorkCalendarEditor
+      key={`${year}-${viewMode}-${versionId ?? 'current'}`}
       year={year}
       detail={query.data}
-      detailRequest={detailRequest}
+      detailQueryKey={detailOptions.queryKey}
       serverValue={serverValue}
       viewMode={viewMode}
       queryRefreshing={query.isFetching}
       onYearChange={onYearChange}
       onViewModeChange={(mode) => setViewSelection({ year, mode })}
+      onVersionChange={(versionId) => setViewSelection({ year, mode: 'history', versionId })}
       onReload={() => void query.refetch()}
     />
   );
@@ -154,24 +171,26 @@ function WorkCalendarContent({ year, onYearChange }: WorkCalendarPageProps) {
 interface WorkCalendarEditorProps {
   year: number;
   detail: WorkCalendarYearDetailRspDTO;
-  detailRequest: WorkCalendarYearDetailReqDTO;
+  detailQueryKey: readonly unknown[];
   serverValue: WorkCalendarDraftFormValue;
   viewMode: WorkCalendarViewMode;
   queryRefreshing: boolean;
   onYearChange: (year: number) => void;
   onViewModeChange: (mode: WorkCalendarViewMode) => void;
+  onVersionChange: (versionId: number) => void;
   onReload: () => void;
 }
 
 function WorkCalendarEditor({
   year,
   detail,
-  detailRequest,
+  detailQueryKey,
   serverValue,
   viewMode,
   queryRefreshing,
   onYearChange,
   onViewModeChange,
+  onVersionChange,
   onReload
 }: WorkCalendarEditorProps) {
   const basis = useDict('WORK_CALENDAR_CLASSIFICATION_BASIS');
@@ -197,6 +216,7 @@ function WorkCalendarEditor({
     defaultValues: serverValue,
     validators: { onSubmit: workCalendarDraftSchema },
     onSubmit: async ({ value }) => {
+      if (viewMode !== WorkCalendarYearDetailReqDTOView.draft) return;
       try {
         setOperationError(null);
         const nextDetail = requireResponse(
@@ -211,7 +231,7 @@ function WorkCalendarEditor({
   });
   const values = useStore(form.store, (state) => state.values);
   const dirty = useStore(form.store, (state) => state.isDirty);
-  const readOnly = viewMode === WorkCalendarYearDetailReqDTOView.active;
+  const readOnly = viewMode !== WorkCalendarYearDetailReqDTOView.draft;
   const dirtyGuard = useWorkCalendarDirtyGuard(dirty);
 
   React.useEffect(() => {
@@ -243,7 +263,26 @@ function WorkCalendarEditor({
   }, []);
 
   function applyServerDetail(nextDetail: WorkCalendarYearDetailRspDTO, successMessage: string) {
-    queryClient.setQueryData(fetchWorkCalendarYearDetailQueryKey(detailRequest), nextDetail);
+    void queryClient.invalidateQueries({
+      queryKey: fetchWorkCalendarYearDetailQueryKey({ year }).slice(0, -1),
+      refetchType: 'none'
+    });
+    queryClient.setQueryData(detailQueryKey, nextDetail);
+    const selectedVersionId = nextDetail.selectedVersion?.versionId;
+    if (selectedVersionId !== undefined) {
+      void queryClient.invalidateQueries({
+        queryKey: fetchWorkCalendarVersionDetailQueryKey({
+          year,
+          versionId: selectedVersionId
+        }).slice(0, -1),
+        refetchType: 'none'
+      });
+      queryClient.setQueryData(
+        fetchWorkCalendarVersionDetailQueryKey({ year, versionId: selectedVersionId }),
+        nextDetail
+      );
+    }
+    void queryClient.invalidateQueries({ queryKey: listWorkCalendarVersionsQueryKey({ year }) });
     queryClient.setQueryData(fetchWorkCalendarYearDetailQueryKey({ year }), nextDetail);
     form.reset(toDraftFormValue(nextDetail, year));
     setOperationError(null);
@@ -421,6 +460,17 @@ function WorkCalendarEditor({
             }
             onViewModeChange(nextMode);
           }}
+          onVersionChange={(versionId) => {
+            if (
+              dirty ||
+              saveMutation.isPending ||
+              prepareMutation.isPending ||
+              publishMutation.isPending ||
+              importMutation.isPending
+            )
+              return;
+            onVersionChange(versionId);
+          }}
           onSave={() => {
             const validation = workCalendarDraftSchema.safeParse(values);
             if (!validation.success) {
@@ -466,7 +516,7 @@ function WorkCalendarEditor({
           onChange={(periods) => form.setFieldValue('standardPeriods', periods)}
         />
         <CalendarLegend
-          viewBasis={basis.getLabel(detail.viewBasis ?? '')}
+          viewBasis={basis.getLabel(detail.viewBasis ?? '') ?? '未知来源'}
           dirty={!readOnly && dirty}
         />
         <YearCalendarGrid
@@ -495,3 +545,9 @@ function WorkCalendarPageSkeleton() {
     </div>
   );
 }
+export { Header } from './components/work-calendar-header';
+export {
+  resolveWorkCalendarViewMode,
+  WorkCalendarYearDetailReqDTOView
+} from './model/work-calendar-page-model';
+export type { WorkCalendarViewMode } from './model/work-calendar-page-model';
