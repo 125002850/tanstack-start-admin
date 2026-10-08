@@ -16,25 +16,25 @@ describe('workspace overlay registry', () => {
     const closeA = vi.fn();
     const closeB = vi.fn();
 
-    registerWorkspaceOverlay('/dashboard/a', closeA);
-    registerWorkspaceOverlay('/dashboard/a', closeB);
+    registerWorkspaceOverlay('/a', closeA);
+    registerWorkspaceOverlay('/a', closeB);
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(2);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(2);
     expect(closeA).toHaveBeenCalledTimes(1);
     expect(closeB).toHaveBeenCalledTimes(1);
 
     // 关闭后条目清空，重复调用无事发生
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(0);
     expect(closeA).toHaveBeenCalledTimes(1);
   });
 
   it('does not close an overlay after unregister', () => {
     const close = vi.fn();
-    const unregister = registerWorkspaceOverlay('/dashboard/a', close);
+    const unregister = registerWorkspaceOverlay('/a', close);
 
     unregister();
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(0);
     expect(close).not.toHaveBeenCalled();
   });
 
@@ -42,10 +42,10 @@ describe('workspace overlay registry', () => {
     const closeA = vi.fn();
     const closeB = vi.fn();
 
-    registerWorkspaceOverlay('/dashboard/a', closeA);
-    registerWorkspaceOverlay('/dashboard/b', closeB);
+    registerWorkspaceOverlay('/a', closeA);
+    registerWorkspaceOverlay('/b', closeB);
 
-    closeRegisteredWorkspaceOverlays('/dashboard/a');
+    closeRegisteredWorkspaceOverlays('/a');
 
     expect(closeA).toHaveBeenCalledTimes(1);
     expect(closeB).not.toHaveBeenCalled();
@@ -67,19 +67,19 @@ describe('workspace overlay registry', () => {
     });
     const closeB = vi.fn();
 
-    registerWorkspaceOverlay('/dashboard/a', closeA);
-    registerWorkspaceOverlay('/dashboard/a', closeB);
+    registerWorkspaceOverlay('/a', closeA);
+    registerWorkspaceOverlay('/a', closeB);
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(2);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(2);
     expect(closeB).toHaveBeenCalledTimes(1);
     expect(consoleError).toHaveBeenCalled();
   });
 
   it('closes registered overlays before the empty-snapshot short-circuit', () => {
     const close = vi.fn();
-    registerWorkspaceOverlay('/dashboard/registered-only', close);
+    registerWorkspaceOverlay('/registered-only', close);
 
-    const dismissResult = dismissWorkspacePageOverlays('/dashboard/registered-only', null);
+    const dismissResult = dismissWorkspacePageOverlays('/registered-only', null);
 
     expect(close).toHaveBeenCalledTimes(1);
     expect(dismissResult.hasPendingExit).toBe(false);
@@ -87,11 +87,45 @@ describe('workspace overlay registry', () => {
 
   it('resets through the page overlay reset entry point', () => {
     const close = vi.fn();
-    registerWorkspaceOverlay('/dashboard/a', close);
+    registerWorkspaceOverlay('/a', close);
 
     resetWorkspaceOverlayRegistry();
 
-    expect(closeRegisteredWorkspaceOverlays('/dashboard/a')).toBe(0);
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(0);
     expect(close).not.toHaveBeenCalled();
+  });
+  it('releases an empty tab entry after the final unregister', () => {
+    const unregister = registerWorkspaceOverlay('/a', vi.fn());
+    const deleteEntry = vi.spyOn(Map.prototype, 'delete');
+    unregister();
+    expect(deleteEntry).toHaveBeenCalledWith('/a');
+  });
+
+  it('closes the initial snapshot even when a callback unregisters another overlay', () => {
+    let unregisterB: () => void = vi.fn();
+    const closeA = vi.fn(() => unregisterB());
+    const closeB = vi.fn();
+    registerWorkspaceOverlay('/a', closeA);
+    unregisterB = registerWorkspaceOverlay('/a', closeB);
+
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(2);
+    expect(closeA).toHaveBeenCalledOnce();
+    expect(closeB).toHaveBeenCalledOnce();
+  });
+
+  it('preserves a replacement registration when old callbacks clean up reentrantly', () => {
+    const replacement = vi.fn();
+    let unregisterOld: () => void = vi.fn();
+    unregisterOld = registerWorkspaceOverlay('/a', () => {
+      registerWorkspaceOverlay('/a', replacement);
+      unregisterOld();
+    });
+
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(1);
+    expect(replacement).not.toHaveBeenCalled();
+    // Repeated cleanup from the previous generation cannot delete the replacement.
+    unregisterOld();
+    expect(closeRegisteredWorkspaceOverlays('/a')).toBe(1);
+    expect(replacement).toHaveBeenCalledOnce();
   });
 });

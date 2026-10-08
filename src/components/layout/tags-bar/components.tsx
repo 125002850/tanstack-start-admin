@@ -44,7 +44,7 @@ function TagContextMenu(props: TagContextMenuProps) {
   const movedRef = React.useRef(false);
 
   return (
-    <ContextMenu>
+    <ContextMenu modal={false}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent
         className='w-48'
@@ -81,12 +81,12 @@ function TagContextMenu(props: TagContextMenuProps) {
         )}
         <ContextMenuItem onSelect={() => void refresh(id)}>刷新页面</ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem onClick={() => void close(id)} disabled={!closable}>
+        <ContextMenuItem onSelect={() => void close(id)} disabled={!closable}>
           关闭标签
         </ContextMenuItem>
-        <ContextMenuItem onClick={() => void closeOther(id)}>关闭其他标签</ContextMenuItem>
+        <ContextMenuItem onSelect={() => void closeOther(id)}>关闭其他标签</ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem onClick={() => void closeAll()}>关闭所有标签</ContextMenuItem>
+        <ContextMenuItem onSelect={() => void closeAll()}>关闭所有标签</ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
   );
@@ -201,6 +201,7 @@ function InteractiveTagButton(props: InteractiveTagButtonProps) {
           type='button'
           data-slot='workspace-tag-close'
           aria-label={`关闭：${title}`}
+          tabIndex={isActive ? 0 : -1}
           onClick={onClose}
           onMouseDown={onClosePointerDown}
           onPointerDown={onClosePointerDown}

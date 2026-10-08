@@ -46,8 +46,8 @@ export function DictionaryTypeList({
         <CardTitle>字典类型</CardTitle>
         <CardDescription>按字典编码或名称筛选字典类型列表</CardDescription>
       </CardHeader>
-      <CardContent className='space-y-4'>
-        <div className='flex items-center gap-2'>
+      <CardContent className='flex min-h-0 flex-col gap-4 xl:flex-1'>
+        <div className='flex shrink-0 items-center gap-2'>
           <Input
             value={keyword}
             placeholder='搜索 编码 / 名称'
@@ -64,7 +64,7 @@ export function DictionaryTypeList({
           </Button>
         </div>
 
-        <div className='max-h-72 min-h-0 flex-1 overflow-y-auto pr-2 xl:max-h-none'>
+        <div className='max-h-72 min-h-0 overflow-y-auto pr-2 xl:max-h-none xl:flex-1'>
           <div className='flex flex-col gap-2'>
             {types.length > 0 ? (
               types.map((record) => {

@@ -29,7 +29,8 @@ export function registerWorkspaceOverlay(tabId: WorkspaceTabId, close: CloseOver
   overlays.set(key, close);
 
   return () => {
-    overlays?.delete(key);
+    overlays.delete(key);
+    if (overlays.size === 0 && registry.get(tabId) === overlays) registry.delete(tabId);
   };
 }
 
@@ -42,7 +43,9 @@ export function closeRegisteredWorkspaceOverlays(tabId: WorkspaceTabId): number 
   registry.delete(tabId);
   if (!overlays || overlays.size === 0) return 0;
 
-  for (const close of overlays.values()) {
+  // 本轮只关闭入口时的快照。回调新注册的浮层属于下一轮，旧 cleanup 不得移除它。
+  const pending = [...overlays.values()];
+  for (const close of pending) {
     try {
       close();
     } catch (error) {
@@ -51,7 +54,7 @@ export function closeRegisteredWorkspaceOverlays(tabId: WorkspaceTabId): number 
       console.error('[workspace] overlay close 回调执行失败', error);
     }
   }
-  return overlays.size;
+  return pending.length;
 }
 
 export function resetWorkspaceOverlayRegistry() {

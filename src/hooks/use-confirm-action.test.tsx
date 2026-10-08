@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor
+} from '@testing-library/react';
 import * as React from 'react';
 
 import { useConfirmAction } from '@/hooks/use-confirm-action';
@@ -93,4 +101,33 @@ it('blocks repeated confirmation and closing, then retains failed actions for re
   fireEvent.click(confirm);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(onRun).toHaveBeenCalledTimes(2);
+});
+
+it('locks confirmation synchronously before React renders the loading state', async () => {
+  let resolve!: () => void;
+  const run = vi.fn(
+    () =>
+      new Promise<void>((done) => {
+        resolve = done;
+      })
+  );
+  const otherRun = vi.fn();
+  const { result } = renderHook(() => useConfirmAction());
+  act(() => result.current.withConfirm({ title: '原操作', run })());
+  const dialog = result.current.confirmDialog!;
+  let pending!: Promise<void>;
+  act(() => {
+    pending = dialog.props.onConfirm();
+    void dialog.props.onConfirm();
+    dialog.props.onClose();
+    result.current.withConfirm({ title: '其他操作', run: otherRun })();
+  });
+  expect(run).toHaveBeenCalledTimes(1);
+  expect(result.current.confirmDialog?.props.title).toBe('原操作');
+  expect(otherRun).not.toHaveBeenCalled();
+  await act(async () => {
+    resolve();
+    await pending;
+  });
+  expect(result.current.confirmDialog).toBeNull();
 });

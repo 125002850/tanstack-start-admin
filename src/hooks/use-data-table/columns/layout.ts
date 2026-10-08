@@ -57,7 +57,7 @@ export function getDeclaredColumnIds<TData>(columns: Array<ColumnDef<TData>>): A
       typeof column.accessorKey === 'string' &&
       column.accessorKey.length > 0
     ) {
-      declaredIds.push(column.accessorKey);
+      declaredIds.push(column.accessorKey.replaceAll('.', '_'));
     }
   }
 
