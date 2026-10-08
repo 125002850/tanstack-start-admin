@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "http://127.0.0.1:18081",
+      "url": "http://localhost",
       "description": "Generated server url"
     }
   ],
@@ -67,9 +67,7 @@
   "paths": {
     "/api/system/work-calendar/year/detail": {
       "post": {
-        "tags": [
-          "工作日历"
-        ],
+        "tags": ["工作日历"],
         "summary": "获取年度工作日历详情",
         "operationId": "fetchWorkCalendarYearDetail",
         "requestBody": {
@@ -96,11 +94,67 @@
         }
       }
     },
+    "/api/system/work-calendar/version/list": {
+      "post": {
+        "tags": ["工作日历"],
+        "summary": "列出年度工作日历版本",
+        "operationId": "listWorkCalendarVersions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCalendarVersionListReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RListWorkCalendarVersionSummaryRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/work-calendar/version/detail": {
+      "post": {
+        "tags": ["工作日历"],
+        "summary": "查询工作日历历史版本",
+        "operationId": "fetchWorkCalendarVersionDetail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkCalendarVersionDetailReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RWorkCalendarYearDetailRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/system/work-calendar/publish": {
       "post": {
-        "tags": [
-          "工作日历"
-        ],
+        "tags": ["工作日历"],
         "summary": "确认发布工作日历草稿",
         "operationId": "publishWorkCalendarDraft",
         "requestBody": {
@@ -129,9 +183,7 @@
     },
     "/api/system/work-calendar/publish/prepare": {
       "post": {
-        "tags": [
-          "工作日历"
-        ],
+        "tags": ["工作日历"],
         "summary": "预检工作日历发布",
         "operationId": "prepareWorkCalendarPublication",
         "requestBody": {
@@ -160,9 +212,7 @@
     },
     "/api/system/work-calendar/draft/save": {
       "post": {
-        "tags": [
-          "工作日历"
-        ],
+        "tags": ["工作日历"],
         "summary": "保存工作日历草稿",
         "operationId": "saveWorkCalendarDraft",
         "requestBody": {
@@ -191,9 +241,7 @@
     },
     "/api/system/work-calendar/draft/import": {
       "post": {
-        "tags": [
-          "工作日历"
-        ],
+        "tags": ["工作日历"],
         "summary": "JSON 覆盖导入工作日历草稿特殊日期",
         "operationId": "importWorkCalendarDraft",
         "parameters": [
@@ -233,9 +281,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object",
                 "properties": {
                   "file": {
@@ -264,9 +310,7 @@
     },
     "/api/system/work-calendar/draft/evaluate": {
       "post": {
-        "tags": [
-          "工作日历"
-        ],
+        "tags": ["工作日历"],
         "summary": "试算已保存工作日历草稿",
         "operationId": "evaluateWorkCalendarDraft",
         "requestBody": {
@@ -295,9 +339,7 @@
     },
     "/api/system/work-calendar/classify": {
       "post": {
-        "tags": [
-          "工作日历"
-        ],
+        "tags": ["工作日历"],
         "summary": "使用生效工作日历判定时间",
         "operationId": "classifyWorkCalendarTime",
         "requestBody": {
@@ -326,9 +368,7 @@
     },
     "/api/system/schedule/job/update": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "修改定时任务",
         "description": "修改定时任务，自动取消旧调度并重新调度",
         "operationId": "systemScheduleJobUpdate",
@@ -358,9 +398,7 @@
     },
     "/api/system/schedule/job/trigger": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "立刻执行",
         "description": "立即触发执行一次定时任务，不影响原有cron调度",
         "operationId": "systemScheduleJobTrigger",
@@ -390,9 +428,7 @@
     },
     "/api/system/schedule/job/page": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "分页查询定时任务",
         "description": "分页查询定时任务列表",
         "operationId": "systemScheduleJobPage",
@@ -422,9 +458,7 @@
     },
     "/api/system/schedule/job/operation-logs": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "查询操作记录",
         "description": "按任务ID查询操作记录列表",
         "operationId": "systemScheduleJobOperationLogs",
@@ -454,9 +488,7 @@
     },
     "/api/system/schedule/job/next-executions": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "预演接下来执行时间",
         "description": "根据 Cron 表达式预演计算接下来的执行时间列表",
         "operationId": "systemScheduleJobNextExecutions",
@@ -486,9 +518,7 @@
     },
     "/api/system/schedule/job/execution-logs": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "查询执行记录",
         "description": "按任务ID查询执行记录列表",
         "operationId": "systemScheduleJobExecutionLogs",
@@ -518,9 +548,7 @@
     },
     "/api/system/schedule/job/enable": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "启用定时任务",
         "description": "启用定时任务并加入调度",
         "operationId": "systemScheduleJobEnable",
@@ -550,9 +578,7 @@
     },
     "/api/system/schedule/job/disable": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "禁用定时任务",
         "description": "禁用定时任务并取消调度",
         "operationId": "systemScheduleJobDisable",
@@ -582,9 +608,7 @@
     },
     "/api/system/schedule/job/delete": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "删除定时任务",
         "description": "删除定时任务，自动取消调度",
         "operationId": "systemScheduleJobDelete",
@@ -614,9 +638,7 @@
     },
     "/api/system/schedule/job/create": {
       "post": {
-        "tags": [
-          "定时任务"
-        ],
+        "tags": ["定时任务"],
         "summary": "新增定时任务",
         "description": "新增定时任务，若启用则自动调度",
         "operationId": "systemScheduleJobCreate",
@@ -646,9 +668,7 @@
     },
     "/api/system/operation-audit/page": {
       "post": {
-        "tags": [
-          "操作日志"
-        ],
+        "tags": ["操作日志"],
         "summary": "分页查询操作日志",
         "operationId": "pageOperationAuditLogs",
         "requestBody": {
@@ -677,9 +697,7 @@
     },
     "/api/system/operation-audit/detail": {
       "post": {
-        "tags": [
-          "操作日志"
-        ],
+        "tags": ["操作日志"],
         "summary": "查询操作日志详情",
         "operationId": "detailOperationAuditLog",
         "requestBody": {
@@ -708,9 +726,7 @@
     },
     "/api/system/dict/global/types/list": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "查询全局字典列表",
         "description": "查询平台级全局字典类型列表",
         "operationId": "systemDictGlobalTypesList",
@@ -740,9 +756,7 @@
     },
     "/api/system/dict/global/types/list-all": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "查询全部全局字典类型",
         "description": "查询平台级全局字典类型全部列表（不分页）",
         "operationId": "systemDictGlobalTypesListAll",
@@ -772,9 +786,7 @@
     },
     "/api/system/dict/global/type/update": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "修改全局字典类型",
         "description": "修改平台级全局字典类型并同步字典项类型编码",
         "operationId": "systemDictGlobalTypeUpdate",
@@ -804,9 +816,7 @@
     },
     "/api/system/dict/global/type/delete": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "删除全局字典类型",
         "description": "删除平台级全局空字典类型",
         "operationId": "systemDictGlobalTypeDelete",
@@ -836,9 +846,7 @@
     },
     "/api/system/dict/global/type/create": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "新增全局字典类型",
         "description": "新增平台级全局字典类型",
         "operationId": "systemDictGlobalTypeCreate",
@@ -868,9 +876,7 @@
     },
     "/api/system/dict/global/items/options": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "批量查询字典选项",
         "description": "前端翻译专用精简接口；单次批量查询，返回启用和禁用的未删除字典项",
         "operationId": "systemDictGlobalItemsOptions",
@@ -900,9 +906,7 @@
     },
     "/api/system/dict/global/items/list-all": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "按类型查询全部全局字典项",
         "description": "包含启用和停用项，按排序号、ID升序；类型不存在时返回空数组",
         "operationId": "systemDictGlobalItemsListAll",
@@ -932,9 +936,7 @@
     },
     "/api/system/dict/global/items/by-type": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "按字典类型查询全局字典项",
         "description": "根据全局字典类型编码分页查询平台级字典项列表",
         "operationId": "systemDictGlobalItemsByType",
@@ -964,9 +966,7 @@
     },
     "/api/system/dict/global/item/update": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "修改全局字典项",
         "description": "修改平台级全局字典项，可切换所属字典类型",
         "operationId": "systemDictGlobalItemUpdate",
@@ -996,9 +996,7 @@
     },
     "/api/system/dict/global/item/delete": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "删除全局字典项",
         "description": "批量删除平台级全局字典项，传入ID列表",
         "operationId": "systemDictGlobalItemDelete",
@@ -1028,9 +1026,7 @@
     },
     "/api/system/dict/global/item/create": {
       "post": {
-        "tags": [
-          "全局字典"
-        ],
+        "tags": ["全局字典"],
         "summary": "新增全局字典项",
         "description": "新增平台级全局字典项",
         "operationId": "systemDictGlobalItemCreate",
@@ -1060,9 +1056,7 @@
     },
     "/api/mdm/export/submit": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "提交导出任务",
         "description": "创建导出记录并异步执行导出",
         "operationId": "submitExport",
@@ -1092,9 +1086,7 @@
     },
     "/api/mdm/export/my/page": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "分页查询我的导出记录",
         "description": "按当前登录人返回其导出记录列表",
         "operationId": "pageMyExportRecords",
@@ -1124,9 +1116,7 @@
     },
     "/api/mdm/export/download": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "获取导出下载地址",
         "description": "校验导出记录后返回临时下载地址",
         "operationId": "downloadExportRecord",
@@ -1156,9 +1146,7 @@
     },
     "/api/mdm/export/download/batch": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "批量下载导出记录",
         "description": "创建异步任务，将多条可下载导出记录流式打包为 zip",
         "operationId": "batchDownloadExportRecords",
@@ -1188,9 +1176,7 @@
     },
     "/api/mdm/export/detail": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "查询导出记录详情",
         "description": "按导出记录ID查询详情",
         "operationId": "detailExportRecord",
@@ -1220,9 +1206,7 @@
     },
     "/api/mdm/export/delete": {
       "post": {
-        "tags": [
-          "导出中心"
-        ],
+        "tags": ["导出中心"],
         "summary": "删除导出记录",
         "description": "批量逻辑删除指定导出记录",
         "operationId": "deleteExportRecord",
@@ -1252,9 +1236,7 @@
     },
     "/api/iam/staff/update": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "编辑员工",
         "operationId": "iamStaffUpdate",
         "requestBody": {
@@ -1283,9 +1265,7 @@
     },
     "/api/iam/staff/status/update": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "启用或禁用员工",
         "operationId": "iamStaffStatusUpdate",
         "requestBody": {
@@ -1314,9 +1294,7 @@
     },
     "/api/iam/staff/roles/assign": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "分配员工角色",
         "operationId": "iamStaffRolesAssign",
         "requestBody": {
@@ -1345,9 +1323,7 @@
     },
     "/api/iam/staff/password/reset": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "重置员工密码",
         "operationId": "iamStaffPasswordReset",
         "requestBody": {
@@ -1376,9 +1352,7 @@
     },
     "/api/iam/staff/page": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "员工分页",
         "operationId": "iamStaffPage",
         "requestBody": {
@@ -1407,9 +1381,7 @@
     },
     "/api/iam/staff/detail": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "员工详情",
         "operationId": "iamStaffDetail",
         "requestBody": {
@@ -1438,9 +1410,7 @@
     },
     "/api/iam/staff/delete": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "删除员工",
         "operationId": "iamStaffDelete",
         "requestBody": {
@@ -1469,9 +1439,7 @@
     },
     "/api/iam/staff/create": {
       "post": {
-        "tags": [
-          "IAM员工管理"
-        ],
+        "tags": ["IAM员工管理"],
         "summary": "新增员工",
         "operationId": "iamStaffCreate",
         "requestBody": {
@@ -1500,9 +1468,7 @@
     },
     "/api/iam/role/update": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "编辑角色",
         "operationId": "iamRoleUpdate",
         "requestBody": {
@@ -1531,9 +1497,7 @@
     },
     "/api/iam/role/status/update": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "启用或禁用角色",
         "operationId": "iamRoleStatusUpdate",
         "requestBody": {
@@ -1562,9 +1526,7 @@
     },
     "/api/iam/role/page": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "角色分页",
         "operationId": "iamRolePage",
         "requestBody": {
@@ -1593,9 +1555,7 @@
     },
     "/api/iam/role/menus/assign": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "分配角色菜单权限",
         "operationId": "iamRoleMenusAssign",
         "requestBody": {
@@ -1624,9 +1584,7 @@
     },
     "/api/iam/role/detail": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "角色详情",
         "operationId": "iamRoleDetail",
         "requestBody": {
@@ -1655,9 +1613,7 @@
     },
     "/api/iam/role/delete": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "删除角色",
         "operationId": "iamRoleDelete",
         "requestBody": {
@@ -1686,9 +1642,7 @@
     },
     "/api/iam/role/data-scope/assign": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "分配角色数据权限",
         "operationId": "iamRoleDataScopeAssign",
         "requestBody": {
@@ -1717,9 +1671,7 @@
     },
     "/api/iam/role/create": {
       "post": {
-        "tags": [
-          "IAM角色管理"
-        ],
+        "tags": ["IAM角色管理"],
         "summary": "新增角色",
         "operationId": "iamRoleCreate",
         "requestBody": {
@@ -1748,9 +1700,7 @@
     },
     "/api/iam/menu/update": {
       "post": {
-        "tags": [
-          "IAM菜单管理"
-        ],
+        "tags": ["IAM菜单管理"],
         "summary": "编辑菜单",
         "operationId": "iamMenuUpdate",
         "requestBody": {
@@ -1779,9 +1729,7 @@
     },
     "/api/iam/menu/tree": {
       "post": {
-        "tags": [
-          "IAM菜单管理"
-        ],
+        "tags": ["IAM菜单管理"],
         "summary": "菜单树",
         "operationId": "iamMenuTree",
         "requestBody": {
@@ -1809,9 +1757,7 @@
     },
     "/api/iam/menu/status/update": {
       "post": {
-        "tags": [
-          "IAM菜单管理"
-        ],
+        "tags": ["IAM菜单管理"],
         "summary": "启用或禁用菜单",
         "operationId": "iamMenuStatusUpdate",
         "requestBody": {
@@ -1840,9 +1786,7 @@
     },
     "/api/iam/menu/detail": {
       "post": {
-        "tags": [
-          "IAM菜单管理"
-        ],
+        "tags": ["IAM菜单管理"],
         "summary": "菜单详情",
         "operationId": "iamMenuDetail",
         "requestBody": {
@@ -1871,9 +1815,7 @@
     },
     "/api/iam/menu/delete": {
       "post": {
-        "tags": [
-          "IAM菜单管理"
-        ],
+        "tags": ["IAM菜单管理"],
         "summary": "删除菜单",
         "operationId": "iamMenuDelete",
         "requestBody": {
@@ -1902,9 +1844,7 @@
     },
     "/api/iam/menu/create": {
       "post": {
-        "tags": [
-          "IAM菜单管理"
-        ],
+        "tags": ["IAM菜单管理"],
         "summary": "新增菜单",
         "operationId": "iamMenuCreate",
         "requestBody": {
@@ -1933,9 +1873,7 @@
     },
     "/api/iam/log/operation/page": {
       "post": {
-        "tags": [
-          "IAM日志"
-        ],
+        "tags": ["IAM日志"],
         "summary": "操作日志分页",
         "operationId": "iamOperationLogPage",
         "requestBody": {
@@ -1964,9 +1902,7 @@
     },
     "/api/iam/log/operation/detail": {
       "post": {
-        "tags": [
-          "IAM日志"
-        ],
+        "tags": ["IAM日志"],
         "summary": "操作日志详情",
         "operationId": "iamOperationLogDetail",
         "requestBody": {
@@ -1995,9 +1931,7 @@
     },
     "/api/iam/log/login/page": {
       "post": {
-        "tags": [
-          "IAM日志"
-        ],
+        "tags": ["IAM日志"],
         "summary": "登录日志分页",
         "operationId": "iamLoginLogPage",
         "requestBody": {
@@ -2026,9 +1960,7 @@
     },
     "/api/iam/log/login/detail": {
       "post": {
-        "tags": [
-          "IAM日志"
-        ],
+        "tags": ["IAM日志"],
         "summary": "登录日志详情",
         "operationId": "iamLoginLogDetail",
         "requestBody": {
@@ -2057,9 +1989,7 @@
     },
     "/api/iam/dept/update": {
       "post": {
-        "tags": [
-          "IAM部门管理"
-        ],
+        "tags": ["IAM部门管理"],
         "summary": "编辑部门",
         "operationId": "iamDeptUpdate",
         "requestBody": {
@@ -2088,9 +2018,7 @@
     },
     "/api/iam/dept/tree": {
       "post": {
-        "tags": [
-          "IAM部门管理"
-        ],
+        "tags": ["IAM部门管理"],
         "summary": "部门树",
         "operationId": "iamDeptTree",
         "requestBody": {
@@ -2118,9 +2046,7 @@
     },
     "/api/iam/dept/status/update": {
       "post": {
-        "tags": [
-          "IAM部门管理"
-        ],
+        "tags": ["IAM部门管理"],
         "summary": "启用或禁用部门",
         "operationId": "iamDeptStatusUpdate",
         "requestBody": {
@@ -2149,9 +2075,7 @@
     },
     "/api/iam/dept/detail": {
       "post": {
-        "tags": [
-          "IAM部门管理"
-        ],
+        "tags": ["IAM部门管理"],
         "summary": "部门详情",
         "operationId": "iamDeptDetail",
         "requestBody": {
@@ -2180,9 +2104,7 @@
     },
     "/api/iam/dept/delete": {
       "post": {
-        "tags": [
-          "IAM部门管理"
-        ],
+        "tags": ["IAM部门管理"],
         "summary": "删除部门",
         "operationId": "iamDeptDelete",
         "requestBody": {
@@ -2211,9 +2133,7 @@
     },
     "/api/iam/dept/create": {
       "post": {
-        "tags": [
-          "IAM部门管理"
-        ],
+        "tags": ["IAM部门管理"],
         "summary": "新增部门",
         "operationId": "iamDeptCreate",
         "requestBody": {
@@ -2242,9 +2162,7 @@
     },
     "/api/iam/auth/refresh": {
       "post": {
-        "tags": [
-          "IAM认证"
-        ],
+        "tags": ["IAM认证"],
         "summary": "刷新 token",
         "description": "使用 refresh token 轮换新的 access token 与 refresh token",
         "operationId": "iamAuthRefresh",
@@ -2274,9 +2192,7 @@
     },
     "/api/iam/auth/password/change": {
       "post": {
-        "tags": [
-          "IAM认证"
-        ],
+        "tags": ["IAM认证"],
         "summary": "修改本人密码",
         "description": "校验旧密码并修改为新密码，成功后重新签发 token",
         "operationId": "iamAuthPasswordChange",
@@ -2306,9 +2222,7 @@
     },
     "/api/iam/auth/me": {
       "post": {
-        "tags": [
-          "IAM认证"
-        ],
+        "tags": ["IAM认证"],
         "summary": "获取当前用户",
         "description": "返回当前员工、角色、权限、菜单和数据权限快照",
         "operationId": "iamAuthMe",
@@ -2328,9 +2242,7 @@
     },
     "/api/iam/auth/logout": {
       "post": {
-        "tags": [
-          "IAM认证"
-        ],
+        "tags": ["IAM认证"],
         "summary": "退出登录",
         "description": "失效当前 refresh token",
         "operationId": "iamAuthLogout",
@@ -2359,9 +2271,7 @@
     },
     "/api/iam/auth/login": {
       "post": {
-        "tags": [
-          "IAM认证"
-        ],
+        "tags": ["IAM认证"],
         "summary": "登录",
         "description": "使用本地员工用户名和密码登录",
         "operationId": "iamAuthLogin",
@@ -2391,9 +2301,7 @@
     },
     "/api/file/storage/object/upload": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "上传文件对象",
         "description": "上传文件到当前启用的文件存储 provider",
         "operationId": "uploadFileObject",
@@ -2423,9 +2331,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object",
                 "properties": {
                   "file": {
@@ -2453,9 +2359,7 @@
     },
     "/api/file/storage/object/temp-url/fetch": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "获取文件临时访问地址",
         "description": "根据对象键获取临时访问地址",
         "operationId": "fileStorageObjectTempUrlFetch",
@@ -2485,9 +2389,7 @@
     },
     "/api/file/storage/object/temp-url/batch-fetch": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "批量获取文件临时访问地址",
         "description": "根据对象键列表批量获取临时访问地址，重复对象键会按首次出现顺序去重",
         "operationId": "batchFetchFileObjectTempUrls",
@@ -2517,9 +2419,7 @@
     },
     "/api/file/storage/object/delete": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "删除文件对象",
         "description": "根据对象键删除文件",
         "operationId": "deleteFileObject",
@@ -2549,9 +2449,7 @@
     },
     "/api/file/storage/direct-upload/credential/fetch": {
       "post": {
-        "tags": [
-          "文件存储"
-        ],
+        "tags": ["文件存储"],
         "summary": "获取直传凭证",
         "description": "获取客户端直传所需的凭证与对象信息",
         "operationId": "fileStorageDirectUploadCredentialFetch",
@@ -2583,9 +2481,7 @@
   "components": {
     "schemas": {
       "WorkCalendarYearDetailReqDTO": {
-        "required": [
-          "year"
-        ],
+        "required": ["year"],
         "type": "object",
         "properties": {
           "year": {
@@ -2600,10 +2496,7 @@
             "type": "string",
             "description": "查看视图；不传时优先返回草稿，否则返回当前生效版本",
             "example": "draft",
-            "enum": [
-              "draft",
-              "active"
-            ],
+            "enum": ["draft", "active"],
             "x-dict-type": "WORK_CALENDAR_YEAR_VIEW"
           }
         },
@@ -2651,12 +2544,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "weekend",
-                "public_holiday",
-                "adjusted_workday",
-                "other_non_working_day"
-              ],
+              "enum": ["weekend", "public_holiday", "adjusted_workday", "other_non_working_day"],
               "x-dict-type": "WORK_CALENDAR_DAY_TRAIT"
             }
           },
@@ -2681,11 +2569,7 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "adjusted_workday",
-              "public_holiday",
-              "other_non_working_day"
-            ],
+            "enum": ["adjusted_workday", "public_holiday", "other_non_working_day"],
             "x-dict-type": "WORK_CALENDAR_DATE_OVERRIDE_TYPE"
           },
           "name": {
@@ -2732,10 +2616,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "published"
-            ],
+            "enum": ["draft", "published"],
             "x-dict-type": "WORK_CALENDAR_VERSION_STATUS"
           },
           "lockVersion": {
@@ -2755,6 +2636,20 @@
           "publishedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "updatedBy": {
+            "type": "integer",
+            "description": "最后更新人 ID",
+            "format": "int64"
+          },
+          "updatedByName": {
+            "type": "string",
+            "description": "最后更新人名称"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "最后更新时间",
+            "format": "date-time"
           }
         },
         "description": "工作日历版本摘要"
@@ -2769,17 +2664,11 @@
           "zoneId": {
             "type": "string",
             "description": "固定时区",
-            "enum": [
-              "Asia/Shanghai"
-            ]
+            "enum": ["Asia/Shanghai"]
           },
           "viewBasis": {
             "type": "string",
-            "enum": [
-              "published_snapshot",
-              "weekly_fallback",
-              "saved_draft"
-            ],
+            "enum": ["published_snapshot", "weekly_fallback", "saved_draft"],
             "x-dict-type": "WORK_CALENDAR_CLASSIFICATION_BASIS"
           },
           "authoritative": {
@@ -2808,16 +2697,70 @@
             "items": {
               "$ref": "#/components/schemas/ResolvedCalendarDayRspDTO"
             }
+          },
+          "selectedVersion": {
+            "$ref": "#/components/schemas/WorkCalendarVersionSummaryRspDTO"
           }
         },
         "description": "工作日历年度详情"
       },
+      "WorkCalendarVersionListReqDTO": {
+        "required": ["year"],
+        "type": "object",
+        "properties": {
+          "year": {
+            "maximum": 2099,
+            "minimum": 2000,
+            "type": "integer",
+            "description": "自然年",
+            "format": "int32",
+            "example": 2026
+          }
+        },
+        "description": "工作日历版本查询"
+      },
+      "RListWorkCalendarVersionSummaryRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarVersionSummaryRspDTO"
+            }
+          }
+        }
+      },
+      "WorkCalendarVersionDetailReqDTO": {
+        "required": ["versionId", "year"],
+        "type": "object",
+        "properties": {
+          "year": {
+            "maximum": 2099,
+            "minimum": 2000,
+            "type": "integer",
+            "description": "自然年",
+            "format": "int32",
+            "example": 2026
+          },
+          "versionId": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "版本 ID",
+            "format": "int64",
+            "example": 1
+          }
+        },
+        "description": "工作日历版本查询"
+      },
       "PublishWorkCalendarDraftReqDTO": {
-        "required": [
-          "contentHash",
-          "draftVersionId",
-          "expectedLockVersion"
-        ],
+        "required": ["contentHash", "draftVersionId", "expectedLockVersion"],
         "type": "object",
         "properties": {
           "draftVersionId": {
@@ -2838,10 +2781,7 @@
         "description": "确认发布工作日历草稿请求"
       },
       "PrepareWorkCalendarPublicationReqDTO": {
-        "required": [
-          "draftVersionId",
-          "expectedLockVersion"
-        ],
+        "required": ["draftVersionId", "expectedLockVersion"],
         "type": "object",
         "properties": {
           "draftVersionId": {
@@ -2866,11 +2806,7 @@
           },
           "changeType": {
             "type": "string",
-            "enum": [
-              "added",
-              "removed",
-              "changed"
-            ],
+            "enum": ["added", "removed", "changed"],
             "x-dict-type": "WORK_CALENDAR_PUBLICATION_CHANGE_TYPE"
           },
           "before": {
@@ -2968,11 +2904,7 @@
         }
       },
       "SaveWorkCalendarDraftReqDTO": {
-        "required": [
-          "dateOverrides",
-          "standardPeriods",
-          "year"
-        ],
+        "required": ["dateOverrides", "standardPeriods", "year"],
         "type": "object",
         "properties": {
           "year": {
@@ -3012,10 +2944,7 @@
         "description": "保存工作日历完整草稿请求"
       },
       "WorkCalendarDateOverrideReqDTO": {
-        "required": [
-          "date",
-          "type"
-        ],
+        "required": ["date", "type"],
         "type": "object",
         "properties": {
           "date": {
@@ -3027,11 +2956,7 @@
           "type": {
             "type": "string",
             "description": "特殊日期覆盖类型稳定编码",
-            "enum": [
-              "adjusted_workday",
-              "public_holiday",
-              "other_non_working_day"
-            ],
+            "enum": ["adjusted_workday", "public_holiday", "other_non_working_day"],
             "x-dict-type": "WORK_CALENDAR_DATE_OVERRIDE_TYPE"
           },
           "name": {
@@ -3060,10 +2985,7 @@
         "description": "工作日历特殊日期请求"
       },
       "WorkCalendarPeriodReqDTO": {
-        "required": [
-          "end",
-          "start"
-        ],
+        "required": ["end", "start"],
         "type": "object",
         "properties": {
           "start": {
@@ -3082,11 +3004,7 @@
         "description": "工作时段请求，采用左闭右开区间"
       },
       "EvaluateWorkCalendarDraftReqDTO": {
-        "required": [
-          "draftVersionId",
-          "expectedLockVersion",
-          "localDateTime"
-        ],
+        "required": ["draftVersionId", "expectedLockVersion", "localDateTime"],
         "type": "object",
         "properties": {
           "draftVersionId": {
@@ -3132,9 +3050,7 @@
           "zoneId": {
             "type": "string",
             "description": "固定时区",
-            "enum": [
-              "Asia/Shanghai"
-            ]
+            "enum": ["Asia/Shanghai"]
           },
           "classification": {
             "type": "string",
@@ -3165,12 +3081,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "weekend",
-                "public_holiday",
-                "adjusted_workday",
-                "other_non_working_day"
-              ],
+              "enum": ["weekend", "public_holiday", "adjusted_workday", "other_non_working_day"],
               "x-dict-type": "WORK_CALENDAR_DAY_TRAIT"
             }
           },
@@ -3191,20 +3102,12 @@
           },
           "basis": {
             "type": "string",
-            "enum": [
-              "published_snapshot",
-              "weekly_fallback",
-              "saved_draft"
-            ],
+            "enum": ["published_snapshot", "weekly_fallback", "saved_draft"],
             "x-dict-type": "WORK_CALENDAR_CLASSIFICATION_BASIS"
           },
           "holidayStatus": {
             "type": "string",
-            "enum": [
-              "confirmed",
-              "candidate",
-              "unknown"
-            ],
+            "enum": ["confirmed", "candidate", "unknown"],
             "x-dict-type": "WORK_CALENDAR_HOLIDAY_STATUS"
           },
           "calendarYear": {
@@ -3223,9 +3126,7 @@
         "description": "工作日历时间判定结果"
       },
       "ClassifyWorkCalendarTimeReqDTO": {
-        "required": [
-          "localDateTime"
-        ],
+        "required": ["localDateTime"],
         "type": "object",
         "properties": {
           "localDateTime": {
@@ -3237,12 +3138,7 @@
         "description": "工作日历生效规则时间判定请求"
       },
       "ScheduleJobUpdateReqDTO": {
-        "required": [
-          "id",
-          "invokeRoute",
-          "jobCode",
-          "jobName"
-        ],
+        "required": ["id", "invokeRoute", "jobCode", "jobName"],
         "type": "object",
         "properties": {
           "id": {
@@ -3390,10 +3286,7 @@
             "type": "string",
             "description": "启用状态：enable-启用，disable-禁用",
             "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
+            "enum": ["enable", "disable"]
           },
           "remark": {
             "type": "string",
@@ -3409,9 +3302,7 @@
         "description": "定时任务响应"
       },
       "ScheduleJobIdReqDTO": {
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "type": "object",
         "properties": {
           "id": {
@@ -3439,28 +3330,18 @@
         }
       },
       "ScheduleJobConditionNode": {
-        "required": [
-          "nodeType"
-        ],
+        "required": ["nodeType"],
         "type": "object",
         "properties": {
           "nodeType": {
             "type": "string",
             "description": "节点类型",
-            "enum": [
-              "compose",
-              "text",
-              "dateTime",
-              "enum"
-            ]
+            "enum": ["compose", "text", "dateTime", "enum"]
           },
           "logic": {
             "type": "string",
             "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
+            "enum": ["AND", "OR"]
           },
           "children": {
             "type": "array",
@@ -3550,10 +3431,7 @@
         ]
       },
       "ScheduleJobDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "定时任务时间条件",
         "allOf": [
@@ -3561,31 +3439,18 @@
             "$ref": "#/components/schemas/ScheduleJobConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "时间字段",
-                "enum": [
-                  "createTime",
-                  "updateTime"
-                ]
+                "enum": ["createTime", "updateTime"]
               },
               "op": {
                 "type": "string",
                 "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -3605,19 +3470,14 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
+                "enum": ["dateTime"]
               }
             }
           }
         ]
       },
       "ScheduleJobEnumCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "定时任务枚举条件",
         "allOf": [
@@ -3625,27 +3485,18 @@
             "$ref": "#/components/schemas/ScheduleJobConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "枚举字段",
-                "enum": [
-                  "status"
-                ]
+                "enum": ["status"]
               },
               "op": {
                 "type": "string",
                 "description": "枚举操作符",
-                "enum": [
-                  "EQ",
-                  "IN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["EQ", "IN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -3665,19 +3516,14 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "enum"
-                ]
+                "enum": ["enum"]
               }
             }
           }
         ]
       },
       "ScheduleJobGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
+        "required": ["children", "logic"],
         "type": "object",
         "description": "定时任务逻辑分组",
         "allOf": [
@@ -3685,18 +3531,13 @@
             "$ref": "#/components/schemas/ScheduleJobConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "logic": {
                 "type": "string",
                 "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
+                "enum": ["AND", "OR"]
               },
               "children": {
                 "type": "array",
@@ -3708,9 +3549,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
+                "enum": ["compose"]
               }
             }
           }
@@ -3753,10 +3592,7 @@
         "description": "定时任务分页查询请求"
       },
       "ScheduleJobSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
+        "required": ["direction", "field"],
         "type": "object",
         "properties": {
           "field": {
@@ -3777,19 +3613,13 @@
           "direction": {
             "type": "string",
             "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
+            "enum": ["ASC", "DESC"]
           }
         },
         "description": "定时任务排序项"
       },
       "ScheduleJobTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "定时任务文本条件",
         "allOf": [
@@ -3797,20 +3627,13 @@
             "$ref": "#/components/schemas/ScheduleJobConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "文本字段",
-                "enum": [
-                  "jobName",
-                  "jobCode",
-                  "invokeRoute",
-                  "groupName"
-                ]
+                "enum": ["jobName", "jobCode", "invokeRoute", "groupName"]
               },
               "op": {
                 "type": "string",
@@ -3843,19 +3666,14 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
+                "enum": ["text"]
               }
             }
           }
         ]
       },
       "PageResultScheduleJobRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -3890,9 +3708,7 @@
         }
       },
       "ScheduleJobOperationLogQueryReqDTO": {
-        "required": [
-          "jobId"
-        ],
+        "required": ["jobId"],
         "type": "object",
         "properties": {
           "jobId": {
@@ -3976,9 +3792,7 @@
         "description": "定时任务操作记录响应"
       },
       "ScheduleJobCronPreviewReqDTO": {
-        "required": [
-          "cronExpression"
-        ],
+        "required": ["cronExpression"],
         "type": "object",
         "properties": {
           "cronExpression": {
@@ -4016,9 +3830,7 @@
         }
       },
       "ScheduleJobExecutionLogQueryReqDTO": {
-        "required": [
-          "jobId"
-        ],
+        "required": ["jobId"],
         "type": "object",
         "properties": {
           "jobId": {
@@ -4101,11 +3913,7 @@
         "description": "定时任务执行记录响应"
       },
       "ScheduleJobCreateReqDTO": {
-        "required": [
-          "invokeRoute",
-          "jobCode",
-          "jobName"
-        ],
+        "required": ["invokeRoute", "jobCode", "jobName"],
         "type": "object",
         "properties": {
           "jobName": {
@@ -4147,10 +3955,7 @@
             "type": "string",
             "description": "启用状态",
             "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ],
+            "enum": ["enable", "disable"],
             "x-dict-type": "ENABLE_STATUS"
           },
           "remark": {
@@ -4171,29 +3976,18 @@
         "description": "定时任务创建请求"
       },
       "OperationAuditLogConditionNode": {
-        "required": [
-          "nodeType"
-        ],
+        "required": ["nodeType"],
         "type": "object",
         "properties": {
           "nodeType": {
             "type": "string",
             "description": "节点类型",
-            "enum": [
-              "compose",
-              "text",
-              "dateTime",
-              "enum",
-              "number"
-            ]
+            "enum": ["compose", "text", "dateTime", "enum", "number"]
           },
           "logic": {
             "type": "string",
             "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
+            "enum": ["AND", "OR"]
           },
           "children": {
             "type": "array",
@@ -4293,40 +4087,25 @@
         ]
       },
       "OperationAuditLogDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "allOf": [
           {
             "$ref": "#/components/schemas/OperationAuditLogConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "时间字段",
-                "enum": [
-                  "operationTime"
-                ]
+                "enum": ["operationTime"]
               },
               "op": {
                 "type": "string",
                 "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -4346,9 +4125,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
+                "enum": ["dateTime"]
               }
             }
           }
@@ -4387,38 +4164,25 @@
         "description": "操作日志动态分页请求"
       },
       "OperationAuditLogEnumCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "allOf": [
           {
             "$ref": "#/components/schemas/OperationAuditLogConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "枚举字段",
-                "enum": [
-                  "action",
-                  "resultStatus"
-                ]
+                "enum": ["action", "resultStatus"]
               },
               "op": {
                 "type": "string",
                 "description": "枚举操作符",
-                "enum": [
-                  "EQ",
-                  "IN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["EQ", "IN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -4438,37 +4202,27 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "enum"
-                ]
+                "enum": ["enum"]
               }
             }
           }
         ]
       },
       "OperationAuditLogGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
+        "required": ["children", "logic"],
         "type": "object",
         "allOf": [
           {
             "$ref": "#/components/schemas/OperationAuditLogConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "logic": {
                 "type": "string",
                 "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
+                "enum": ["AND", "OR"]
               },
               "children": {
                 "type": "array",
@@ -4480,55 +4234,32 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
+                "enum": ["compose"]
               }
             }
           }
         ]
       },
       "OperationAuditLogNumberCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "allOf": [
           {
             "$ref": "#/components/schemas/OperationAuditLogConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "数值字段",
-                "enum": [
-                  "logId",
-                  "operatorId",
-                  "durationMs",
-                  "httpStatus",
-                  "resultCode"
-                ]
+                "enum": ["logId", "operatorId", "durationMs", "httpStatus", "resultCode"]
               },
               "op": {
                 "type": "string",
                 "description": "数值操作符",
-                "enum": [
-                  "EQ",
-                  "NE",
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["EQ", "NE", "GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "number",
@@ -4548,19 +4279,14 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "number"
-                ]
+                "enum": ["number"]
               }
             }
           }
         ]
       },
       "OperationAuditLogSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
+        "required": ["direction", "field"],
         "type": "object",
         "properties": {
           "field": {
@@ -4579,28 +4305,20 @@
           "direction": {
             "type": "string",
             "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
+            "enum": ["ASC", "DESC"]
           }
         },
         "description": "排序项"
       },
       "OperationAuditLogTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "allOf": [
           {
             "$ref": "#/components/schemas/OperationAuditLogConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
@@ -4647,9 +4365,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
+                "enum": ["text"]
               }
             }
           }
@@ -4702,10 +4418,7 @@
           },
           "resultStatus": {
             "type": "string",
-            "enum": [
-              "success",
-              "failed"
-            ],
+            "enum": ["success", "failed"],
             "x-dict-type": "OPERATION_AUDIT_STATUS"
           },
           "durationMs": {
@@ -4720,10 +4433,7 @@
         "description": "操作日志列表项"
       },
       "PageResultOperationAuditLogRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -4758,9 +4468,7 @@
         }
       },
       "OperationAuditLogIdReqDTO": {
-        "required": [
-          "logId"
-        ],
+        "required": ["logId"],
         "type": "object",
         "properties": {
           "logId": {
@@ -4818,10 +4526,7 @@
           },
           "resultStatus": {
             "type": "string",
-            "enum": [
-              "success",
-              "failed"
-            ],
+            "enum": ["success", "failed"],
             "x-dict-type": "OPERATION_AUDIT_STATUS"
           },
           "durationMs": {
@@ -4880,27 +4585,18 @@
         }
       },
       "GlobalDictTypeConditionNode": {
-        "required": [
-          "nodeType"
-        ],
+        "required": ["nodeType"],
         "type": "object",
         "properties": {
           "nodeType": {
             "type": "string",
             "description": "节点类型",
-            "enum": [
-              "compose",
-              "text",
-              "dateTime"
-            ]
+            "enum": ["compose", "text", "dateTime"]
           },
           "logic": {
             "type": "string",
             "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
+            "enum": ["AND", "OR"]
           },
           "children": {
             "type": "array",
@@ -4912,11 +4608,7 @@
           "field": {
             "type": "string",
             "description": "文本字段；时间字段",
-            "enum": [
-              "dictTypeCode",
-              "dictTypeName",
-              "createTime"
-            ]
+            "enum": ["dictTypeCode", "dictTypeName", "createTime"]
           },
           "op": {
             "type": "string",
@@ -4982,10 +4674,7 @@
         ]
       },
       "GlobalDictTypeDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "全局字典类型时间条件",
         "allOf": [
@@ -4993,30 +4682,18 @@
             "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "时间字段",
-                "enum": [
-                  "createTime"
-                ]
+                "enum": ["createTime"]
               },
               "op": {
                 "type": "string",
                 "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -5036,9 +4713,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
+                "enum": ["dateTime"]
               }
             }
           }
@@ -5081,10 +4756,7 @@
         "description": "全局字典类型动态分页查询请求"
       },
       "GlobalDictTypeGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
+        "required": ["children", "logic"],
         "type": "object",
         "description": "全局字典类型逻辑分组",
         "allOf": [
@@ -5092,18 +4764,13 @@
             "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "logic": {
                 "type": "string",
                 "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
+                "enum": ["AND", "OR"]
               },
               "children": {
                 "type": "array",
@@ -5115,45 +4782,31 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
+                "enum": ["compose"]
               }
             }
           }
         ]
       },
       "GlobalDictTypeSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
+        "required": ["direction", "field"],
         "type": "object",
         "properties": {
           "field": {
             "type": "string",
             "description": "排序字段",
-            "enum": [
-              "id",
-              "createTime"
-            ]
+            "enum": ["id", "createTime"]
           },
           "direction": {
             "type": "string",
             "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
+            "enum": ["ASC", "DESC"]
           }
         },
         "description": "全局字典类型排序项"
       },
       "GlobalDictTypeTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "全局字典类型文本条件",
         "allOf": [
@@ -5161,18 +4814,13 @@
             "$ref": "#/components/schemas/GlobalDictTypeConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "文本字段",
-                "enum": [
-                  "dictTypeCode",
-                  "dictTypeName"
-                ]
+                "enum": ["dictTypeCode", "dictTypeName"]
               },
               "op": {
                 "type": "string",
@@ -5205,9 +4853,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
+                "enum": ["text"]
               }
             }
           }
@@ -5274,19 +4920,13 @@
             "type": "string",
             "description": "状态：enable-启用，disable-禁用",
             "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
+            "enum": ["enable", "disable"]
           }
         },
         "description": "全局字典类型响应"
       },
       "PageResultGlobalDictTypeRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -5350,11 +4990,7 @@
         }
       },
       "GlobalDictTypeUpdateReqDTO": {
-        "required": [
-          "dictTypeCode",
-          "dictTypeName",
-          "id"
-        ],
+        "required": ["dictTypeCode", "dictTypeName", "id"],
         "type": "object",
         "properties": {
           "id": {
@@ -5377,9 +5013,7 @@
         "description": "全局字典类型修改请求"
       },
       "GlobalDictTypeDeleteReqDTO": {
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "type": "object",
         "properties": {
           "id": {
@@ -5392,10 +5026,7 @@
         "description": "全局字典类型删除请求"
       },
       "GlobalDictTypeCreateReqDTO": {
-        "required": [
-          "dictTypeCode",
-          "dictTypeName"
-        ],
+        "required": ["dictTypeCode", "dictTypeName"],
         "type": "object",
         "properties": {
           "dictTypeCode": {
@@ -5412,9 +5043,7 @@
         "description": "全局字典类型创建请求"
       },
       "GlobalDictOptionsReqDTO": {
-        "required": [
-          "dictTypeCodes"
-        ],
+        "required": ["dictTypeCodes"],
         "type": "object",
         "properties": {
           "dictTypeCodes": {
@@ -5422,10 +5051,7 @@
             "minItems": 0,
             "type": "array",
             "description": "字典类型编码；一次请求最多50种",
-            "example": [
-              "ENABLE_STATUS",
-              "YES_NO"
-            ],
+            "example": ["ENABLE_STATUS", "YES_NO"],
             "items": {
               "pattern": "^[A-Za-z0-9_.-]{1,64}$",
               "type": "string",
@@ -5500,9 +5126,7 @@
         }
       },
       "GlobalDictItemListReqDTO": {
-        "required": [
-          "dictTypeCode"
-        ],
+        "required": ["dictTypeCode"],
         "type": "object",
         "properties": {
           "dictTypeCode": {
@@ -5585,10 +5209,7 @@
             "type": "string",
             "description": "状态：enable-启用，disable-禁用",
             "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ]
+            "enum": ["enable", "disable"]
           }
         },
         "description": "字典项响应"
@@ -5612,27 +5233,18 @@
         }
       },
       "GlobalDictItemConditionNode": {
-        "required": [
-          "nodeType"
-        ],
+        "required": ["nodeType"],
         "type": "object",
         "properties": {
           "nodeType": {
             "type": "string",
             "description": "节点类型",
-            "enum": [
-              "compose",
-              "text",
-              "dateTime"
-            ]
+            "enum": ["compose", "text", "dateTime"]
           },
           "logic": {
             "type": "string",
             "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
+            "enum": ["AND", "OR"]
           },
           "children": {
             "type": "array",
@@ -5644,12 +5256,7 @@
           "field": {
             "type": "string",
             "description": "文本字段；时间字段",
-            "enum": [
-              "dictTypeCode",
-              "dictItemCode",
-              "dictItemName",
-              "createTime"
-            ]
+            "enum": ["dictTypeCode", "dictItemCode", "dictItemName", "createTime"]
           },
           "op": {
             "type": "string",
@@ -5715,10 +5322,7 @@
         ]
       },
       "GlobalDictItemDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "全局字典项时间条件",
         "allOf": [
@@ -5726,30 +5330,18 @@
             "$ref": "#/components/schemas/GlobalDictItemConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "时间字段",
-                "enum": [
-                  "createTime"
-                ]
+                "enum": ["createTime"]
               },
               "op": {
                 "type": "string",
                 "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -5769,9 +5361,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
+                "enum": ["dateTime"]
               }
             }
           }
@@ -5810,10 +5400,7 @@
         "description": "全局字典项动态分页查询请求"
       },
       "GlobalDictItemGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
+        "required": ["children", "logic"],
         "type": "object",
         "description": "全局字典项逻辑分组",
         "allOf": [
@@ -5821,18 +5408,13 @@
             "$ref": "#/components/schemas/GlobalDictItemConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "logic": {
                 "type": "string",
                 "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
+                "enum": ["AND", "OR"]
               },
               "children": {
                 "type": "array",
@@ -5844,46 +5426,31 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
+                "enum": ["compose"]
               }
             }
           }
         ]
       },
       "GlobalDictItemSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
+        "required": ["direction", "field"],
         "type": "object",
         "properties": {
           "field": {
             "type": "string",
             "description": "排序字段",
-            "enum": [
-              "id",
-              "sortOrder",
-              "createTime"
-            ]
+            "enum": ["id", "sortOrder", "createTime"]
           },
           "direction": {
             "type": "string",
             "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
+            "enum": ["ASC", "DESC"]
           }
         },
         "description": "全局字典项排序项"
       },
       "GlobalDictItemTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "全局字典项文本条件",
         "allOf": [
@@ -5891,19 +5458,13 @@
             "$ref": "#/components/schemas/GlobalDictItemConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "文本字段",
-                "enum": [
-                  "dictTypeCode",
-                  "dictItemCode",
-                  "dictItemName"
-                ]
+                "enum": ["dictTypeCode", "dictItemCode", "dictItemName"]
               },
               "op": {
                 "type": "string",
@@ -5936,19 +5497,14 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
+                "enum": ["text"]
               }
             }
           }
         ]
       },
       "PageResultDictItemRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -5983,12 +5539,7 @@
         }
       },
       "GlobalDictItemUpdateReqDTO": {
-        "required": [
-          "dictItemCode",
-          "dictItemName",
-          "dictTypeCode",
-          "id"
-        ],
+        "required": ["dictItemCode", "dictItemName", "dictTypeCode", "id"],
         "type": "object",
         "properties": {
           "id": {
@@ -6027,29 +5578,20 @@
             "type": "string",
             "description": "状态：enable-启用，disable-禁用",
             "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ],
+            "enum": ["enable", "disable"],
             "x-dict-type": "ENABLE_STATUS"
           }
         },
         "description": "全局字典项修改请求"
       },
       "GlobalDictItemDeleteReqDTO": {
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "type": "object",
         "properties": {
           "ids": {
             "type": "array",
             "description": "字典项ID列表",
-            "example": [
-              1,
-              2,
-              3
-            ],
+            "example": [1, 2, 3],
             "items": {
               "type": "integer",
               "description": "字典项ID列表",
@@ -6060,11 +5602,7 @@
         "description": "全局字典项删除请求（支持多选）"
       },
       "GlobalDictItemCreateReqDTO": {
-        "required": [
-          "dictItemCode",
-          "dictItemName",
-          "dictTypeCode"
-        ],
+        "required": ["dictItemCode", "dictItemName", "dictTypeCode"],
         "type": "object",
         "properties": {
           "dictTypeCode": {
@@ -6097,19 +5635,14 @@
             "type": "string",
             "description": "状态：enable-启用，disable-禁用",
             "example": "enable",
-            "enum": [
-              "enable",
-              "disable"
-            ],
+            "enum": ["enable", "disable"],
             "x-dict-type": "ENABLE_STATUS"
           }
         },
         "description": "全局字典项创建请求"
       },
       "ExportSubmitReqDTO": {
-        "required": [
-          "sceneCode"
-        ],
+        "required": ["sceneCode"],
         "type": "object",
         "properties": {
           "sceneCode": {
@@ -6194,13 +5727,7 @@
             "type": "string",
             "description": "状态编码；显示名由前端字典 EXPORT_RECORD_STATUS 翻译",
             "example": "2",
-            "enum": [
-              "1",
-              "2",
-              "3",
-              "4",
-              "5"
-            ],
+            "enum": ["1", "2", "3", "4", "5"],
             "x-dict-type": "EXPORT_RECORD_STATUS"
           },
           "contentType": {
@@ -6259,28 +5786,18 @@
         }
       },
       "ExportRecordConditionNode": {
-        "required": [
-          "nodeType"
-        ],
+        "required": ["nodeType"],
         "type": "object",
         "properties": {
           "nodeType": {
             "type": "string",
             "description": "节点类型",
-            "enum": [
-              "compose",
-              "text",
-              "dateTime",
-              "enum"
-            ]
+            "enum": ["compose", "text", "dateTime", "enum"]
           },
           "logic": {
             "type": "string",
             "description": "分组逻辑",
-            "enum": [
-              "AND",
-              "OR"
-            ]
+            "enum": ["AND", "OR"]
           },
           "children": {
             "type": "array",
@@ -6368,10 +5885,7 @@
         ]
       },
       "ExportRecordDateTimeCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "导出记录时间条件",
         "allOf": [
@@ -6379,32 +5893,18 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "时间字段",
-                "enum": [
-                  "createTime",
-                  "finishedTime",
-                  "expireTime"
-                ]
+                "enum": ["createTime", "finishedTime", "expireTime"]
               },
               "op": {
                 "type": "string",
                 "description": "时间操作符",
-                "enum": [
-                  "GT",
-                  "GTE",
-                  "LT",
-                  "LTE",
-                  "BETWEEN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["GT", "GTE", "LT", "LTE", "BETWEEN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "string",
@@ -6424,9 +5924,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "dateTime"
-                ]
+                "enum": ["dateTime"]
               }
             }
           }
@@ -6465,10 +5963,7 @@
         "description": "导出记录动态分页查询请求"
       },
       "ExportRecordEnumCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "导出记录枚举条件",
         "allOf": [
@@ -6476,27 +5971,18 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "枚举字段",
-                "enum": [
-                  "status"
-                ]
+                "enum": ["status"]
               },
               "op": {
                 "type": "string",
                 "description": "枚举操作符",
-                "enum": [
-                  "EQ",
-                  "IN",
-                  "IS_NULL",
-                  "IS_NOT_NULL"
-                ]
+                "enum": ["EQ", "IN", "IS_NULL", "IS_NOT_NULL"]
               },
               "value": {
                 "type": "integer",
@@ -6518,19 +6004,14 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "enum"
-                ]
+                "enum": ["enum"]
               }
             }
           }
         ]
       },
       "ExportRecordGroupCondition": {
-        "required": [
-          "children",
-          "logic"
-        ],
+        "required": ["children", "logic"],
         "type": "object",
         "description": "导出记录逻辑分组",
         "allOf": [
@@ -6538,18 +6019,13 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "logic": {
                 "type": "string",
                 "description": "分组逻辑",
-                "enum": [
-                  "AND",
-                  "OR"
-                ]
+                "enum": ["AND", "OR"]
               },
               "children": {
                 "type": "array",
@@ -6561,47 +6037,31 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "compose"
-                ]
+                "enum": ["compose"]
               }
             }
           }
         ]
       },
       "ExportRecordSortItem": {
-        "required": [
-          "direction",
-          "field"
-        ],
+        "required": ["direction", "field"],
         "type": "object",
         "properties": {
           "field": {
             "type": "string",
             "description": "排序字段",
-            "enum": [
-              "createTime",
-              "finishedTime",
-              "expireTime",
-              "downloadCount"
-            ]
+            "enum": ["createTime", "finishedTime", "expireTime", "downloadCount"]
           },
           "direction": {
             "type": "string",
             "description": "排序方向",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
+            "enum": ["ASC", "DESC"]
           }
         },
         "description": "导出记录排序项"
       },
       "ExportRecordTextCondition": {
-        "required": [
-          "field",
-          "op"
-        ],
+        "required": ["field", "op"],
         "type": "object",
         "description": "导出记录文本条件",
         "allOf": [
@@ -6609,19 +6069,13 @@
             "$ref": "#/components/schemas/ExportRecordConditionNode"
           },
           {
-            "required": [
-              "nodeType"
-            ],
+            "required": ["nodeType"],
             "type": "object",
             "properties": {
               "field": {
                 "type": "string",
                 "description": "文本字段",
-                "enum": [
-                  "exportBizCode",
-                  "exportBizName",
-                  "fileName"
-                ]
+                "enum": ["exportBizCode", "exportBizName", "fileName"]
               },
               "op": {
                 "type": "string",
@@ -6654,9 +6108,7 @@
               "nodeType": {
                 "type": "string",
                 "description": "节点类型",
-                "enum": [
-                  "text"
-                ]
+                "enum": ["text"]
               }
             }
           }
@@ -6729,13 +6181,7 @@
             "type": "string",
             "description": "状态编码；显示名由前端字典 EXPORT_RECORD_STATUS 翻译",
             "example": "2",
-            "enum": [
-              "1",
-              "2",
-              "3",
-              "4",
-              "5"
-            ],
+            "enum": ["1", "2", "3", "4", "5"],
             "x-dict-type": "EXPORT_RECORD_STATUS"
           },
           "contentType": {
@@ -6774,10 +6220,7 @@
         "description": "导出记录响应"
       },
       "PageResultExportRecordRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -6812,9 +6255,7 @@
         }
       },
       "ExportRecordIdReqDTO": {
-        "required": [
-          "recordId"
-        ],
+        "required": ["recordId"],
         "type": "object",
         "properties": {
           "recordId": {
@@ -6864,9 +6305,7 @@
         }
       },
       "ExportBatchDownloadReqDTO": {
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "type": "object",
         "properties": {
           "ids": {
@@ -6874,11 +6313,7 @@
             "minItems": 0,
             "type": "array",
             "description": "导出记录ID列表，最多 50 条",
-            "example": [
-              1,
-              2,
-              3
-            ],
+            "example": [1, 2, 3],
             "items": {
               "type": "integer",
               "description": "导出记录ID列表，最多 50 条",
@@ -6901,13 +6336,7 @@
             "type": "string",
             "description": "任务状态编码；显示名由前端字典 EXPORT_RECORD_STATUS 翻译",
             "example": "1",
-            "enum": [
-              "1",
-              "2",
-              "3",
-              "4",
-              "5"
-            ],
+            "enum": ["1", "2", "3", "4", "5"],
             "x-dict-type": "EXPORT_RECORD_STATUS"
           },
           "fileName": {
@@ -6965,19 +6394,13 @@
         }
       },
       "ExportRecordDeleteReqDTO": {
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "type": "object",
         "properties": {
           "ids": {
             "type": "array",
             "description": "导出记录ID列表",
-            "example": [
-              1,
-              2,
-              3
-            ],
+            "example": [1, 2, 3],
             "items": {
               "type": "integer",
               "description": "导出记录ID列表",
@@ -6988,12 +6411,7 @@
         "description": "导出记录删除请求（支持多选）"
       },
       "StaffUpdateReqDTO": {
-        "required": [
-          "deptId",
-          "staffCode",
-          "staffId",
-          "staffName"
-        ],
+        "required": ["deptId", "staffCode", "staffId", "staffName"],
         "type": "object",
         "properties": {
           "staffId": {
@@ -7034,10 +6452,7 @@
             "type": "string",
             "description": "状态",
             "example": "ENABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "remark": {
@@ -7048,10 +6463,7 @@
         "description": "更新员工请求"
       },
       "StaffStatusUpdateReqDTO": {
-        "required": [
-          "staffId",
-          "status"
-        ],
+        "required": ["staffId", "status"],
         "type": "object",
         "properties": {
           "staffId": {
@@ -7064,20 +6476,14 @@
             "type": "string",
             "description": "状态",
             "example": "DISABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           }
         },
         "description": "员工状态更新请求"
       },
       "StaffRolesAssignReqDTO": {
-        "required": [
-          "roleIds",
-          "staffId"
-        ],
+        "required": ["roleIds", "staffId"],
         "type": "object",
         "properties": {
           "staffId": {
@@ -7099,10 +6505,7 @@
         "description": "员工角色分配请求"
       },
       "StaffPasswordResetReqDTO": {
-        "required": [
-          "newPassword",
-          "staffId"
-        ],
+        "required": ["newPassword", "staffId"],
         "type": "object",
         "properties": {
           "staffId": {
@@ -7165,10 +6568,7 @@
           "deptIds": {
             "type": "array",
             "description": "部门ID集合，是否包含子部门由 includeDescendants 控制；非空时优先于 deptId",
-            "example": [
-              1,
-              2
-            ],
+            "example": [1, 2],
             "items": {
               "type": "integer",
               "description": "部门ID集合，是否包含子部门由 includeDescendants 控制；非空时优先于 deptId",
@@ -7185,27 +6585,18 @@
             "type": "string",
             "description": "员工状态",
             "example": "ENABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "statuses": {
             "type": "array",
             "description": "员工状态集合；非空时优先于 status",
-            "example": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "example": ["ENABLED", "DISABLED"],
             "items": {
               "type": "string",
               "description": "员工状态集合；非空时优先于 status",
               "example": "[\"ENABLED\",\"DISABLED\"]",
-              "enum": [
-                "ENABLED",
-                "DISABLED"
-              ],
+              "enum": ["ENABLED", "DISABLED"],
               "x-dict-type": "IAM_STATUS"
             }
           },
@@ -7231,10 +6622,7 @@
         "description": "员工分页请求"
       },
       "PageResultStaffRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -7365,10 +6753,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "mustChangePassword": {
@@ -7387,9 +6772,7 @@
         "description": "员工响应"
       },
       "StaffIdReqDTO": {
-        "required": [
-          "staffId"
-        ],
+        "required": ["staffId"],
         "type": "object",
         "properties": {
           "staffId": {
@@ -7417,13 +6800,7 @@
         }
       },
       "StaffCreateReqDTO": {
-        "required": [
-          "deptId",
-          "password",
-          "staffCode",
-          "staffName",
-          "username"
-        ],
+        "required": ["deptId", "password", "staffCode", "staffName", "username"],
         "type": "object",
         "properties": {
           "username": {
@@ -7467,10 +6844,7 @@
             "type": "string",
             "description": "状态",
             "example": "ENABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "roleIds": {
@@ -7490,11 +6864,7 @@
         "description": "创建员工请求"
       },
       "RoleUpdateReqDTO": {
-        "required": [
-          "roleCode",
-          "roleId",
-          "roleName"
-        ],
+        "required": ["roleCode", "roleId", "roleName"],
         "type": "object",
         "properties": {
           "roleCode": {
@@ -7515,23 +6885,13 @@
           "status": {
             "type": "string",
             "description": "状态",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "dataScopeType": {
             "type": "string",
             "description": "数据权限范围",
-            "enum": [
-              "ALL",
-              "DEPT_AND_CHILD",
-              "DEPT_ONLY",
-              "SELF",
-              "CUSTOM_DEPT",
-              "MIXED"
-            ],
+            "enum": ["ALL", "DEPT_AND_CHILD", "DEPT_ONLY", "SELF", "CUSTOM_DEPT", "MIXED"],
             "x-dict-type": "IAM_DATA_SCOPE_TYPE"
           },
           "remark": {
@@ -7548,10 +6908,7 @@
         "description": "更新角色请求"
       },
       "RoleStatusUpdateReqDTO": {
-        "required": [
-          "roleId",
-          "status"
-        ],
+        "required": ["roleId", "status"],
         "type": "object",
         "properties": {
           "roleId": {
@@ -7564,10 +6921,7 @@
             "type": "string",
             "description": "状态",
             "example": "DISABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           }
         },
@@ -7597,20 +6951,14 @@
           "status": {
             "type": "string",
             "description": "状态",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           }
         },
         "description": "角色分页请求"
       },
       "PageResultRoleRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -7697,22 +7045,12 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "dataScopeType": {
             "type": "string",
-            "enum": [
-              "ALL",
-              "DEPT_AND_CHILD",
-              "DEPT_ONLY",
-              "SELF",
-              "CUSTOM_DEPT",
-              "MIXED"
-            ],
+            "enum": ["ALL", "DEPT_AND_CHILD", "DEPT_ONLY", "SELF", "CUSTOM_DEPT", "MIXED"],
             "x-dict-type": "IAM_DATA_SCOPE_TYPE"
           },
           "systemBuiltIn": {
@@ -7739,10 +7077,7 @@
         "description": "角色响应"
       },
       "RoleMenusAssignReqDTO": {
-        "required": [
-          "menuIds",
-          "roleId"
-        ],
+        "required": ["menuIds", "roleId"],
         "type": "object",
         "properties": {
           "roleId": {
@@ -7764,9 +7099,7 @@
         "description": "角色菜单分配请求"
       },
       "RoleIdReqDTO": {
-        "required": [
-          "roleId"
-        ],
+        "required": ["roleId"],
         "type": "object",
         "properties": {
           "roleId": {
@@ -7794,10 +7127,7 @@
         }
       },
       "RoleDataScopeAssignReqDTO": {
-        "required": [
-          "dataScopeType",
-          "roleId"
-        ],
+        "required": ["dataScopeType", "roleId"],
         "type": "object",
         "properties": {
           "roleId": {
@@ -7809,14 +7139,7 @@
           "dataScopeType": {
             "type": "string",
             "description": "数据权限范围",
-            "enum": [
-              "ALL",
-              "DEPT_AND_CHILD",
-              "DEPT_ONLY",
-              "SELF",
-              "CUSTOM_DEPT",
-              "MIXED"
-            ],
+            "enum": ["ALL", "DEPT_AND_CHILD", "DEPT_ONLY", "SELF", "CUSTOM_DEPT", "MIXED"],
             "x-dict-type": "IAM_DATA_SCOPE_TYPE"
           },
           "deptIds": {
@@ -7832,10 +7155,7 @@
         "description": "角色数据权限分配请求"
       },
       "RoleCreateReqDTO": {
-        "required": [
-          "roleCode",
-          "roleName"
-        ],
+        "required": ["roleCode", "roleName"],
         "type": "object",
         "properties": {
           "roleCode": {
@@ -7856,23 +7176,13 @@
           "status": {
             "type": "string",
             "description": "状态",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "dataScopeType": {
             "type": "string",
             "description": "数据权限范围",
-            "enum": [
-              "ALL",
-              "DEPT_AND_CHILD",
-              "DEPT_ONLY",
-              "SELF",
-              "CUSTOM_DEPT",
-              "MIXED"
-            ],
+            "enum": ["ALL", "DEPT_AND_CHILD", "DEPT_ONLY", "SELF", "CUSTOM_DEPT", "MIXED"],
             "x-dict-type": "IAM_DATA_SCOPE_TYPE"
           },
           "remark": {
@@ -7883,12 +7193,7 @@
         "description": "创建角色请求"
       },
       "MenuUpdateReqDTO": {
-        "required": [
-          "menuCode",
-          "menuId",
-          "menuName",
-          "menuType"
-        ],
+        "required": ["menuCode", "menuId", "menuName", "menuType"],
         "type": "object",
         "properties": {
           "parentId": {
@@ -7910,11 +7215,7 @@
             "type": "string",
             "description": "菜单类型",
             "example": "MENU",
-            "enum": [
-              "DIR",
-              "MENU",
-              "BUTTON"
-            ],
+            "enum": ["DIR", "MENU", "BUTTON"],
             "x-dict-type": "IAM_MENU_TYPE"
           },
           "routePath": {
@@ -7945,10 +7246,7 @@
           "status": {
             "type": "string",
             "description": "状态",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "permissionCode": {
@@ -8034,11 +7332,7 @@
           },
           "menuType": {
             "type": "string",
-            "enum": [
-              "DIR",
-              "MENU",
-              "BUTTON"
-            ],
+            "enum": ["DIR", "MENU", "BUTTON"],
             "x-dict-type": "IAM_MENU_TYPE"
           },
           "routePath": {
@@ -8062,10 +7356,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "permissionCode": {
@@ -8096,10 +7387,7 @@
         }
       },
       "MenuStatusUpdateReqDTO": {
-        "required": [
-          "menuId",
-          "status"
-        ],
+        "required": ["menuId", "status"],
         "type": "object",
         "properties": {
           "menuId": {
@@ -8112,19 +7400,14 @@
             "type": "string",
             "description": "状态",
             "example": "DISABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           }
         },
         "description": "菜单状态更新请求"
       },
       "MenuIdReqDTO": {
-        "required": [
-          "menuId"
-        ],
+        "required": ["menuId"],
         "type": "object",
         "properties": {
           "menuId": {
@@ -8152,11 +7435,7 @@
         }
       },
       "MenuCreateReqDTO": {
-        "required": [
-          "menuCode",
-          "menuName",
-          "menuType"
-        ],
+        "required": ["menuCode", "menuName", "menuType"],
         "type": "object",
         "properties": {
           "parentId": {
@@ -8178,11 +7457,7 @@
             "type": "string",
             "description": "菜单类型",
             "example": "MENU",
-            "enum": [
-              "DIR",
-              "MENU",
-              "BUTTON"
-            ],
+            "enum": ["DIR", "MENU", "BUTTON"],
             "x-dict-type": "IAM_MENU_TYPE"
           },
           "routePath": {
@@ -8213,10 +7488,7 @@
           "status": {
             "type": "string",
             "description": "状态",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "permissionCode": {
@@ -8263,13 +7535,7 @@
           "module": {
             "type": "string",
             "description": "模块",
-            "enum": [
-              "IAM_AUTH",
-              "IAM_STAFF",
-              "IAM_DEPT",
-              "IAM_ROLE",
-              "IAM_MENU"
-            ],
+            "enum": ["IAM_AUTH", "IAM_STAFF", "IAM_DEPT", "IAM_ROLE", "IAM_MENU"],
             "x-dict-type": "IAM_OPERATION_LOG_MODULE"
           },
           "action": {
@@ -8321,13 +7587,7 @@
           },
           "module": {
             "type": "string",
-            "enum": [
-              "IAM_AUTH",
-              "IAM_STAFF",
-              "IAM_DEPT",
-              "IAM_ROLE",
-              "IAM_MENU"
-            ],
+            "enum": ["IAM_AUTH", "IAM_STAFF", "IAM_DEPT", "IAM_ROLE", "IAM_MENU"],
             "x-dict-type": "IAM_OPERATION_LOG_MODULE"
           },
           "action": {
@@ -8381,10 +7641,7 @@
         "description": "操作日志响应"
       },
       "PageResultOperationLogRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -8419,9 +7676,7 @@
         }
       },
       "LogIdReqDTO": {
-        "required": [
-          "logId"
-        ],
+        "required": ["logId"],
         "type": "object",
         "properties": {
           "logId": {
@@ -8475,10 +7730,7 @@
           "result": {
             "type": "string",
             "description": "结果：SUCCESS/FAIL",
-            "enum": [
-              "SUCCESS",
-              "FAIL"
-            ],
+            "enum": ["SUCCESS", "FAIL"],
             "x-dict-type": "IAM_LOGIN_RESULT"
           },
           "ip": {
@@ -8511,19 +7763,12 @@
           },
           "eventType": {
             "type": "string",
-            "enum": [
-              "LOGIN",
-              "REFRESH",
-              "LOGOUT"
-            ],
+            "enum": ["LOGIN", "REFRESH", "LOGOUT"],
             "x-dict-type": "IAM_LOGIN_EVENT_TYPE"
           },
           "result": {
             "type": "string",
-            "enum": [
-              "SUCCESS",
-              "FAIL"
-            ],
+            "enum": ["SUCCESS", "FAIL"],
             "x-dict-type": "IAM_LOGIN_RESULT"
           },
           "failureReason": {
@@ -8553,10 +7798,7 @@
         "description": "登录日志响应"
       },
       "PageResultLoginLogRspDTO": {
-        "required": [
-          "list",
-          "total"
-        ],
+        "required": ["list", "total"],
         "type": "object",
         "properties": {
           "total": {
@@ -8606,11 +7848,7 @@
         }
       },
       "DeptUpdateReqDTO": {
-        "required": [
-          "deptCode",
-          "deptId",
-          "deptName"
-        ],
+        "required": ["deptCode", "deptId", "deptName"],
         "type": "object",
         "properties": {
           "parentId": {
@@ -8638,10 +7876,7 @@
             "type": "string",
             "description": "状态",
             "example": "ENABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "remark": {
@@ -8734,10 +7969,7 @@
           "status": {
             "type": "string",
             "description": "状态",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "remark": {
@@ -8773,10 +8005,7 @@
         }
       },
       "DeptStatusUpdateReqDTO": {
-        "required": [
-          "deptId",
-          "status"
-        ],
+        "required": ["deptId", "status"],
         "type": "object",
         "properties": {
           "deptId": {
@@ -8789,19 +8018,14 @@
             "type": "string",
             "description": "状态",
             "example": "DISABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           }
         },
         "description": "部门状态更新请求"
       },
       "DeptIdReqDTO": {
-        "required": [
-          "deptId"
-        ],
+        "required": ["deptId"],
         "type": "object",
         "properties": {
           "deptId": {
@@ -8829,10 +8053,7 @@
         }
       },
       "DeptCreateReqDTO": {
-        "required": [
-          "deptCode",
-          "deptName"
-        ],
+        "required": ["deptCode", "deptName"],
         "type": "object",
         "properties": {
           "parentId": {
@@ -8860,10 +8081,7 @@
             "type": "string",
             "description": "状态",
             "example": "ENABLED",
-            "enum": [
-              "ENABLED",
-              "DISABLED"
-            ],
+            "enum": ["ENABLED", "DISABLED"],
             "x-dict-type": "IAM_STATUS"
           },
           "remark": {
@@ -8874,9 +8092,7 @@
         "description": "创建部门请求"
       },
       "RefreshReqDTO": {
-        "required": [
-          "refreshToken"
-        ],
+        "required": ["refreshToken"],
         "type": "object",
         "properties": {
           "refreshToken": {
@@ -8902,12 +8118,7 @@
         }
       },
       "TokenRspDTO": {
-        "required": [
-          "accessToken",
-          "accessTokenExpiresAt",
-          "refreshToken",
-          "tokenType"
-        ],
+        "required": ["accessToken", "accessTokenExpiresAt", "refreshToken", "tokenType"],
         "type": "object",
         "properties": {
           "accessToken": {
@@ -8932,10 +8143,7 @@
         "description": "IAM token响应"
       },
       "ChangePasswordReqDTO": {
-        "required": [
-          "newPassword",
-          "oldPassword"
-        ],
+        "required": ["newPassword", "oldPassword"],
         "type": "object",
         "properties": {
           "oldPassword": {
@@ -9266,10 +8474,7 @@
         "description": "IAM退出登录请求"
       },
       "LoginReqDTO": {
-        "required": [
-          "password",
-          "username"
-        ],
+        "required": ["password", "username"],
         "type": "object",
         "properties": {
           "username": {
@@ -9416,9 +8621,7 @@
         "description": "已存储文件响应"
       },
       "FetchTempUrlReqDTO": {
-        "required": [
-          "objectKey"
-        ],
+        "required": ["objectKey"],
         "type": "object",
         "properties": {
           "objectKey": {
@@ -9461,9 +8664,7 @@
         }
       },
       "FetchTempUrlBatchReqDTO": {
-        "required": [
-          "objectKeys"
-        ],
+        "required": ["objectKeys"],
         "type": "object",
         "properties": {
           "objectKeys": {
@@ -9471,10 +8672,7 @@
             "minItems": 0,
             "type": "array",
             "description": "对象键列表，最多200个，重复对象键会按首次出现顺序去重",
-            "example": [
-              "exports/global-dict/a.csv",
-              "exports/global-dict/b.csv"
-            ],
+            "example": ["exports/global-dict/a.csv", "exports/global-dict/b.csv"],
             "items": {
               "type": "string",
               "description": "对象键列表，最多200个，重复对象键会按首次出现顺序去重",
@@ -9529,9 +8727,7 @@
         }
       },
       "DeleteFileReqDTO": {
-        "required": [
-          "objectKey"
-        ],
+        "required": ["objectKey"],
         "type": "object",
         "properties": {
           "objectKey": {
@@ -9543,9 +8739,7 @@
         "description": "删除文件请求"
       },
       "FetchDirectUploadCredentialReqDTO": {
-        "required": [
-          "bizPath"
-        ],
+        "required": ["bizPath"],
         "type": "object",
         "properties": {
           "bizPath": {

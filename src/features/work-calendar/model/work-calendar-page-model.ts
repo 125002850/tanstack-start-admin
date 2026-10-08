@@ -2,19 +2,13 @@ import { type WorkCalendarYearDetailRspDTO } from '@/lib/api/clients/service';
 import { normalizeApiError } from '@/lib/api/error-normalizer';
 import { type WorkCalendarDraftFormValue } from './work-calendar-model';
 
-export const WorkCalendarYearDetailReqDTOView = {
-  draft: 'draft',
-  active: 'active'
-} as const;
+export const WorkCalendarYearDetailReqDTOView = { draft: 'draft', active: 'active' } as const;
 
 export const WORK_CALENDAR_CLASSIFICATION_BASIS = {
   weeklyFallback: 'weekly_fallback'
 } as const;
 
-export type WorkCalendarYearDetailReqDTOView =
-  (typeof WorkCalendarYearDetailReqDTOView)[keyof typeof WorkCalendarYearDetailReqDTOView];
-
-export type WorkCalendarViewMode = 'draft' | 'active';
+export type WorkCalendarViewMode = 'draft' | 'active' | 'history';
 
 export function toSaveRequest(value: WorkCalendarDraftFormValue) {
   return {
@@ -60,13 +54,25 @@ export function resolveWorkCalendarViewMode(
   detail: WorkCalendarYearDetailRspDTO,
   requestedView?: WorkCalendarViewMode
 ): WorkCalendarViewMode {
+  if (requestedView === 'history') {
+    const selected = detail.selectedVersion;
+    if (
+      selected?.versionId !== undefined &&
+      selected.versionId === detail.draftVersion?.versionId &&
+      selected.status === 'draft'
+    )
+      return 'draft';
+    if (selected?.versionId !== undefined && selected.versionId === detail.activeVersion?.versionId)
+      return 'active';
+    return 'history';
+  }
   if (requestedView === WorkCalendarYearDetailReqDTOView.draft) {
     return WorkCalendarYearDetailReqDTOView.draft;
   }
   if (requestedView === WorkCalendarYearDetailReqDTOView.active && detail.activeVersion) {
     return WorkCalendarYearDetailReqDTOView.active;
   }
-  return detail.draftVersion || !detail.activeVersion
-    ? WorkCalendarYearDetailReqDTOView.draft
-    : WorkCalendarYearDetailReqDTOView.active;
+  return detail.activeVersion
+    ? WorkCalendarYearDetailReqDTOView.active
+    : WorkCalendarYearDetailReqDTOView.draft;
 }
