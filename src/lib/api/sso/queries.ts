@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { bootstrapRequest, collectSsoRedirectUrls } from './bootstrap';
 import { LoginForbiddenError } from './errors';
-import { setLoginUserId, setLogoutUrl } from './session';
+import { setLoginUserCode, setLoginUserId, setLogoutUrl } from './session';
 import type { LoginUserData, LoginUserRsp } from './type';
 import { HTTP_STATUS_FORBIDDEN } from '../../http-status';
 import { transportProfile } from '../clients/service/generated/runtime';
@@ -97,6 +97,7 @@ export const getLoginInfoQueryOptions = () =>
 
       setLogoutUrl(data.logoutUrl);
       setLoginUserId(data.userId);
+      if (data.userCode) setLoginUserCode(data.userCode);
       return data;
     },
     staleTime: LOGIN_INFO_STALE_TIME_MS

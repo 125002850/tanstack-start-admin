@@ -2,6 +2,69 @@ import { ssoStorageKeys } from './storage-keys';
 import { sessionExpiryStore } from './session-expiry';
 
 const BEARER_PREFIX = 'bearer ';
+export const SSO_SESSION_INVALIDATED_KEY = 'sso:session-invalidated';
+
+/** 只清理约定的登录凭据，保留业务缓存和各应用的登录返回参数。 */
+function clearAllAuth() {
+  if (!isBrowser()) return;
+  try {
+    const keys: string[] = [];
+    for (let index = 0; index < localStorage.length; index++) {
+      const key = localStorage.key(index);
+      if (key && /^sso:[^:]+:(token|user_id|user_code|logout_url)$/.test(key)) keys.push(key);
+    }
+    for (const key of keys) localStorage.removeItem(key);
+  } catch {}
+}
+
+function removeUrlToken() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('token')) return;
+    url.searchParams.delete('token');
+    window.history.replaceState(window.history.state, '', url.toString());
+  } catch {}
+}
+
+/** 同源应用共用此通知；接收方只标记失效，不再次广播。 */
+export function subscribeToSsoSessionInvalidation() {
+  const onStorage = (event: StorageEvent) => {
+    if (
+      event.storageArea !== localStorage ||
+      event.key !== SSO_SESSION_INVALIDATED_KEY ||
+      !event.newValue
+    )
+      return;
+    try {
+      const notification: unknown = JSON.parse(event.newValue);
+      if (!notification || typeof notification !== 'object' || !('logoutUrl' in notification))
+        return;
+      const logoutUrl = notification.logoutUrl;
+      if (logoutUrl !== null && typeof logoutUrl !== 'string') return;
+      if (sessionExpiryStore.getState().expired) return;
+      sessionExpiryStore.setState({ expired: true, logoutUrl: getLogoutUrl() || logoutUrl });
+      clearAuth();
+      removeUrlToken();
+    } catch {}
+  };
+  window.addEventListener('storage', onStorage);
+  return () => window.removeEventListener('storage', onStorage);
+}
+
+function invalidateAllSessions(logoutUrl: string | null) {
+  sessionExpiryStore.setState({ expired: true, logoutUrl });
+  clearAllAuth();
+  removeUrlToken();
+  try {
+    localStorage.setItem(
+      SSO_SESSION_INVALIDATED_KEY,
+      JSON.stringify({
+        id: `${Date.now()}-${Math.random()}`,
+        logoutUrl
+      })
+    );
+  } catch {}
+}
 
 function isBrowser() {
   return typeof window !== 'undefined';
@@ -67,6 +130,25 @@ export function hydrateFromUrl() {
   } catch {}
 }
 
+function parseJwtClaims(rawToken: string): Record<string, unknown> | null {
+  try {
+    const token = normalizeToken(rawToken) ?? rawToken;
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
 export function getAuthHeader(): string | null {
   if (!isBrowser()) return null;
   try {
@@ -82,6 +164,10 @@ export function setAuthHeader(value: string) {
   if (!normalized) return;
   try {
     localStorage.setItem(ssoStorageKeys.token, normalized);
+    const claims = parseJwtClaims(normalized);
+    if (typeof claims?.userCode === 'string' && claims.userCode.trim()) {
+      setLoginUserCode(claims.userCode);
+    }
   } catch {}
 }
 
@@ -91,6 +177,7 @@ export function clearAuth() {
     localStorage.removeItem(ssoStorageKeys.token);
     localStorage.removeItem(ssoStorageKeys.logoutUrl);
     localStorage.removeItem(ssoStorageKeys.userId);
+    localStorage.removeItem(ssoStorageKeys.userCode);
   } catch {}
 }
 
@@ -109,6 +196,35 @@ export function setLoginUserId(value: string) {
   if (!normalized) return;
   try {
     localStorage.setItem(ssoStorageKeys.userId, normalized);
+  } catch {}
+}
+
+export function getLoginUserCode(): string | null {
+  if (!isBrowser()) return null;
+  try {
+    const cached = localStorage.getItem(ssoStorageKeys.userCode);
+    if (cached && cached.trim()) return cached.trim();
+    const token = getAuthHeader();
+    if (token) {
+      const claims = parseJwtClaims(token);
+      if (claims && typeof claims.userCode === 'string' && claims.userCode.trim()) {
+        const code = claims.userCode.trim();
+        setLoginUserCode(code);
+        return code;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function setLoginUserCode(value: string) {
+  if (!isBrowser() || sessionExpiryStore.getState().expired) return;
+  const normalized = value.trim();
+  if (!normalized) return;
+  try {
+    localStorage.setItem(ssoStorageKeys.userCode, normalized);
   } catch {}
 }
 
@@ -136,8 +252,7 @@ export function handleUnauthorized(redirectUrl?: string | null) {
     return;
   }
   const logoutUrl = redirectUrl || getLogoutUrl();
-  sessionExpiryStore.setState({ expired: true, logoutUrl });
-  clearAuth();
+  invalidateAllSessions(logoutUrl);
 }
 
 export function confirmSessionExpired() {
@@ -148,8 +263,9 @@ export function confirmSessionExpired() {
 }
 
 export function logout(redirectUrl?: string | null) {
-  const url = redirectUrl || getLogoutUrl();
-  clearAuth();
+  const state = sessionExpiryStore.getState();
+  const url = redirectUrl || state.logoutUrl || getLogoutUrl();
+  if (!state.expired) invalidateAllSessions(url);
   if (url) {
     window.location.href = url;
     return;

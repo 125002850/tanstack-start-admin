@@ -7,6 +7,7 @@ export function createSsoStorageKeys(serviceCode: string) {
   return {
     token: `${prefix}:token`,
     userId: `${prefix}:user_id`,
+    userCode: `${prefix}:user_code`,
     logoutUrl: `${prefix}:logout_url`,
     loginReturnSearch: `${prefix}:login_return_search`
   } as const;

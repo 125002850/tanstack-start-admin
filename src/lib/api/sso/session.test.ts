@@ -65,8 +65,10 @@ function setupBrowserMocks(token?: string, search?: string) {
     clear: vi.fn(() => {
       Object.keys(store).forEach((k) => delete store[k]);
     }),
-    length: 0,
-    key: vi.fn(() => null)
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: vi.fn((index: number) => Object.keys(store)[index] ?? null)
   });
 
   vi.stubGlobal('sessionStorage', {

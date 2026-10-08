@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mockSession = {
   getAuthHeader: vi.fn<() => string | null>(),
   setAuthHeader: vi.fn<(token: string) => void>(),
+  setLoginUserCode: vi.fn<(code: string) => void>(),
   setLoginUserId: vi.fn<(userId: string) => void>(),
   setLogoutUrl: vi.fn<(url: string) => void>(),
   getLogoutUrl: vi.fn<() => string | null>()
@@ -18,6 +19,7 @@ const mockRuntime = vi.hoisted(() => ({
 vi.mock('./session', () => ({
   getAuthHeader: () => mockSession.getAuthHeader(),
   setAuthHeader: (token: string) => mockSession.setAuthHeader(token),
+  setLoginUserCode: (code: string) => mockSession.setLoginUserCode(code),
   setLoginUserId: (userId: string) => mockSession.setLoginUserId(userId),
   setLogoutUrl: (url: string) => mockSession.setLogoutUrl(url),
   getLogoutUrl: () => mockSession.getLogoutUrl(),
@@ -74,6 +76,7 @@ describe('login info query', () => {
           success: true,
           data: {
             userId: '1',
+            userCode: 'EMP001',
             phone: '13800138000',
             userName: 'admin',
             realName: 'Admin',
@@ -96,9 +99,10 @@ describe('login info query', () => {
     expect(data.userName).toBe('admin');
     expect(mockSession.setLogoutUrl).toHaveBeenCalledWith('https://sso/logout');
     expect(mockSession.setLoginUserId).toHaveBeenCalledWith('1');
+    expect(mockSession.setLoginUserCode).toHaveBeenCalledWith('EMP001');
   });
 
-  it('prefixes login info requests when basePath is non-root', async () => {
+  it('supports missing userCode and prefixes login info requests when basePath is non-root', async () => {
     mockRuntime.basePath = '/admin-api';
     globalThis.fetch = vi.fn().mockResolvedValue(
       new Response(

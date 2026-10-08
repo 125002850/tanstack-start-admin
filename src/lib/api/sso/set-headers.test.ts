@@ -36,16 +36,18 @@ describe('createAuthHeaders', () => {
 
   it('injects X-User-Id when login user id exists in session', async () => {
     setupBrowserMocks();
-    const { setAuthHeader, setLoginUserId } = await import('./session');
+    const { setAuthHeader, setLoginUserId, setLoginUserCode } = await import('./session');
     const { createAuthHeaders } = await import('./set-headers');
 
     setAuthHeader('Bearer token-value');
     setLoginUserId('10086');
+    setLoginUserCode(' EMP10086 ');
 
     const headers = createAuthHeaders();
 
     expect(headers.get('Authorization')).toBe('token-value');
     expect(headers.get('X-User-Id')).toBe('10086');
+    expect(headers.get('X-User-Code')).toBe('EMP10086');
   });
 
   it('skips X-User-Id when login user id is unavailable', async () => {
@@ -59,5 +61,6 @@ describe('createAuthHeaders', () => {
 
     expect(headers.get('Authorization')).toBe('token-value');
     expect(headers.has('X-User-Id')).toBe(false);
+    expect(headers.has('X-User-Code')).toBe(false);
   });
 });

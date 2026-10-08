@@ -7,6 +7,7 @@ export interface LoginUserRsp {
 
 export interface LoginUserData {
   userId: string;
+  userCode?: string;
   phone: string;
   userName: string;
   realName: string;

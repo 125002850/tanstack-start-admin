@@ -4,7 +4,10 @@ import { createRoot } from 'react-dom/client';
 import { RouterProgressBar } from './components/layout/router-progress';
 import { configureApiTransport } from './lib/api/transport';
 import { createRouter } from './router';
+import { subscribeToSsoSessionInvalidation } from './lib/api/sso/session';
 
+const unsubscribeSessionInvalidation = subscribeToSsoSessionInvalidation();
+if (import.meta.hot) import.meta.hot.dispose(unsubscribeSessionInvalidation);
 configureApiTransport();
 const router = createRouter();
 
