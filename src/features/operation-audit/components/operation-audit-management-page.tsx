@@ -22,7 +22,12 @@ import { nullableDateTime, nullableOperatorLabel } from '@/lib/formatters/displa
 import type { DataTableRowAction } from '@/types/data-table';
 
 import { OperationAuditDetailSheet } from './operation-audit-detail-sheet';
-import { operationAuditEnumCode, operationAuditEnumLabel } from '../operation-audit-enum';
+import {
+  isOperationAuditFailed,
+  isOperationAuditSuccess,
+  operationAuditEnumCode,
+  operationAuditEnumLabel
+} from '../operation-audit-enum';
 
 const TABLE_ID = 'operation-audit-log-list';
 const DEFAULT_REQUEST_SORT = [
@@ -62,12 +67,16 @@ function OperationAuditContent() {
         filterPlaceholder: '搜索描述',
         enableSorting: false
       }),
-      columnDsl.field('operatorName', '操作人', {
-        size: 150,
+      columnDsl.custom({
+        id: 'operatorNameFilter',
+        title: '操作人',
+        accessorFn: (row) => row.operatorName,
         filter: 'text',
         filterPlaceholder: '搜索操作人',
-        enableSorting: true,
-        format: (value, row) => nullableOperatorLabel({ id: row.operatorId, name: value })
+        dsl: { filterField: 'operatorName' },
+        enableSorting: false,
+        columnPanelVisible: false,
+        cell: () => null
       }),
       columnDsl.field('clientIp', '操作 IP', {
         size: 150,
@@ -97,9 +106,9 @@ function OperationAuditContent() {
           return label ?? operationAuditEnumLabel(value);
         },
         variant: (value) =>
-          operationAuditEnumCode(value) === 'failed'
+          isOperationAuditFailed(value)
             ? 'destructive'
-            : operationAuditEnumCode(value) === 'success'
+            : isOperationAuditSuccess(value)
               ? 'success'
               : 'outline'
       }),
@@ -109,12 +118,22 @@ function OperationAuditContent() {
         filter: false,
         format: (value) => formatDuration(value)
       }),
-      columnDsl.field('operationTime', '操作时间', {
+      columnDsl.field('operationTime', '操作信息', {
         size: 180,
         type: 'dateTime',
         filter: 'dateRange',
         enableSorting: true,
-        format: (value) => nullableDateTime(value)
+        renderCell: ({ row }) => (
+          <div className='flex flex-col text-xs'>
+            <span className='text-muted-foreground'>
+              {nullableOperatorLabel({
+                id: row.original.operatorId,
+                name: row.original.operatorName
+              })}
+            </span>
+            <span>{nullableDateTime(row.original.operationTime)}</span>
+          </div>
+        )
       }),
       columnDsl.custom({
         id: 'traceId',
@@ -144,6 +163,7 @@ function OperationAuditContent() {
         label: '详情',
         icon: <Icons.eye className='size-4' />,
         disabled: (row) => row.logId == null,
+        disabledReason: '缺少日志编号，无法查看详情。',
         Sheet: OperationAuditDetailSheet
       }
     ],
@@ -165,7 +185,7 @@ function OperationAuditContent() {
     rowActions,
     rowId: 'logId',
     initialState: {
-      columnVisibility: { traceId: false, requestPath: false }
+      columnVisibility: { operatorNameFilter: false, traceId: false, requestPath: false }
     },
     refreshBehavior: {
       onSuccess: () => {
@@ -181,7 +201,7 @@ function OperationAuditContent() {
           <DataTable
             table={table}
             isLoading={queryState.isFetching && !queryState.data}
-            loadingSkeleton={{ columnCount: 8, filterCount: 4 }}
+            loadingSkeleton={{ columnCount: 7, filterCount: 4 }}
             {...refreshProps}
             getStatusConfig={({ rows, hasFilters, isLoading }) =>
               !rows.length && !isLoading
