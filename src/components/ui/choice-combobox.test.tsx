@@ -292,3 +292,23 @@ describe('ChoiceCombobox', () => {
     expect(screen.queryByRole('button', { name: '加载更多' })).not.toBeInTheDocument();
   });
 });
+
+it('renders option label content and footer while searching the plain label', async () => {
+  const user = userEvent.setup();
+  render(
+    <SingleChoiceCombobox
+      options={[{ value: 'v1', label: '版本一', labelContent: <strong>自定义版本</strong> }]}
+      value={null}
+      onValueChange={vi.fn()}
+      triggerLabel='版本'
+      placeholder='请选择'
+      searchPlaceholder='搜索版本'
+    >
+      <button type='button'>重新加载</button>
+    </SingleChoiceCombobox>
+  );
+  await user.click(screen.getByRole('button', { name: '版本' }));
+  await user.type(screen.getByPlaceholderText('搜索版本'), '版本一');
+  expect(screen.getByText('自定义版本')).toBeVisible();
+  expect(screen.getByRole('button', { name: '重新加载' })).toBeVisible();
+});

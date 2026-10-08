@@ -41,6 +41,8 @@ export type DataTableAction<TData> =
 export interface DataTableRowAction<TData> {
   id?: string;
   label: string;
+  /** 按行调整展示文案；操作标识仍使用 id 或静态 label。 */
+  getLabel?: (row: TData) => string;
   icon?: ReactNode;
   disabled?: boolean | ((row: TData) => boolean);
   /** 仅在禁用时展示，支持按行返回具体原因。 */

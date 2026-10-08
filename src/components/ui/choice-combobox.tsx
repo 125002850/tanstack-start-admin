@@ -28,6 +28,8 @@ export type ChoiceComboboxValue = string | number;
 export type ChoiceComboboxOption<TValue extends ChoiceComboboxValue = string> = {
   value: TValue;
   label: string;
+  /** 自定义选项文案展示；搜索、触发器和 Tooltip 仍使用 label。 */
+  labelContent?: React.ReactNode;
   description?: string;
   keywords?: readonly string[];
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
@@ -71,6 +73,8 @@ type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
   id?: string;
   className?: string;
   contentClassName?: string;
+  /** 弹层底部的附加操作。 */
+  children?: React.ReactNode;
   renderTrigger?: (props: ChoiceComboboxTriggerProps) => React.ReactElement;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
@@ -111,6 +115,7 @@ function getOptionKey(value: ChoiceComboboxValue) {
 function ChoiceOption({
   value,
   label,
+  labelContent,
   description,
   keyboardNavigation,
   icon: OptionIcon,
@@ -120,6 +125,7 @@ function ChoiceOption({
 }: React.ComponentProps<typeof CommandItem> & {
   value: string;
   label: string;
+  labelContent?: React.ReactNode;
   description?: string;
   keyboardNavigation: boolean;
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
@@ -145,7 +151,7 @@ function ChoiceOption({
       <span className='flex min-w-0 items-center gap-2'>
         {OptionIcon ? <OptionIcon className='size-4 shrink-0' /> : null}
         <span ref={labelRef} className='min-w-0 truncate'>
-          {label}
+          {labelContent ?? label}
         </span>
         {count ? <span className='ml-auto font-mono text-xs'>{count}</span> : null}
       </span>
@@ -201,6 +207,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   id,
   className,
   contentClassName,
+  children,
   renderTrigger,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
@@ -433,6 +440,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                   return (
                     <ChoiceOption
                       label={option.label}
+                      labelContent={option.labelContent}
                       description={option.description}
                       icon={option.icon}
                       count={option.count}
@@ -510,6 +518,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
             </div>
           ) : null}
         </Command>
+        {children ? <div className='border-t p-1'>{children}</div> : null}
       </PopoverContent>
     </Popover>
   );

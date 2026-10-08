@@ -160,3 +160,34 @@ describe('DataTableRowActions', () => {
     await waitFor(() => expect(onClick).toHaveBeenCalledExactlyOnceWith(ROW));
   });
 });
+
+it('resolves inline and overflow action labels by row while keeping confirmations', async () => {
+  const user = userEvent.setup();
+  const onClick = vi.fn();
+  render(
+    <DataTableRowActions
+      row={ROW}
+      maxVisible={1}
+      actions={[
+        { id: 'edit', label: '编辑', getLabel: (row) => `编辑 ${row.name}` },
+        {
+          id: 'publish',
+          label: '发布',
+          getLabel: (row) => `发布 ${row.name}`,
+          onClick,
+          confirm: {
+            title: (row) => `确认发布 ${row.name}`,
+            description: (row) => `${row.name} 将发布`,
+            confirmText: '继续发布'
+          }
+        }
+      ]}
+    />
+  );
+  expect(screen.getByRole('button', { name: '编辑 Alice' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: '更多操作' }));
+  await user.click(screen.getByRole('menuitem', { name: '发布 Alice' }));
+  expect(screen.getByRole('dialog')).toHaveTextContent('确认发布 Alice');
+  await user.click(screen.getByRole('button', { name: '继续发布' }));
+  expect(onClick).toHaveBeenCalledWith(ROW);
+});

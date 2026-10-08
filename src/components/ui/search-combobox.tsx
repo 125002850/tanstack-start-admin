@@ -27,11 +27,13 @@ type SearchComboboxLoadMoreProps = {
 };
 
 type SearchComboboxProps<TItem> = {
+  id?: string;
   items: TItem[];
   value?: TItem | null;
   open: boolean;
   inputValue: string;
   triggerLabel: string;
+  triggerAppearance?: 'input' | 'button';
   placeholder: string;
   searchPlaceholder: string;
   emptyText: string;
@@ -46,6 +48,7 @@ type SearchComboboxProps<TItem> = {
   clearLabel?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
+  'aria-required'?: boolean;
   loadMore?: SearchComboboxLoadMoreProps;
   onOpenChange: (open: boolean) => void;
   onInputValueChange: (value: string) => void;
@@ -61,11 +64,13 @@ type SearchComboboxProps<TItem> = {
 };
 
 export function SearchCombobox<TItem>({
+  id,
   items,
   value = null,
   open,
   inputValue,
   triggerLabel,
+  triggerAppearance = 'input',
   placeholder,
   searchPlaceholder,
   emptyText,
@@ -80,6 +85,7 @@ export function SearchCombobox<TItem>({
   clearLabel,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
+  'aria-required': ariaRequired,
   loadMore,
   onOpenChange,
   onInputValueChange,
@@ -111,6 +117,24 @@ export function SearchCombobox<TItem>({
     },
     [onInputValueChange, onOpenChange, onValueChange, open]
   );
+  const handleListScroll = React.useCallback(
+    (event: React.UIEvent<HTMLDivElement>) => {
+      if (
+        !loadMore?.visible ||
+        loadMore.disabled ||
+        loadMore.isLoading ||
+        disabled ||
+        event.currentTarget.scrollHeight -
+          event.currentTarget.scrollTop -
+          event.currentTarget.clientHeight >
+          24
+      ) {
+        return;
+      }
+      loadMore.onClick();
+    },
+    [disabled, loadMore]
+  );
 
   return (
     <Combobox
@@ -130,17 +154,20 @@ export function SearchCombobox<TItem>({
       onValueChange={(nextValue) => onValueChange(nextValue ?? null)}
     >
       <ComboboxTrigger
+        id={id}
         ref={setTriggerNode}
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
+        aria-required={ariaRequired}
         aria-label={triggerLabel}
         render={
           <Button
             type='button'
             variant='outline'
             className={cn(
-              'border-input min-w-0 w-full overflow-hidden justify-between gap-2 bg-transparent font-normal',
-              !selectedLabel && 'text-muted-foreground',
+              'min-w-0 w-full overflow-hidden justify-between gap-2',
+              triggerAppearance === 'input' && 'border-input bg-transparent font-normal',
+              triggerAppearance === 'input' && !selectedLabel && 'text-muted-foreground',
               className
             )}
           />
@@ -192,7 +219,7 @@ export function SearchCombobox<TItem>({
           />
         </div>
         <ComboboxEmpty>{isError ? errorText : isLoading ? loadingText : emptyText}</ComboboxEmpty>
-        <ComboboxList>
+        <ComboboxList onScroll={handleListScroll}>
           <ComboboxGroup>
             {items.map((item, index) => (
               <ComboboxItem

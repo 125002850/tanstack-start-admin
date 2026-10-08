@@ -2,7 +2,7 @@
 export { TextField } from './text-field';
 export { TextareaField } from './textarea-field';
 export { SelectField } from './select-field';
-export { CheckboxField } from './checkbox-field';
+export { CheckboxField, ControlledCheckboxField, TanStackCheckboxField } from './checkbox-field';
 export { SwitchField } from './switch-field';
 export { RadioGroupField } from './radio-group-field';
 export { SliderField } from './slider-field';

@@ -152,7 +152,7 @@ export function DataTableRowActions<TData>({
         {visibleActions.map((action) => (
           <DataTableActionTooltip
             key={action.id ?? action.label}
-            label={action.label}
+            label={action.getLabel?.(row) ?? action.label}
             disabled={
               pendingKeys.has(action.id ?? action.label) ||
               resolveRowActionValue(action.disabled ?? false, row)
@@ -175,7 +175,7 @@ export function DataTableRowActions<TData>({
                 event.stopPropagation();
                 void handleClick(action);
               }}
-              aria-label={action.label}
+              aria-label={action.getLabel?.(row) ?? action.label}
               data-row-expand-ignore
             >
               {action.icon}
@@ -221,7 +221,7 @@ export function DataTableRowActions<TData>({
                 >
                   {action.icon}
                   <span className='ml-2'>
-                    <span className='block'>{action.label}</span>
+                    <span className='block'>{action.getLabel?.(row) ?? action.label}</span>
                     {pendingKeys.has(action.id ?? action.label) ||
                     resolveRowActionValue(action.disabled ?? false, row) ? (
                       <span className='block text-xs'>
