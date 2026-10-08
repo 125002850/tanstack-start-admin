@@ -54,12 +54,21 @@
 - `filter={null}` 由基础组件统一设置，调用方必须传入已过滤的 `items`。本地数据使用派生过滤结果；远程数据使用 `useRemoteComboboxState` 统一处理 debounce、分页、去重和关闭重置。
 - 远程选择器必须区分 `emptyText` 与 `loadingText`，并通过 `loadMore` 暴露分页状态；加载中和只读状态必须传入 `disabled`。
 
+### 展示、分页与可访问性
+
+- `triggerAppearance` 默认为 `'input'`；工具栏等按钮式入口可使用 `'button'`。该属性只调整触发器外观，不改变受控值、搜索或选择行为。
+- `id` 用于关联外部 Label 的 `htmlFor`；必填字段传入 `aria-required`，校验提示继续使用 `aria-invalid` / `aria-describedby`。这些可访问性属性不代替表单校验。
+- 列表滚动接近底部时会调用 `loadMore.onClick`，并保留手动加载入口。调用方通过 `loadMore.visible` 表达是否还有下一页，通过 `isLoading` / `disabled` 阻止重复加载；分页状态和请求仍由调用方管理，禁止另外注册滚动监听重复触发请求。
+- 自定义外观或分页不得绕过组件内置的 `useOverlayLifecycle` 与 Portal 容器处理。
+
 ## ChoiceCombobox
 
 - 单选和多选统一复用 `SingleChoiceCombobox` / `MultipleChoiceCombobox`，两者共享 ChoiceCombobox 弹层与底部操作区，并分别保持标量和数组值契约；`MultiSelectCombobox` 仅作为向后兼容包装。
 - value 必须由调用方受控；多选值保持用户选择顺序并按 value 去重。使用 `maxSelected` 时，达到上限后只禁用未选 option；`allowEmpty={false}` 时隐藏清除入口，并阻止移除最后一项。
 - 远程选择器同时受控 `open`、`inputValue`，通过 `loadMore` 传入分页状态，并使用 `searchMode='remote'` 避免二次本地过滤。
 - loading、empty、error、load more 必须使用不同文案；搜索翻页时需要保留已选 value，但不得实现“选择全部远程数据”。
+- `ChoiceComboboxOption.labelContent` 只替换选项内的文案展示，可用于徽标或复合内容；必须保留纯文本 `label`，搜索、触发器和 Tooltip 仍使用它，`value` 继续作为稳定业务标识。
+- `SingleChoiceCombobox` / `MultipleChoiceCombobox` 的 `children` 渲染在弹层底部独立操作区，适合创建或管理入口；不得塞入选项列表或当成选中值。自定义操作需要关闭弹层时，通过受控 `open` / `onOpenChange` 完成。
 - DataTable 的 `editableField` 已封装上述远程状态、Portal 和焦点生命周期，业务列只声明 option source、selectionMode 与 allowEmpty，不直接拼装 Combobox。
 
 ### Workspace 与表单联动
@@ -90,3 +99,13 @@
 
 - 必填字段除可视标记外，还须向输入控件传递 `aria-required`。加载按钮应保持动作的可访问名称，并设置 disabled/aria-busy 阻止重复提交。
 - `form.Form` 统一捕获提交 Promise 的拒绝；已由 Mutation 处理的错误不重复提示，其余错误使用安全归一化器。提交失败保留字段输入与浮层。
+
+### 独立选择筛选触发器
+
+业务版本选择等独立筛选可组合公开的 `DataTableFilterTrigger`（`components/data-table/filters/data-table-filter-trigger`）与 `SingleChoiceCombobox`，复用选中标签展示。其余 DataTable 内部筛选实现仍不对业务 feature 开放。
+
+`CheckboxField` 支持受控 `checked/id/onCheckedChange`；旧上下文用法保留。显式 adapter 为 `TanStackCheckboxField`，`FormCheckboxField` 与 `form.CheckboxField` 公开接口继续兼容。
+
+### 远程选项预加载
+
+`useRemoteComboboxState` 默认仅在展开且未禁用时查询。需要提前加载首屏时显式传入 `preload: true`；`disabled` 始终优先，禁用时不自动请求。预加载模式关闭面板后恢复默认首屏并复用查询缓存，不在关闭状态加载后续页。未开启预加载的调用方保留关闭清空候选项的行为。

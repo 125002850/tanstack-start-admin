@@ -170,6 +170,8 @@
 
 ## 表格操作
 
+- `DataTableRowAction.getLabel(row)` 可按行调整同一操作的显示文案（如“编辑／继续编辑”），行内按钮提示、更多菜单与可访问名称保持一致；`id` 或静态 `label` 仍作为稳定操作标识，不得随记录状态改变。未提供 `getLabel` 时继续使用静态 `label`。
+
 - 对于已向用户提供的行内操作、更多菜单和常规工具栏操作，必须保持可见、顺序稳定；不得按记录状态、业务前置条件、服务能力或请求进度使用 `hidden`、条件数组或条件 JSX 移除操作。
 - 业务操作当前不可执行时使用 `disabled`，并提供 `disabledReason`。原因应说明具体限制或恢复方式，例如“请先停用任务，再删除”；有后端不可用原因时优先直接消费，不在前端推导另一套业务规则。
 - `DataTableRowAction.disabledReason` 支持字符串或按行解析的函数；`DataTableAction.disabledReason` 支持字符串或按选择上下文解析的函数。原因只在禁用时展示，不得替代 `disabled` 判断。

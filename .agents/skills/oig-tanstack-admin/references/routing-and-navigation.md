@@ -30,7 +30,7 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/users')({
+export const Route = createFileRoute('/users')({
   ...meta,
   component: UsersPage
 });
@@ -44,7 +44,7 @@ export const Route = createFileRoute('/dashboard/users')({
 - `title`：浏览器文档标题。`defineRouteMeta()` 自动生成 `head()`；未提供时回退到 `label`。
 - `breadcrumb.label`：面包屑文案。
 - `breadcrumb.to`：可选的自定义 breadcrumb 链接目标。
-- `requiredPermission` / `requiredAnyPermissions`：dashboard 路由权限元数据；由 `/dashboard` 根路由统一调用 `ensureDashboardRouteAccess()` 校验，页面 route 不再手写 `ensureIamPermission()`。
+- `requiredPermission` / `requiredAnyPermissions`：dashboard 路由权限元数据；由 `/_app` 无路径布局路由统一调用 `ensureDashboardRouteAccess()` 校验，页面 route 不再手写 `ensureIamPermission()`。
 
 ### `nav`
 
@@ -104,3 +104,13 @@ export const Route = createFileRoute('/dashboard/users')({
 - 外部链接使用普通 `<a href>`，禁止使用 TanStack Router `Link`。
 - 特殊 `head()` 逻辑应在 route 文件中显式扩展，禁止反向修改通用消费端。
 - `account/profile` 与 `account/password` 在当前主线是隐藏兼容重定向路由；真实入口在侧边栏账号菜单的 Sheet，不要把它们重新恢复为可导航 workspace 页面。
+
+内容路由位于 `src/routes/_app/`，由无路径 AppLayout 统一承载认证与 workspace。
+
+侧栏在权限过滤后将 `nav.group` 投影为业务中心，再展示可跳转功能项；旧 `kind/parentId` 容器仍参与权限过滤，展示时扁平化，不新增第三层菜单。
+
+## 功能开关与空导航
+
+- 路由通过 `feature: { key, enabled }` 声明功能开关；关闭后隐藏导航，`/_app` 的 `ensureDashboardRouteAccess()` 拒绝直达。开启后继续执行原有 IAM 菜单及权限检查。
+- 无可见子项且 `linkable: false` 的导航容器被过滤；可跳转的叶子页面保留。
+- 页签关闭按钮仅在当前页签进入 Tab 顺序；确认操作使用同步执行锁防止重复提交。

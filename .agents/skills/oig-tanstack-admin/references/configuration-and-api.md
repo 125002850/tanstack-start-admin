@@ -117,3 +117,9 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 原生 fetch / XMLHttpRequest / bootstrapRequest 的允许边界由 `src/test/contracts/openapi-adoption.test.ts` 检查；新业务功能使用生成客户端，不新增手写业务 transport。
 - 接口或类型缺失时，先核对后端 Controller/DTO、服务导出的 OpenAPI 和本地 spec。修复后端契约或同步服务版本后，再执行 `pnpm api`；单独 `pnpm codegen` 不会更新后端契约。
 - 禁止手改 spec、generated 文件、生成后 patch 或用类型断言补造契约。后端不可用时报告阻塞；保留模板自身的 IAM/SSO 认证边界与 operationId。
+
+## 带过期时间的浏览器缓存
+
+- `src/hooks/use-expiring-storage.ts` 提供 `createExpiringStorage()` 与 `useExpiringStorage()`，支持 local/session storage 和自定义异步 adapter。
+- 调用方显式提供独立 key、TTL、类型校验和创建时间提取；失效记录在读取时清理，不依赖后台计时器。hook 的 client 应保持引用稳定。
+- 仅用于允许持久化的业务数据，不用于 token、密码等凭据。模板不预设具体业务的缓存内容和期限。
