@@ -51,7 +51,7 @@ describe('OpenAPI package adoption contract', () => {
       engines?: Record<string, string>;
     };
 
-    expect(packageJson.dependencies?.['@oig/react-query-generator']).toBe('5.0.0');
+    expect(packageJson.dependencies?.['@oig/react-query-generator']).toBe('5.0.2');
     expect(packageJson.engines?.node).toBe('>=22.18.0');
   });
 
