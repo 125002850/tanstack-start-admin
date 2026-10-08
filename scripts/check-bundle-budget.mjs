@@ -51,8 +51,8 @@ function parseIntegerEnv(name, fallback) {
     return fallback;
   }
 
-  const value = Number.parseInt(raw, 10);
-  if (!Number.isFinite(value) || value < 0) {
+  const value = Number(raw);
+  if (raw.trim() === '' || !Number.isSafeInteger(value) || value < 0) {
     throw new Error(`${name} must be a non-negative integer, got ${raw}`);
   }
 
@@ -224,6 +224,9 @@ function main() {
   const jsFiles = files.filter((file) => file.extension === '.js');
   const cssFiles = files.filter((file) => file.extension === '.css');
   const imageFiles = files.filter((file) => IMAGE_EXTENSIONS.has(file.extension));
+  if (files.length === 0 || jsFiles.length === 0) {
+    throw new Error(`No built JavaScript assets found: ${DIST_DIR}`);
+  }
   const initialJsFiles = collectInitialJsFiles(files);
 
   const metrics = {
