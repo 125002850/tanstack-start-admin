@@ -103,7 +103,7 @@ export function isDataTableVirtualizationEnabled(): boolean {
 
 - generated API、业务 query/mutation 和页面代码必须复用共享 transport，禁止在边界外散落 `fetch`。
 - 当前仓库允许直接调用 `fetch` 的运行时边界只有 `src/lib/api/sso/bootstrap.ts`；新增例外前必须同步调整 API adoption 契约测试。
-- 首次登录或缺少 token 的 401 由 `bootstrap.ts` 跳转 `loginUrl`；已有 token 失效后统一清理当前服务凭据并显示不可关闭的确认框，确认后跳转 `logoutUrl`。并发 401 合并提示，失效后阻止请求及迟到响应刷新 token。页面层不得复制清 token 或重定向逻辑。
+- 首次登录或缺少 token 的 401 由 `bootstrap.ts` 跳转 `loginUrl`；已有 token 失效后统一清理同源所有应用约定的 SSO 凭据并显示不可关闭的确认框，确认后跳转 `logoutUrl`。并发 401 合并提示，失效后阻止请求及迟到响应刷新 token。页面层不得复制清 token 或重定向逻辑。
 - `transport.ts` 的 request middleware 必须统一调用 `createAuthHeaders()`；页面和 generated client 不得重复拼装 SSO 头或注册 middleware。
 - 共享 middleware 配置必须使用 `setTransportMiddlewares()` 的替换语义，禁止在启动路径使用 `registerTransportMiddleware()`，避免 HMR 或重复初始化累加执行。
 - SSO 响应返回新的 `Authorization` 时，由 `refreshTokenFromResponse()` 统一更新本地会话。
@@ -139,3 +139,17 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - 升级后旧公共登录缓存不迁移，用户重新通过 SSO 换票。回跳只恢复业务查询参数，忽略暂存的旧 token。
 - 会话失效状态由 `sessionExpiryStore` 统一维护；确认退出前不允许 Escape/遮罩关闭提示。无退出地址时清除当前 URL 的 token 后重新进入当前页面。
 - E2E 与登录录制脚本必须通过共享 storage-key helper 计算隔离 key；UI 测试使用构建时同一 serviceCode。
+
+
+## 同源统一登录失效协议
+
+- 适用于同源各应用共用 SSO 网关会话的部署。已有 token 的 401 和主动退出清理所有 `sso:<编码后的 serviceCode>:{token,user_id,user_code,logout_url}`；登录引导的 `clearAuth()` 仍只清当前服务。
+- 保留业务数据、登录前查询参数和旧公共 key。清理前保存退出地址，并移除当前 URL token，避免刷新恢复失效凭据。
+- `main.tsx` 注册 `subscribeToSsoSessionInvalidation()`，HMR dispose 时取消。各应用使用 localStorage 的 `sso:session-invalidated` 通知（事件 ID、退出地址）同步内存失效状态；接收方不重复广播，阻止请求和迟到响应回写。其他应用也必须接入该协议才能即时响应。
+- `X-User-Code` 为可选用户编码头，优先使用登录信息的 `userCode`，并支持从 URL/响应 token 的 JWT payload 提取及本地 token 兜底；解析仅用于字段传递，不代表 JWT 验签或授权。编码按服务存储，失效期间禁止写回，退出与统一失效时清理。缺少编码时不新增该请求头。
+
+## 带过期时间的浏览器缓存
+
+- `src/hooks/use-expiring-storage.ts` 提供 `createExpiringStorage()` 与 `useExpiringStorage()`，支持 local/session storage 和自定义异步 adapter。
+- 调用方显式提供独立 key、TTL、类型校验和创建时间提取；失效记录在读取时清理，不依赖后台计时器。hook 的 client 应保持引用稳定。
+- 仅用于允许持久化的业务数据，不用于 token、密码等凭据。模板不预设具体业务的缓存内容和期限。

@@ -32,7 +32,7 @@ const meta = defineRouteMeta({
   }
 });
 
-export const Route = createFileRoute('/dashboard/system-management/dictionaries')({
+export const Route = createFileRoute('/_app/system-management/dictionaries')({
   ...meta,
   component: DictionariesPage
 });
@@ -69,13 +69,13 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 
 ## SSO 登录与菜单权限
 
-- `/dashboard` 根路由通过 loader 调用 `ensureSsoLoginInfo()`，统一完成 SSO 登录信息准备。
+- `/_app` 无路径布局路由通过 loader 调用 `ensureSsoLoginInfo()`，统一完成 SSO 登录信息准备。
 - 侧边栏和 KBar 使用同一份 `menuData` 可见节点集合过滤导航，`hiddenFlag === 'Y'` 的节点不授予权限。
 - `menuData.code` 会按最后一个 `:` 后的片段归一化；route 侧只声明稳定的业务 `menuKey`，不要复制环境前缀。
 - 声明 `nav.menuKey` 的 route 会由 `defineRouteMeta()` 自动注入 `createMenuPermissionBeforeLoad()`；禁止页面 route 再手写相同 guard。
 - route guard 与导航过滤必须复用 `collectVisibleMenuKeys()` / `normalizeMenuKey()`，确保“可见菜单”和“可访问路由”使用相同语义。
 - 没有声明 `menuKey` 的框架、示例或公共页面默认不受 `menuData` 过滤；业务菜单是否应公开必须在 route metadata 中明确决定。
-- 权限缺失时抛出 `RouteAccessForbiddenError`，由 dashboard/root error component 呈现 403；页面不得通过空白渲染伪装无权限状态。
+- 权限缺失时抛出 `RouteAccessForbiddenError`，由 _app/root error component 呈现 403；页面不得通过空白渲染伪装无权限状态。
 - 前端菜单过滤和 route guard 只负责交互与路由防护，后端仍必须校验真实业务权限。
 
 ## 运行时消费
@@ -116,3 +116,12 @@ export const Route = createFileRoute('/dashboard/system-management/dictionaries'
 - 外部链接使用普通 `<a href>`，禁止使用 TanStack Router `Link`。
 - 特殊 `head()` 逻辑应在 route 文件中显式扩展，禁止反向修改通用消费端。
 - 聊天等不应套 `PageContainer` 的全屏布局可以直接使用 `WorkspacePageBoundary`，但必须在 route 文件中说明原因。
+
+内容路由位于 `src/routes/_app/`，由无路径 AppLayout 统一承载认证与 workspace。
+
+侧栏在权限过滤后将 `nav.group` 投影为业务中心，再展示可跳转功能项；旧 `kind/parentId` 容器仍参与权限过滤，展示时扁平化，不新增第三层菜单。
+
+
+## 功能可用性开关
+
+路由可通过 `defineRouteMeta({ ..., feature: { key: 'example', enabled } })` 声明功能开关。关闭时隐藏导航并在 `beforeLoad` 拒绝直达 URL，使用统一 403 页面；开启时仍执行原有 `menuKey` 权限检查。`key` 由应用定义，模板不带入业务系统的功能枚举或环境开关。不要在路由上覆盖生成的 `beforeLoad` 而绕过守卫。

@@ -20,6 +20,13 @@
 - `contained` 页面中的多栏根容器必须传递 `h-full min-h-0`；实际滚动区域使用 `min-h-0 flex-1 overflow-auto`，禁止使用硬编码 `calc(100vh - ...)` 或 `max-h-svh` 推算页面高度。
 - 单卡片表格仅需填满 Card 剩余高度时，不得用 `<Card className='h-full'>`、页面级 `contentSizing='contained'` 或固定视口高度替代上述 `CardContent` 高度传递。`contained` 只用于确实需要锁定页面高度的布局。
 
+### 响应式卡片内列表滚动
+
+- 卡片内列表需要独立滚动时，必须让受约束的高度通过父级传到列表。模板的 `CardContent` 不默认提供纵向 flex 布局，不能只给列表加 `overflow-y-auto`；否则宽屏取消 `max-height` 后，内容仍会撑开并被外层裁切。
+- 字典类型列表采用：`CardContent` 使用 `flex min-h-0 flex-col gap-4 xl:flex-1`，搜索栏使用 `shrink-0`，列表使用 `max-h-72 min-h-0 overflow-y-auto xl:max-h-none xl:flex-1`。宽屏由卡片剩余高度约束列表，窄屏保留列表最大高度。
+- 只在父级高度受约束的断点分配 `flex-1`；不要无条件套用到窄屏按内容增长的布局，以免列表高度收缩。标题、搜索栏和底部操作应放在滚动列表之外。
+- 滚动回归使用真实浏览器，覆盖窄屏与宽屏、足量列表项，验证滚轮改变 `scrollTop`、末项可达且搜索和操作入口仍可用；仅断言 CSS 类名不足以证明可滚动。参考 `e2e/dictionary-responsive.smoke.spec.ts`，鼠标落点需避开浮层，避免将 Tooltip 截获滚轮误判为列表高度问题。
+
 ### 正确用法
 
 ```tsx
@@ -150,3 +157,8 @@ export default function XxxRoutePage() {
 - 状态展示复用 `Badge` 与表格 `columnDsl.badge`，禁止业务页面另写状态色 CSS。列表、详情及筛选选项使用一致文案。
 - 启停或生命周期变化移到明确的操作入口，确认后执行；异步期间禁用重复操作。禁止将业务系统的枚举 desc 或硬编码名称替代模板字典。
 - 主题按钮与 KBar 使用 `useThemeMode`，根据 resolvedTheme 切换明暗；设置为 system 后继续响应系统偏好。
+
+
+### Tree 双击
+
+`TreeItem.onDoubleClick` 可用于调用方的详情或编辑入口；禁用节点不触发，展开按钮的双击不向节点冒泡。双击不会替代已有单击选择和键盘操作。

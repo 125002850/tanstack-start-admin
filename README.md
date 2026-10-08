@@ -50,17 +50,17 @@
 
 ## 页面说明
 
-| 页面                                                   | 说明                                                                             |
-| :----------------------------------------------------- | :------------------------------------------------------------------------------- |
-| [数据概览](/dashboard/overview)                        | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离 |
-| [Kanban 看板](/dashboard/kanban)                       | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                   |
-| [聊天](/dashboard/chat)                                | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                         |
-| [通知中心](/dashboard/notifications)                   | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                       |
-| [字典管理](/dashboard/system-management/dictionaries)  | 字典类型管理 + 字典项增删改查，支持 Sheet 抽屉交互和搜索筛选                     |
-| [导出中心](/dashboard/system-management/export-center) | 管理异步导出任务、导出进度、文件下载和失败重试                                   |
-| [系统管理](/dashboard/system-management)               | 系统管理导航页面，提供字典管理、导出中心等基础设施入口                           |
-| [表单示例](/dashboard/forms/basic)                     | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                        |
-| [未找到页面](/notfound)                                | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面           |
+| 页面                                         | 说明                                                                             |
+| :------------------------------------------- | :------------------------------------------------------------------------------- |
+| [数据概览](/overview)                        | 使用 Recharts 图表和卡片展示概览数据，并通过 Suspense 实现分区独立加载与错误隔离 |
+| [Kanban 看板](/kanban)                       | 基于 dnd-kit 和 Zustand 的拖拽任务看板，支持列排序和优先级展示                   |
+| [聊天](/chat)                                | 聊天界面，包含会话列表、消息气泡、快捷回复和文件附件能力                         |
+| [通知中心](/notifications)                   | 通知中心，包含铃铛徽标、弹层预览以及带标签页的完整通知页面                       |
+| [字典管理](/system-management/dictionaries)  | 字典类型管理 + 字典项增删改查，支持 Sheet 抽屉交互和搜索筛选                     |
+| [导出中心](/system-management/export-center) | 管理异步导出任务、导出进度、文件下载和失败重试                                   |
+| [系统管理](/system-management)               | 系统管理导航页面，提供字典管理、导出中心等基础设施入口                           |
+| [表单示例](/forms/basic)                     | 展示基础表单、多步骤表单、Sheet/Dialog 表单和高级表单模式                        |
+| [未找到页面](/notfound)                      | 通过 TanStack Router 的 `defaultNotFoundComponent` 实现自定义 404 页面           |
 
 ## 目录结构
 
@@ -75,8 +75,8 @@ src/
 │   ├── terms-of-service.tsx        # 服务条款
 │   ├── auth.tsx                    # 认证布局
 │   ├── auth/                       # 登录、注册兼容入口
-│   ├── dashboard.tsx               # SSO 登录信息 loader 与控制台布局
-│   └── dashboard/                  # 控制台内容页
+│   ├── _app.tsx               # SSO 登录信息 loader 与控制台布局
+│   └── _app/                  # 控制台内容页
 │       ├── elements/               # UI 能力示例
 │       ├── examples/               # DataTable 综合示例
 │       ├── forms/                  # 表单示例
@@ -155,7 +155,7 @@ src/
 ## SSO 运行时
 
 1. `src/router.tsx` 创建 Router 前调用 `hydrateFromUrl()`，从 SSO 回调 URL 恢复 token 和登录前查询参数。
-2. `/dashboard` loader 调用 `ensureSsoLoginInfo()`；`bootstrapRequest()` 获取登录信息，并在未登录或会话过期时跳转 SSO 提供的登录/登出地址。
+2. `/_app` 布局 loader 调用 `ensureSsoLoginInfo()`；`bootstrapRequest()` 获取登录信息，并在未登录或会话过期时跳转 SSO 提供的登录/登出地址。
 3. `src/lib/api/transport.ts` 为 generated client 注入 SSO 服务头、`Authorization` 和 `X-User-Id`，并从响应头刷新 token。
 4. 侧边栏、KBar 和声明了 `nav.menuKey` 的 route 使用同一份可见 `menuData.code` 集合，分别完成菜单过滤与访问校验。
 
@@ -263,3 +263,5 @@ pnpm preview
 | 构建工具 | Webpack / Turbopack                     | Vite                                             |
 | 部署     | `next start`（Node 服务端）             | 静态文件（`dist/`），部署到任意静态服务器        |
 | URL 状态 | nuqs                                    | TanStack Router `useSearch()` + `validateSearch` |
+
+内容路由位于 `src/routes/_app/`，由无路径 AppLayout 统一承载认证与 workspace。
