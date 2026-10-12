@@ -1,3 +1,5 @@
+import { getQuerySceneMetadataQueryKey, listQuerySchemesQueryKey } from '@/lib/api/clients/service';
+import { clearAuth, handleUnauthorized } from './session';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
   clearTransportMiddlewares,
@@ -179,3 +181,19 @@ it('business 403 and other failures do not invalidate the session', async () => 
     expect(getAuthHeader()).toBe('valid');
   }
 });
+
+for (const clearSession of [clearAuth, handleUnauthorized]) {
+  it(`clears personal schemes and preserves shared metadata on ${clearSession.name}`, () => {
+    const cache = getQueryClient();
+    const first = listQuerySchemesQueryKey({ sceneCode: 'first' });
+    const second = listQuerySchemesQueryKey({ sceneCode: 'second' });
+    const metadata = getQuerySceneMetadataQueryKey();
+    cache.setQueryData(first, [{ id: 1 }]);
+    cache.setQueryData(second, [{ id: 2 }]);
+    cache.setQueryData(metadata, { shared: true });
+    clearSession();
+    expect(cache.getQueryData(first)).toBeUndefined();
+    expect(cache.getQueryData(second)).toBeUndefined();
+    expect(cache.getQueryData(metadata)).toEqual({ shared: true });
+  });
+}

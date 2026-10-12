@@ -1,11 +1,21 @@
+import { getQueryClient } from '@/lib/query-client';
+import { listQuerySchemesQueryKey } from '@/lib/api/clients/service';
 import { ssoStorageKeys } from './storage-keys';
 import { sessionExpiryStore } from './session-expiry';
 
 const BEARER_PREFIX = 'bearer ';
 export const SSO_SESSION_INVALIDATED_KEY = 'sso:session-invalidated';
 
-/** 只清理约定的登录凭据，保留业务缓存和各应用的登录返回参数。 */
+function clearQuerySchemes() {
+  if (!isBrowser()) return;
+  getQueryClient().removeQueries({
+    queryKey: listQuerySchemesQueryKey({ sceneCode: '' }).slice(0, -1)
+  });
+}
+
+/** 清理登录凭据及个人方案缓存，保留共享元数据和各应用的登录返回参数。 */
 function clearAllAuth() {
+  clearQuerySchemes();
   if (!isBrowser()) return;
   try {
     const keys: string[] = [];
@@ -172,6 +182,7 @@ export function setAuthHeader(value: string) {
 }
 
 export function clearAuth() {
+  clearQuerySchemes();
   if (!isBrowser()) return;
   try {
     localStorage.removeItem(ssoStorageKeys.token);

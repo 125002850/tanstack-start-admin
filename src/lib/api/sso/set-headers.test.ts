@@ -1,6 +1,8 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import './session';
+import './set-headers';
 
 function setupBrowserMocks() {
   const store: Record<string, string> = {};

@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import './session';
 
 function createMockLocation(token?: string, search?: string): Location {
   const parsedUrl = new URL('https://example.com/dashboard');

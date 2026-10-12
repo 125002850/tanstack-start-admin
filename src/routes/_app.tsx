@@ -1,3 +1,5 @@
+import { QuerySceneMetadataBootstrap } from '@/components/layout/query-scene-metadata-bootstrap';
+import { querySceneMetadataQueryOptions } from '@/lib/api/query-scene-metadata';
 import { RouteErrorPage } from '@/components/layout/route-error-page';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
@@ -33,7 +35,10 @@ export const Route = createFileRoute('/_app')({
       { name: 'robots', content: 'noindex, nofollow' }
     ]
   }),
-  loader: ({ context }) => ensureSsoLoginInfo(context.queryClient),
+  loader: async ({ context }) => {
+    await ensureSsoLoginInfo(context.queryClient);
+    void context.queryClient.prefetchQuery(querySceneMetadataQueryOptions());
+  },
   errorComponent: RouteErrorPage,
   component: AppLayout
 });
@@ -53,6 +58,7 @@ function AppLayout() {
           <Header />
           <InfobarProvider defaultOpen={false}>
             <QueryClientProvider client={queryClient}>
+              <QuerySceneMetadataBootstrap />
               {workspaceEnabled && <WorkspaceViewport />}
               <Outlet />
             </QueryClientProvider>

@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { removeQueries } = vi.hoisted(() => ({ removeQueries: vi.fn() }));
+vi.mock('@/lib/query-client', () => ({ getQueryClient: () => ({ removeQueries }) }));
+
 beforeEach(() => {
+  removeQueries.mockClear();
   vi.resetModules();
   localStorage.clear();
   sessionStorage.clear();
@@ -41,6 +45,10 @@ describe('project session isolation', () => {
     expect(a.getAuthHeader()).toBe('a-token');
     expect(b.getAuthHeader()).toBe('b-token');
     b.clearAuth();
+    const { listQuerySchemesQueryKey } = await import('@/lib/api/clients/service');
+    expect(removeQueries).toHaveBeenCalledWith({
+      queryKey: listQuerySchemesQueryKey({ sceneCode: '' }).slice(0, -1)
+    });
     expect(a.getLoginUserId()).toBe('a-user');
     expect(a.getLogoutUrl()).toBe('https://sso/a');
     expect(localStorage.getItem('sso_token')).toBe('legacy');
