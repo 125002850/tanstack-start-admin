@@ -1,3 +1,4 @@
+import metadata from '../../src/test/fixtures/query-scene-metadata.json' with { type: 'json' };
 import type { Page } from '@playwright/test';
 
 const IAM_REFRESH_TOKEN_KEY = 'iam_refresh_token';
@@ -80,6 +81,12 @@ function envelope<T>(data: T) {
 
 /** 为 main 分支的 Playwright 新浏览器上下文建立最小本地 IAM 会话。 */
 export async function mockIamSession(page: Page, options: MockIamSessionOptions = {}) {
+  await page.route('**/api/system/query-scene/metadata', (route) =>
+    route.fulfill({ json: envelope(metadata) })
+  );
+  await page.route('**/api/system/query-scheme/list', (route) =>
+    route.fulfill({ json: envelope([]) })
+  );
   const resolvedIamMe = {
     ...iamMe,
     menus: options.menus ?? iamMe.menus,
