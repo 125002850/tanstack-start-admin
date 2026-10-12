@@ -1,3 +1,7 @@
+import {
+  mockQuerySceneMetadataQueryOptions,
+  mockQuerySchemesQueryOptions
+} from '@/test/query-scene-metadata';
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -108,6 +112,8 @@ vi.mock('@/lib/api/clients/service', async (importOriginal) => {
 
   return {
     ...actual,
+    getQuerySceneMetadataQueryOptions: mockQuerySceneMetadataQueryOptions,
+    listQuerySchemesQueryOptions: mockQuerySchemesQueryOptions,
     pageMyExportRecordsQueryOptions: (...args: unknown[]) =>
       serviceMocks.pageMyExportRecordsQueryOptions(...args),
     detailExportRecordQueryOptions: (...args: unknown[]) =>

@@ -409,6 +409,7 @@ export default function ExportCenterManagementPage() {
     ReturnType<typeof pageMyExportRecordsQueryKey>
   >({
     tableId: TABLE_ID,
+    sceneCode: 'mdm.export.record.page',
     columns,
     queryOptions: pageMyExportRecordsQueryOptions,
     showSelectColumn: true,
