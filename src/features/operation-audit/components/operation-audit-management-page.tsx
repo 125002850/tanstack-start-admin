@@ -178,6 +178,7 @@ function OperationAuditContent() {
     ReturnType<typeof pageOperationAuditLogsQueryKey>
   >({
     tableId: TABLE_ID,
+    sceneCode: 'system.operation-audit.log.page',
     columns,
     queryOptions: pageOperationAuditLogsQueryOptions,
     defaultRequestSort: DEFAULT_REQUEST_SORT,
