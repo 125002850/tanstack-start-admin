@@ -269,3 +269,25 @@ interface AuditFields {
 
 - 恢复非空列顺序缓存时，新增列按声明顺序以前一个已存在列为锚点回填，保留已有列的用户相对顺序；没有前置锚点时插入开头。
 - 回填只处理列顺序，不清除列宽、显隐和排序偏好；业务列应提供稳定的 `id` 或 `accessorKey`。
+
+## 高级搜索与个人查询方案
+
+- DSL 页面在 `useDslDataTable` 中声明 `sceneCode` 即可启用高级搜索和个人方案；字段、类型、操作符、枚举标签及条件限制来自 `POST /api/system/query-scene/metadata`，无需手写 `advancedSearchFields`。
+- metadata 返回所有场景的 `Record<sceneCode, { fields, limits }>`；`/query-scheme/list` 仅返回当前用户在指定场景下保存的方案。
+- `_app` 在 IAM 鉴权完成后预取 metadata；应用内只挂载一个 `QuerySceneMetadataBootstrap`，共享 React Query 查询键，缓存 5 分钟后自动刷新，未订阅缓存保留 30 分钟。窗口重新激活或网络重连会刷新过期数据，后台失败保留已有字段。
+- 首次业务查询等待 metadata 和默认方案恢复完成，避免先请求未筛选列表；metadata 首次失败使用表格错误态和刷新入口重试。
+- 最终条件为 `baseCondition AND 快捷条件 AND 高级条件`。方案仅保存快捷/高级条件，不保存业务范围、分页和排序；重置不能清除 `baseCondition`。切换字典类型等业务上下文时范围仍由页面提供。
+- 高级搜索 UI 与类型在 `components/data-table/advanced-search`，纯条件算法在 `lib/data-table/advanced-search.ts`，缓存订阅与状态编排在 `hooks/use-data-table`。保留树表格、远程筛选、业务重置回调等原有能力。
+- 退出 IAM 会话时清除各场景个人方案缓存，防止下次登录恢复上一用户的方案。没有 `sceneCode` 的原有列表保持原行为，IAM 兼容分页接口不自动启用高级搜索。
+
+最简接入（列标签、日期展示和选项继续复用列 DSL）：
+
+```tsx
+const { table, queryState, refreshProps } = useDslDataTable({
+  tableId: 'export-center',
+  sceneCode: 'mdm.export.record.page',
+  columns,
+  queryOptions: pageMyExportRecordsQueryOptions,
+  rowId: 'recordId'
+});
+```
