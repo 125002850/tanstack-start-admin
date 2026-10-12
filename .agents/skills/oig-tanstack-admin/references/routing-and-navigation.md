@@ -109,6 +109,9 @@ export const Route = createFileRoute('/users')({
 
 侧栏在权限过滤后将 `nav.group` 投影为业务中心，再展示可跳转功能项；旧 `kind/parentId` 容器仍参与权限过滤，展示时扁平化，不新增第三层菜单。
 
+- 桌面侧栏折叠后，悬停业务中心图标只显示名称 Tooltip，点击或键盘操作才打开子菜单；移出鼠标不自动关闭，复用 DropdownMenu 的关闭和焦点恢复行为。
+- 展开态与移动端使用内联折叠菜单，当前路由所在分组允许手动收起；文字和子菜单动画遵守 `prefers-reduced-motion`。
+
 ## 功能开关与空导航
 
 - 路由通过 `feature: { key, enabled }` 声明功能开关；关闭后隐藏导航，`/_app` 的 `ensureDashboardRouteAccess()` 拒绝直达。开启后继续执行原有 IAM 菜单及权限检查。
