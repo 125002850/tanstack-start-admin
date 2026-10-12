@@ -1,3 +1,7 @@
+import {
+  mockQuerySceneMetadataQueryOptions,
+  mockQuerySchemesQueryOptions
+} from '@/test/query-scene-metadata';
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -57,6 +61,8 @@ vi.mock('@/components/ui/scroll-area', () => ({
 
 vi.mock('@/lib/api/clients/service', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/api/clients/service')>()),
+  getQuerySceneMetadataQueryOptions: mockQuerySceneMetadataQueryOptions,
+  listQuerySchemesQueryOptions: mockQuerySchemesQueryOptions,
   systemDictGlobalItemsOptions: async () => [
     {
       dictTypeCode: 'OPERATION_AUDIT_ACTION',
