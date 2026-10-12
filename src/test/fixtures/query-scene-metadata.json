@@ -1,0 +1,377 @@
+{
+  "mdm.export.record.page": {
+    "fields": {
+      "createTime": {
+        "label": "创建时间",
+        "conditionType": "dateTime",
+        "operators": ["IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "expireTime": {
+        "label": "过期时间",
+        "conditionType": "dateTime",
+        "operators": ["IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "exportBizCode": {
+        "label": "导出场景编码",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "exportBizName": {
+        "label": "导出场景名称",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "fileName": {
+        "label": "文件名",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "finishedTime": {
+        "label": "完成时间",
+        "conditionType": "dateTime",
+        "operators": ["IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "ownerId": {
+        "label": "创建人",
+        "conditionType": "enum",
+        "operators": ["EQ"],
+        "valueLabels": {}
+      },
+      "status": {
+        "label": "状态",
+        "conditionType": "enum",
+        "operators": ["EQ", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {
+          "1": "处理中",
+          "2": "成功",
+          "3": "失败",
+          "4": "已过期",
+          "5": "已删除"
+        }
+      }
+    },
+    "limits": {
+      "maxDepth": 4,
+      "maxNodes": 20,
+      "maxInSize": 1000,
+      "maxComplexityScore": 100
+    }
+  },
+  "mdm.global.dict.item.page": {
+    "fields": {
+      "createTime": {
+        "label": "创建时间",
+        "conditionType": "dateTime",
+        "operators": ["IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "dictItemCode": {
+        "label": "字典项编码",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "dictItemName": {
+        "label": "字典项名称",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "dictTypeCode": {
+        "label": "字典类型编码",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      }
+    },
+    "limits": {
+      "maxDepth": 4,
+      "maxNodes": 20,
+      "maxInSize": 1000,
+      "maxComplexityScore": 100
+    }
+  },
+  "mdm.global.dict.type.list": {
+    "fields": {
+      "createTime": {
+        "label": "创建时间",
+        "conditionType": "dateTime",
+        "operators": ["IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "dictTypeCode": {
+        "label": "字典类型编码",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "dictTypeName": {
+        "label": "字典类型名称",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      }
+    },
+    "limits": {
+      "maxDepth": 4,
+      "maxNodes": 20,
+      "maxInSize": 1000,
+      "maxComplexityScore": 100
+    }
+  },
+  "system.operation-audit.log.page": {
+    "fields": {
+      "action": {
+        "label": "操作类型",
+        "conditionType": "enum",
+        "operators": ["EQ", "NE", "IN", "NOT_IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {
+          "status_change": "状态变更",
+          "import": "导入",
+          "upload": "上传",
+          "update": "修改",
+          "archive": "归档",
+          "delete": "删除",
+          "sync": "同步",
+          "execute": "执行",
+          "confirm": "确认",
+          "download": "下载",
+          "publish": "发布",
+          "create": "新增",
+          "export": "导出"
+        }
+      },
+      "clientIp": {
+        "label": "客户端 IP",
+        "conditionType": "text",
+        "operators": [
+          "EQ",
+          "NE",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "STARTS_WITH",
+          "ENDS_WITH",
+          "IN",
+          "NOT_IN",
+          "IS_NULL",
+          "IS_NOT_NULL"
+        ],
+        "valueLabels": {}
+      },
+      "description": {
+        "label": "操作描述",
+        "conditionType": "text",
+        "operators": [
+          "EQ",
+          "NE",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "STARTS_WITH",
+          "ENDS_WITH",
+          "IN",
+          "NOT_IN",
+          "IS_NULL",
+          "IS_NOT_NULL"
+        ],
+        "valueLabels": {}
+      },
+      "durationMs": {
+        "label": "耗时（毫秒）",
+        "conditionType": "number",
+        "operators": ["EQ", "NE", "IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "httpStatus": {
+        "label": "HTTP 状态码",
+        "conditionType": "number",
+        "operators": ["EQ", "NE", "IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "logId": {
+        "label": "日志 ID",
+        "conditionType": "number",
+        "operators": ["EQ", "NE", "IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "moduleCode": {
+        "label": "模块编码",
+        "conditionType": "text",
+        "operators": [
+          "EQ",
+          "NE",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "STARTS_WITH",
+          "ENDS_WITH",
+          "IN",
+          "NOT_IN",
+          "IS_NULL",
+          "IS_NOT_NULL"
+        ],
+        "valueLabels": {}
+      },
+      "moduleName": {
+        "label": "模块名称",
+        "conditionType": "text",
+        "operators": [
+          "EQ",
+          "NE",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "STARTS_WITH",
+          "ENDS_WITH",
+          "IN",
+          "NOT_IN",
+          "IS_NULL",
+          "IS_NOT_NULL"
+        ],
+        "valueLabels": {}
+      },
+      "operationTime": {
+        "label": "操作时间",
+        "conditionType": "dateTime",
+        "operators": ["EQ", "NE", "IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "operatorId": {
+        "label": "操作人 ID",
+        "conditionType": "number",
+        "operators": ["EQ", "NE", "IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "operatorName": {
+        "label": "操作人",
+        "conditionType": "text",
+        "operators": [
+          "EQ",
+          "NE",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "STARTS_WITH",
+          "ENDS_WITH",
+          "IN",
+          "NOT_IN",
+          "IS_NULL",
+          "IS_NOT_NULL"
+        ],
+        "valueLabels": {}
+      },
+      "requestPath": {
+        "label": "请求路径",
+        "conditionType": "text",
+        "operators": [
+          "EQ",
+          "NE",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "STARTS_WITH",
+          "ENDS_WITH",
+          "IN",
+          "NOT_IN",
+          "IS_NULL",
+          "IS_NOT_NULL"
+        ],
+        "valueLabels": {}
+      },
+      "resultCode": {
+        "label": "业务状态码",
+        "conditionType": "number",
+        "operators": ["EQ", "NE", "IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "resultStatus": {
+        "label": "操作结果",
+        "conditionType": "enum",
+        "operators": ["EQ", "NE", "IN", "NOT_IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {
+          "success": "成功",
+          "failed": "失败"
+        }
+      },
+      "traceId": {
+        "label": "追踪 ID",
+        "conditionType": "text",
+        "operators": [
+          "EQ",
+          "NE",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "STARTS_WITH",
+          "ENDS_WITH",
+          "IN",
+          "NOT_IN",
+          "IS_NULL",
+          "IS_NOT_NULL"
+        ],
+        "valueLabels": {}
+      }
+    },
+    "limits": {
+      "maxDepth": 4,
+      "maxNodes": 20,
+      "maxInSize": 1000,
+      "maxComplexityScore": 100
+    }
+  },
+  "system.schedule.job.page": {
+    "fields": {
+      "createTime": {
+        "label": "创建时间",
+        "conditionType": "dateTime",
+        "operators": ["IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      },
+      "groupName": {
+        "label": "任务分组",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "invokeRoute": {
+        "label": "调用路由",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "jobCode": {
+        "label": "任务编码",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "jobName": {
+        "label": "任务名称",
+        "conditionType": "text",
+        "operators": ["EQ", "CONTAINS", "STARTS_WITH", "ENDS_WITH", "IN", "IS_NULL", "IS_NOT_NULL"],
+        "valueLabels": {}
+      },
+      "status": {
+        "label": "启用状态",
+        "conditionType": "enum",
+        "operators": ["EQ", "IN"],
+        "valueLabels": {
+          "enable": "启用",
+          "disable": "禁用"
+        }
+      },
+      "updateTime": {
+        "label": "更新时间",
+        "conditionType": "dateTime",
+        "operators": ["IS_NULL", "IS_NOT_NULL", "GT", "GTE", "LT", "LTE", "BETWEEN"],
+        "valueLabels": {}
+      }
+    },
+    "limits": {
+      "maxDepth": 4,
+      "maxNodes": 20,
+      "maxInSize": 1000,
+      "maxComplexityScore": 100
+    }
+  }
+}

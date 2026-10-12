@@ -1,3 +1,4 @@
+import { buildDataTableDslQuickConditions, restoreDataTableColumnFilters } from './dsl';
 import { describe, expect, it, vi } from 'vitest';
 import type {
   ColumnDef,
@@ -523,18 +524,21 @@ describe('use-dsl-data-table.dsl', () => {
       'text',
       'select',
       'multiSelect',
+      'boolean',
       'date',
-      'dateRange'
+      'dateRange',
+      'number',
+      'range'
     ]);
 
     expect(isDataTableDslFilterVariantSupported('text')).toBe(true);
     expect(isDataTableDslFilterVariantSupported('dateRange')).toBe(true);
-    expect(isDataTableDslFilterVariantSupported('number')).toBe(false);
-    expect(isDataTableDslFilterVariantSupported('range')).toBe(false);
-    expect(isDataTableDslFilterVariantSupported('boolean')).toBe(false);
+    expect(isDataTableDslFilterVariantSupported('number')).toBe(true);
+    expect(isDataTableDslFilterVariantSupported('range')).toBe(true);
+    expect(isDataTableDslFilterVariantSupported('boolean')).toBe(true);
   });
 
-  it('does not serialize numeric or boolean UI-only filter variants into DSL conditions', () => {
+  it('serializes numeric ranges and booleans as typed DSL conditions', () => {
     const request = buildDataTableDslRequest({
       columns: [
         {
@@ -565,7 +569,15 @@ describe('use-dsl-data-table.dsl', () => {
       ]
     });
 
-    expect(request.condition).toBeUndefined();
+    expect(request.condition).toEqual({
+      nodeType: 'compose',
+      logic: 'AND',
+      children: [
+        { nodeType: 'number', field: 'id', op: 'EQ', value: 42 },
+        { nodeType: 'number', field: 'dictTypeCode', op: 'BETWEEN', start: 10, end: 20 },
+        { nodeType: 'boolean', field: 'dictTypeName', op: 'EQ', value: true }
+      ]
+    });
   });
   it('preserves structured conditions from the column DSL and clears them without fallback', () => {
     const buildFilterCondition = vi.fn((value: unknown): DataTableDslCondition | undefined =>
@@ -611,4 +623,42 @@ describe('use-dsl-data-table.dsl', () => {
     expect(buildFilterCondition).toHaveBeenCalledWith(['A']);
     expect(build(undefined).condition).toBeUndefined();
   });
+});
+
+it('restores a custom compound quick filter without dropping its logic', () => {
+  const customColumns: ColumnDef<DictionaryTypeRow>[] = [
+    {
+      id: 'custom',
+      enableColumnFilter: true,
+      meta: {
+        variant: 'text',
+        query: {
+          buildFilterCondition: (value) => ({
+            nodeType: 'compose',
+            logic: 'OR',
+            children: [
+              { nodeType: 'text', field: 'dictTypeCode', op: 'EQ', value: String(value) },
+              { nodeType: 'text', field: 'dictTypeName', op: 'EQ', value: String(value) }
+            ]
+          })
+        }
+      }
+    }
+  ];
+  const saved = buildDataTableDslQuickConditions(customColumns, [{ id: 'custom', value: 'A' }]);
+  expect(restoreDataTableColumnFilters(customColumns, JSON.parse(JSON.stringify(saved)))).toEqual([
+    { id: 'custom', value: 'A' }
+  ]);
+  saved[0]!.filterValue = 'tampered';
+  expect(restoreDataTableColumnFilters(customColumns, saved)).toBeUndefined();
+});
+it('rejects quick schemes whose operator no longer matches the current column', () => {
+  expect(
+    restoreDataTableColumnFilters(columns, [
+      {
+        columnId: 'dictTypeCode',
+        condition: { nodeType: 'text', field: 'dictTypeCode', op: 'NE', value: 'A' }
+      }
+    ])
+  ).toBeUndefined();
 });

@@ -29,15 +29,19 @@ export interface DataTableDslComposeCondition<TField extends string = string> {
 export interface DataTableDslTextCondition<TField extends string = string> {
   nodeType: 'text';
   field: TField;
-  op: Extract<DataTableDslOperator, 'EQ' | 'CONTAINS' | 'STARTS_WITH' | 'ENDS_WITH' | 'IN'>;
-  value?: string;
-  values?: string[];
-}
-
-export interface DataTableDslEnumCondition<TField extends string = string> {
-  nodeType: 'enum';
-  field: TField;
-  op: Extract<DataTableDslOperator, 'EQ' | 'IN'>;
+  op: Extract<
+    DataTableDslOperator,
+    | 'EQ'
+    | 'NE'
+    | 'CONTAINS'
+    | 'NOT_CONTAINS'
+    | 'STARTS_WITH'
+    | 'ENDS_WITH'
+    | 'IN'
+    | 'NOT_IN'
+    | 'IS_NULL'
+    | 'IS_NOT_NULL'
+  >;
   value?: string;
   values?: string[];
 }
@@ -45,10 +49,40 @@ export interface DataTableDslEnumCondition<TField extends string = string> {
 export interface DataTableDslDateTimeCondition<TField extends string = string> {
   nodeType: 'dateTime';
   field: TField;
-  op: Extract<DataTableDslOperator, 'GT' | 'GTE' | 'LT' | 'LTE' | 'BETWEEN'>;
+  op: Extract<
+    DataTableDslOperator,
+    'EQ' | 'NE' | 'GT' | 'GTE' | 'LT' | 'LTE' | 'BETWEEN' | 'IS_NULL' | 'IS_NOT_NULL'
+  >;
   value?: string;
   start?: string;
   end?: string;
+}
+
+export interface DataTableDslEnumCondition<TField extends string = string> {
+  nodeType: 'enum';
+  field: TField;
+  op: Extract<DataTableDslOperator, 'EQ' | 'NE' | 'IN' | 'NOT_IN' | 'IS_NULL' | 'IS_NOT_NULL'>;
+  value?: string | number;
+  values?: Array<string | number>;
+}
+
+export interface DataTableDslBooleanCondition<TField extends string = string> {
+  nodeType: 'boolean';
+  field: TField;
+  op: Extract<DataTableDslOperator, 'EQ' | 'NE' | 'IS_NULL' | 'IS_NOT_NULL'>;
+  value?: boolean;
+}
+
+export interface DataTableDslNumberCondition<TField extends string = string> {
+  nodeType: 'number';
+  field: TField;
+  op: Extract<
+    DataTableDslOperator,
+    'EQ' | 'NE' | 'GT' | 'GTE' | 'LT' | 'LTE' | 'BETWEEN' | 'IS_NULL' | 'IS_NOT_NULL'
+  >;
+  value?: number;
+  start?: number;
+  end?: number;
 }
 
 /** Feature 模块通过声明合并注册后端专用条件，通用表格不依赖业务类型。 */
@@ -58,7 +92,9 @@ export type DataTableDslCondition<TField extends string = string> =
   | DataTableDslComposeCondition<TField>
   | DataTableDslTextCondition<TField>
   | DataTableDslEnumCondition<TField>
+  | DataTableDslBooleanCondition<TField>
   | DataTableDslDateTimeCondition<TField>
+  | DataTableDslNumberCondition<TField>
   | DataTableDslConditionExtensions[keyof DataTableDslConditionExtensions];
 
 export interface DataTableDslSortItem<TField extends string = string> {
@@ -82,23 +118,35 @@ export type QueryOptionsFactory<
 > = (request: TRequest) => UseQueryOptions<TQueryData, TError, TQueryData, TQueryKey>;
 
 const TEXT_VARIANT_OPERATORS = {
-  text: ['EQ', 'CONTAINS', 'STARTS_WITH', 'ENDS_WITH'] as const,
-  select: ['EQ'] as const,
-  multiSelect: ['IN'] as const
+  text: ['EQ', 'NE', 'CONTAINS', 'NOT_CONTAINS', 'STARTS_WITH', 'ENDS_WITH'] as const,
+  select: ['EQ', 'NE'] as const,
+  multiSelect: ['IN', 'NOT_IN'] as const
 } satisfies Partial<Record<FilterVariant, readonly DataTableDslOperator[]>>;
 
 const DATE_VARIANT_OPERATORS = {
-  date: ['GT', 'GTE', 'LT', 'LTE', 'BETWEEN'] as const,
-  dateRange: ['GT', 'GTE', 'LT', 'LTE', 'BETWEEN'] as const
+  date: ['EQ', 'NE', 'GT', 'GTE', 'LT', 'LTE', 'BETWEEN'] as const,
+  dateRange: ['EQ', 'NE', 'GT', 'GTE', 'LT', 'LTE', 'BETWEEN'] as const
 } satisfies Partial<Record<FilterVariant, readonly DataTableDslOperator[]>>;
 
-/** 自动 DSL 当前只支持文本/枚举/日期类筛选，数值 range 等仅作为前端 UI 状态。 */
+const BOOLEAN_VARIANT_OPERATORS = {
+  boolean: ['EQ', 'NE'] as const
+} satisfies Partial<Record<FilterVariant, readonly DataTableDslOperator[]>>;
+
+const NUMBER_VARIANT_OPERATORS = {
+  number: ['EQ', 'NE', 'GT', 'GTE', 'LT', 'LTE'] as const,
+  range: ['BETWEEN'] as const
+} satisfies Partial<Record<FilterVariant, readonly DataTableDslOperator[]>>;
+
+/** 自动 DSL 支持的快捷筛选控件；高级搜索使用相同的条件节点契约。 */
 export const DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS = [
   'text',
   'select',
   'multiSelect',
+  'boolean',
   'date',
-  'dateRange'
+  'dateRange',
+  'number',
+  'range'
 ] as const satisfies readonly FilterVariant[];
 
 type SupportedFilterVariant = (typeof DATA_TABLE_DSL_SUPPORTED_FILTER_VARIANTS)[number];
@@ -115,6 +163,7 @@ type BuildDataTableDslRequestOptions<TData> = {
   sorting: SortingState;
   columnFilters: ColumnFiltersState;
   baseCondition?: DataTableDslCondition;
+  advancedCondition?: DataTableDslCondition;
   defaultRequestSort?: Array<DataTableDslSortItem>;
 };
 
@@ -122,6 +171,13 @@ type ResolvedColumn<TData> = {
   id: string;
   column: ColumnDef<TData>;
 };
+
+export interface DataTableDslQuickCondition {
+  /** 自定义快捷筛选的可序列化 UI 值，恢复后须与条件重新核对。 */
+  filterValue?: unknown;
+  columnId: string;
+  condition: DataTableDslCondition;
+}
 
 function warn(message: string, details?: Record<string, unknown>) {
   console.warn(`[useDslDataTable.dsl] ${message}`, details ?? {});
@@ -246,6 +302,12 @@ function parseTimestamp(value: unknown): Date | undefined {
   return undefined;
 }
 
+function parseBackendDateTimeTimestamp(dateTime: string | undefined) {
+  if (!dateTime) return undefined;
+  const parsed = new Date(dateTime.replace(' ', 'T'));
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.getTime();
+}
+
 /** 后端 DSL 当前使用 `yyyy-MM-dd HH:mm:ss` 字符串，不携带时区偏移。 */
 function formatDateTimeWithOffset(date: Date): string {
   return format(date, 'yyyy-MM-dd HH:mm:ss');
@@ -268,6 +330,12 @@ function getDefaultOperatorForVariant(variant: SupportedFilterVariant): DataTabl
       return 'EQ';
     case 'multiSelect':
       return 'IN';
+    case 'boolean':
+      return 'EQ';
+    case 'number':
+      return 'EQ';
+    case 'range':
+      return 'BETWEEN';
     case 'date':
     case 'dateRange':
       return 'BETWEEN';
@@ -280,9 +348,14 @@ export function isDataTableDslOperatorCompatibleWithVariant(
 ): boolean {
   const allowed =
     TEXT_VARIANT_OPERATORS[variant as keyof typeof TEXT_VARIANT_OPERATORS] ??
-    DATE_VARIANT_OPERATORS[variant as keyof typeof DATE_VARIANT_OPERATORS];
+    DATE_VARIANT_OPERATORS[variant as keyof typeof DATE_VARIANT_OPERATORS] ??
+    BOOLEAN_VARIANT_OPERATORS[variant as keyof typeof BOOLEAN_VARIANT_OPERATORS];
+  const numberAllowed = NUMBER_VARIANT_OPERATORS[variant as keyof typeof NUMBER_VARIANT_OPERATORS];
 
-  return Boolean((allowed as readonly DataTableDslOperator[] | undefined)?.includes(operator));
+  return Boolean(
+    (allowed as readonly DataTableDslOperator[] | undefined)?.includes(operator) ||
+    (numberAllowed as readonly DataTableDslOperator[] | undefined)?.includes(operator)
+  );
 }
 
 /** 判断筛选 variant 是否支持自动 DSL 序列化。 */
@@ -342,6 +415,17 @@ function buildFilterCondition<TData>(
     ? // 列级 serializeFilter 可把 UI 值转换成后端需要的值，例如枚举 code 或时间戳。
       meta.query.serializeFilter(filter.value, resolvedColumn.column as never)
     : filter.value;
+  const conditionType = meta?.query?.filterNodeType;
+
+  if (variant === 'boolean') {
+    const rawValue = Array.isArray(filterValue) ? filterValue[0] : filterValue;
+    if (typeof rawValue === 'boolean') {
+      return { nodeType: 'boolean', field, op: 'EQ', value: rawValue };
+    }
+    const value = normalizeStringArray(rawValue)[0];
+    if (value !== 'true' && value !== 'false') return undefined;
+    return { nodeType: 'boolean', field, op: 'EQ', value: value === 'true' };
+  }
 
   if (variant === 'text' || variant === 'select') {
     const value =
@@ -362,10 +446,9 @@ function buildFilterCondition<TData>(
       return { nodeType: 'text', field, op: 'IN', values };
     }
 
-    if (variant === 'select' && meta?.query?.filterNodeType === 'enum') {
+    if (conditionType === 'enum') {
       return { nodeType: 'enum', field, op: op as DataTableDslEnumCondition['op'], value };
     }
-
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], value };
   }
 
@@ -376,13 +459,57 @@ function buildFilterCondition<TData>(
     }
 
     const op = resolveOperator(variant, meta?.query?.operator, field);
-    if (meta?.query?.filterNodeType === 'enum') {
+    if (conditionType === 'enum') {
       return { nodeType: 'enum', field, op: op as DataTableDslEnumCondition['op'], values };
     }
-
     return { nodeType: 'text', field, op: op as DataTableDslTextCondition['op'], values };
   }
 
+  if (variant === 'number' || variant === 'range')
+    return buildNumericFilterCondition(variant, filterValue, field, meta?.query?.operator);
+
+  return buildDateFilterCondition(variant, filterValue, field);
+}
+
+function buildNumericFilterCondition(
+  variant: 'number' | 'range',
+  filterValue: unknown,
+  field: string,
+  operator?: DataTableDslOperator
+): DataTableDslCondition | undefined {
+  if (variant === 'number') {
+    const rawValue = Array.isArray(filterValue) ? filterValue[0] : filterValue;
+    const value = typeof rawValue === 'number' ? rawValue : Number(rawValue);
+    if (rawValue === '' || rawValue === null || rawValue === undefined || !Number.isFinite(value))
+      return undefined;
+    const op = resolveOperator(variant, operator, field);
+    return { nodeType: 'number', field, op: op as DataTableDslNumberCondition['op'], value };
+  }
+
+  if (variant === 'range') {
+    const [startRaw, endRaw] = Array.isArray(filterValue) ? filterValue : [];
+    const start = Number(startRaw);
+    const end = Number(endRaw);
+    if (
+      startRaw == null ||
+      endRaw == null ||
+      startRaw === '' ||
+      endRaw === '' ||
+      !Number.isFinite(start) ||
+      !Number.isFinite(end)
+    )
+      return undefined;
+    return { nodeType: 'number', field, op: 'BETWEEN', start, end };
+  }
+
+  return undefined;
+}
+
+function buildDateFilterCondition(
+  variant: string,
+  filterValue: unknown,
+  field: string
+): DataTableDslCondition | undefined {
   if (variant === 'date') {
     const date = parseTimestamp(filterValue);
     if (!date) {
@@ -441,6 +568,95 @@ function buildFilterCondition<TData>(
   return undefined;
 }
 
+/** 将快捷筛选序列化成可持久化的 columnId + DSL 条件。 */
+export function buildDataTableDslQuickConditions<TData>(
+  columns: Array<ColumnDef<TData>>,
+  columnFilters: ColumnFiltersState
+): DataTableDslQuickCondition[] {
+  const resolvedColumns = resolveColumns(columns);
+  return columnFilters.flatMap((filter) => {
+    const condition = buildFilterCondition(filter, resolvedColumns);
+    return condition
+      ? [
+          {
+            columnId: filter.id,
+            condition,
+            ...(resolvedColumns.get(filter.id)?.column.meta?.query?.buildFilterCondition
+              ? { filterValue: filter.value }
+              : {})
+          }
+        ]
+      : [];
+  });
+}
+
+/** 把查询方案里的快捷条件恢复为 TanStack columnFilters。任一条件失效时整体拒绝恢复。 */
+export function restoreDataTableColumnFilters<TData>(
+  columns: Array<ColumnDef<TData>>,
+  quickConditions: DataTableDslQuickCondition[]
+): ColumnFiltersState | undefined {
+  const resolvedColumns = resolveColumns(columns);
+  const restored: ColumnFiltersState = [];
+
+  for (const item of quickConditions) {
+    const resolved = resolvedColumns.get(item.columnId);
+    if (!resolved) return undefined;
+    const meta = resolved.column.meta;
+    const variant = meta?.variant;
+    if (!isDataTableDslFilterVariantSupported(variant)) return undefined;
+    const expectedField = meta?.query?.filterField ?? item.columnId;
+    const condition = item.condition;
+    if ('filterValue' in item && meta?.query?.buildFilterCondition) {
+      const rebuilt = buildFilterCondition(
+        { id: item.columnId, value: item.filterValue },
+        resolvedColumns
+      );
+      if (canonicalCondition(rebuilt) !== canonicalCondition(condition)) return undefined;
+      restored.push({ id: item.columnId, value: item.filterValue });
+      continue;
+    }
+    if (condition.nodeType === 'compose' || condition.field !== expectedField) return undefined;
+
+    let value: unknown;
+    switch (condition.nodeType) {
+      case 'text':
+        if (condition.op === 'IN' || condition.op === 'NOT_IN') {
+          value = variant === 'text' ? condition.values?.join(';') : condition.values;
+        } else {
+          value = condition.value;
+        }
+        break;
+      case 'enum':
+        value =
+          condition.op === 'IN' || condition.op === 'NOT_IN' ? condition.values : condition.value;
+        break;
+      case 'boolean':
+        value = condition.value === undefined ? undefined : String(condition.value);
+        break;
+      case 'number':
+        value = condition.op === 'BETWEEN' ? [condition.start, condition.end] : condition.value;
+        break;
+      case 'dateTime': {
+        value =
+          condition.op === 'BETWEEN'
+            ? [
+                parseBackendDateTimeTimestamp(condition.start),
+                parseBackendDateTimeTimestamp(condition.end)
+              ]
+            : parseBackendDateTimeTimestamp(condition.value);
+        break;
+      }
+    }
+
+    if (value === undefined) return undefined;
+    const rebuilt = buildFilterCondition({ id: item.columnId, value }, resolvedColumns);
+    if (canonicalCondition(rebuilt) !== canonicalCondition(condition)) return undefined;
+    restored.push({ id: item.columnId, value });
+  }
+
+  return restored;
+}
+
 /** 将 TanStack sorting 转换为后端 sort；没有有效排序时使用 defaultRequestSort。 */
 function buildSort<TData>(
   sorting: SortingState,
@@ -471,25 +687,32 @@ function buildSort<TData>(
 function buildCondition<TData>({
   columnFilters,
   resolvedColumns,
-  baseCondition
+  baseCondition,
+  advancedCondition
 }: {
   columnFilters: ColumnFiltersState;
   resolvedColumns: Map<string, ResolvedColumn<TData>>;
   baseCondition?: DataTableDslCondition;
+  advancedCondition?: DataTableDslCondition;
 }): DataTableDslCondition | undefined {
   const filterConditions = columnFilters
     .map((filter) => buildFilterCondition(filter, resolvedColumns))
     .filter((condition): condition is DataTableDslCondition => Boolean(condition));
-
-  if (filterConditions.length === 0) {
-    // 无筛选时直接返回 baseCondition，避免多包一层空 compose。
-    return baseCondition;
+  if (!baseCondition && !advancedCondition && filterConditions.length > 0) {
+    return { nodeType: 'compose', logic: 'AND', children: filterConditions };
   }
+
+  const allConditions = [baseCondition, ...filterConditions, advancedCondition].filter(
+    (condition): condition is DataTableDslCondition => Boolean(condition)
+  );
+
+  if (allConditions.length === 0) return undefined;
+  if (allConditions.length === 1) return allConditions[0];
 
   return {
     nodeType: 'compose',
     logic: 'AND',
-    children: baseCondition ? [baseCondition, ...filterConditions] : filterConditions
+    children: allConditions
   };
 }
 
@@ -500,6 +723,7 @@ export function buildDataTableDslRequest<TData>({
   sorting,
   columnFilters,
   baseCondition,
+  advancedCondition,
   defaultRequestSort
 }: BuildDataTableDslRequestOptions<TData>): DataTableDslPageRequestBase {
   const resolvedColumns = resolveColumns(columns);
@@ -507,7 +731,18 @@ export function buildDataTableDslRequest<TData>({
   return {
     pageNo: pagination.pageIndex + 1,
     pageSize: pagination.pageSize,
-    condition: buildCondition({ columnFilters, resolvedColumns, baseCondition }),
+    condition: buildCondition({ columnFilters, resolvedColumns, baseCondition, advancedCondition }),
     sort: buildSort(sorting, resolvedColumns, defaultRequestSort)
   };
+}
+
+function canonicalCondition(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalCondition).join(',')}]`;
+  if (value && typeof value === 'object')
+    return `{${Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .toSorted(([a], [b]) => a.localeCompare(b))
+      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalCondition(item)}`)
+      .join(',')}}`;
+  return JSON.stringify(value);
 }

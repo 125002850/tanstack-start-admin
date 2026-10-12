@@ -448,7 +448,7 @@ describe('useDslDataTable', () => {
         accessorKey: 'id',
         header: 'ID',
         enableColumnFilter: true,
-        meta: { variant: 'number', label: 'ID' }
+        meta: { variant: 'unsupported' as never, label: 'ID' }
       }
     ];
 
@@ -473,7 +473,7 @@ describe('useDslDataTable', () => {
     expect(warn.mock.calls[0]?.[1]).toMatchObject({
       tableId: 'dictionary-types',
       columnId: 'id',
-      variant: 'number'
+      variant: 'unsupported'
     });
 
     rerender({ tableId: 'dictionary-types' });

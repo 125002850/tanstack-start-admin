@@ -435,6 +435,7 @@ describe('project architecture contracts', () => {
       });
     const sharedTypeImports = collectModuleSpecifiers(readProjectFile('src/types/data-table.ts'));
     const allowedSharedTypeImports = new Set([
+      '@/components/data-table/advanced-search/types',
       '@/components/data-table/actions/types',
       '@/components/data-table/columns/dsl/contracts',
       '@/components/data-table/core/types',

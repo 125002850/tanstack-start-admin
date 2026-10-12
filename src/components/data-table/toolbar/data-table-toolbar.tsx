@@ -1,3 +1,4 @@
+import { DataTableAdvancedSearch } from '@/components/data-table/advanced-search/data-table-advanced-search';
 import type { Column, Table } from '@tanstack/react-table';
 import * as React from 'react';
 
@@ -51,18 +52,21 @@ export function DataTableToolbar<TData>({
   leadingFilters,
   ...props
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0;
+  const advancedSearch = table.options.meta?.dataTableAdvancedSearch;
+  const isFiltered =
+    table.getState().columnFilters.length > 0 || Boolean(advancedSearch?.conditionCount);
 
   // 只有 getCanFilter 的列会进入工具栏；filter=false 的列已在 column options 阶段关闭。
   const columns = table.getAllColumns().filter((column) => column.getCanFilter());
 
   const onReset = React.useCallback(() => {
+    advancedSearch?.clearAll();
     if (onResetFilters) {
       onResetFilters();
     } else {
       table.resetColumnFilters(true);
     }
-  }, [onResetFilters, table]);
+  }, [advancedSearch, onResetFilters, table]);
 
   return (
     <div
@@ -76,6 +80,7 @@ export function DataTableToolbar<TData>({
         {columns.map((column) => (
           <DataTableToolbarFilter key={column.id} column={column} table={table} labels={labels} />
         ))}
+        {advancedSearch && <DataTableAdvancedSearch table={table} />}
         {isFiltered && (
           <Button
             aria-label={labels?.resetFiltersAriaLabel ?? '重置筛选条件'}

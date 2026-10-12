@@ -1,3 +1,4 @@
+import type { DataTableAdvancedSearchConfig } from '../advanced-search/types';
 import type { DataTableDslCondition } from '@/hooks/use-data-table/dsl';
 import type { Column } from '@tanstack/react-table';
 import type { FC, SVGProps } from 'react';
@@ -88,6 +89,11 @@ export type FilterVariant =
 
 export type DataTableDslOperator =
   | 'EQ'
+  | 'NE'
+  | 'NOT_CONTAINS'
+  | 'NOT_IN'
+  | 'IS_NULL'
+  | 'IS_NOT_NULL'
   | 'CONTAINS'
   | 'STARTS_WITH'
   | 'ENDS_WITH'
@@ -98,7 +104,8 @@ export type DataTableDslOperator =
   | 'LTE'
   | 'BETWEEN';
 
-export type DataTableDslFilterNodeType = 'text' | 'enum';
+export type DataTableDslConditionType = 'text' | 'enum' | 'dateTime' | 'number' | 'boolean';
+export type DataTableDslFilterNodeType = DataTableDslConditionType;
 
 export type DataTableColumnFilterVariant =
   | 'text'
@@ -168,6 +175,7 @@ export interface DataTableColumnFilterOptions<TData = unknown, TValue = unknown>
 }
 
 export interface DataTableColumnDslQueryOptions<TData, TValue> {
+  advancedSearch?: false | DataTableAdvancedSearchConfig;
   dsl?: {
     filterNodeType?: DataTableDslFilterNodeType;
     filterField?: string;

@@ -39,7 +39,9 @@ export function dslConditionValue(
     }
     return undefined;
   }
-  return condition.field === field ? condition.value : undefined;
+  return condition.field === field && typeof condition.value === 'string'
+    ? condition.value
+    : undefined;
 }
 
 export function dslConditionNumber(condition: DataTableDslCondition | undefined, field: string) {

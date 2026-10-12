@@ -15,3 +15,4 @@ export * from '@/components/data-table/filters/types';
 export * from '@/components/data-table/virtualization/types';
 export * from '@/components/data-table/tree/types';
 export * from '@/components/data-table/row-detail/types';
+export * from '@/components/data-table/advanced-search/types';

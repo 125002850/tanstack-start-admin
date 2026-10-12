@@ -241,6 +241,7 @@ function resolveMeta<TData, TValue>(
 
   return {
     ...baseMeta,
+    advancedSearch: options.advancedSearch || undefined,
     label:
       // meta.label 显式传入时优先，否则使用 DSL title 作为列面板/拖拽显示名。
       typeof baseMeta.label === 'string' && baseMeta.label.trim().length > 0

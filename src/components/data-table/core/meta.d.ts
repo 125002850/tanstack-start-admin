@@ -1,3 +1,7 @@
+import type {
+  DataTableAdvancedSearchConfig,
+  DataTableAdvancedSearchRuntime
+} from '../advanced-search/types';
 import type { DataTableDslCondition } from '@/hooks/use-data-table/dsl';
 import type { Column, PaginationState, RowData } from '@tanstack/react-table';
 import type { FC, SVGProps } from 'react';
@@ -25,6 +29,7 @@ declare module '@tanstack/react-table' {
   // biome-ignore lint/correctness/noUnusedVariables: Interface type parameters required by @tanstack/react-table
   interface ColumnMeta<TData extends RowData, TValue> {
     label?: string;
+    advancedSearch?: DataTableAdvancedSearchConfig;
     placeholder?: string;
     variant?: FilterVariant;
     localFilter?: DataTableLocalFilterMeta<TData>;
@@ -59,6 +64,7 @@ declare module '@tanstack/react-table' {
     dataTableColumnOrder?: DataTableColumnOrderMeta;
     enableZebraStriping?: boolean;
     dataTableId?: string;
+    dataTableAdvancedSearch?: DataTableAdvancedSearchRuntime;
     dataTableTree?: DataTableTreeConfig;
     dataTableRowDetail?: DataTableRowDetailConfig<TData>;
     dataTableInstanceId?: string;
