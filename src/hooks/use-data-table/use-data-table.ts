@@ -102,6 +102,7 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
 }
 
 interface DataTableRuntimeContext {
+  tableMeta?: TableOptions<unknown>['meta'];
   editingScope?: {
     pageNo: number;
     scopeKey: string;
@@ -490,6 +491,7 @@ export function useDataTableRuntime<TData>(
     pageCount: resolvedPageCount,
     rowCount: resolvedTotalCount,
     meta: {
+      ...runtimeContext.tableMeta,
       rowNumberDisplayMode,
       rowNumberPagination,
       dataTableColumnOrder: {

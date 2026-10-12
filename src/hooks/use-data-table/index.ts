@@ -1,4 +1,8 @@
 export type {
+  DataTableDslQuickCondition,
+  DataTableDslEnumCondition,
+  DataTableDslBooleanCondition,
+  DataTableDslNumberCondition,
   DataTableDslComposeCondition,
   DataTableDslCondition,
   DataTableDslDateTimeCondition,
