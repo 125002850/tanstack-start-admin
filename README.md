@@ -191,7 +191,7 @@ pnpm codegen
 
 ## 通用平台模块
 
-操作审计、调度中心、工作日历及回灌公共组件见 [模块说明](docs/platform-modules.md)。
+操作审计、调度中心及回灌公共组件见 [模块说明](docs/platform-modules.md)。
 
 ## 开发规范
 

@@ -8,8 +8,7 @@ export const DEV_MOCK_SSO_MENU_KEYS = [
   'dict-management',
   'export-center',
   'operation-audit',
-  'schedule-center',
-  'work-calendar'
+  'schedule-center'
 ] as const;
 
 function normalizeGatewayPrefix(value: string): string {
