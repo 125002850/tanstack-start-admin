@@ -350,7 +350,7 @@ export function getBodyCell(container: HTMLElement, rowIndex: number, text: stri
 
 export function dispatchCellPointerEvent(
   target: HTMLElement,
-  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
   init: { pointerId: number; clientX?: number; clientY?: number; shiftKey?: boolean }
 ) {
   const event = new (window.PointerEvent ?? window.MouseEvent)(type, {
@@ -453,6 +453,30 @@ export function MoneyCopyHarness({ rows }: { rows: MoneyRow[] }) {
   });
 
   return <DataTable table={table} />;
+}
+
+const SUMMARY_COLUMNS: ColumnDef<{ value: unknown }>[] = [
+  {
+    accessorKey: 'value',
+    header: '数值',
+    cell: ({ getValue }) => `显示 ${String(getValue() ?? '空')}`,
+    meta: { copyValue: () => '999' }
+  }
+];
+
+export function SummaryHarness({
+  values,
+  showPagination = true
+}: {
+  values: unknown[];
+  showPagination?: boolean;
+}) {
+  const table = useReactTable({
+    data: React.useMemo(() => values.map((value) => ({ value })), [values]),
+    columns: SUMMARY_COLUMNS,
+    getCoreRowModel: getCoreRowModel()
+  });
+  return <DataTable table={table} showPagination={showPagination} virtualization={false} />;
 }
 
 export function EditableSelectionHarness({

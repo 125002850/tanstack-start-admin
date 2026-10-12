@@ -168,6 +168,9 @@
 - `rowId` key 与 `rowId` function 的解析必须复用 `resolveDataTableRowId()`；TanStack `getRowId` 由共享 runtime 统一装配，禁止页面层复制或覆盖行 ID 解析逻辑。
 - 展开分屏生命周期和尺寸逻辑统一收敛在 `useDataTableExpandPanel`；列拖拽状态和 handler 统一收敛在 `useDataTableColumnDnd`，新 hook 只供 `DataTable` 内部装配。点击/拖拽共面的 sensor 统一复用顶层 `useDndClickDragSensors`。
 
+- 单元格选区至少包含两个 cell 时，在底栏左侧展示选区汇总。横向布局中分页区按内容宽度保持不压缩，两区间距 32px，汇总区占据剩余宽度，统计项整体换行；容器不足以并排容纳两区时底栏分行。关闭分页时汇总区使用全部可用宽度；清空选区恢复原有行数文案。
+- 汇总的“选中”计入选区内全部 cell（包含空值），合计、平均、最小值、最大值仅使用有限数字及通过共享数值 codec 校验的字符串；平均以有效数值数量为分母。无有效数字时只显示选中数量。必须从选区数据模型取值，不能解析 DOM 展示或剪贴板文案；点击统计项复制不带分组分隔符的数值，保持原选区。
+
 ## 表格操作
 
 - `DataTableRowAction.getLabel(row)` 可按行调整同一操作的显示文案（如“编辑／继续编辑”），行内按钮提示、更多菜单与可访问名称保持一致；`id` 或静态 `label` 仍作为稳定操作标识，不得随记录状态改变。未提供 `getLabel` 时继续使用静态 `label`。
@@ -190,6 +193,7 @@
 - selected data row 必须在数据行 `<tr>` 暴露 `aria-selected="true"`；未选中行不得伪造 selected 状态。
 - 选择列控件继续使用 checkbox 语义：`role="checkbox"` + `aria-checked`，全选半选态使用 `aria-checked="mixed"`。
 - 可展开行的点击边界必须排除 checkbox、button、link、input、select、textarea、menuitem 等行内交互控件；键盘等价路径不得触发行内控件双重动作。
+- 单元格跨 cell 拖选（含拖回起点）与 Shift 扩选结束产生的 click 不得触发行展开或切换详情；按本次 Pointer 手势判定，不用延时器拦截。后续普通单击及键盘行操作保持可用。
 - 不得为了虚拟化把所有行强行加入 tab order；键盘 tab stop 只覆盖可交互 / 可展开行或明确的行内控件。
 
 ## 回归测试

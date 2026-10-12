@@ -14,6 +14,7 @@ import {
 import { getPageSelectionTotalRowCount, getSelectedPageRowCount } from '@/lib/data-table/selection';
 import { DATA_TABLE_PAGE_SIZE_OPTIONS } from '@/lib/data-table/state-persistence';
 import { cn } from '@/lib/utils';
+import { DataTableCellSelectionSummarySlot } from '../selection/data-table-cell-selection-summary';
 
 /**
  * DataTable 底部分页栏。
@@ -41,6 +42,7 @@ interface DataTablePaginationProps<TData> extends React.ComponentProps<'div'> {
   selectedTotalRowCount?: number;
   pageSizeOptions?: readonly number[];
   labels?: DataTablePaginationLabels;
+  selectionSummaryRef?: React.Ref<HTMLDivElement>;
 }
 
 export function DataTablePagination<TData>({
@@ -50,6 +52,7 @@ export function DataTablePagination<TData>({
   selectedTotalRowCount,
   pageSizeOptions = DATA_TABLE_PAGE_SIZE_OPTIONS,
   labels,
+  selectionSummaryRef,
   className,
   ...props
 }: DataTablePaginationProps<TData>) {
@@ -103,23 +106,27 @@ export function DataTablePagination<TData>({
         ? table.getRowCount()
         : table.getRowModel().rows.length);
   const resolvedTotalRowCount = table.getRowCount();
+  const rowCountText =
+    resolvedSelectedRowCount > 0
+      ? selectedRowsText(resolvedSelectedRowCount, resolvedSelectedTotalRowCount)
+      : totalRowsText(resolvedTotalRowCount);
 
   return (
     <div
       className={cn(
-        'flex w-full flex-col-reverse items-center justify-between gap-4 overflow-auto p-1 sm:flex-row sm:gap-8',
+        'flex w-full flex-col-reverse items-center justify-between gap-4 overflow-auto p-1 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-2',
         className
       )}
       {...props}
     >
-      <div className='text-muted-foreground flex-1 text-sm whitespace-nowrap'>
-        {resolvedSelectedRowCount > 0 ? (
-          <>{selectedRowsText(resolvedSelectedRowCount, resolvedSelectedTotalRowCount)}</>
-        ) : (
-          <>{totalRowsText(resolvedTotalRowCount)}</>
-        )}
-      </div>
-      <div className='flex flex-col-reverse items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8'>
+      {selectionSummaryRef ? (
+        <DataTableCellSelectionSummarySlot ref={selectionSummaryRef}>
+          {rowCountText}
+        </DataTableCellSelectionSummarySlot>
+      ) : (
+        <div className='text-muted-foreground flex-1 text-sm whitespace-nowrap'>{rowCountText}</div>
+      )}
+      <div className='flex shrink-0 flex-col-reverse items-center gap-4 sm:ml-auto sm:flex-row sm:gap-6 lg:gap-8'>
         <div className='flex items-center space-x-2'>
           <p className='text-sm font-medium whitespace-nowrap'>
             {labels?.rowsPerPage ?? '每页条数'}

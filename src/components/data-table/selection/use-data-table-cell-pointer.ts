@@ -1,8 +1,10 @@
 import type { Cell } from '@tanstack/react-table';
 import {
   useCallback,
+  useEffect,
   useRef,
   type Dispatch,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
   type SetStateAction
@@ -20,6 +22,8 @@ import { useDataTableCellAutoScroll } from './use-data-table-cell-auto-scroll';
 
 type ActivePointerSelection = {
   pointerId: number;
+  origin: DataTableCellCoordinate;
+  isRangeSelection: boolean;
   handlePointerMove: (event: PointerEvent) => void;
   captureTarget: HTMLElement;
 };
@@ -46,24 +50,48 @@ export function useDataTableCellPointer<TData>({
   setRange: Dispatch<SetStateAction<DataTableCellRange | null>>;
 }) {
   const activePointerRef = useRef<ActivePointerSelection | null>(null);
+  const pendingSelectionClickRef = useRef(false);
   const suppressNextFocusSelectionRef = useRef(false);
   const stopAutoScrollRef = useRef<() => void>(() => undefined);
   const cellElementsRef = useRef(new Map<string, HTMLTableCellElement>());
 
-  const finishPointerSelection = useCallback(() => {
-    stopAutoScrollRef.current();
-    scrollViewportRef.current?.removeAttribute('data-cell-range-dragging');
-    const activePointer = activePointerRef.current;
-    if (activePointer) {
-      document.removeEventListener('pointermove', activePointer.handlePointerMove);
-      if (activePointer.captureTarget.hasPointerCapture?.(activePointer.pointerId)) {
-        activePointer.captureTarget.releasePointerCapture(activePointer.pointerId);
+  const finishPointerSelection = useCallback(
+    (event?: PointerEvent) => {
+      const activePointer = activePointerRef.current;
+      if (event && event.pointerId !== activePointer?.pointerId) return;
+      // pointerup is followed by click; cancellation and explicit cleanup must not suppress clicks.
+      pendingSelectionClickRef.current =
+        event?.type === 'pointerup' && Boolean(activePointer?.isRangeSelection);
+      stopAutoScrollRef.current();
+      scrollViewportRef.current?.removeAttribute('data-cell-range-dragging');
+      if (activePointer) {
+        document.removeEventListener('pointermove', activePointer.handlePointerMove);
+        if (activePointer.captureTarget.hasPointerCapture?.(activePointer.pointerId)) {
+          activePointer.captureTarget.releasePointerCapture(activePointer.pointerId);
+        }
       }
-    }
-    activePointerRef.current = null;
-    document.removeEventListener('pointerup', finishPointerSelection);
-    document.removeEventListener('pointercancel', finishPointerSelection);
-  }, [scrollViewportRef]);
+      activePointerRef.current = null;
+      document.removeEventListener('pointerup', finishPointerSelection);
+      document.removeEventListener('pointercancel', finishPointerSelection);
+    },
+    [scrollViewportRef]
+  );
+
+  useEffect(() => {
+    // Some gestures produce no click. A fresh pointerdown always starts a new intent,
+    // including presses outside selectable cells (row padding, buttons, another table).
+    const resetPendingClick = () => {
+      pendingSelectionClickRef.current = false;
+    };
+    document.addEventListener('pointerdown', resetPendingClick, true);
+    return () => document.removeEventListener('pointerdown', resetPendingClick, true);
+  }, []);
+
+  const consumeSelectionClick = useCallback((event: ReactMouseEvent) => {
+    const shouldIgnore = pendingSelectionClickRef.current && event.detail > 0;
+    pendingSelectionClickRef.current = false;
+    return shouldIgnore;
+  }, []);
 
   const findOwnedCell = useCallback(
     (element: Element | null): HTMLTableCellElement | null => {
@@ -123,6 +151,9 @@ export function useDataTableCellPointer<TData>({
       const cell = findCellAtPointer(pointer, captured);
       const coordinate = cell ? readCellCoordinate(cell) : null;
       if (coordinate) {
+        if (activePointer && !isSameCoordinate(activePointer.origin, coordinate)) {
+          activePointer.isRangeSelection = true;
+        }
         const dataCell = cellsByCoordinate.get(getCoordinateKey(coordinate));
         if (dataCell) {
           editing?.selectCell({
@@ -165,7 +196,7 @@ export function useDataTableCellPointer<TData>({
   );
 
   const beginPointerDrag = useCallback(
-    (event: ReactPointerEvent<HTMLTableCellElement>) => {
+    (event: ReactPointerEvent<HTMLTableCellElement>, origin: DataTableCellCoordinate) => {
       suppressNextFocusSelectionRef.current = true;
       event.currentTarget.focus({ preventScroll: true });
       suppressNextFocusSelectionRef.current = false;
@@ -175,6 +206,8 @@ export function useDataTableCellPointer<TData>({
 
       activePointerRef.current = {
         pointerId: event.pointerId,
+        origin,
+        isRangeSelection: event.shiftKey,
         handlePointerMove: handleDocumentPointerMove,
         captureTarget: event.currentTarget
       };
@@ -196,6 +229,7 @@ export function useDataTableCellPointer<TData>({
   return {
     beginPointerDrag,
     cellElementsRef,
+    consumeSelectionClick,
     findCellAtPointer,
     finishPointerSelection,
     focusCoordinate,
