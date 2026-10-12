@@ -1,4 +1,14 @@
 import { buildBusinessCenterNav } from '@/lib/router/business-center-nav';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
@@ -265,6 +275,8 @@ export default function AppSidebar() {
   );
   const filteredGroups = useFilteredNavGroups(navGroups);
   const { data: loginUser, isLoading } = useQuery(getLoginInfoQueryOptions());
+  const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
+  const userMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
 
   const handleLogout = () => {
     logout();
@@ -309,6 +321,7 @@ export default function AppSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
+                  ref={userMenuTriggerRef}
                   aria-label='用户菜单'
                   size='lg'
                   className={cn(
@@ -362,6 +375,9 @@ export default function AppSidebar() {
                 side='bottom'
                 align='end'
                 sideOffset={4}
+                onCloseAutoFocus={(event) => {
+                  if (logoutDialogOpen) event.preventDefault();
+                }}
               >
                 <DropdownMenuGroup>
                   <DropdownMenuItem onClick={() => router.navigate({ to: '/notifications' })}>
@@ -371,13 +387,30 @@ export default function AppSidebar() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onSelect={() => setLogoutDialogOpen(true)}>
                     <Icons.logout className='size-4' />
                     退出登录
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
+            <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+              <AlertDialogContent
+                onCloseAutoFocus={(event) => {
+                  event.preventDefault();
+                  userMenuTriggerRef.current?.focus();
+                }}
+              >
+                <AlertDialogHeader>
+                  <AlertDialogTitle>确认退出登录？</AlertDialogTitle>
+                  <AlertDialogDescription>退出后将跳转至登录页，是否继续？</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout}>确认退出</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

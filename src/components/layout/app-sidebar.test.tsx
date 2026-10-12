@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import * as React from 'react';
 import userEvent from '@testing-library/user-event';
 
@@ -29,38 +30,7 @@ vi.mock('@/hooks/use-nav', () => ({
   useFilteredNavGroups: () => []
 }));
 
-vi.mock('@/components/ui/sidebar', () => ({
-  useSidebar: () => ({ state: 'expanded', isMobile: false }),
-  Sidebar: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', { 'data-testid': 'sidebar' }, children),
-  SidebarProvider: ({ children }: { children: React.ReactNode }) =>
-    React.createElement(React.Fragment, null, children),
-  SidebarContent: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', { 'data-testid': 'sidebar-content' }, children),
-  SidebarFooter: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', { 'data-testid': 'sidebar-footer' }, children),
-  SidebarGroup: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarGroupLabel: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarHeader: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarMenu: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarMenuItem: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarMenuButton: ({ children, className }: { children: React.ReactNode; className?: string }) =>
-    React.createElement('button', { 'data-testid': 'sidebar-menu-button', className }, children),
-  SidebarMenuSub: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarMenuSubButton: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarMenuSubItem: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  SidebarRail: () => React.createElement('div', null),
-  SidebarInset: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children)
-}));
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => false }));
 
 vi.mock('@/components/ui/skeleton', () => ({
   Skeleton: ({ className }: { className?: string }) =>
@@ -74,22 +44,6 @@ vi.mock('@/components/ui/collapsible', () => ({
     React.createElement('div', null, children),
   CollapsibleContent: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', null, children)
-}));
-
-vi.mock('@/components/ui/dropdown-menu', () => ({
-  DropdownMenu: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', { 'data-testid': 'dropdown-content' }, children),
-  DropdownMenuGroup: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  DropdownMenuItem: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) =>
-    React.createElement('button', { 'data-testid': 'dropdown-item', onClick }, children),
-  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', null, children),
-  DropdownMenuSeparator: () => React.createElement('hr', null),
-  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) =>
-    React.createElement('div', { 'data-testid': 'dropdown-trigger' }, children)
 }));
 
 vi.mock('@/components/ui/sso-skeleton', () => ({
@@ -121,7 +75,7 @@ async function renderSidebar(queryClient: QueryClient) {
     React.createElement(
       QueryClientProvider,
       { client: queryClient },
-      React.createElement(AppSidebar)
+      React.createElement(SidebarProvider, null, React.createElement(AppSidebar))
     )
   );
 }
@@ -186,21 +140,45 @@ describe('app-sidebar auth footer', () => {
     expect(screen.getByText('-')).toBeDefined();
   });
 
-  it('calls session.logout when clicking logout', async () => {
+  it('only calls session.logout after confirming the logout dialog', async () => {
     const user = userEvent.setup();
     await renderSidebar(queryClient);
 
-    // Open dropdown to reveal logout button
-    const trigger = screen.getByTestId('dropdown-trigger');
-    await user.click(trigger);
+    await user.click(screen.getByRole('button', { name: '用户菜单' }));
+    await user.click(screen.getByRole('menuitem', { name: /退出登录/ }));
 
-    // Click logout button
-    const logoutButton = screen
-      .getAllByTestId('dropdown-item')
-      .find((el) => el.textContent?.includes('退出登录'));
-    expect(logoutButton).toBeDefined();
-    await user.click(logoutButton!);
+    expect(screen.getByRole('alertdialog', { name: '确认退出登录？' })).toBeVisible();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(mockLogout).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByRole('button', { name: '取消' })).toHaveFocus());
+
+    await user.click(screen.getByRole('button', { name: '确认退出' }));
 
     expect(mockLogout).toHaveBeenCalledOnce();
+  });
+
+  it.each(['cancel', 'escape'])('keeps the session and restores focus on %s', async (action) => {
+    const user = userEvent.setup();
+    await renderSidebar(queryClient);
+    const trigger = screen.getByRole('button', { name: '用户菜单' });
+
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await screen.findByRole('menuitem', { name: /通知/ });
+    await user.keyboard('{End}{Enter}');
+    expect(screen.getByRole('alertdialog', { name: '确认退出登录？' })).toBeVisible();
+
+    if (action === 'cancel') {
+      await user.click(screen.getByRole('button', { name: '取消' }));
+    } else {
+      await user.keyboard('{Escape}');
+    }
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(mockLogout).not.toHaveBeenCalled();
+    await waitFor(() => expect(trigger).toHaveFocus());
+
+    await user.click(trigger);
+    expect(screen.getByRole('menuitem', { name: /退出登录/ })).toBeVisible();
   });
 });
