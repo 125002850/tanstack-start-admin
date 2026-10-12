@@ -309,6 +309,7 @@ function ScheduleCenterContent() {
     ReturnType<typeof systemScheduleJobPageQueryKey>
   >({
     tableId: TABLE_ID,
+    sceneCode: 'system.schedule.job.page',
     columns,
     queryOptions: systemScheduleJobPageQueryOptions,
     showSelectColumn: false,

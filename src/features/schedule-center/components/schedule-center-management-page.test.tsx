@@ -1,3 +1,7 @@
+import {
+  mockQuerySceneMetadataQueryOptions,
+  mockQuerySchemesQueryOptions
+} from '@/test/query-scene-metadata';
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
@@ -13,6 +17,8 @@ vi.mock('@/lib/api/clients/service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api/clients/service')>();
   return {
     ...actual,
+    getQuerySceneMetadataQueryOptions: mockQuerySceneMetadataQueryOptions,
+    listQuerySchemesQueryOptions: mockQuerySchemesQueryOptions,
     systemDictGlobalItemsOptions: async () => [
       {
         dictTypeCode: 'ENABLE_STATUS',
