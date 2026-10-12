@@ -1,3 +1,5 @@
+import { QuerySceneMetadataBootstrap } from '@/components/layout/query-scene-metadata-bootstrap';
+import { querySceneMetadataQueryOptions } from '@/lib/api/query-scene-metadata';
 import { normalizeApiError } from '@/lib/api/error-normalizer';
 import * as React from 'react';
 import {
@@ -62,6 +64,7 @@ export const Route = createFileRoute('/_app')({
           search: { redirect: `${location.pathname}${location.searchStr}` }
         });
       }
+      void context.queryClient.prefetchQuery(querySceneMetadataQueryOptions());
       return me;
     } catch (error) {
       if (isAuthRequiredError(error)) {
@@ -130,6 +133,7 @@ function AppLayout() {
 
   return (
     <DictionaryScope typeCodes={dictTypes}>
+      <QuerySceneMetadataBootstrap />
       <KBar>
         <SidebarProvider>
           <AppSidebar />

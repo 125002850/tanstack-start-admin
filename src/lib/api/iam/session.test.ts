@@ -1,6 +1,9 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getQueryClient } from '@/lib/query-client';
+import { listQuerySchemesQueryKey, getQuerySceneMetadataQueryKey } from '@/lib/api/clients/service';
+import { clearIamSession, ensureFreshAccessToken, setIamTokens } from './session';
 
 function createStorageMock() {
   const store: Record<string, string> = {};
@@ -64,10 +67,11 @@ describe('IAM session', () => {
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
-    vi.resetModules();
+    clearIamSession();
   });
 
   afterEach(() => {
+    clearIamSession();
     globalThis.fetch = originalFetch;
     vi.unstubAllGlobals();
   });
@@ -82,7 +86,6 @@ describe('IAM session', () => {
       })
     );
 
-    const { ensureFreshAccessToken, setIamTokens } = await import('./session');
     setIamTokens({
       accessToken: 'old-access-token',
       refreshToken: 'stale-refresh-token',
@@ -96,5 +99,23 @@ describe('IAM session', () => {
     expect(store.iam_refresh_token).toBeUndefined();
     expect(store.iam_access_token_expires_at).toBeUndefined();
     expect(location.href).toBe('/auth/sign-in?redirect=%2Foverview%3Ftab%3Dactive');
+  });
+  it('clears personal query schemes across scenes when the session ends', () => {
+    setupBrowserMocks();
+    const client = getQueryClient();
+    const first = listQuerySchemesQueryKey({ sceneCode: 'mdm.global.dict.item.page' });
+    const second = listQuerySchemesQueryKey({ sceneCode: 'system.schedule.job.page' });
+    const metadata = getQuerySceneMetadataQueryKey();
+    try {
+      client.setQueryData(first, [{ id: 1 }]);
+      client.setQueryData(second, [{ id: 2 }]);
+      client.setQueryData(metadata, {});
+      clearIamSession();
+      expect(client.getQueryData(first)).toBeUndefined();
+      expect(client.getQueryData(second)).toBeUndefined();
+      expect(client.getQueryData(metadata)).toEqual({});
+    } finally {
+      client.clear();
+    }
   });
 });

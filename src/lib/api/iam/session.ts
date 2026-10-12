@@ -1,4 +1,5 @@
 import { HttpError } from '@oig/react-query-generator/core';
+import { listQuerySchemesQueryKey } from '@/lib/api/clients/service';
 import { getQueryClient } from '@/lib/query-client';
 import { HTTP_STATUS_UNAUTHORIZED } from '@/lib/http-status';
 import { buildSignInHref, getCurrentInternalHref } from '@/lib/router/safe-redirect';
@@ -108,6 +109,9 @@ export function clearIamSession(): void {
 
   try {
     getQueryClient().removeQueries({ queryKey: IAM_QUERY_KEYS.me });
+    getQueryClient().removeQueries({
+      queryKey: listQuerySchemesQueryKey({ sceneCode: '' }).slice(0, -1)
+    });
   } catch {}
 }
 
