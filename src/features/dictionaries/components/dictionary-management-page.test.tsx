@@ -1,3 +1,7 @@
+import {
+  mockQuerySceneMetadataQueryOptions,
+  mockQuerySchemesQueryOptions
+} from '@/test/query-scene-metadata';
 import * as React from 'react';
 import { QueryClient, QueryClientProvider, queryOptions } from '@tanstack/react-query';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -18,7 +22,10 @@ const serviceMocks = vi.hoisted(() => ({
   systemDictGlobalTypeDeleteMutationOptions: vi.fn()
 }));
 
-vi.mock('@/lib/api/clients/service', () => ({
+vi.mock('@/lib/api/clients/service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/api/clients/service')>()),
+  getQuerySceneMetadataQueryOptions: mockQuerySceneMetadataQueryOptions,
+  listQuerySchemesQueryOptions: mockQuerySchemesQueryOptions,
   systemDictGlobalTypesListAll: (...args: unknown[]) =>
     serviceMocks.systemDictGlobalTypesListAll(...args),
   systemDictGlobalTypesListAllQueryOptions: (...args: unknown[]) =>
@@ -433,15 +440,17 @@ describe('DictionaryManagementPage', () => {
     });
 
     expect(typeRequests[0]).toEqual({});
-    expect(itemRequests.at(-1)).toMatchObject({
-      pageNo: 1,
-      pageSize: 50,
-      condition: {
-        nodeType: 'text',
-        field: 'dictTypeCode',
-        op: 'EQ',
-        value: 'payment'
-      }
+    await waitFor(() => {
+      expect(itemRequests.at(-1)).toMatchObject({
+        pageNo: 1,
+        pageSize: 50,
+        condition: {
+          nodeType: 'text',
+          field: 'dictTypeCode',
+          op: 'EQ',
+          value: 'payment'
+        }
+      });
     });
     await waitFor(() => {
       expect(screen.getByText('已支付')).toBeInTheDocument();

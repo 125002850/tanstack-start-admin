@@ -161,6 +161,7 @@ export function DictionaryItemsPanel({
     >({
       columns: dictionaryItemColumns(),
       tableId,
+      sceneCode: 'mdm.global.dict.item.page',
       queryOptions: dictionaryItemsQueryOptions,
       baseCondition,
       mapQueryData,
