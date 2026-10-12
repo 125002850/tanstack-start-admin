@@ -14,6 +14,7 @@ export interface DataTableBodyProps<TData> {
   enableZebraStriping: boolean;
   emptyMessage: ReactNode;
   status?: DataTableStatusConfig;
+  selectionSummaryContainer?: HTMLDivElement | null;
   virtualization?: DataTableResolvedVirtualizationOptions;
   columnVirtualWindow?: DataTableColumnVirtualWindow<TData>;
   scrollToColumn?: (columnId: string) => void;

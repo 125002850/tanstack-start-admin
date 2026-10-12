@@ -24,6 +24,15 @@ export type DataTableCellCopyFeedbackState = {
   run: 'a' | 'b';
 };
 
+export type DataTableCellSelectionSummary = {
+  selectedCount: number;
+  numericCount: number;
+  sum: number;
+  average: number;
+  min: number;
+  max: number;
+};
+
 export type DataTableCellSelectionProps = {
   ref: RefCallback<HTMLTableCellElement>;
   tabIndex: number;

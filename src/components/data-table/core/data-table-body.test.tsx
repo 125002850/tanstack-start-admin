@@ -8,6 +8,9 @@ import {
   ColumnResizeMeasureHarness,
   ControlsHarness,
   ExpandHarness,
+  getBodyCell,
+  dragCellRange,
+  dispatchCellPointerEvent,
   GroupedHeaderHarness,
   Harness,
   HeaderDragOverlayHarness,
@@ -26,7 +29,7 @@ import {
   type TestRow
 } from './data-table.test-utils';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createPortal } from 'react-dom';
 import { DATA_TABLE_DEFAULT_EXPAND_TABLE_SIZING } from '@/lib/data-table/expand-split';
@@ -921,6 +924,94 @@ describe('DataTable body', () => {
 
     expect(screen.getByTestId('expanded-row-key').textContent).toBe('2');
     expect(screen.getByTestId('expanded-row-name').textContent).toBe('Item 2');
+  });
+
+  it.each([false, { enabled: true, rowCountThreshold: 0 }] as const)(
+    'does not expand after range dragging with virtualization %j, but allows the next click',
+    async (virtualization) => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <ExpandHarness rows={makeRows(5)} virtualization={virtualization} />
+      );
+      const firstCell = getBodyCell(container, 0, 'Item 1');
+      const secondCell = getBodyCell(container, 1, 'Item 2');
+
+      dragCellRange(firstCell, secondCell);
+      // Pointer capture makes the browser dispatch the trailing click at the starting cell.
+      fireEvent.click(firstCell, { detail: 1 });
+
+      expect(screen.getByTestId('expanded-row-key')).toHaveTextContent('null');
+      expect(secondCell).toHaveAttribute('data-cell-selected', 'true');
+
+      await user.click(secondCell);
+      expect(screen.getByTestId('expanded-row-key')).toHaveTextContent('2');
+    }
+  );
+
+  it('does not expand when a range drag returns to its starting cell', () => {
+    const { container } = render(<ExpandHarness rows={makeRows(5)} />);
+    const firstCell = getBodyCell(container, 0, 'Item 1');
+    const secondCell = getBodyCell(container, 1, 'Item 2');
+
+    dispatchCellPointerEvent(firstCell, 'pointerdown', { pointerId: 1 });
+    dispatchCellPointerEvent(secondCell, 'pointermove', { pointerId: 1 });
+    dispatchCellPointerEvent(firstCell, 'pointermove', { pointerId: 1 });
+    dispatchCellPointerEvent(firstCell, 'pointerup', { pointerId: 1 });
+    fireEvent.click(firstCell.closest('tr')!, { detail: 1 });
+
+    expect(screen.getByTestId('expanded-row-key')).toHaveTextContent('null');
+  });
+
+  it('keeps the expanded row when Shift-click extends the cell range', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ExpandHarness rows={makeRows(5)} />);
+    await user.click(getBodyCell(container, 0, 'Item 1'));
+    const secondCell = getBodyCell(container, 1, 'Item 2');
+
+    await user.keyboard('{Shift>}');
+    await user.click(secondCell);
+    await user.keyboard('{/Shift}');
+
+    expect(secondCell).toHaveAttribute('data-cell-selected', 'true');
+    expect(screen.getByTestId('expanded-row-key')).toHaveTextContent('1');
+  });
+
+  it('allows a new row click if the browser did not dispatch a click after dragging', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ExpandHarness rows={makeRows(5)} />);
+    const firstCell = getBodyCell(container, 0, 'Item 1');
+    const secondCell = getBodyCell(container, 1, 'Item 2');
+
+    dragCellRange(firstCell, secondCell);
+    await user.click(secondCell.closest('tr')!);
+
+    expect(screen.getByTestId('expanded-row-key')).toHaveTextContent('2');
+  });
+
+  it.each(['pointercancel', 'blur'] as const)(
+    'allows row clicks after a cell range gesture ends with %s',
+    (endEvent) => {
+      const { container } = render(<ExpandHarness rows={makeRows(5)} />);
+      const firstCell = getBodyCell(container, 0, 'Item 1');
+      const secondCell = getBodyCell(container, 1, 'Item 2');
+      dispatchCellPointerEvent(firstCell, 'pointerdown', { pointerId: 1 });
+      dispatchCellPointerEvent(secondCell, 'pointermove', { pointerId: 1 });
+      if (endEvent === 'blur') fireEvent.blur(window);
+      else dispatchCellPointerEvent(secondCell, 'pointercancel', { pointerId: 1 });
+      fireEvent.click(secondCell, { detail: 1 });
+
+      expect(screen.getByTestId('expanded-row-key')).toHaveTextContent('2');
+    }
+  );
+
+  it('allows keyboard-generated clicks after range dragging', () => {
+    const { container } = render(<ExpandHarness rows={makeRows(5)} />);
+    const firstCell = getBodyCell(container, 0, 'Item 1');
+    const secondCell = getBodyCell(container, 1, 'Item 2');
+    dragCellRange(firstCell, secondCell);
+    fireEvent.click(secondCell, { detail: 0 });
+
+    expect(screen.getByTestId('expanded-row-key')).toHaveTextContent('2');
   });
 
   it('preserves table scroll position when opening the expand panel', async () => {

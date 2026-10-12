@@ -46,6 +46,7 @@ import { DATA_TABLE_SCROLLBAR_Z_INDEX } from './data-table-pinning';
 import { useDataTableColumnDnd } from '@/components/data-table/dnd/use-data-table-column-dnd';
 import { useDataTableExpandPanel } from '@/components/data-table/expand/use-data-table-expand-panel';
 import { useDataTableVirtualization } from '@/components/data-table/virtualization/use-data-table-virtualization';
+import { DataTableCellSelectionSummarySlot } from '../selection/data-table-cell-selection-summary';
 
 /**
  * DataTable 的主渲染组件。
@@ -166,6 +167,8 @@ export function DataTable<TData>({
   // ScrollArea 的 viewport 是行/列虚拟化共同依赖的滚动容器。
   const scrollViewportRef = React.useRef<HTMLDivElement>(null);
   const [scrollViewport, setScrollViewport] = React.useState<HTMLDivElement | null>(null);
+  const [selectionSummaryContainer, setSelectionSummaryContainer] =
+    React.useState<HTMLDivElement | null>(null);
   const attachScrollViewport = React.useCallback((element: HTMLDivElement | null) => {
     scrollViewportRef.current = element;
     // Activity 恢复时，节点变化驱动虚拟化重新订阅。
@@ -379,6 +382,7 @@ export function DataTable<TData>({
       enableZebraStriping={enableZebraStriping}
       emptyMessage={emptyMessage}
       status={resolvedStatus}
+      selectionSummaryContainer={selectionSummaryContainer}
       virtualization={virtConfig}
       columnVirtualWindow={columnVirtualWindow}
       columnDragMotionById={columnDragMotionById}
@@ -547,20 +551,21 @@ export function DataTable<TData>({
             >
               {tableViewport}
             </div>
-            {showPagination || (actionBar && resolvedSelectedRowCount > 0) ? (
-              <div ref={paginationRef} className='flex flex-col gap-2.5'>
-                {showPagination ? (
-                  <DataTablePagination
-                    table={table}
-                    labels={paginationLabels}
-                    getSelectedRows={getSelectedRows}
-                    selectedRowCount={resolvedSelectedRowCount}
-                    selectedTotalRowCount={resolvedSelectedTotalRowCount}
-                  />
-                ) : null}
-                {actionBar && resolvedSelectedRowCount > 0 && actionBar}
-              </div>
-            ) : null}
+            <div ref={paginationRef} className='flex shrink-0 flex-col gap-2.5'>
+              {showPagination ? (
+                <DataTablePagination
+                  table={table}
+                  labels={paginationLabels}
+                  getSelectedRows={getSelectedRows}
+                  selectedRowCount={resolvedSelectedRowCount}
+                  selectedTotalRowCount={resolvedSelectedTotalRowCount}
+                  selectionSummaryRef={setSelectionSummaryContainer}
+                />
+              ) : (
+                <DataTableCellSelectionSummarySlot ref={setSelectionSummaryContainer} />
+              )}
+              {actionBar && resolvedSelectedRowCount > 0 && actionBar}
+            </div>
             {isExpandLayoutActive &&
             expandSplitLayout &&
             activeExpandTab &&

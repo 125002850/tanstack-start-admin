@@ -3,6 +3,7 @@ import {
   EditableNumericSelectionHarness,
   KeyboardSelectionHarness,
   Harness,
+  SummaryHarness,
   MoneyCopyHarness,
   SelectableHarness,
   SpecialColumnsSelectionHarness,
@@ -17,11 +18,93 @@ import {
   type EditableRow
 } from '../core/data-table.test-utils';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, act, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DataTableEditingController } from '@/types/data-table';
 
 describe('DataTable cell selection', () => {
+  it('汇总混合选区的原始值，选中包含空值且平均只使用数字数量', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SummaryHarness values={[10, '20', '备注', null]} />);
+    expect(screen.queryByRole('group', { name: '选区汇总' })).not.toBeInTheDocument();
+    dragCellRange(getBodyCell(container, 0, '显示 10'), getBodyCell(container, 3, '显示 空'));
+
+    const summary = screen.getByRole('group', { name: '选区汇总' });
+    expect(
+      within(summary)
+        .getAllByRole('button')
+        .map((button) => button.textContent)
+    ).toEqual(['合计30', '选中4', '平均15', '最小值10', '最大值20']);
+    expect(summary.closest('table')).toBeNull();
+    await user.hover(within(summary).getByRole('button', { name: '选中：4' }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('4 个单元格，其中 2 个为数值');
+  });
+
+  it('无分页时仍支持汇总与清除选区', () => {
+    const { container } = render(<SummaryHarness values={['备注', null]} showPagination={false} />);
+    const lastCell = getBodyCell(container, 1, '显示 空');
+    dragCellRange(getBodyCell(container, 0, '显示 备注'), lastCell);
+    expect(screen.queryByText('每页条数')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '选区汇总' })).toHaveTextContent('选中2');
+    expect(screen.getByRole('group', { name: '选区汇总' }).querySelectorAll('button')).toHaveLength(
+      1
+    );
+    fireEvent.keyDown(lastCell, { key: 'Escape' });
+    expect(screen.queryByRole('group', { name: '选区汇总' })).not.toBeInTheDocument();
+  });
+
+  it('数据刷新重算汇总，数据清空后不残留统计', () => {
+    const { container, rerender } = render(<SummaryHarness values={[10, 20]} />);
+    dragCellRange(getBodyCell(container, 0, '显示 10'), getBodyCell(container, 1, '显示 20'));
+    expect(screen.getByRole('button', { name: '合计：30' })).toBeInTheDocument();
+    rerender(<SummaryHarness values={[10, 40]} />);
+    expect(screen.getByRole('button', { name: '合计：50' })).toBeInTheDocument();
+    rerender(<SummaryHarness values={[]} />);
+    expect(screen.queryByRole('group', { name: '选区汇总' })).not.toBeInTheDocument();
+  });
+
+  it('复制纯数值并保留原始选区及单元格复制行为', async () => {
+    const user = userEvent.setup();
+    const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
+    const { container } = render(<SummaryHarness values={[1000, 250.5]} />);
+    dragCellRange(getBodyCell(container, 0, '显示 1000'), getBodyCell(container, 1, '显示 250.5'));
+    await user.click(screen.getByRole('button', { name: '合计：1,250.5' }));
+    expect(clipboardWrite).toHaveBeenCalledWith('1250.5');
+    expect(container.querySelectorAll('td[data-cell-selected="true"]')).toHaveLength(2);
+    const { clipboardData, event } = createCopyEvent();
+    act(() => document.dispatchEvent(event));
+    expect(clipboardData.setData).toHaveBeenCalledWith('text/plain', '999\n999');
+  });
+
+  it('键盘扩展到未渲染的虚拟行时仍汇总完整选区', () => {
+    const { container } = render(<Harness rows={makeRows(8)} virtualization={{ mode: 'on' }} />);
+    const firstCell = getBodyCell(container, 0, '1');
+    const lastRenderedCell = getBodyCell(container, 3, '4');
+    dragCellRange(firstCell, lastRenderedCell);
+    expect(container.querySelector('td[data-cell-row-id="4"]')).toBeNull();
+    fireEvent.keyDown(lastRenderedCell, { key: 'ArrowDown', shiftKey: true });
+    expect(screen.getByRole('button', { name: '选中：5' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '合计：15' })).toBeInTheDocument();
+  });
+
+  it('切换表格选区时清除旧表格的汇总', () => {
+    const first = render(<SummaryHarness values={[10, 20]} />);
+    const second = render(<SummaryHarness values={[30, 40]} />);
+    dragCellRange(
+      getBodyCell(first.container, 0, '显示 10'),
+      getBodyCell(first.container, 1, '显示 20')
+    );
+    expect(within(first.container).getByRole('group', { name: '选区汇总' })).toBeInTheDocument();
+    dragCellRange(
+      getBodyCell(second.container, 0, '显示 30'),
+      getBodyCell(second.container, 1, '显示 40')
+    );
+    expect(
+      within(first.container).queryByRole('group', { name: '选区汇总' })
+    ).not.toBeInTheDocument();
+    expect(within(second.container).getByRole('button', { name: '合计：70' })).toBeInTheDocument();
+  });
+
   it('renders a server cell error with accessible invalid state and a non-color marker', async () => {
     const user = userEvent.setup();
     const editingRef: { current: DataTableEditingController<EditableRow> | null } = {

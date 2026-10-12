@@ -54,6 +54,12 @@ export function useDataTableCellSelection<TData>({
   const [range, setRange] = useState<DataTableCellRange | null>(null);
   rangeRef.current = range;
 
+  const selectionModel = useDataTableCellSelectionModel({
+    rows,
+    columns,
+    matrixPasteColumns,
+    range
+  });
   const {
     pasteColumns,
     resolveColumnLabel,
@@ -62,11 +68,12 @@ export function useDataTableCellSelection<TData>({
     rangeIndex,
     rangeBounds,
     cellsByCoordinate
-  } = useDataTableCellSelectionModel({ rows, columns, matrixPasteColumns, range });
+  } = selectionModel;
 
   const {
     beginPointerDrag,
     cellElementsRef,
+    consumeSelectionClick,
     findCellAtPointer,
     finishPointerSelection,
     focusCoordinate,
@@ -246,7 +253,7 @@ export function useDataTableCellSelection<TData>({
       activateDataTableCellSelectionOwner(ownerRef.current);
       setRange(nextRange);
       clearCopyFeedback();
-      beginPointerDrag(event);
+      beginPointerDrag(event, coordinate);
     },
     [
       clearCellSelection,
@@ -475,5 +482,11 @@ export function useDataTableCellSelection<TData>({
     };
   }, [finishFillPointer, finishPointerSelection]);
 
-  return { getCellFillHandleProps, getCellSelectionProps, getCellServerError };
+  return {
+    consumeSelectionClick,
+    getCellFillHandleProps,
+    getCellSelectionProps,
+    getCellServerError,
+    selectionModel
+  };
 }

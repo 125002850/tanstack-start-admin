@@ -793,3 +793,133 @@ test('@workspace-v2 resumes virtual scrolling after repeated workspace tab switc
   await expect(card.getByText('code-001', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('@workspace-v2 consumes row clicks from range gestures but preserves normal clicks', async ({
+  page
+}) => {
+  const card = await gotoDictionaryTable(page);
+  const firstCell = card.locator('td[data-cell-column-id="dictItemCode"]').nth(0);
+  const secondCell = card.locator('td[data-cell-column-id="dictItemCode"]').nth(1);
+  const thirdCell = card.locator('td[data-cell-column-id="dictItemCode"]').nth(2);
+  const body = card.locator('tbody');
+
+  // Observe the native trailing click before and after React's shared row handler.
+  // The expand-panel effect is covered by ExpandHarness in the component tests.
+  await body.evaluate((element) => {
+    element.setAttribute('data-test-captured-clicks', '0');
+    element.setAttribute('data-test-bubbled-clicks', '0');
+    const increment = (attribute: string) => {
+      element.setAttribute(attribute, String(Number(element.getAttribute(attribute)) + 1));
+    };
+    element.addEventListener('click', () => increment('data-test-captured-clicks'), true);
+    document.addEventListener('click', (event) => {
+      if (event.target instanceof Node && element.contains(event.target)) {
+        increment('data-test-bubbled-clicks');
+      }
+    });
+  });
+
+  await firstCell.click();
+  await expect(body).toHaveAttribute('data-test-bubbled-clicks', '1');
+  await dragBetweenCells(page, firstCell, secondCell);
+  await expect(card.locator('td[data-cell-selected="true"]')).toHaveCount(2);
+  await expect(body).toHaveAttribute('data-test-captured-clicks', '2');
+  await expect(body).toHaveAttribute('data-test-bubbled-clicks', '1');
+
+  await thirdCell.click({ modifiers: ['Shift'] });
+  await expect(card.locator('td[data-cell-selected="true"]')).toHaveCount(3);
+  await expect(body).toHaveAttribute('data-test-captured-clicks', '3');
+  await expect(body).toHaveAttribute('data-test-bubbled-clicks', '1');
+
+  await secondCell.click();
+  await expect(body).toHaveAttribute('data-test-bubbled-clicks', '2');
+});
+
+test('@workspace-v2 shows mixed range summaries on the left and copies a summary without clearing selection', async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 2000, height: 1000 });
+  const card = await gotoDictionaryTable(page);
+  const firstOrder = card.locator('td[data-cell-column-id="sortOrder"]').nth(0);
+  const secondOrder = card.locator('td[data-cell-column-id="sortOrder"]').nth(1);
+  const viewport = card.locator('[data-slot="scroll-area-viewport"]');
+  const pagination = card.getByText('每页条数', { exact: true }).locator('../..');
+  const footer = pagination.locator('..');
+  await firstOrder.scrollIntoViewIfNeeded();
+  const heightBefore = await viewport.evaluate((element) => element.clientHeight);
+  const paginationBefore = await pagination.boundingBox();
+  await dragBetweenCells(page, firstOrder, secondOrder);
+  const summary = card.getByRole('group', { name: '选区汇总' });
+  await expect(summary.getByRole('button', { name: '合计：3' })).toBeVisible();
+  await expect(summary.getByRole('button', { name: '平均：1.5' })).toBeVisible();
+
+  await secondOrder.focus();
+  await secondOrder.press('Shift+ArrowLeft');
+  await expect(summary.getByRole('button', { name: '选中：4' })).toBeVisible();
+  await expect(summary.getByRole('button', { name: '平均：1.5' })).toBeVisible();
+  await expect(card.getByText('共 150 条数据', { exact: true })).toBeHidden();
+  expect(await viewport.evaluate((element) => element.clientHeight)).toBe(heightBefore);
+
+  const summaryBox = await summary.boundingBox();
+  const paginationBox = await pagination.boundingBox();
+  if (!summaryBox || !paginationBox || !paginationBefore) {
+    throw new Error('summary or pagination missing');
+  }
+  expect(summaryBox.width).toBeGreaterThan(700);
+  expect(paginationBox.x - (summaryBox.x + summaryBox.width)).toBeCloseTo(32, 0);
+  expect(paginationBox.width).toBeCloseTo(paginationBefore.width, 0);
+  expect(paginationBox.x).toBeCloseTo(paginationBefore.x, 0);
+  await summary.getByRole('button', { name: '合计：3' }).click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('3');
+  await expect(card.locator('td[data-cell-selected="true"]')).toHaveCount(4);
+
+  // 缩小整个底栏：分页宽度保持不变，汇总用剩余空间自然换行。
+  await footer.evaluate((element, paginationWidth) => {
+    element.style.width = `${paginationWidth + 32 + 200 + 8}px`;
+  }, paginationBox.width);
+  const layout = await summary.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return {
+      width: bounds.width,
+      tops: [
+        ...new Set(
+          Array.from(element.querySelectorAll('button')).map(
+            (button) => button.getBoundingClientRect().top
+          )
+        )
+      ],
+      contained: Array.from(element.querySelectorAll('button')).every((button) => {
+        const item = button.getBoundingClientRect();
+        return item.left >= bounds.left && item.right <= bounds.right + 1;
+      })
+    };
+  });
+  expect(layout.width).toBeCloseTo(200, 0);
+  expect(layout.contained).toBe(true);
+  expect(layout.tops.length).toBeGreaterThan(1);
+  const narrowSummaryBox = await summary.boundingBox();
+  const narrowPaginationBox = await pagination.boundingBox();
+  if (!narrowSummaryBox || !narrowPaginationBox) throw new Error('footer layout missing');
+  expect(narrowPaginationBox.width).toBeCloseTo(paginationBox.width, 0);
+  expect(narrowPaginationBox.x - (narrowSummaryBox.x + narrowSummaryBox.width)).toBeCloseTo(32, 0);
+  await summary.scrollIntoViewIfNeeded();
+  await expect(summary).toBeInViewport();
+  const screenshotPath = test.info().outputPath('selection-summary.png');
+  await summary.locator('../..').screenshot({ path: screenshotPath });
+  await test.info().attach('选区汇总换行', { path: screenshotPath, contentType: 'image/png' });
+
+  // 更窄的实际页面容器允许两区分行，但不重叠或裁剪统计项。
+  await footer.evaluate((element) => element.style.removeProperty('width'));
+  await page.setViewportSize({ width: 1050, height: 1000 });
+  await expect(summary.getByRole('button', { name: '最大值：2' })).toBeVisible();
+  const compactSummaryBox = await summary.boundingBox();
+  const compactPaginationBox = await pagination.boundingBox();
+  if (!compactSummaryBox || !compactPaginationBox) throw new Error('compact footer missing');
+  expect(
+    compactSummaryBox.x + compactSummaryBox.width <= compactPaginationBox.x ||
+      compactSummaryBox.y + compactSummaryBox.height <= compactPaginationBox.y
+  ).toBe(true);
+  await card.locator('td[data-cell-range-focus="true"]').press('Escape');
+  await expect(summary).toHaveCount(0);
+  await expect(card.getByText('共 150 条数据', { exact: true })).toBeVisible();
+});

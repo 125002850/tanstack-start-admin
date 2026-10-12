@@ -1,5 +1,6 @@
 import type { Cell, Row } from '@tanstack/react-table';
 import { useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 
 import { EmptyBody } from '@/components/data-table/core/body/empty';
 import { StandardBody } from '@/components/data-table/core/body/standard';
@@ -7,10 +8,14 @@ import type {
   DataTableBodyCellServices,
   DataTableBodyProps
 } from '@/components/data-table/core/body/types';
-import { useRowInteraction } from '@/components/data-table/core/body/use-row-interaction';
+import {
+  shouldIgnoreRowExpandTarget,
+  useRowInteraction
+} from '@/components/data-table/core/body/use-row-interaction';
 import { VirtualBody } from '@/components/data-table/core/body/virtual';
 import { DataTableStatus } from '@/components/data-table/feedback/data-table-status';
 import { useDataTableCellSelection } from '@/components/data-table/selection/use-data-table-cell-selection';
+import { DataTableCellSelectionSummary } from '@/components/data-table/selection/data-table-cell-selection-summary';
 import { VirtualBodyBoundary } from '@/components/data-table/virtualization/boundary';
 import { useRowVirtualizer } from '@/components/data-table/virtualization/use-row-virtualizer';
 import { useDataTableTreeFocus } from '@/components/data-table/tree/use-data-table-tree-focus';
@@ -18,6 +23,7 @@ import { useDataTableTreeFocus } from '@/components/data-table/tree/use-data-tab
 function PopulatedBody<TData>({
   table,
   rows,
+  selectionSummaryContainer,
   enableZebraStriping,
   virtualization,
   columnVirtualWindow,
@@ -37,16 +43,26 @@ function PopulatedBody<TData>({
     const treeColumnId = table.options.meta?.dataTableTree?.columnId;
     if (treeColumnId) scrollToColumn?.(treeColumnId);
   }, [scrollToColumn, table]);
-  const rowInteraction = useRowInteraction({ onRowClick, expandedRowKey, getExpandRowKey });
-  const { getCellFillHandleProps, getCellSelectionProps, getCellServerError } =
-    useDataTableCellSelection<TData>({
-      rows,
-      columns: table.getVisibleLeafColumns(),
-      matrixPasteColumns: table.getCenterLeafColumns(),
-      scrollViewportRef,
-      shouldIgnoreTarget: rowInteraction.shouldIgnoreTarget,
-      editing: table.options.meta?.dataTableEditing
-    });
+  const {
+    consumeSelectionClick,
+    getCellFillHandleProps,
+    getCellSelectionProps,
+    getCellServerError,
+    selectionModel
+  } = useDataTableCellSelection<TData>({
+    rows,
+    columns: table.getVisibleLeafColumns(),
+    matrixPasteColumns: table.getCenterLeafColumns(),
+    scrollViewportRef,
+    shouldIgnoreTarget: shouldIgnoreRowExpandTarget,
+    editing: table.options.meta?.dataTableEditing
+  });
+  const rowInteraction = useRowInteraction({
+    onRowClick,
+    expandedRowKey,
+    getExpandRowKey,
+    shouldIgnoreClick: consumeSelectionClick
+  });
   const renderCellServerError = useCallback(
     (cell: Cell<TData, unknown>) => {
       const state = getCellServerError(cell);
@@ -121,7 +137,7 @@ function PopulatedBody<TData>({
     />
   );
 
-  return shouldVirtualize ? (
+  const body = shouldVirtualize ? (
     <VirtualBodyBoundary fallback={standardBody} onError={handleRuntimeError}>
       <VirtualBody
         rows={rows}
@@ -136,6 +152,18 @@ function PopulatedBody<TData>({
     </VirtualBodyBoundary>
   ) : (
     standardBody
+  );
+
+  return (
+    <>
+      {body}
+      {selectionSummaryContainer
+        ? createPortal(
+            <DataTableCellSelectionSummary model={selectionModel} />,
+            selectionSummaryContainer
+          )
+        : null}
+    </>
   );
 }
 

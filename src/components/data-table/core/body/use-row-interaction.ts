@@ -17,7 +17,10 @@ const ROW_EXPAND_IGNORE_SELECTOR = [
   '[role="checkbox"]'
 ].join(',');
 
-function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: HTMLElement) {
+export function shouldIgnoreRowExpandTarget(
+  target: EventTarget | null,
+  currentTarget: HTMLElement
+) {
   if (!(target instanceof HTMLElement) || !currentTarget.contains(target)) return true;
   return Boolean(target.closest(ROW_EXPAND_IGNORE_SELECTOR));
 }
@@ -25,19 +28,26 @@ function shouldIgnoreRowExpandTarget(target: EventTarget | null, currentTarget: 
 export function useRowInteraction<TData>({
   onRowClick,
   expandedRowKey,
-  getExpandRowKey
+  getExpandRowKey,
+  shouldIgnoreClick
 }: {
   onRowClick?: (rowKey: string) => void;
   expandedRowKey?: string | null;
   getExpandRowKey?: (row: TData) => string | null;
+  shouldIgnoreClick?: (event: React.MouseEvent<HTMLTableRowElement>) => boolean;
 }): DataTableBodyRowInteraction<TData> {
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLTableRowElement>, row: Row<TData>) => {
+      if (shouldIgnoreClick?.(event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (shouldIgnoreRowExpandTarget(event.target, event.currentTarget)) return;
       const rowKey = getExpandRowKey?.(row.original);
       if (rowKey) onRowClick?.(rowKey);
     },
-    [getExpandRowKey, onRowClick]
+    [getExpandRowKey, onRowClick, shouldIgnoreClick]
   );
 
   const handleKeyDown = useCallback(
