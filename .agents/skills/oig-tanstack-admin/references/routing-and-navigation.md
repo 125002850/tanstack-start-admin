@@ -121,6 +121,9 @@ export const Route = createFileRoute('/_app/system-management/dictionaries')({
 
 侧栏在权限过滤后将 `nav.group` 投影为业务中心，再展示可跳转功能项；旧 `kind/parentId` 容器仍参与权限过滤，展示时扁平化，不新增第三层菜单。
 
+- 桌面侧栏折叠后，悬停业务中心图标只显示名称 Tooltip，点击或键盘操作才打开子菜单；移出鼠标不自动关闭，复用 DropdownMenu 的关闭和焦点恢复行为。
+- 展开态与移动端使用内联折叠菜单，当前路由所在分组允许手动收起；文字和子菜单动画遵守 `prefers-reduced-motion`。
+
 
 ## 功能可用性开关
 

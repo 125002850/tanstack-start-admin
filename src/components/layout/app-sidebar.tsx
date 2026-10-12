@@ -21,6 +21,7 @@ import { Icons } from '../icons';
 import { SsoAvatarSkeleton, SsoTextSkeleton } from '@/components/ui/sso-skeleton';
 import { getLoginInfoQueryOptions } from '@/lib/api/sso/queries';
 import { logout } from '@/lib/api/sso/session';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Sidebar,
   SidebarContent,
@@ -37,6 +38,14 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 import { baseConfig } from '@/config';
+
+const SIDEBAR_MENU_BUTTON_MOTION_CLASS = 'transition-colors motion-reduce:transition-none';
+const SIDEBAR_LARGE_BUTTON_MOTION_CLASS =
+  'transition-[color,background-color,border-color,padding] motion-reduce:transition-none';
+const SIDEBAR_EXPANDED_LABEL_MOTION_CLASS =
+  'animate-in fade-in-0 fill-mode-backwards delay-150 duration-75 motion-reduce:animate-none';
+const SIDEBAR_SUBMENU_MOTION_CLASS =
+  'motion-safe:data-[state=closed]:animate-collapsible-up motion-safe:data-[state=open]:animate-collapsible-down data-[state=closed]:animation-duration-150 data-[state=open]:animation-duration-200 overflow-hidden motion-reduce:animate-none';
 
 function normalizePath(path: string): string {
   if (path === '/') return path;
@@ -58,73 +67,9 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
     item.items?.some((subItem) => isRouteActive(pathname, subItem.url)) ?? false;
   const isActive = (item.linkable !== false && isRouteActive(pathname, item.url)) || hasActiveChild;
   const isCollapsedDesktop = state === 'collapsed' && !isMobile;
+  const expandedLabelMotionClass =
+    state === 'expanded' && !isMobile ? SIDEBAR_EXPANDED_LABEL_MOTION_CLASS : undefined;
   const [open, setOpen] = React.useState(() => hasActiveChild);
-  const [flyoutOpen, setFlyoutOpen] = React.useState(false);
-  const menuItemRef = React.useRef<HTMLLIElement | null>(null);
-  const flyoutContentRef = React.useRef<HTMLDivElement | null>(null);
-  const lastInteractionRef = React.useRef<'pointer' | 'keyboard' | null>(null);
-  const openTimerRef = React.useRef<number | null>(null);
-  const closeTimerRef = React.useRef<number | null>(null);
-
-  const clearOpenTimer = React.useCallback(() => {
-    if (openTimerRef.current) {
-      window.clearTimeout(openTimerRef.current);
-      openTimerRef.current = null;
-    }
-  }, []);
-
-  const clearCloseTimer = React.useCallback(() => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, []);
-
-  const blurTriggerIfFocused = React.useCallback(() => {
-    const trigger = menuItemRef.current?.querySelector<HTMLElement>('[data-sidebar="menu-button"]');
-    if (trigger && document.activeElement === trigger) {
-      trigger.blur();
-    }
-  }, []);
-
-  const releaseFlyoutFocus = React.useCallback(() => {
-    const activeElement = document.activeElement;
-    const content = flyoutContentRef.current;
-
-    if (content && activeElement instanceof HTMLElement && content.contains(activeElement)) {
-      activeElement.blur();
-    }
-
-    blurTriggerIfFocused();
-  }, [blurTriggerIfFocused]);
-
-  const scheduleFlyoutOpen = React.useCallback(() => {
-    lastInteractionRef.current = 'pointer';
-    clearCloseTimer();
-    clearOpenTimer();
-    openTimerRef.current = window.setTimeout(() => {
-      setFlyoutOpen(true);
-    }, 140);
-  }, [clearCloseTimer, clearOpenTimer]);
-
-  const scheduleFlyoutClose = React.useCallback(() => {
-    clearOpenTimer();
-    clearCloseTimer();
-    closeTimerRef.current = window.setTimeout(() => {
-      setFlyoutOpen(false);
-    }, 220);
-  }, [clearCloseTimer, clearOpenTimer]);
-
-  const handleFlyoutOpenChange = React.useCallback((nextOpen: boolean) => {
-    setFlyoutOpen(nextOpen);
-  }, []);
-
-  React.useEffect(() => {
-    return () => {
-      clearOpenTimer();
-      clearCloseTimer();
-    };
-  }, [clearCloseTimer, clearOpenTimer]);
 
   React.useEffect(() => {
     if (hasActiveChild) {
@@ -132,34 +77,39 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
     }
   }, [hasActiveChild]);
 
-  React.useEffect(() => {
-    if (!flyoutOpen || lastInteractionRef.current !== 'pointer') {
-      return;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      releaseFlyoutFocus();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [flyoutOpen, releaseFlyoutFocus]);
-
   if (!hasChildren) {
     const isLinkable = item.linkable !== false;
     return (
       <SidebarMenuItem>
-        <SidebarMenuButton asChild={isLinkable} tooltip={item.title} isActive={isActive}>
+        <SidebarMenuButton
+          asChild={isLinkable}
+          tooltip={item.title}
+          isActive={isActive}
+          className={SIDEBAR_MENU_BUTTON_MOTION_CLASS}
+        >
           {isLinkable ? (
-            <Link to={item.url}>
-              {item.icon && <Icon />}
-              <span>{item.title}</span>
+            <Link to={item.url} className='flex min-w-0 w-full items-center'>
+              {item.icon && <Icon className='size-4' />}
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate group-data-[state=collapsed]:opacity-0',
+                  expandedLabelMotionClass
+                )}
+              >
+                {item.title}
+              </span>
             </Link>
           ) : (
-            <span className='flex items-center gap-2'>
-              {item.icon && <Icon />}
-              <span>{item.title}</span>
+            <span className='flex min-w-0 w-full items-center gap-2'>
+              {item.icon && <Icon className='size-4' />}
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate group-data-[state=collapsed]:opacity-0',
+                  expandedLabelMotionClass
+                )}
+              >
+                {item.title}
+              </span>
             </span>
           )}
         </SidebarMenuButton>
@@ -169,59 +119,47 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
 
   if (isCollapsedDesktop) {
     return (
-      <li
-        ref={menuItemRef}
-        data-slot='sidebar-menu-item'
-        data-sidebar='menu-item'
-        className='group/menu-item relative'
-        onMouseEnter={scheduleFlyoutOpen}
-        onMouseLeave={scheduleFlyoutClose}
-      >
-        <DropdownMenu modal={false} open={flyoutOpen} onOpenChange={handleFlyoutOpenChange}>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              aria-label={item.title}
-              isActive={isActive}
-              className='group-data-[collapsible=icon]:justify-center'
-              onPointerDown={() => {
-                lastInteractionRef.current = 'pointer';
-              }}
-              onKeyDown={() => {
-                lastInteractionRef.current = 'keyboard';
-              }}
-            >
-              {item.icon && <Icon />}
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
+      <SidebarMenuItem>
+        <DropdownMenu modal={false}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  aria-label={item.title}
+                  isActive={isActive}
+                  className={cn(
+                    SIDEBAR_MENU_BUTTON_MOTION_CLASS,
+                    'group-data-[collapsible=icon]:justify-center'
+                  )}
+                >
+                  {item.icon && <Icon className='size-4' />}
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side='right' align='center'>
+              {item.title}
+            </TooltipContent>
+          </Tooltip>
           <DropdownMenuContent
-            ref={flyoutContentRef}
             side='right'
             align='start'
             sideOffset={6}
             className='w-64 rounded-xl p-2'
-            onCloseAutoFocus={(event) => {
-              if (lastInteractionRef.current === 'pointer') {
-                event.preventDefault();
-                blurTriggerIfFocused();
-              }
-            }}
-            onMouseEnter={clearCloseTimer}
-            onMouseLeave={scheduleFlyoutClose}
           >
-            <DropdownMenuLabel className='text-muted-foreground px-2 py-1 text-xs font-semibold tracking-[0.12em] uppercase'>
-              {item.title}
-            </DropdownMenuLabel>
-            {item.linkable !== false && (
-              <>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className='text-muted-foreground px-2 py-1 text-xs font-semibold tracking-[0.12em] uppercase'>
+                {item.title}
+              </DropdownMenuLabel>
+              {item.linkable !== false && (
                 <DropdownMenuItem asChild className='rounded-md px-2 py-2'>
                   <Link to={item.url} className='flex items-center gap-2'>
                     <Icons.arrowRight className='size-4' />
                     <span>{item.title}</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
+              )}
+            </DropdownMenuGroup>
+            {item.linkable !== false && <DropdownMenuSeparator />}
             <DropdownMenuGroup>
               {item.items?.map((subItem) => {
                 const isSubItemActive = isRouteActive(pathname, subItem.url);
@@ -239,14 +177,16 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
                     {isSubLinkable ? (
                       <Link to={subItem.url} className='flex items-center gap-3'>
                         <span className='flex-1 truncate'>{subItem.title}</span>
-                        {isSubItemActive && <Icons.check className='size-4 text-primary' />}
+                        {isSubItemActive && (
+                          <Icons.check className='size-4 text-accent-foreground' />
+                        )}
                       </Link>
                     ) : (
                       <span className='flex items-center gap-3'>
                         <Icons.circle
                           className={cn(
                             'size-2 fill-current stroke-none',
-                            isSubItemActive ? 'text-primary' : 'text-muted-foreground/50'
+                            isSubItemActive ? 'text-accent-foreground' : 'text-muted-foreground/50'
                           )}
                         />
                         <span className='flex-1 truncate'>{subItem.title}</span>
@@ -258,7 +198,7 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-      </li>
+      </SidebarMenuItem>
     );
   }
 
@@ -266,13 +206,26 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
     <Collapsible asChild open={open} onOpenChange={setOpen} className='group/collapsible'>
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={item.title} isActive={isActive}>
-            {item.icon && <Icon />}
-            <span>{item.title}</span>
-            <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
+          <SidebarMenuButton
+            tooltip={item.title}
+            isActive={isActive}
+            className={SIDEBAR_MENU_BUTTON_MOTION_CLASS}
+          >
+            {item.icon && <Icon className='size-4' />}
+            <span className={cn('min-w-0 flex-1 truncate', expandedLabelMotionClass)}>
+              {item.title}
+            </span>
+            <span
+              className={cn(
+                'flex size-4 shrink-0 items-center justify-center',
+                expandedLabelMotionClass
+              )}
+            >
+              <Icons.chevronRight className='size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 motion-reduce:transition-none' />
+            </span>
           </SidebarMenuButton>
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent className={SIDEBAR_SUBMENU_MOTION_CLASS}>
           <SidebarMenuSub>
             {item.items?.map((subItem) => {
               const isSubLinkable = subItem.linkable !== false;
@@ -284,10 +237,10 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
                   >
                     {isSubLinkable ? (
                       <Link to={subItem.url}>
-                        <span>{subItem.title}</span>
+                        <span className='min-w-0 truncate'>{subItem.title}</span>
                       </Link>
                     ) : (
-                      <span>{subItem.title}</span>
+                      <span className='min-w-0 truncate'>{subItem.title}</span>
                     )}
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
@@ -303,6 +256,9 @@ function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string })
 export default function AppSidebar() {
   const { pathname } = useLocation();
   const router = useRouter();
+  const { isMobile, state } = useSidebar();
+  const expandedLabelMotionClass =
+    state === 'expanded' && !isMobile ? SIDEBAR_EXPANDED_LABEL_MOTION_CLASS : undefined;
   const navGroups = React.useMemo(
     () => buildNavGroupsFromRoutes(router.routesById),
     [router.routesById]
@@ -319,12 +275,17 @@ export default function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size='lg' asChild>
+            <SidebarMenuButton size='lg' asChild className={SIDEBAR_LARGE_BUTTON_MOTION_CLASS}>
               <Link to='/overview'>
                 <div className='bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-md'>
                   <Icons.logo className='size-4' />
                 </div>
-                <div className='grid flex-1 text-left text-sm leading-tight'>
+                <div
+                  className={cn(
+                    'grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[state=collapsed]:opacity-0',
+                    expandedLabelMotionClass
+                  )}
+                >
                   <span className='truncate font-semibold'>{baseConfig.projectName}</span>
                   <span className='text-muted-foreground truncate text-xs'>工作台</span>
                 </div>
@@ -348,13 +309,22 @@ export default function AppSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
+                  aria-label='用户菜单'
                   size='lg'
-                  className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+                  className={cn(
+                    SIDEBAR_LARGE_BUTTON_MOTION_CLASS,
+                    'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+                  )}
                 >
                   {isLoading ? (
                     <>
                       <SsoAvatarSkeleton size={32} />
-                      <div className='grid flex-1 gap-1'>
+                      <div
+                        className={cn(
+                          'grid min-w-0 flex-1 gap-1 group-data-[state=collapsed]:opacity-0',
+                          expandedLabelMotionClass
+                        )}
+                      >
                         <SsoTextSkeleton width='60%' className='h-3' />
                         <SsoTextSkeleton width='80%' className='h-2.5' />
                       </div>
@@ -364,7 +334,12 @@ export default function AppSidebar() {
                       <div className='bg-muted flex aspect-square size-8 shrink-0 items-center justify-center rounded-full'>
                         <Icons.account className='size-4' />
                       </div>
-                      <div className='grid flex-1 text-left text-sm leading-tight'>
+                      <div
+                        className={cn(
+                          'grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[state=collapsed]:opacity-0',
+                          expandedLabelMotionClass
+                        )}
+                      >
                         <span className='truncate font-medium'>
                           {loginUser?.realName || loginUser?.userName || '用户'}
                         </span>
@@ -374,7 +349,12 @@ export default function AppSidebar() {
                       </div>
                     </>
                   )}
-                  <Icons.chevronsDown className='ml-auto size-4' />
+                  <Icons.chevronsDown
+                    className={cn(
+                      'ml-auto size-4 shrink-0 group-data-[state=collapsed]:opacity-0',
+                      expandedLabelMotionClass
+                    )}
+                  />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -390,10 +370,12 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                  <Icons.logout className='mr-2 h-4 w-4' />
-                  退出登录
-                </DropdownMenuItem>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <Icons.logout className='size-4' />
+                    退出登录
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

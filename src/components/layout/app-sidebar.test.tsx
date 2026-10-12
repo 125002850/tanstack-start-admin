@@ -30,6 +30,7 @@ vi.mock('@/hooks/use-nav', () => ({
 }));
 
 vi.mock('@/components/ui/sidebar', () => ({
+  useSidebar: () => ({ state: 'expanded', isMobile: false }),
   Sidebar: ({ children }: { children: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': 'sidebar' }, children),
   SidebarProvider: ({ children }: { children: React.ReactNode }) =>
