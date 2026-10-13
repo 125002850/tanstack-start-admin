@@ -34,13 +34,12 @@ export function ThemeModeToggle() {
         return;
       }
 
+      // 点击坐标、视口尺寸与伪元素动画均使用 CSS 像素，无需按 DPR 缩放。
       const { x, y } = getTransitionOrigin(event);
-      const snapshotScale = window.devicePixelRatio || 1;
-      const animationX = x * snapshotScale;
-      const animationY = y * snapshotScale;
-      const radius =
-        Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y)) *
-        snapshotScale;
+      const radius = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      );
       root.setAttribute('data-theme-mode-transition', 'true');
 
       try {
@@ -52,15 +51,9 @@ export function ThemeModeToggle() {
           .then(() => {
             root.animate(
               {
-                clipPath: [
-                  `circle(0px at ${animationX}px ${animationY}px)`,
-                  `circle(${radius}px at ${animationX}px ${animationY}px)`
-                ],
+                clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`],
                 opacity: [0.7, 1],
-                transformOrigin: [
-                  `${animationX}px ${animationY}px`,
-                  `${animationX}px ${animationY}px`
-                ]
+                transformOrigin: [`${x}px ${y}px`, `${x}px ${y}px`]
               },
               {
                 duration: 400,
