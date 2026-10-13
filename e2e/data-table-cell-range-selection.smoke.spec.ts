@@ -923,3 +923,36 @@ test('@workspace-v2 shows mixed range summaries on the left and copies a summary
   await expect(summary).toHaveCount(0);
   await expect(card.getByText('共 150 条数据', { exact: true })).toBeVisible();
 });
+
+test('@workspace-v2 preserves decimal precision from selected values through clipboard output', async ({
+  page
+}) => {
+  await page.route('**/api/system/dict/global/items/by-type', (route) =>
+    route.fulfill({
+      json: apiEnvelope({
+        total: 2,
+        list: ['9007199254740993.001', '0.002'].map((value, i) => ({
+          id: i + 1,
+          dictTypeCode: 'cell_range',
+          dictItemCode: `code-00${i + 1}`,
+          dictItemName: value,
+          status: 'enable',
+          sortOrder: i + 1
+        }))
+      })
+    })
+  );
+  const card = await gotoDictionaryTable(page);
+  const cells = card.locator('td[data-cell-column-id="dictItemName"]');
+  await dragBetweenCells(page, cells.nth(0), cells.nth(1));
+  const summary = card.getByRole('group', { name: '选区汇总' });
+  await summary.getByRole('button', { name: '合计：9.007199254740993003E15' }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('9007199254740993.003');
+  await summary.getByRole('button', { name: '平均：4.503599627370496502E15' }).click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('4503599627370496.502');
+  await expect(card.locator('td[data-cell-selected="true"]')).toHaveCount(2);
+});

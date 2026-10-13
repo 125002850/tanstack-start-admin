@@ -76,6 +76,32 @@ describe('DataTable cell selection', () => {
     expect(clipboardData.setData).toHaveBeenCalledWith('text/plain', '999\n999');
   });
 
+  it('平均值展示和复制最多三位小数，复制时去除千分位且保留选区', async () => {
+    const user = userEvent.setup();
+    const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
+    const { container } = render(<SummaryHarness values={[1000, 1000, 1001]} />);
+    dragCellRange(getBodyCell(container, 0, '显示 1000'), getBodyCell(container, 2, '显示 1001'));
+    await user.click(screen.getByRole('button', { name: '平均：1,000.333' }));
+    expect(clipboardWrite).toHaveBeenCalledWith('1000.333');
+    expect(screen.getByRole('button', { name: '合计：3,001' })).toBeInTheDocument();
+    expect(container.querySelectorAll('td[data-cell-selected="true"]')).toHaveLength(3);
+  });
+
+  it('高精度字符串的合计和平均值展示、复制均不经过 number', async () => {
+    const user = userEvent.setup();
+    const clipboardWrite = vi.spyOn(navigator.clipboard, 'writeText');
+    const { container } = render(<SummaryHarness values={['9007199254740993.001', '0.002']} />);
+    dragCellRange(
+      getBodyCell(container, 0, '显示 9007199254740993.001'),
+      getBodyCell(container, 1, '显示 0.002')
+    );
+    await user.click(screen.getByRole('button', { name: '合计：9.007199254740993003E15' }));
+    expect(clipboardWrite).toHaveBeenLastCalledWith('9007199254740993.003');
+    await user.click(screen.getByRole('button', { name: '平均：4.503599627370496502E15' }));
+    expect(clipboardWrite).toHaveBeenLastCalledWith('4503599627370496.502');
+    expect(container.querySelectorAll('td[data-cell-selected="true"]')).toHaveLength(2);
+  });
+
   it('键盘扩展到未渲染的虚拟行时仍汇总完整选区', () => {
     const { container } = render(<Harness rows={makeRows(8)} virtualization={{ mode: 'on' }} />);
     const firstCell = getBodyCell(container, 0, '1');
