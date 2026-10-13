@@ -24,11 +24,16 @@ it('shows one mandatory dialog and requires confirmation, even when expiry preda
   expect(screen.queryByRole('button', { name: '取消' })).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: '确认' }));
   expect(confirm).toHaveBeenCalledTimes(1);
-  expect(screen.getByRole('button', { name: '确认' })).toBeDisabled();
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });
 it('does not show during first entry and reacts to expiry after mounting', () => {
   render(<SessionExpiredDialog />);
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   act(() => sessionExpiryStore.setState({ expired: true }));
   expect(screen.getByRole('alertdialog')).toBeVisible();
+});
+it('does not flash an expiry dialog while an intentional logout is redirecting', () => {
+  render(<SessionExpiredDialog />);
+  act(() => sessionExpiryStore.setState({ expired: true, redirecting: true }));
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
 });

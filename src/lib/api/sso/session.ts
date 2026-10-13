@@ -61,8 +61,8 @@ export function subscribeToSsoSessionInvalidation() {
   return () => window.removeEventListener('storage', onStorage);
 }
 
-function invalidateAllSessions(logoutUrl: string | null) {
-  sessionExpiryStore.setState({ expired: true, logoutUrl });
+function invalidateAllSessions(logoutUrl: string | null, redirecting = false) {
+  sessionExpiryStore.setState({ expired: true, logoutUrl, redirecting });
   clearAllAuth();
   removeUrlToken();
   try {
@@ -269,14 +269,15 @@ export function handleUnauthorized(redirectUrl?: string | null) {
 export function confirmSessionExpired() {
   const state = sessionExpiryStore.getState();
   if (!state.expired || state.redirecting) return;
-  sessionExpiryStore.setState({ redirecting: true });
   logout(state.logoutUrl);
 }
 
 export function logout(redirectUrl?: string | null) {
   const state = sessionExpiryStore.getState();
   const url = redirectUrl || state.logoutUrl || getLogoutUrl();
-  if (!state.expired) invalidateAllSessions(url);
+  // 主动退出同时进入失效与跳转状态，避免跳转前短暂弹出失效确认框。
+  if (!state.expired) invalidateAllSessions(url, true);
+  else sessionExpiryStore.setState({ redirecting: true });
   if (url) {
     window.location.href = url;
     return;

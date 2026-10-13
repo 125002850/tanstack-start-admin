@@ -14,7 +14,7 @@ import { confirmSessionExpired } from '@/lib/api/sso/session';
 export function SessionExpiredDialog() {
   const { expired, redirecting } = useStore(sessionExpiryStore);
   return (
-    <AlertDialog open={expired}>
+    <AlertDialog open={expired && !redirecting}>
       <AlertDialogContent onEscapeKeyDown={(event) => event.preventDefault()}>
         <AlertDialogHeader>
           <AlertDialogTitle>登录状态已失效</AlertDialogTitle>

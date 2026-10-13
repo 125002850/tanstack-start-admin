@@ -42,7 +42,13 @@ describe('同源 SSO 会话统一失效', () => {
       seedSessions();
       // 测试关注清理与失效状态；导航由既有 session 测试覆盖。
       if (action === 'logout') localStorage.removeItem('sso:test-service:logout_url');
+      const showExpiryDialog = vi.fn();
+      const stopObserving = sessionExpiryStore.subscribe((state) => {
+        if (state.expired && !state.redirecting) showExpiryDialog();
+      });
       session[action]();
+      stopObserving();
+      expect(showExpiryDialog).toHaveBeenCalledTimes(action === 'logout' ? 0 : 1);
       for (const code of ['test-service', 'other-app', 'encoded%3Aapp']) {
         for (const field of ['token', 'user_id', 'user_code', 'logout_url']) {
           expect(localStorage.getItem(`sso:${code}:${field}`)).toBeNull();
@@ -53,6 +59,7 @@ describe('同源 SSO 会话统一失效', () => {
       expect(localStorage.getItem('sso_token')).toBe('legacy');
       expect(sessionStorage.getItem('sso:other-app:login_return_search')).toBe('tab=orders');
       expect(sessionExpiryStore.getState().expired).toBe(true);
+      expect(sessionExpiryStore.getState().redirecting).toBe(action === 'logout');
       expect(window.location.search).toBe('?tab=orders');
       expect(window.location.hash).toBe('#details');
       session.setAuthHeader('late-response');
