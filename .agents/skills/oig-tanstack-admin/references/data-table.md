@@ -145,7 +145,10 @@
 - 48px 是普通表体的标准基线，复杂内容在非虚拟模式下允许自然撑高以避免裁剪。双行审计列可以容纳在 48px 内，不得仅因双行展示覆盖高度。
 - 虚拟表格的单元格内容确实需要超过 48px 时，调用方必须显式传入匹配内容布局的 `virtualization.estimateRowHeight`（例如 56），禁止依赖普通表格的自然撑高语义。
 - 页面层一般不要手写虚拟化 gate。
-- `DataTable` 默认按内部阈值尝试虚拟化；仅在必要时通过 `virtualization={false}` 关闭，或传入配置对象覆盖。
+- `DataTable` 的行、列虚拟化默认均为 `auto`：行默认达到 100 行启用，列默认达到 20 个可见非固定列启用；隐藏列和固定列不计入列阈值，固定列始终渲染。按具体页面测量结果通过 `virtualization` 覆盖阈值或 `columnVirtualizationMode: 'on' | 'off'`，不要把业务页面专属阈值改成全局规则。
+- `virtualization={false}`、`mode: 'off'` 或旧 API `enabled: false` 继续关闭行列虚拟化；分组表头、colSpan、行内明细等结构性回退保持有效。
+- 表体单元格分两层复用：内容以 `cell` 和 `table.options` 快照失效，外框以稳定 services 和标量布局/尺寸复用。TanStack 的 table、row、cell 对象会复用，不得仅比较这些引用就忽略状态、数据、meta 或列渲染器变化；滚动窗口对象和临时 style 对象不得作为 memo 外框的 props。
+- 行选中背景与固定列底色即时更新，不添加 `transition-colors`；单元格选区 outline/box-shadow 过渡保留。行操作只复用按钮/Tooltip 展示，动态 getLabel/hidden/disabled/reason 每次在父层解析，行数据或回调变化必须更新点击行为。
 - 虚拟化公共解析入口统一收敛在 `useDataTableVirtualization`，表体内部的行 virtualizer、测量和运行时回退可拆为 `virtualization/` 下的私有 hook；页面层只通过 `virtualization` 配置调整阈值、overscan 或显式关闭。
 - 浏览器级虚拟化回归必须覆盖 `e2e/data-table-regression.smoke.spec.ts --grep @workspace-v2`，验证首屏非空、横向/纵向滚动、固定列可见和 header/body 基础对齐。
 - 分页响应、总数字段映射等差异必须收敛在 `mapQueryData`。

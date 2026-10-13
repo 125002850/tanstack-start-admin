@@ -31,6 +31,42 @@ function resolveRowActionValue<TData, TValue>(
   return typeof value === 'function' ? (value as (row: TData) => TValue)(row) : value;
 }
 
+function RowActionButton<TData>({
+  action,
+  label,
+  disabled,
+  reason,
+  onAction
+}: {
+  action: DataTableRowAction<TData>;
+  label: string;
+  disabled: boolean;
+  reason: string | null | undefined;
+  onAction: (action: DataTableRowAction<TData>) => Promise<void>;
+}) {
+  return (
+    <DataTableActionTooltip label={label} disabled={disabled} reason={reason}>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-8 w-8'
+        disabled={disabled}
+        onClick={(event) => {
+          event.stopPropagation();
+          void onAction(action);
+        }}
+        aria-label={label}
+        data-row-expand-ignore
+      >
+        {action.icon}
+      </Button>
+    </DataTableActionTooltip>
+  );
+}
+
+// 只缓存按钮展示，动态显隐/禁用仍在父组件解析；行数据和回调变化会更新 onAction。
+const MemoizedRowActionButton = React.memo(RowActionButton) as typeof RowActionButton;
+
 export function DataTableRowActions<TData>({
   row,
   actions,
@@ -133,10 +169,9 @@ export function DataTableRowActions<TData>({
     [row, withConfirm, runAction]
   );
 
-  const resolvedActions = React.useMemo(
-    // hidden 支持按行动态判断，因此必须在每次 row/actions 变化时重新过滤。
-    () => actions.filter((action) => !resolveRowActionValue(action.hidden ?? false, row)),
-    [actions, row]
+  // 闭包中的权限/状态也会变化，每次解析显隐；仅缓存最终按钮展示。
+  const resolvedActions = actions.filter(
+    (action) => !resolveRowActionValue(action.hidden ?? false, row)
   );
   const visibleActions = resolvedActions.slice(0, maxVisible);
   const moreActions = resolvedActions.slice(maxVisible);
@@ -149,39 +184,26 @@ export function DataTableRowActions<TData>({
       )}
 
       <div className='flex items-center gap-0.5' data-row-expand-ignore>
-        {visibleActions.map((action) => (
-          <DataTableActionTooltip
-            key={action.id ?? action.label}
-            label={action.getLabel?.(row) ?? action.label}
-            disabled={
-              pendingKeys.has(action.id ?? action.label) ||
-              resolveRowActionValue(action.disabled ?? false, row)
-            }
-            reason={
-              pendingKeys.has(action.id ?? action.label)
-                ? '正在处理，请稍候。'
-                : resolveRowActionValue(action.disabledReason ?? '', row)
-            }
-          >
-            <Button
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8'
-              disabled={
-                pendingKeys.has(action.id ?? action.label) ||
-                resolveRowActionValue(action.disabled ?? false, row)
+        {visibleActions.map((action) => {
+          const pending = pendingKeys.has(action.id ?? action.label);
+          const disabled = pending || resolveRowActionValue(action.disabled ?? false, row);
+          return (
+            <MemoizedRowActionButton
+              key={action.id ?? action.label}
+              action={action}
+              label={action.getLabel?.(row) ?? action.label}
+              disabled={disabled}
+              reason={
+                pending
+                  ? '正在处理，请稍候。'
+                  : disabled
+                    ? resolveRowActionValue(action.disabledReason ?? '', row)
+                    : undefined
               }
-              onClick={(event) => {
-                event.stopPropagation();
-                void handleClick(action);
-              }}
-              aria-label={action.getLabel?.(row) ?? action.label}
-              data-row-expand-ignore
-            >
-              {action.icon}
-            </Button>
-          </DataTableActionTooltip>
-        ))}
+              onAction={handleClick}
+            />
+          );
+        })}
         {moreActions.length > 0 && (
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>

@@ -2,15 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { resolveDataTableVirtualizationOptions } from '@/config/data-table';
 
 describe('DataTable virtualization option resolution', () => {
-  it('keeps column virtualization disabled by default while preserving row auto mode', () => {
-    const resolved = resolveDataTableVirtualizationOptions();
+  it.each([undefined, true, {}, { enabled: true }])(
+    'defaults column virtualization to auto for %j while preserving row auto mode',
+    (virtualization) => {
+      const resolved = resolveDataTableVirtualizationOptions(virtualization);
 
-    expect(resolved.value?.enabled).toBe(true);
-    expect(resolved.value?.rowCountThreshold).toBeUndefined();
-    expect(resolved.value?.column.enabled).toBe(false);
-    expect(resolved.value?.column.columnCountThreshold).toBe(20);
-    expect(resolved.value?.column.overscan).toBe(3);
-  });
+      expect(resolved.value?.enabled).toBe(true);
+      expect(resolved.value?.rowCountThreshold).toBeUndefined();
+      expect(resolved.value?.column.enabled).toBe(true);
+      expect(resolved.value?.column.columnCountThreshold).toBe(20);
+      expect(resolved.value?.column.overscan).toBe(3);
+    }
+  );
 
   it('forces column virtualization candidate mode independently of row threshold', () => {
     const resolved = resolveDataTableVirtualizationOptions({
@@ -52,10 +55,13 @@ describe('DataTable virtualization option resolution', () => {
     expect(resolved.value?.column.enabled).toBe(false);
   });
 
-  it('keeps virtualization=false as a full row and column opt-out', () => {
-    const resolved = resolveDataTableVirtualizationOptions(false);
+  it.each([false, { enabled: false }, { mode: 'off' as const }])(
+    'keeps %j as a full row and column opt-out',
+    (virtualization) => {
+      const resolved = resolveDataTableVirtualizationOptions(virtualization);
 
-    expect(resolved.value?.enabled).toBe(false);
-    expect(resolved.value?.column.enabled).toBe(false);
-  });
+      expect(resolved.value?.enabled).toBe(false);
+      expect(resolved.value?.column.enabled).toBe(false);
+    }
+  );
 });

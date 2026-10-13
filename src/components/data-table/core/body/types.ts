@@ -30,6 +30,8 @@ export interface DataTableBodyProps<TData> {
 }
 
 export type DataTableBodyCellServices<TData> = {
+  // TanStack 的 table/cell 引用会复用，options 快照用于使数据和状态变化穿透 memo。
+  tableOptions: TanstackTable<TData>['options'];
   treeEnabled?: boolean;
   columnDragMotionById: DataTableColumnDragMotionMap;
   isColumnDragging: boolean;

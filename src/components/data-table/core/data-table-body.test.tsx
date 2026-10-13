@@ -82,6 +82,7 @@ describe('DataTable body', () => {
     const firstCell = container.querySelector('tbody td[data-cell-id]');
 
     expect(firstRow?.style.height).toBe('48px');
+    expect(firstRow).toHaveClass('transition-none');
     expect(firstCell?.getAttribute('class')).toContain('px-[15px]');
     expect(firstCell?.getAttribute('class')).toContain('py-0');
     expect(firstCell?.getAttribute('class')).toContain('outline');
@@ -647,6 +648,26 @@ describe('DataTable body', () => {
     );
     expect(virtualRows.length).toBeGreaterThan(0);
   });
+
+  it.each([19, 20])(
+    'default column virtualization counts %i center columns without pinned columns',
+    (centerColumnCount) => {
+      const { container } = render(<WideHarness centerColumnCount={centerColumnCount} />);
+      const enabled = centerColumnCount >= 20;
+
+      expect(virtualizerMocks.calls.find((call) => call.horizontal)).toMatchObject({
+        count: centerColumnCount,
+        enabled
+      });
+      expect(container.querySelector('tbody')?.dataset.columnVirtualEnabled === 'true').toBe(
+        enabled
+      );
+      expect(screen.getByText('L1')).toBeInTheDocument();
+      expect(screen.getByText('R1')).toBeInTheDocument();
+      expect(screen.queryByText(`R1C${centerColumnCount - 1}`) !== null).toBe(!enabled);
+      expect(container.querySelectorAll('tbody tr').length).toBe(20);
+    }
+  );
 
   it('column virtualization creates a horizontal virtualizer for center columns only', () => {
     render(<WideHarness centerColumnCount={40} />);

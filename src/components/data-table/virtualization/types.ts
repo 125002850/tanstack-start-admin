@@ -13,6 +13,7 @@ export interface DataTableVirtualizationOptions {
   mode?: DataTableVirtualizationMode;
   /** @deprecated 使用 mode。 */
   enabled?: boolean;
+  /** 默认 auto：可见非固定列达到 columnCountThreshold 时启用；固定列始终渲染。 */
   columnVirtualizationMode?: DataTableVirtualizationMode;
   estimateRowHeight?: number;
   overscan?: number;

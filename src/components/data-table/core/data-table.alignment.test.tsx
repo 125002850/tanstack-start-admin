@@ -429,7 +429,7 @@ describe('DataTable column alignment', () => {
       'tbody td [data-slot="data-table-pinned-cell-base"]'
     );
     expect(firstPinnedCellBase).not.toBeNull();
-    expect(firstPinnedCellBase?.getAttribute('class')).toContain('transition-colors');
+    expect(firstPinnedCellBase?.getAttribute('class')).not.toContain('transition-colors');
     expect(
       container.querySelector('tbody td [data-slot="data-table-pinned-cell-overlay"]')
     ).toBeNull();

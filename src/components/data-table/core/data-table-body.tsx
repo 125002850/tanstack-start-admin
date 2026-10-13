@@ -90,8 +90,10 @@ function PopulatedBody<TData>({
     },
     [getCellFillHandleProps]
   );
+  const tableOptions = table.options;
   const cellServices = useMemo<DataTableBodyCellServices<TData>>(
     () => ({
+      tableOptions,
       treeEnabled,
       columnDragMotionById,
       isColumnDragging,
@@ -100,6 +102,7 @@ function PopulatedBody<TData>({
       renderCellFillHandle
     }),
     [
+      tableOptions,
       treeEnabled,
       columnDragMotionById,
       getCellSelectionProps,
