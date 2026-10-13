@@ -734,7 +734,7 @@ export function SpecialColumnsSelectionHarness({ rows }: { rows: TestRow[] }) {
 export function WideHarness({
   rows = makeWideRows(20),
   centerColumnCount = 40,
-  virtualization = { columnVirtualizationMode: 'on' as const }
+  virtualization
 }: {
   rows?: WideRow[];
   centerColumnCount?: number;

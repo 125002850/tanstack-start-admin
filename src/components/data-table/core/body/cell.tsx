@@ -1,5 +1,5 @@
 import { flexRender, type Cell, type Row } from '@tanstack/react-table';
-import type { CSSProperties, ReactNode } from 'react';
+import { memo, type CSSProperties, type ReactNode } from 'react';
 
 import { DataTableRowActions } from '@/components/data-table/actions/data-table-row-action';
 import { DataTableCellContent } from '@/components/data-table/cells/data-table-cell-content';
@@ -40,14 +40,26 @@ function getBodyCellPinningStyles<TData>(cell: Cell<TData, unknown>): CSSPropert
   return styles;
 }
 
-function renderCellValue<TData>(cell: Cell<TData, unknown>) {
+function CellValue<TData>({
+  cell
+}: {
+  cell: Cell<TData, unknown>;
+  tableOptions: DataTableBodyCellServices<TData>['tableOptions'];
+}) {
   const rowActions = cell.getContext().table.options.meta?.dataTableRowActions;
-  return cell.column.id === 'actions' && rowActions?.length ? (
-    <DataTableRowActions row={cell.row.original} actions={rowActions} />
-  ) : (
-    flexRender(cell.column.columnDef.cell, cell.getContext())
+  return (
+    <DataTableCellContent cell={cell}>
+      {cell.column.id === 'actions' && rowActions?.length ? (
+        <DataTableRowActions row={cell.row.original} actions={rowActions} />
+      ) : (
+        flexRender(cell.column.columnDef.cell, cell.getContext())
+      )}
+    </DataTableCellContent>
   );
 }
+
+// options 只作为失效信号；选区/拖拽改变外框时，可继续复用未变化的单元格内容。
+const MemoizedCellValue = memo(CellValue) as typeof CellValue;
 
 function PinnedCellSurface<TData>({
   cell,
@@ -68,7 +80,7 @@ function PinnedCellSurface<TData>({
         aria-hidden='true'
         data-slot='data-table-pinned-cell-base'
         data-pinning-shadow-edge={shadowEdge}
-        className='pointer-events-none absolute inset-0 transition-colors'
+        className='pointer-events-none absolute inset-0'
       />
       {shadowStyle ? (
         <div
@@ -87,13 +99,17 @@ function PinnedCellSurface<TData>({
 function CellFrame<TData>({
   cell,
   services,
-  style,
+  layout = 'flow',
+  columnSize,
+  measuredWidth,
   leafIndex,
   centerIndex
 }: {
   cell: Cell<TData, unknown>;
   services: DataTableBodyCellServices<TData>;
-  style?: CSSProperties;
+  layout?: ColumnWindowLayout;
+  columnSize?: number;
+  measuredWidth?: number;
   leafIndex?: number;
   centerIndex?: number;
 }) {
@@ -106,7 +122,19 @@ function CellFrame<TData>({
     cell.getContext().table.options.meta?.dataTableTree?.columnId === cell.column.id;
   const detailMeta = cell.getContext().table.options.meta;
   const isDetailColumn = detailMeta?.dataTableRowDetail?.columnId === cell.column.id;
-  const content = <DataTableCellContent cell={cell}>{renderCellValue(cell)}</DataTableCellContent>;
+  const content = <MemoizedCellValue cell={cell} tableOptions={services.tableOptions} />;
+  const pinningStyle = getBodyCellPinningStyles(cell);
+  const layoutStyle: CSSProperties = {
+    ...(layout === 'virtual-row'
+      ? {
+          display: 'flex',
+          alignItems: 'center',
+          height: '100%',
+          width: measuredWidth ?? pinningStyle.width ?? cell.column.getSize()
+        }
+      : {}),
+    ...(columnSize !== undefined ? getColumnWidthStyle(columnSize) : {})
+  };
   const value = cell.getValue();
 
   return (
@@ -120,8 +148,8 @@ function CellFrame<TData>({
       className={CELL_CLASS_NAME}
       {...services.getCellSelectionProps(cell)}
       style={{
-        ...getBodyCellPinningStyles(cell),
-        ...style,
+        ...pinningStyle,
+        ...layoutStyle,
         ...dragMotion?.cellStyle
       }}
     >
@@ -153,6 +181,9 @@ function CellFrame<TData>({
   );
 }
 
+// 滚动窗口每次都会重建；传入标量尺寸让固定列和重叠列跳过外框重算。
+const MemoizedCellFrame = memo(CellFrame) as typeof CellFrame;
+
 export function FlowCell<TData>({
   cell,
   services
@@ -160,7 +191,7 @@ export function FlowCell<TData>({
   cell: Cell<TData, unknown>;
   services: DataTableBodyCellServices<TData>;
 }) {
-  return <CellFrame cell={cell} services={services} />;
+  return <MemoizedCellFrame cell={cell} services={services} />;
 }
 
 export function VirtualRowCell<TData>({
@@ -172,17 +203,12 @@ export function VirtualRowCell<TData>({
   measuredWidth?: number;
   services: DataTableBodyCellServices<TData>;
 }) {
-  const pinningWidth = getBodyCellPinningStyles(cell).width as number | undefined;
   return (
-    <CellFrame
+    <MemoizedCellFrame
       cell={cell}
       services={services}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        height: '100%',
-        width: measuredWidth ?? pinningWidth ?? cell.column.getSize()
-      }}
+      layout='virtual-row'
+      measuredWidth={measuredWidth}
     />
   );
 }
@@ -207,17 +233,13 @@ function ColumnWindowCell<TData>({
   const cell = row.getVisibleCells()[item.leafIndex] as Cell<TData, unknown> | undefined;
   if (!cell) return null;
   return (
-    <CellFrame
+    <MemoizedCellFrame
       cell={cell}
       services={services}
       leafIndex={item.leafIndex}
       centerIndex={item.centerIndex}
-      style={{
-        ...(layout === 'virtual-row'
-          ? { display: 'flex', alignItems: 'center', height: '100%' }
-          : {}),
-        ...getColumnWidthStyle(item.size)
-      }}
+      layout={layout}
+      columnSize={item.size}
     />
   );
 }

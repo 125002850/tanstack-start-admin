@@ -91,11 +91,11 @@ function resolveDataTableVirtualizationMode(
 function resolveDataTableColumnVirtualizationMode(
   virtualization?: DataTableVirtualizationProp
 ): 'auto' | 'on' | 'off' {
-  // 列虚拟化默认关闭，必须显式通过 object 配置打开。
+  // 列虚拟化默认 auto，达到中间可见列数阈值时启用；显式配置仍优先。
   if (virtualization === false) return 'off';
-  if (typeof virtualization !== 'object' || virtualization === null) return 'off';
+  if (typeof virtualization !== 'object' || virtualization === null) return 'auto';
 
-  return virtualization.columnVirtualizationMode ?? 'off';
+  return virtualization.columnVirtualizationMode ?? 'auto';
 }
 
 /** 解析虚拟化 gate 的失败原因，供 hook 发出 fallback 事件。 */

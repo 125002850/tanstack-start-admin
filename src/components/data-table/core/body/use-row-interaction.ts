@@ -74,7 +74,7 @@ export function useRowInteraction<TData>({
   );
 
   return {
-    className: cn(onRowClick && 'cursor-pointer'),
+    className: cn('transition-none', onRowClick && 'cursor-pointer'),
     getTabIndex,
     handleClick,
     handleKeyDown,

@@ -39,3 +39,55 @@
 - 日历默认查看生效版本；可搜索版本号、状态、操作人，查看更新/发布记录，历史快照只读。新增模板接口 `/api/system/work-calendar/version/list` 与 `/version/detail`；后者按 year 校验版本归属。
 - 审计失败原因按稳定 code 判定，操作人/时间合列，独立筛选和时间排序保留；DTO 仍为 code 字符串与名称字段。
 - 修正嵌套 accessorKey 列 ID、Tree 内嵌按钮键盘事件、workspace 浮层注册表快照与空 Map 清理。
+
+## DataTable 性能回灌（2026-10-13）
+
+来源为 `oig-export-erp` 的销售订单表格优化。本次按模板现有的 `core/body/` 分层接入，保留树形表格、行内明细、编辑、选择和列拖拽契约。
+
+| 问题                                       | 通用改进                                                    | 边界                                                                         |
+| ------------------------------------------ | ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 点击后选中背景缓慢变色                     | 去除表体行和固定列底色的颜色过渡                            | 保留单元格选区 outline/box-shadow 过渡；通用 UI Table 不变                   |
+| 滚动或选中时重复渲染行内按钮和 Tooltip     | 私有 `React.memo` 按钮组件复用展示                          | 动态文案、显隐、禁用原因每次重新解析；数据和回调变化更新点击行为             |
+| 横向滚动反复计算固定列和仍在视口中的单元格 | 内容与外框分两层复用；外框接收稳定 services、标量尺寸和位置 | `table.options` 快照作为失效信号，数据、选中状态、meta、列配置变化仍重新渲染 |
+| 宽表未显式配置时渲染所有列                 | 列虚拟化默认 `auto`，20 个可见非固定列触发                  | 隐藏列与固定列不计入阈值，固定列始终渲染；显式 on/off 及结构性回退保留       |
+
+`React.memo` 减少的是重复执行组件和计算渲染结果，不是另建一份 DOM 缓存。进入窗口的新单元格仍需渲染，浏览器的布局与绘制开销也仍存在。
+
+模板原有的 Activity 隐藏/恢复、滚动观察器恢复和尺寸缓存能力继续复用；ERP 此前从模板同步过这些修复，本次未重复迁入。全局行虚拟化阈值仍为 100，行/列 overscan 仍为 8/3。ERP 销售单的 30 行阈值、客户和仓库强制开启列虚拟化属于页面配置，未设为模板规则。模板继续使用 `getLabel(row)` 和静态 label/id 标识，不引入 ERP 的默认详情抽屉。
+
+### ERP 来源测量
+
+以下是 ERP 单元格复用前后的隔离 Chromium 测量，**不是模板的性能实测值**。Mock 50 条销售订单，挂载 19 行、285 个单元格；真实拖动底部水平滚动条，向右/向左合计 120 次顺序鼠标移动，每种构建各测三轮。
+
+| 滚动事件处理耗时中位数 | 复用前   | 复用后  | 降幅   |
+| ---------------------- | -------- | ------- | ------ |
+| 开发构建               | 18.92 ms | 7.90 ms | 约 58% |
+| 生产构建               | 6.02 ms  | 3.42 ms | 约 43% |
+
+比较基线已包含第一轮按钮优化，因此表中反映的是单元格复用的增量收益。顺序鼠标事件会等待 Playwright 完成，追踪本身也有开销；这些数据用于相对比较，不能当作真实用户 FPS 或所有页面的速度承诺。
+
+### 回归范围
+
+新增渲染计数测试验证：横向滚动后，固定列和重叠列不重复渲染，新进入列正常渲染；数据、选中状态、meta 和列渲染器变化及时更新。行操作测试验证按钮复用、动态状态以及最新数据/回调。阈值测试覆盖 19/20 个非固定列边界、默认 auto 与显式关闭。
+
+既有回归继续覆盖 Activity 恢复、列宽/固定列对齐、树展开、行内明细、单元格编辑、选区与底部真实滚动条拖动。
+
+首次回灌到 `features/sso` 的验证记录（模板基线 `5b9d9b46`，隔离 Chromium、Mock API、生产构建；其他分支结果见下方同步验证）：
+
+- `corepack pnpm check` 通过：lint、架构检查、TypeScript 和 163 个文件中的 1,344 项单元测试通过。
+- `corepack pnpm build --outDir /tmp/template-table-build` 通过。
+- 本次修改文件的格式检查及 `git diff --check` 通过。全仓 `corepack pnpm format:check` 仍报 4 个原有文件：`docs/ssr-docker-nginx-deployment.md`、`openapi/specs/openapi.json`、`src/features/workspace-tabs/components/workspace-overlay-contract-page.tsx`、`src/test/fixtures/query-scene-metadata.json`；它们与 HEAD 一致，本次未修改。
+- Playwright 执行 `data-table-regression`、`data-table-cell-range-selection`、`data-table-tree`、`data-table-editing-example`、`data-table-editable-choice-columns` 五组 smoke，共 30 项。首轮 26 通过、4 失败；仅重跑失败项后，滚动条边界检查通过，剩余 3 项失败均在修改前构建中以相同断言复现。
+- 3 项原有失败分别为：表头 padding 断言期望 20px、实际 8px；choice editor 的 ready trigger 不存在；刷新禁用提示 hover 后读到了“新增字典项”提示。未将其计为本次优化通过项，也未扩展到无关修复。
+- 滚动条边界检查首轮出现 10px 差异，单独重测及基线测试通过，偶发原因尚未定位。另一条底部滚动条真实拖动/固定列对齐回归首轮通过。
+
+本次没有重测模板的性能百分比，也没有运行真实 SSO 登录 E2E。后续若调整虚拟化阈值，应按页面实际列数、固定列占比、单元格复杂度和生产构建重新采样。
+
+### 同步到 main（2026-10-13）
+
+从 `features/sso` 的 `6f167e55` 选择性移植 DataTable 优化，基于本分支 `f33ad384` 验证；保留本分支认证、表格及其他既有能力，未整体合并产品分支。
+
+- `corepack pnpm check` 通过：178 个文件、1,374 项单元测试，包含 lint、类型和架构检查。
+- `corepack pnpm build --outDir /tmp/template-table-main-build` 通过；本次修改文件格式检查及 `git diff --check` 通过。
+- 隔离 Chromium、Mock API 的 `data-table-regression` 和 `data-table-tree` 浏览器回归：共 6 项，5 通过、1 失败。失败项为刷新禁用提示 hover 后读到“新增字典项”，已在本分支同步前的生产构建中复现相同断言。
+- 全仓格式检查仍有 3 个原有文件问题，已确认这些文件与同步前 HEAD 一致：`docs/ssr-docker-nginx-deployment.md`、`openapi/specs/openapi.json`、`src/features/workspace-tabs/components/workspace-overlay-contract-page.tsx`。
