@@ -6,7 +6,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { copyTextToClipboard } from '@/lib/browser/copy-text-to-clipboard';
 import { getCoordinateKey } from './model';
 import { formatDataTableSelectionNumber, summarizeDataTableCellRange } from './summary';
-import type { DataTableCellSelectionModel } from './types';
+import type {
+  DataTableCellSelectionModel,
+  DataTableCellSelectionSummary as SelectionSummary
+} from './types';
 
 /** Portal 的宿主与回退文案共享位置；选区仍由表体管理，无需同步第二份统计状态。 */
 export function DataTableCellSelectionSummarySlot({
@@ -45,12 +48,16 @@ export function DataTableCellSelectionSummary<TData>({
   if (!summary || summary.selectedCount < 2) return null;
 
   const numericItems = summary.numericCount > 0;
-  const items = [
+  const items: Array<{
+    label: string;
+    value: SelectionSummary['sum'] | number;
+    format?: 'average';
+  }> = [
     ...(numericItems ? [{ label: '合计', value: summary.sum }] : []),
     { label: '选中', value: summary.selectedCount },
     ...(numericItems
       ? [
-          { label: '平均', value: summary.average },
+          { label: '平均', value: summary.average, format: 'average' as const },
           { label: '最小值', value: summary.min },
           { label: '最大值', value: summary.max }
         ]
@@ -64,8 +71,8 @@ export function DataTableCellSelectionSummary<TData>({
       data-slot='data-table-cell-selection-summary'
       className='flex w-full flex-wrap items-center gap-x-3 gap-y-1'
     >
-      {items.map(({ label, value }) => {
-        const { text, copyText } = formatDataTableSelectionNumber(value);
+      {items.map(({ label, value, format }) => {
+        const { text, copyText } = formatDataTableSelectionNumber(value, format);
         const description =
           label === '选中'
             ? `${summary.selectedCount} 个单元格，其中 ${summary.numericCount} 个为数值`

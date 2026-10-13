@@ -1,3 +1,4 @@
+import type Decimal from 'decimal.js';
 import type { Cell, Column, Row } from '@tanstack/react-table';
 import type {
   ButtonHTMLAttributes,
@@ -27,10 +28,10 @@ export type DataTableCellCopyFeedbackState = {
 export type DataTableCellSelectionSummary = {
   selectedCount: number;
   numericCount: number;
-  sum: number;
-  average: number;
-  min: number;
-  max: number;
+  sum: Decimal;
+  average: Decimal;
+  min: Decimal;
+  max: Decimal;
 };
 
 export type DataTableCellSelectionProps = {

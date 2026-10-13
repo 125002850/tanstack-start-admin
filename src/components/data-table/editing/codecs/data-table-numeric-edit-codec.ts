@@ -1,3 +1,8 @@
+import {
+  isDecimalNumericText,
+  normalizeFullWidthNumericText,
+  normalizeGroupedNumericText
+} from '@/lib/data-table/numeric-text';
 import { dataTableMessages } from '@/config/data-table-messages';
 import type { DataTableEditableNumericType, DataTableEditCodec } from '../types';
 
@@ -15,20 +20,6 @@ export type NumericEditCodecOptions = {
   currency?: string;
   accounting?: boolean;
 };
-
-function normalizeFullWidthNumericText(value: string) {
-  return value
-    .replace(/[０-９]/g, (character) =>
-      String.fromCharCode(character.charCodeAt(0) - '０'.charCodeAt(0) + '0'.charCodeAt(0))
-    )
-    .replaceAll('＋', '+')
-    .replaceAll('－', '-')
-    .replaceAll('．', '.')
-    .replaceAll('，', ',')
-    .replaceAll('Ｅ', 'E')
-    .replaceAll('ｅ', 'e')
-    .replaceAll('％', '%');
-}
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -84,15 +75,6 @@ function stripCurrencyDecoration(
     status: 'valid',
     value: isAccountingNegative ? `-${normalized}` : normalized
   };
-}
-
-function normalizeGroupedNumericText(value: string): string | null {
-  if (!value.includes(',')) return value;
-  const exponentIndex = value.search(/[eE]/);
-  const significand = exponentIndex < 0 ? value : value.slice(0, exponentIndex);
-  const exponent = exponentIndex < 0 ? '' : value.slice(exponentIndex);
-  if (!/^[+-]?\d{1,3}(?:,\d{3})+(?:\.\d*)?$/.test(significand)) return null;
-  return `${significand.replaceAll(',', '')}${exponent}`;
 }
 
 function expandExponentialNumber(value: string) {
@@ -196,10 +178,7 @@ export function createNumericEditCodec<TData>(
           errors: [validationMessages.scientificNotationNotAllowed]
         };
       }
-      const numericPattern = options.allowScientificNotation
-        ? /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/
-        : /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
-      if (!numericPattern.test(normalized)) {
+      if (!isDecimalNumericText(normalized, options.allowScientificNotation)) {
         return { status: 'invalid', errors: [validationMessages.invalidNumericDraft] };
       }
 
