@@ -38,7 +38,9 @@ interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   labels?: DataTableToolbarLabels;
   /** 显示在自动列筛选之前的自定义查询控件。 */
   leadingFilters?: React.ReactNode;
-  /** 页面可恢复自己的默认查询范围；未提供时清空所有列筛选。 */
+  /** 覆盖重置按钮的显隐；未提供时按列筛选和高级搜索条件判断。 */
+  canResetFilters?: boolean;
+  /** 点击重置时执行，不控制按钮显隐；未提供时清空所有筛选。 */
   onResetFilters?: () => void;
 }
 
@@ -48,13 +50,15 @@ export function DataTableToolbar<TData>({
   children,
   className,
   labels,
+  canResetFilters,
   onResetFilters,
   leadingFilters,
   ...props
 }: DataTableToolbarProps<TData>) {
   const advancedSearch = table.options.meta?.dataTableAdvancedSearch;
-  const isFiltered =
-    table.getState().columnFilters.length > 0 || Boolean(advancedSearch?.conditionCount);
+  const showResetFilters =
+    canResetFilters ??
+    (table.getState().columnFilters.length > 0 || Boolean(advancedSearch?.conditionCount));
 
   // 只有 getCanFilter 的列会进入工具栏；filter=false 的列已在 column options 阶段关闭。
   const columns = table.getAllColumns().filter((column) => column.getCanFilter());
@@ -81,7 +85,7 @@ export function DataTableToolbar<TData>({
           <DataTableToolbarFilter key={column.id} column={column} table={table} labels={labels} />
         ))}
         {advancedSearch && <DataTableAdvancedSearch table={table} />}
-        {isFiltered && (
+        {showResetFilters && (
           <Button
             aria-label={labels?.resetFiltersAriaLabel ?? '重置筛选条件'}
             aria-busy={isQuerying || undefined}

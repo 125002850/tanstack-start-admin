@@ -143,6 +143,8 @@ export function useDataTableRuntime<TData>(
     onExpandedChange: externalOnExpandedChange,
     editing: editingOptions,
     sortingMode = 'client',
+    paginationMode = 'server',
+    filteringMode = 'server',
     onColumnOrderChange: externalOnColumnOrderChange,
     ...tableProps
   } = props;
@@ -343,7 +345,8 @@ export function useDataTableRuntime<TData>(
     fixedWidthColumnSizing
   });
 
-  const rowNumberPagination = usePaginationForRenderedData(tableProps.data, pagination);
+  const renderedPagination = usePaginationForRenderedData(tableProps.data, pagination);
+  const rowNumberPagination = paginationMode === 'client' ? pagination : renderedPagination;
 
   React.useEffect(() => {
     // 选择列启用但没有稳定 row id 时，只能做当前页范围选择，开发环境给出提示。
@@ -372,8 +375,14 @@ export function useDataTableRuntime<TData>(
   }, [rowId, showSelectColumn, tableId, tableProps.data]);
 
   const resolvedTotalCount =
-    totalCount ?? (treeEnabled || rowDetailEnabled ? tableProps.data.length : undefined);
+    paginationMode === 'client'
+      ? undefined
+      : (totalCount ?? (treeEnabled || rowDetailEnabled ? tableProps.data.length : undefined));
   const resolvedPageCount = React.useMemo(() => {
+    if (paginationMode === 'client') {
+      return undefined;
+    }
+
     if (typeof explicitPageCount === 'number') {
       return explicitPageCount;
     }
@@ -384,7 +393,7 @@ export function useDataTableRuntime<TData>(
     }
 
     return -1;
-  }, [explicitPageCount, pagination.pageSize, resolvedTotalCount]);
+  }, [explicitPageCount, pagination.pageSize, paginationMode, resolvedTotalCount]);
 
   const resolvedGetRowId = React.useCallback<NonNullable<TableOptions<TData>['getRowId']>>(
     (row, index, parent) =>
@@ -557,9 +566,9 @@ export function useDataTableRuntime<TData>(
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
-    manualPagination: true,
+    manualPagination: paginationMode === 'server',
     manualSorting: sortingMode === 'server',
-    manualFiltering: true
+    manualFiltering: filteringMode === 'server'
   } satisfies Pick<TableOptions<TData>, DataTableRuntimeConfiguredTableOption>;
 
   const table = useReactTable({
