@@ -47,7 +47,10 @@ export default defineConfig({
           }
         }
       : {}),
-    launchOptions: browserProxy ? undefined : { args: ['--no-proxy-server'] }
+    launchOptions: {
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+      ...(browserProxy ? {} : { args: ['--no-proxy-server'] })
+    }
   },
   projects: [
     {

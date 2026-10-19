@@ -459,7 +459,7 @@ describe('DataTable column alignment', () => {
     );
 
     const gradientColor =
-      'var(--data-table-pinned-shadow-gradient-color, color-mix(in oklch, var(--foreground) 3.5%, transparent))';
+      'var(--data-table-pinned-shadow-gradient-color, var(--pinned-shadow-gradient))';
     const headerCells = Array.from(container.querySelectorAll('thead th'));
     const bodyCells = Array.from(container.querySelectorAll('tbody tr:first-child td'));
     const leftPinnedCellShadow = bodyCells[0]?.querySelector(

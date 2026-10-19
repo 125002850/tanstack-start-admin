@@ -2,11 +2,11 @@ import type { Column } from '@tanstack/react-table';
 import type { CSSProperties } from 'react';
 
 const DATA_TABLE_PINNED_SHADOW_COLOR =
-  'var(--data-table-pinned-shadow-color, color-mix(in oklch, var(--foreground) 8%, transparent))';
+  'var(--data-table-pinned-shadow-color, var(--pinned-shadow-default))';
 const DATA_TABLE_PINNED_SHADOW_SOFT_COLOR =
-  'var(--data-table-pinned-shadow-soft-color, color-mix(in oklch, var(--foreground) 3%, transparent))';
+  'var(--data-table-pinned-shadow-soft-color, var(--pinned-shadow-soft))';
 const DATA_TABLE_PINNED_SHADOW_GRADIENT_COLOR =
-  'var(--data-table-pinned-shadow-gradient-color, color-mix(in oklch, var(--foreground) 3.5%, transparent))';
+  'var(--data-table-pinned-shadow-gradient-color, var(--pinned-shadow-gradient))';
 const DATA_TABLE_PINNED_SHADOW_LAYER_WIDTH = 18;
 
 // globals.css 中选区边框的层级为 20；fixed 表体必须覆盖选区，sticky 表头再依次覆盖表体。

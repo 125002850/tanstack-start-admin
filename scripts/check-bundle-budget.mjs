@@ -6,16 +6,17 @@
  * Defaults were measured from `dist` on 2026-07-01 and set to 120% of baseline:
  * - total: 9,269,972 bytes -> 11,123,967
  * - js total: 2,315,210 bytes -> 2,778,252
- * - css total: 202,721 bytes -> 243,266
+ * - css total: see Chrome 109 baseline below
  * - image total: 6,616,508 bytes -> 7,939,810
  * - largest js: 483,211 bytes -> 579,854
- * - largest css: 202,721 bytes -> 243,266
+ * - largest css: see Chrome 109 baseline below
  * - largest image: 3,025,307 bytes -> 3,630,369
  *
- * Initial-load gzip budgets were measured after enabling route auto code splitting on 2026-08-03
- * and set to 120% of baseline:
- * - initial js gzip: 145,625 bytes -> 175,000
- * - app css gzip: 35,350 bytes -> 43,000
+ * Chrome 109 polyfills and theme fallbacks were measured on 2026-10-19;
+ * affected budgets use 120% of baseline, all other limits stay unchanged:
+ * - css total / largest css: 320,191 bytes -> 384,230
+ * - initial js gzip: 178,001 bytes -> 213,602
+ * - app css gzip: 51,757 bytes -> 62,109
  *
  * Override with environment variables:
  * BUNDLE_BUDGET_TOTAL_BYTES, BUNDLE_BUDGET_JS_BYTES, BUNDLE_BUDGET_CSS_BYTES,
@@ -33,13 +34,13 @@ import { gzipSync } from 'node:zlib';
 const DEFAULT_BUDGETS = {
   totalBytes: 11_123_967,
   jsBytes: 2_778_252,
-  cssBytes: 243_266,
+  cssBytes: 384_230,
   imageBytes: 7_939_810,
   maxJsBytes: 579_854,
-  maxCssBytes: 243_266,
+  maxCssBytes: 384_230,
   maxImageBytes: 3_630_369,
-  initialJsGzipBytes: 175_000,
-  appCssGzipBytes: 43_000
+  initialJsGzipBytes: 213_602,
+  appCssGzipBytes: 62_109
 };
 
 const IMAGE_EXTENSIONS = new Set(['.avif', '.gif', '.jpg', '.jpeg', '.png', '.svg', '.webp']);

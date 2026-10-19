@@ -1,3 +1,4 @@
+import './lib/browser/polyfills';
 import { Matches, RouterContextProvider } from '@tanstack/react-router';
 import { createRoot } from 'react-dom/client';
 import { RouterProgressBar } from './components/layout/router-progress';
