@@ -17,7 +17,15 @@ export async function mockWorkspacePageData(page: Page) {
   await page.route('**/api/**', async (route) => {
     const pathname = new URL(route.request().url()).pathname;
     const path = pathname.slice(pathname.indexOf('/api/'));
-    if (path === '/api/getLoginInfo') return route.fallback();
+    // 登录 fixture 已提供会话与查询契约，交给先注册的路由处理。
+    if (
+      [
+        '/api/getLoginInfo',
+        '/api/system/query-scene/metadata',
+        '/api/system/query-scheme/list'
+      ].includes(path)
+    )
+      return route.fallback();
     if (!(path in responses)) {
       requests.add(path);
       return route.abort();

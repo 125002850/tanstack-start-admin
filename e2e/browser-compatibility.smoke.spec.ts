@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { THEMES } from '../src/components/themes/theme.config';
-import { mockIamSession } from './support/mock-iam-session';
+import { mockLoginInfo } from './support/mock-login-info';
+import { mockWorkspacePageData } from './support/mock-workspace-page-data';
 
 test('@workspace-v2 浏览器基线：导航与请求', async ({ page, browser }) => {
   test.info().annotations.push({ type: 'browser', description: browser.version() });
@@ -9,7 +10,8 @@ test('@workspace-v2 浏览器基线：导航与请求', async ({ page, browser }
   }
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await mockIamSession(page);
+  await mockLoginInfo(page);
+  await mockWorkspacePageData(page);
   await page.route('**/api/system/dict/**', (route) =>
     route.fulfill({
       json: {
