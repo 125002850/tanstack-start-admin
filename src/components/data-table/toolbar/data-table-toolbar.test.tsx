@@ -3,6 +3,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
 import { DataTableToolbar } from '@/components/data-table/toolbar/data-table-toolbar';
 import { DataTableColumnHeader } from '@/components/data-table/columns/header/data-table-column-header';
+import type { DataTableAdvancedSearchRuntime } from '@/components/data-table/advanced-search/types';
 
 // DataTableViewOptions is always rendered by DataTableToolbar — mock it to avoid
 // Radix Popover / Command complexity in jsdom.
@@ -83,17 +84,35 @@ interface ToolbarHarnessProps {
   columns: ColumnDef<TestRow>[];
   initialState?: { columnFilters?: { id: string; value: unknown }[] };
   isQuerying?: boolean;
+  canResetFilters?: boolean;
+  onResetFilters?: () => void;
+  advancedSearch?: DataTableAdvancedSearchRuntime;
 }
 
 /** Renders DataTableToolbar with a useReactTable instance created inside a component. */
-function ToolbarHarness({ columns, initialState, isQuerying }: ToolbarHarnessProps) {
+function ToolbarHarness({
+  columns,
+  initialState,
+  isQuerying,
+  canResetFilters,
+  onResetFilters,
+  advancedSearch
+}: ToolbarHarnessProps) {
   const table = useReactTable({
     data: DATA,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    initialState
+    initialState,
+    meta: { dataTableAdvancedSearch: advancedSearch }
   });
-  return <DataTableToolbar table={table} isQuerying={isQuerying} />;
+  return (
+    <DataTableToolbar
+      table={table}
+      isQuerying={isQuerying}
+      canResetFilters={canResetFilters}
+      onResetFilters={onResetFilters}
+    />
+  );
 }
 
 afterEach(cleanup);
@@ -408,5 +427,113 @@ describe('DataTableToolbar filter variant dispatch', () => {
 
     expect(screen.getByPlaceholderText('客户名称')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '客户分类' })).toBeInTheDocument();
+  });
+});
+
+describe('自定义筛选重置', () => {
+  it('高级搜索条件仍可触发重置，同时保留页面自定义重置动作', () => {
+    const clearAll = vi.fn();
+    const onResetFilters = vi.fn();
+    const advancedSearch: DataTableAdvancedSearchRuntime = {
+      sceneCode: 'test',
+      fields: [],
+      conditionCount: 1,
+      summary: '测试条件',
+      clearAll,
+      applyCondition: vi.fn(),
+      schemes: [],
+      dirty: false,
+      loadingSchemes: false,
+      mutatingScheme: false,
+      applyScheme: vi.fn(),
+      saveAs: vi.fn(),
+      overwriteSelected: vi.fn(),
+      renameSelected: vi.fn(),
+      deleteSelected: vi.fn(),
+      setSelectedAsDefault: vi.fn()
+    };
+    const view = render(
+      <ToolbarHarness
+        columns={[]}
+        advancedSearch={advancedSearch}
+        onResetFilters={onResetFilters}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '重置筛选条件' }));
+    expect(clearAll).toHaveBeenCalledOnce();
+    expect(onResetFilters).toHaveBeenCalledOnce();
+
+    view.rerender(
+      <ToolbarHarness
+        columns={[]}
+        advancedSearch={{ ...advancedSearch, conditionCount: 0 }}
+        onResetFilters={onResetFilters}
+      />
+    );
+    expect(screen.queryByRole('button', { name: '重置筛选条件' })).not.toBeInTheDocument();
+  });
+
+  it('提供重置回调不代表存在筛选', () => {
+    render(<ToolbarHarness columns={[]} onResetFilters={vi.fn()} />);
+
+    expect(screen.queryByRole('button', { name: '重置筛选条件' })).not.toBeInTheDocument();
+  });
+
+  it('有列筛选时仍执行自定义重置回调', () => {
+    const onResetFilters = vi.fn();
+    render(
+      <ToolbarHarness
+        columns={[{ accessorKey: 'category' }]}
+        initialState={{ columnFilters: [{ id: 'category', value: ['A'] }] }}
+        onResetFilters={onResetFilters}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '重置筛选条件' }));
+    expect(onResetFilters).toHaveBeenCalledOnce();
+  });
+
+  it('自定义搜索清空后隐藏按钮，即使重置回调仍存在', () => {
+    const onResetFilters = vi.fn();
+    const view = render(
+      <ToolbarHarness columns={[]} canResetFilters onResetFilters={onResetFilters} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '重置筛选条件' }));
+    expect(onResetFilters).toHaveBeenCalledOnce();
+
+    view.rerender(
+      <ToolbarHarness columns={[]} canResetFilters={false} onResetFilters={onResetFilters} />
+    );
+    expect(screen.queryByRole('button', { name: '重置筛选条件' })).not.toBeInTheDocument();
+  });
+
+  it('页面可以在已处于默认查询范围时隐藏重置按钮', () => {
+    render(
+      <ToolbarHarness
+        columns={[{ accessorKey: 'category' }]}
+        initialState={{ columnFilters: [{ id: 'category', value: ['A'] }] }}
+        canResetFilters={false}
+        onResetFilters={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: '重置筛选条件' })).not.toBeInTheDocument();
+  });
+
+  it('页面可明确保留恢复默认范围的入口', () => {
+    const onResetFilters = vi.fn();
+    render(
+      <ToolbarHarness
+        columns={[{ accessorKey: 'category' }]}
+        initialState={{ columnFilters: [] }}
+        canResetFilters
+        onResetFilters={onResetFilters}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '重置筛选条件' }));
+    expect(onResetFilters).toHaveBeenCalledOnce();
   });
 });

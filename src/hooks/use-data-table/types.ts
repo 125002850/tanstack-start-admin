@@ -186,6 +186,10 @@ export interface UseDataTableProps<TData> extends Pick<
    * 服务端分页场景必须使用 `'server'`，禁止只对当前已加载页做前端排序。
    */
   sortingMode?: DataTableSortingMode;
+  /** client 对完整本地数组分页；默认 server 保留调用方分页行为。 */
+  paginationMode?: 'client' | 'server';
+  /** client 在完整本地数据上执行列筛选；默认 server 由调用方执行查询。 */
+  filteringMode?: 'client' | 'server';
   /** 列宽拖拽结束时的回调，仅在列宽实际变化时触发。 */
   onColumnResizeEnd?: (columnKey: string, width: number) => void;
   /** 是否在表格首列显示行号列。默认 `true`。 */

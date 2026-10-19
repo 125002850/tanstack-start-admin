@@ -48,6 +48,8 @@
 
 ## Hook 选型
 
+- 完整本地数组的列筛选使用 `filteringMode: 'client'`，在排序和分页之前执行；默认 `server` 保留服务端查询行为。枚举多选需提供与字符串数组值协议匹配的 `filterFn`。
+- 完整本地数组需要分页时，使用 `useDataTable({ paginationMode: 'client' })`，先筛选完整数组，再由表格排序、分页；页长偏好复用 `useDataTablePageSize`。默认 `server` 模式不改变既有行为。
 - 标准 DSL 服务端分页表格统一使用 `useDslDataTable`。
 - `useDslDataTable` 负责 DSL request 组装、`useQuery` 生命周期、`keepPreviousData`、页长偏好和默认表格 UX 选项。
 - `useDslDataTable` 固定使用服务端排序，调用方不得覆盖排序执行模式；表头 sorting state 必须序列化为后端 DSL sort 后重新查询。
@@ -127,6 +129,7 @@
 
 ## 页面组合
 
+- 展开面板关闭只通知 `onExpandedRowKeyChange(null)`；受控 `expandedRow` 确认关闭后才清空活动页签，等待确认或取消关闭时保留当前内容。
 - 标准后台表格页面使用 `Card` + `DataTable` + `DataTableToolbar`。
 - `DataTable` 默认展示列显示面板按钮；纯展示表格可传 `showViewOptions={false}` 关闭入口。该开关只控制按钮渲染，不得改写列的 `enableHiding`、显隐状态或持久化契约。
 - 数据层统一由 `useDslDataTable` 驱动。
@@ -258,7 +261,7 @@ interface AuditFields {
 
 - 列使用 `filter: 'select' | 'multiSelect'` 配合 `filterRemoteOptions.loadOptions({keyword, pageNo, pageSize, signal})` 声明远程选项；返回 `{items, total?}`，选项使用稳定 value。支持分页、取消与 `maxSelected`，禁止在业务层另写筛选弹层。
 - 固定单多选统一复用 ChoiceCombobox，支持 keywords、icon 和 count。必选查询使用受控 `value/onValueChange` 与 `clearable={false}`。
-- Toolbar 的 `leadingFilters` 放前置查询控件，`onResetFilters` 用于恢复业务默认查询范围；不传时仍清空列筛选。
+- Toolbar 的 `leadingFilters` 放前置查询控件；`onResetFilters` 只定义重置动作，不控制按钮显隐。默认按列筛选和高级搜索条件判断；自定义搜索或恢复默认查询范围时，页面通过 `canResetFilters` 提供完整可重置状态，禁止通过条件传入回调控制显隐。
 - 普通确认操作使用 `rowActions.confirm`，title/description 可按行计算；`confirmDelete` 保持兼容。状态徽标只读，状态变更使用带确认的操作入口。
 
 ## 缓存列顺序升级

@@ -200,7 +200,7 @@ export function useDataTableExpandPanel<TData>({
 
   const handleExpandPanelClose = React.useCallback(() => {
     onExpandedRowKeyChange?.(null);
-    setActiveExpandTab(null);
+    // 由受控 expandedRow 确认关闭后再清空活动页签，允许业务先确认未保存修改。
   }, [onExpandedRowKeyChange]);
 
   const handleSplitKeyDown = React.useCallback(
