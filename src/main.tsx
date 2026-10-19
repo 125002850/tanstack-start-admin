@@ -1,3 +1,4 @@
+import './lib/browser/polyfills';
 import { Matches, RouterContextProvider } from '@tanstack/react-router';
 import { SessionExpiredDialog } from './features/auth/components/session-expired-dialog';
 import { createRoot } from 'react-dom/client';

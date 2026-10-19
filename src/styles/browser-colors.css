@@ -1,0 +1,6 @@
+/* JS 行内样式引用的颜色也需要经过 Chrome 109 构建转换。 */
+:root {
+  --pinned-shadow-default: color-mix(in oklch, var(--foreground) 8%, transparent);
+  --pinned-shadow-soft: color-mix(in oklch, var(--foreground) 3%, transparent);
+  --pinned-shadow-gradient: color-mix(in oklch, var(--foreground) 3.5%, transparent);
+}

@@ -210,6 +210,22 @@ README 只维护项目定位、运行方式和架构入口；可执行的工程�
 
 ## 快速开始
 
+### 浏览器兼容基线
+
+最低支持 **Chrome 109**。Vite 显式设置 JS/CSS 构建目标，应用入口补齐 `toSorted`、`toReversed` 和 `AbortSignal.any`；仅设置构建 target 不会补齐运行时 API。
+
+保留 Tailwind v4，由 `scripts/postcss-chrome109-colors.ts` 为现有主题的 OKLCH、`color-mix()` 和透明度生成 RGB 回退。新增混色的颜色变量需来自主题或 Tailwind 色板，无法解析时构建会失败；JS 行内混色应引用 CSS token，让它经过构建转换。RGB 量化可能产生细微色差，不支持 View Transition 时直接切换主题。
+
+普通 E2E 使用 Playwright 自带 Chromium。验证最低版本时指定真实旧内核，不能只改 User-Agent：
+
+```bash
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/absolute/path/to/chromium-109' \
+PLAYWRIGHT_EXPECT_CHROMIUM_MAJOR=109 \
+pnpm run test:e2e:smoke --project=default e2e/browser-compatibility.smoke.spec.ts e2e/theme-mode.smoke.spec.ts e2e/workspace-tabs-smoke.spec.ts
+```
+
+### 本地启动
+
 > [!IMPORTANT]
 > 当前仓库统一使用 `pnpm`，锁文件以 `pnpm-lock.yaml` 为准。项目及 `@oig/react-query-generator` 5.x 要求 Node.js `>=22.18.0`。
 

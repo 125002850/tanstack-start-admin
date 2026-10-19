@@ -3,6 +3,7 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { chrome109Colors } from './scripts/postcss-chrome109-colors';
 import { createDevMockSsoPlugin, stripAppGateway } from './vite.sso-mock';
 
 function manualChunks(id: string) {
@@ -109,7 +110,12 @@ export default defineConfig(({ mode }) => {
         ? [visualizer({ emitFile: true, filename: 'stats.html', gzipSize: true, brotliSize: true })]
         : [])
     ],
+    css: {
+      postcss: { plugins: [chrome109Colors()] }
+    },
     build: {
+      target: ['chrome109', 'edge109', 'firefox114', 'safari16.4'],
+      cssTarget: ['chrome109', 'edge109', 'firefox114', 'safari16.4'],
       rolldownOptions: {
         output: {
           manualChunks

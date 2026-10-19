@@ -38,6 +38,10 @@ test.describe('主题切换动画原点', () => {
       });
       await mockLoginInfo(page);
       await page.goto('/overview');
+      test.skip(
+        !(await page.evaluate(() => typeof document.startViewTransition === 'function')),
+        '旧内核直接切换主题；功能切换由下方独立用例覆盖'
+      );
       expect(await page.evaluate(() => window.devicePixelRatio)).toBe(2);
       const toggle = page.getByRole('button', { name: '切换主题模式' });
       await expect(toggle).toBeVisible();
