@@ -3,7 +3,6 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { chrome109Colors } from './scripts/postcss-chrome109-colors';
 
 function normalizeBasePath(value: string | undefined) {
   if (!value || value === '/') {
@@ -63,11 +62,20 @@ export default defineConfig(({ mode }) => {
         : [])
     ],
     css: {
-      postcss: { plugins: [chrome109Colors()] }
+      transformer: 'lightningcss',
+      // Tailwind 开发输出含嵌套规则；build.cssTarget 不负责开发服务的语法转换。
+      lightningcss: {
+        targets: {
+          chrome: 111 << 16,
+          edge: 111 << 16,
+          firefox: 114 << 16,
+          safari: (16 << 16) | (4 << 8)
+        }
+      }
     },
     build: {
-      target: ['chrome109', 'edge109', 'firefox114', 'safari16.4'],
-      cssTarget: ['chrome109', 'edge109', 'firefox114', 'safari16.4']
+      target: ['chrome111', 'edge111', 'firefox114', 'safari16.4'],
+      cssTarget: ['chrome111', 'edge111', 'firefox114', 'safari16.4']
     }
   };
 });

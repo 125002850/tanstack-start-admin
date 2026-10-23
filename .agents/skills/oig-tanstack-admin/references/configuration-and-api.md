@@ -123,3 +123,11 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - `src/hooks/use-expiring-storage.ts` 提供 `createExpiringStorage()` 与 `useExpiringStorage()`，支持 local/session storage 和自定义异步 adapter。
 - 调用方显式提供独立 key、TTL、类型校验和创建时间提取；失效记录在读取时清理，不依赖后台计时器。hook 的 client 应保持引用稳定。
 - 仅用于允许持久化的业务数据，不用于 token、密码等凭据。模板不预设具体业务的缓存内容和期限。
+
+## 浏览器兼容构建
+
+- 浏览器目标最低为 Chrome 111 / Edge 111（Chromium 111），不再支持 Chrome 109/110；`vite.config.ts` 同时设置 JS/CSS target。构建 target 不会补齐运行时 API，入口继续加载 `src/lib/browser/polyfills.ts`。
+- 保留 Tailwind v4，OKLCH、`color-mix()` 和透明度由浏览器原生处理，不再生成 Chrome 109 专用颜色回退，也不要求混色变量可在构建时静态解析。共享固定列阴影 token 位于 `src/styles/browser-colors.css`。
+- CSS 使用 Vite 内置的 Lightning CSS transformer，并显式配置 `css.lightningcss.targets`，保证 Tailwind 开发输出的嵌套规则也能在 Chrome 111 生效；仅设置 `build.cssTarget` 不能覆盖开发服务。
+- Chrome 111 仍需 `AbortSignal.any` 补丁。其他浏览器的现有构建 target 暂时保留，`toSorted` / `toReversed` 补丁继续保留。Firefox 114 低于 Tailwind v4 官方的 Firefox 128 基线，不能仅凭构建 target 声明兼容；其支持范围需单独评估。
+- 兼容回归使用 `e2e/browser-compatibility.smoke.spec.ts`，覆盖导航请求、全部主题的明暗模式、透明度、表格混色与固定列颜色；最低版本必须用真实 Chromium 111 验证，不能仅改 User-Agent。开发服务和生产构建都需要验证，并同时在当前稳定版 Chromium 回归。
