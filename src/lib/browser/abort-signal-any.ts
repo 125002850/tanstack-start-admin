@@ -1,4 +1,4 @@
-// Chrome 109 已有 AbortController、reason 和事件监听器的 signal 选项，仅缺 any。
+// Chrome 111 已有 AbortController、reason 和事件监听器的 signal 选项，仅缺 any。
 const controllers = new WeakMap<AbortSignal, AbortController>();
 const cleanup = new FinalizationRegistry<AbortController>((listeners) => listeners.abort());
 

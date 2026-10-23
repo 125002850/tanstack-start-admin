@@ -1,4 +1,4 @@
-/* JS 行内样式引用的颜色也需要经过 Chrome 109 构建转换。 */
+/* 固定列行内样式复用的共享颜色 token，由浏览器原生计算混色。 */
 :root {
   --pinned-shadow-default: color-mix(in oklch, var(--foreground) 8%, transparent);
   --pinned-shadow-soft: color-mix(in oklch, var(--foreground) 3%, transparent);

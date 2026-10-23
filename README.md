@@ -212,15 +212,15 @@ README 只维护项目定位、运行方式和架构入口；可执行的工程�
 
 ### 浏览器兼容基线
 
-最低支持 **Chrome 109**。Vite 显式设置 JS/CSS 构建目标，应用入口补齐 `toSorted`、`toReversed` 和 `AbortSignal.any`；仅设置构建 target 不会补齐运行时 API。
+最低支持 **Chrome 111 / Edge 111（Chromium 111）**，不再支持 Chrome 109/110。Vite 显式设置 JS/CSS 构建目标，Tailwind v4 的 OKLCH、`color-mix()` 和透明度由浏览器原生处理；开发服务通过 Vite 内置的 Lightning CSS 转换嵌套语法。
 
-保留 Tailwind v4，由 `scripts/postcss-chrome109-colors.ts` 为现有主题的 OKLCH、`color-mix()` 和透明度生成 RGB 回退。新增混色的颜色变量需来自主题或 Tailwind 色板，无法解析时构建会失败；JS 行内混色应引用 CSS token，让它经过构建转换。RGB 量化可能产生细微色差，不支持 View Transition 时直接切换主题。
+应用入口保留 `AbortSignal.any` 补丁，`toSorted`、`toReversed` 补丁继续服务于现有其他浏览器目标；仅设置构建 target 不会补齐运行时 API。不支持 View Transition 时直接切换主题。构建与运行时补丁的维护边界见[配置与 API](.agents/skills/oig-tanstack-admin/references/configuration-and-api.md#浏览器兼容构建)。
 
 普通 E2E 使用 Playwright 自带 Chromium。验证最低版本时指定真实旧内核，不能只改 User-Agent：
 
 ```bash
-PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/absolute/path/to/chromium-109' \
-PLAYWRIGHT_EXPECT_CHROMIUM_MAJOR=109 \
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/absolute/path/to/chromium-111' \
+PLAYWRIGHT_EXPECT_CHROMIUM_MAJOR=111 \
 pnpm run test:e2e:smoke --project=default e2e/browser-compatibility.smoke.spec.ts e2e/theme-mode.smoke.spec.ts e2e/workspace-tabs-smoke.spec.ts
 ```
 

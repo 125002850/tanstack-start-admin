@@ -6,14 +6,14 @@
  * Defaults were measured from `dist` on 2026-07-01 and set to 120% of baseline:
  * - total: 9,269,972 bytes -> 11,123,967
  * - js total: 2,315,210 bytes -> 2,778,252
- * - css total: see Chrome 109 baseline below
+ * - css total: see Chrome 111 baseline below
  * - image total: 6,616,508 bytes -> 7,939,810
  * - largest js: 483,211 bytes -> 579,854
- * - largest css: see Chrome 109 baseline below
+ * - largest css: see Chrome 111 baseline below
  * - largest image: 3,025,307 bytes -> 3,630,369
  *
- * Chrome 109 theme fallbacks: SSO baseline measured on 2026-10-19, plus 20%:
- * - css total / largest css: 311,783 bytes -> 374,140
+ * Chrome 111 native colors: SSO baseline measured on 2026-10-23, plus 20%:
+ * - css total / largest css: 243,076 bytes -> 291,692
  *
  * Override with environment variables:
  * BUNDLE_BUDGET_TOTAL_BYTES, BUNDLE_BUDGET_JS_BYTES, BUNDLE_BUDGET_CSS_BYTES,
@@ -29,10 +29,10 @@ import process from 'node:process';
 const DEFAULT_BUDGETS = {
   totalBytes: 11_123_967,
   jsBytes: 2_778_252,
-  cssBytes: 374_140,
+  cssBytes: 291_692,
   imageBytes: 7_939_810,
   maxJsBytes: 579_854,
-  maxCssBytes: 374_140,
+  maxCssBytes: 291_692,
   maxImageBytes: 3_630_369
 };
 

@@ -15,6 +15,7 @@ export async function mockWorkspacePageData(page: Page) {
   const requests = new Set<string>();
   unexpected.set(page, requests);
   await page.route('**/api/**', async (route) => {
+    if (!['fetch', 'xhr'].includes(route.request().resourceType())) return route.fallback();
     const pathname = new URL(route.request().url()).pathname;
     const path = pathname.slice(pathname.indexOf('/api/'));
     // 登录 fixture 已提供会话与查询契约，交给先注册的路由处理。

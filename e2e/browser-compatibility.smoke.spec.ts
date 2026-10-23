@@ -34,6 +34,21 @@ test('@workspace-v2 浏览器基线：导航与请求', async ({ page, browser }
     'aria-selected',
     'true'
   );
+  expect(
+    await page.evaluate(() => ({
+      sorted: [3, 1, 2].toSorted(),
+      reversed: [1, 2, 3].toReversed(),
+      any: typeof AbortSignal.any,
+      colorMix: CSS.supports('color', 'color-mix(in oklab, red, blue)'),
+      oklch: CSS.supports('color', 'oklch(0.5 0.1 180)')
+    }))
+  ).toEqual({
+    sorted: [1, 2, 3],
+    reversed: [3, 2, 1],
+    any: 'function',
+    colorMix: true,
+    oklch: true
+  });
   expect(errors).toEqual([]);
 });
 
