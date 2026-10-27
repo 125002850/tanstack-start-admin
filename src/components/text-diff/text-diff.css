@@ -1,0 +1,35 @@
+/* Diff 颜色表示增删，不代表业务状态；底色与文字继承当前主题。 */
+[data-component='text-diff'] [data-diff-kind='added'] {
+  --diff-background: color-mix(in oklab, var(--color-green-600) 6%, var(--background));
+  --diff-highlight-background: color-mix(in oklab, var(--color-green-600) 20%, var(--background));
+}
+
+[data-component='text-diff'] [data-diff-kind='removed'] {
+  --diff-background: color-mix(in oklab, var(--color-red-600) 12%, var(--background));
+  --diff-highlight-background: color-mix(in oklab, var(--color-red-600) 24%, var(--background));
+}
+
+[data-component='text-diff'] :is([data-diff-kind='added'], [data-diff-kind='removed']) {
+  background-color: var(--diff-background);
+}
+
+[data-component='text-diff'] [data-diff-highlight='true'] {
+  background-color: var(--diff-highlight-background);
+  border-radius: 2px;
+}
+
+[data-component='text-diff'] [data-token='string'] {
+  color: var(--color-blue-700);
+}
+
+[data-component='text-diff'] [data-token='literal'] {
+  color: var(--color-violet-700);
+}
+
+.dark [data-component='text-diff'] [data-token='string'] {
+  color: var(--color-blue-300);
+}
+
+.dark [data-component='text-diff'] [data-token='literal'] {
+  color: var(--color-violet-300);
+}
