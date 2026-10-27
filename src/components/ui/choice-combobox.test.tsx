@@ -204,6 +204,59 @@ describe('ChoiceCombobox', () => {
     expect(screen.getByRole('option', { name: '审计员' })).toBeInTheDocument();
   });
 
+  it('supports header controls while preserving search focus and Escape focus restoration', async () => {
+    const user = userEvent.setup();
+    const onHeader = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <MultipleChoiceCombobox
+        options={OPTIONS}
+        value={[]}
+        triggerLabel='角色'
+        placeholder='请选择角色'
+        onValueChange={onChange}
+        header={
+          <button type='button' onClick={onHeader}>
+            全部角色
+          </button>
+        }
+      />
+    );
+    const trigger = screen.getByRole('button', { name: '角色' });
+    await user.click(trigger);
+    expect(screen.getByPlaceholderText('搜索角色')).toHaveFocus();
+    expect(
+      screen
+        .getByPlaceholderText('搜索角色')
+        .compareDocumentPosition(screen.getByRole('button', { name: '全部角色' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: '全部角色' }));
+    await user.keyboard('{Enter}');
+    expect(onHeader).toHaveBeenCalledTimes(2);
+    expect(onChange).not.toHaveBeenCalled();
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByPlaceholderText('搜索角色')).not.toBeInTheDocument();
+  });
+
+  it('shows empty search results even when selected values retain the clear action', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultipleChoiceCombobox
+        options={OPTIONS}
+        value={[1]}
+        triggerLabel='角色'
+        placeholder='请选择角色'
+        onValueChange={vi.fn()}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: '角色' }));
+    await user.type(screen.getByPlaceholderText('搜索角色'), '不存在');
+    expect(screen.getByText('未找到匹配项')).toBeInTheDocument();
+    expect(screen.getByText('清除选择')).toBeInTheDocument();
+  });
+
   it('places the single-selection clear action in the command footer', async () => {
     const user = userEvent.setup();
     render(<SingleHarness searchMode='none' />);
