@@ -24,7 +24,8 @@
     "format:check": "oxfmt --check .",
     "test:unit": "vitest run",
     "pretest:e2e:smoke": "pnpm run build",
-    "test:e2e:smoke": "NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost playwright test"
+    "test:e2e:smoke": "NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost playwright test",
+    "test:e2e:shared-ui": "playwright test -c playwright.shared-ui.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.6.0",
