@@ -11,16 +11,23 @@ describe('useDataTablePageSize', () => {
     localStorage.clear();
   });
 
-  it('hydrates table-scoped persisted values after mount', async () => {
-    localStorage.setItem(USERS_STORAGE_KEY, '50');
+  it('uses the table-scoped persisted page size from the first render', async () => {
+    localStorage.setItem(USERS_STORAGE_KEY, '2000');
+    const renderedPageSizes: number[] = [];
 
-    const { result } = renderHook(() => useDataTablePageSize({ tableId: 'users' }));
+    const { result } = renderHook(() => {
+      const pageSize = useDataTablePageSize({ tableId: 'users' });
+      renderedPageSizes.push(pageSize.pageSize);
+      return pageSize;
+    });
+
+    expect(renderedPageSizes[0]).toBe(2000);
 
     await waitFor(() => {
       expect(result.current.isReady).toBe(true);
     });
 
-    expect(result.current.pageSize).toBe(50);
+    expect(result.current.pageSize).toBe(2000);
   });
 
   it('updates only the current table scope when page size changes', async () => {

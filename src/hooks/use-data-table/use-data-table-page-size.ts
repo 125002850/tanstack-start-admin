@@ -17,11 +17,14 @@ type UseDataTablePageSizeOptions = {
  * URL / Router 查询参数同步由调用方负责；这个 hook 只管理本地偏好和初始 ready 状态。
  */
 export function useDataTablePageSize({ tableId }: UseDataTablePageSizeOptions = {}) {
-  const [pageSize, setPageSizeState] = React.useState<number>(DEFAULT_DATA_TABLE_PAGE_SIZE);
+  // 首次渲染就恢复偏好，让表格 pagination 与首个查询使用相同的页长。
+  const [pageSize, setPageSizeState] = React.useState<number>(
+    () => readDataTablePageSize(tableId) ?? DEFAULT_DATA_TABLE_PAGE_SIZE
+  );
   const [isReady, setIsReady] = React.useState(false);
 
   React.useEffect(() => {
-    // 首次挂载读取缓存；没有缓存时写入默认值，让后续读取路径稳定。
+    // 挂载或 tableId 改变时同步缓存；没有缓存时写入默认值。
     const persistedPageSize = readDataTablePageSize(tableId);
     const nextPageSize = persistedPageSize ?? DEFAULT_DATA_TABLE_PAGE_SIZE;
 
