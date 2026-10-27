@@ -18,6 +18,7 @@ export default defineConfig({
   timeout: 30_000,
   webServer: {
     command: `pnpm exec vite dev --host 127.0.0.1 --port ${port} --strictPort`,
+    env: { VITE_APP_SSO_SERVICE_CODE: 'shared-ui-browser-test' },
     url: `${baseURL}/src/test/fixtures/shared-ui-preview.html`,
     reuseExistingServer: false
   },
