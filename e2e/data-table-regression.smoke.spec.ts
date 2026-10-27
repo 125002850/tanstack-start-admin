@@ -256,6 +256,10 @@ test('@workspace-v2 explains disabled refresh actions on keyboard focus and hove
   await page.keyboard.press('Space');
   await expect(refresh).toBeDisabled();
   await page.keyboard.press('Tab');
+  // 结束键盘提示后重新移入，独立验证鼠标悬停路径。
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await page.mouse.move(0, 0);
   await explanation.hover();
   await expect(page.getByRole('tooltip')).toContainText('正在刷新，请稍候。');
 
