@@ -99,12 +99,14 @@ import {
   IconCrown,
   IconChartInfographic,
   IconX,
+  IconZoomIn,
   IconClipboardList,
   IconDatabaseCog,
   IconSparkleHighlight
 } from '@tabler/icons-react';
 
 export const Icons = {
+  zoomIn: IconZoomIn,
   // General
   alertCircle: IconAlertCircle,
   warning: IconAlertTriangle,

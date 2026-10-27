@@ -1,0 +1,11 @@
+.image-preview-host > .pswp {
+  position: absolute;
+  z-index: auto;
+  --pswp-bg: var(--background);
+  --pswp-icon-color: var(--foreground);
+  --pswp-icon-color-secondary: var(--background);
+}
+
+.image-preview-dialog .pswp__error-msg-container {
+  display: none;
+}

@@ -1,6 +1,9 @@
 import { OverflowTooltipText } from './overflow-tooltip-text';
-import type { FC } from 'react';
+import { useEffect, useMemo, useState, type FC } from 'react';
 import { Icons } from '@/components/icons';
+import { ImagePreview } from '@/components/image-preview';
+import { Button } from './button';
+import { isImageFile } from '@/lib/browser/attachment-preview';
 import { cn } from '@/lib/utils';
 
 export interface UploadedFile {
@@ -108,88 +111,132 @@ export const FilePreview: FC<FilePreviewProps> = ({
   className,
   variant = 'default'
 }) => {
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const imageFiles = useMemo(
+    () =>
+      files.filter(
+        (file) =>
+          file.url &&
+          !file.isUploading &&
+          isImageFile({ filename: file.name, contentType: file.type, url: file.url })
+      ),
+    [files]
+  );
+  const images = useMemo(
+    () =>
+      imageFiles.map((file) => ({
+        id: file.id,
+        src: file.url ?? '',
+        title: file.name,
+        alt: file.name
+      })),
+    [imageFiles]
+  );
+  const previewIndex = imageFiles.findIndex((file) => file.id === previewId);
+  useEffect(() => {
+    if (previewIndex < 0) setPreviewId(null);
+  }, [previewIndex]);
   const isInverted = variant === 'inverted';
   if (files.length === 0) return null;
 
   return (
-    <div className={cn('flex w-full flex-col gap-2 rounded-xl p-2', className)}>
-      <div className='flex w-full flex-wrap gap-2'>
-        {files.map((file) => (
-          <div
-            key={file.id}
-            className={cn(
-              'group/file relative flex items-center rounded-xl transition-all',
-              isInverted
-                ? 'bg-primary-foreground/15 hover:bg-primary-foreground/20'
-                : 'bg-muted hover:bg-muted/80',
-              file.type.startsWith('image/') && file.url
-                ? 'h-14 w-14 justify-center'
-                : 'max-w-[220px] min-w-[180px] p-2 pr-8'
-            )}
-          >
-            {file.isUploading && (
-              <div className='absolute inset-0 flex items-center justify-center rounded-xl bg-black/30'>
-                <Icons.spinner size={20} className='animate-spin text-white' />
-              </div>
-            )}
-
-            {onRemove && (
-              <button
-                type='button'
-                onClick={() => onRemove(file.id)}
-                className={cn(
-                  'absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full',
-                  'scale-75 opacity-0 transition-all duration-150 group-hover/file:scale-100 group-hover/file:opacity-100',
-                  'bg-muted-foreground/60 hover:bg-muted-foreground/80 cursor-pointer'
-                )}
-                aria-label={`Remove ${file.name}`}
-              >
-                <Icons.close size={10} className='text-white' />
-              </button>
-            )}
-
-            {file.type.startsWith('image/') && file.url ? (
-              <div className='h-12 w-12 overflow-hidden rounded-md'>
-                <img
-                  width={48}
-                  height={48}
-                  src={file.url}
-                  alt={file.name}
-                  className='h-full w-full object-cover'
-                />
-              </div>
-            ) : (
-              <>
-                <div
-                  className={cn(
-                    'mr-3 flex h-10 w-10 items-center justify-center rounded-lg',
-                    isInverted ? 'bg-primary-foreground/10' : 'bg-muted-foreground/10'
-                  )}
-                >
-                  {getFileIcon(file.type, file.name)}
+    <>
+      <div className={cn('flex w-full flex-col gap-2 rounded-xl p-2', className)}>
+        <div className='flex w-full flex-wrap gap-2'>
+          {files.map((file) => (
+            <div
+              key={file.id}
+              className={cn(
+                'group/file relative flex items-center rounded-xl transition-all',
+                isInverted
+                  ? 'bg-primary-foreground/15 hover:bg-primary-foreground/20'
+                  : 'bg-muted hover:bg-muted/80',
+                isImageFile({ filename: file.name, contentType: file.type, url: file.url }) &&
+                  file.url
+                  ? 'h-14 w-14 justify-center'
+                  : 'max-w-[220px] min-w-[180px] p-2 pr-8'
+              )}
+            >
+              {file.isUploading && (
+                <div className='absolute inset-0 flex items-center justify-center rounded-xl bg-black/30'>
+                  <Icons.spinner size={20} className='animate-spin text-white' />
                 </div>
-                <div className='flex min-w-0 flex-1 flex-col'>
-                  <OverflowTooltipText
-                    text={file.name}
-                    className={cn(
-                      'truncate text-sm font-medium',
-                      isInverted ? 'text-primary-foreground' : 'text-foreground'
-                    )}
+              )}
+
+              {onRemove && (
+                <button
+                  type='button'
+                  onClick={() => onRemove(file.id)}
+                  className={cn(
+                    'absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full',
+                    'scale-75 opacity-0 transition-all duration-150 group-hover/file:scale-100 group-hover/file:opacity-100',
+                    'bg-muted-foreground/60 hover:bg-muted-foreground/80 cursor-pointer'
+                  )}
+                  aria-label={`Remove ${file.name}`}
+                >
+                  <Icons.close size={10} className='text-white' />
+                </button>
+              )}
+
+              {isImageFile({ filename: file.name, contentType: file.type, url: file.url }) &&
+              file.url ? (
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='size-12 overflow-hidden rounded-md p-0'
+                  aria-label={`预览 ${file.name}`}
+                  disabled={file.isUploading}
+                  onClick={() => setPreviewId(file.id)}
+                >
+                  <img
+                    width={48}
+                    height={48}
+                    src={file.url}
+                    alt={file.name}
+                    referrerPolicy='no-referrer'
+                    className='h-full w-full object-cover'
                   />
-                  <span
+                </Button>
+              ) : (
+                <>
+                  <div
                     className={cn(
-                      'text-xs',
-                      isInverted ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                      'mr-3 flex h-10 w-10 items-center justify-center rounded-lg',
+                      isInverted ? 'bg-primary-foreground/10' : 'bg-muted-foreground/10'
                     )}
                   >
-                    {getFormattedFileType(file.type, file.name)}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+                    {getFileIcon(file.type, file.name)}
+                  </div>
+                  <div className='flex min-w-0 flex-1 flex-col'>
+                    <OverflowTooltipText
+                      text={file.name}
+                      className={cn(
+                        'truncate text-sm font-medium',
+                        isInverted ? 'text-primary-foreground' : 'text-foreground'
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'text-xs',
+                        isInverted ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                      )}
+                    >
+                      {getFormattedFileType(file.type, file.name)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+      <ImagePreview
+        open={previewIndex >= 0}
+        images={images}
+        index={previewIndex}
+        onIndexChange={(next) => setPreviewId(imageFiles[next].id)}
+        onOpenChange={(open) => !open && setPreviewId(null)}
+      />
+    </>
   );
 };
