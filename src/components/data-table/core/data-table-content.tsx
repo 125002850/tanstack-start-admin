@@ -1,8 +1,11 @@
-import { useRef, type ReactNode } from 'react';
+import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import type { Table as TanstackTable } from '@tanstack/react-table';
 import { Table } from '@/components/ui/table';
 import { DataTableCellTooltipProvider } from '../cells/data-table-cell-tooltip';
-import type { DataTableColumnVirtualWindow } from '../virtualization/types';
+import { useComposedRefs } from '@/lib/compose-refs';
+import { cn } from '@/lib/utils';
+import type { DataTableVirtualizationProp } from '../virtualization/types';
+import { useDataTableVirtualization } from '../virtualization/use-data-table-virtualization';
 import { DataTableHeader } from './data-table-header';
 import { DataTableBody } from './data-table-body';
 import { DataTableColGroup } from './data-table-colgroup';
@@ -10,49 +13,58 @@ import { DataTableColGroup } from './data-table-colgroup';
 const noColumns = new Set<string>();
 const noMotion = new Map();
 
-/** 轻量表格内容：复用标准 thead/tbody，无工具栏、分页、虚拟化或固定高度。 */
+/** 轻量表格内容：复用标准 thead/tbody，无工具栏和分页；默认自然高度，可按需启用虚拟化。 */
 export function DataTableContent<TData>({
   table,
   label,
-  emptyMessage = '暂无数据'
-}: {
+  emptyMessage = '暂无数据',
+  virtualization = false,
+  className,
+  ref,
+  ...viewportProps
+}: ComponentProps<'div'> & {
   table: TanstackTable<TData>;
   label: string;
   emptyMessage?: ReactNode;
+  virtualization?: DataTableVirtualizationProp;
 }) {
   const tableRef = useRef<HTMLTableElement>(null);
   const headerRef = useRef<HTMLTableRowElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
+  const composedRef = useComposedRefs(viewportRef, setScrollViewport, ref);
+  const {
+    ariaRowCount,
+    columnVirtualWindow,
+    orderedLeafColumns,
+    resolvedTableWidth,
+    scrollToColumn,
+    shouldVirtualizeColumns,
+    useTransformFreeVirtualRows,
+    virtConfig
+  } = useDataTableVirtualization({ table, virtualization, scrollViewport });
   const separatorColumnIds = new Set(
     table
       .getCenterVisibleLeafColumns()
       .slice(0, -1)
       .map((column) => column.id)
   );
-  const columnWindow: DataTableColumnVirtualWindow<TData> = {
-    enabled: false,
-    items: [],
-    leftItems: [],
-    rightItems: [],
-    virtualPaddingLeft: 0,
-    virtualPaddingRight: 0,
-    virtualTotalSize: 0
-  };
   return (
-    <div ref={viewportRef} className='overflow-x-auto'>
+    <div ref={composedRef} className={cn('overflow-auto', className)} {...viewportProps}>
       <DataTableCellTooltipProvider>
         <Table
           ref={tableRef}
           aria-label={label}
-          style={{ tableLayout: 'fixed', width: table.getTotalSize(), minWidth: '100%' }}
+          aria-rowcount={ariaRowCount}
+          style={{ tableLayout: 'fixed', width: resolvedTableWidth, minWidth: '100%' }}
         >
-          <DataTableColGroup columns={table.getVisibleLeafColumns()} />
+          {shouldVirtualizeColumns ? null : <DataTableColGroup columns={orderedLeafColumns} />}
           <DataTableHeader
             table={table}
             tableElementRef={tableRef}
             headerRowRef={headerRef}
-            columnVirtualWindow={columnWindow}
-            shouldVirtualizeColumns={false}
+            columnVirtualWindow={columnVirtualWindow}
+            shouldVirtualizeColumns={shouldVirtualizeColumns}
             separatorColumnIds={separatorColumnIds}
             draggableColumnIdSet={noColumns}
             columnDragMotionById={noMotion}
@@ -62,8 +74,12 @@ export function DataTableContent<TData>({
             emptyMessage={emptyMessage}
             enableZebraStriping={table.options.meta?.enableZebraStriping ?? false}
             scrollViewportRef={viewportRef}
-            scrollViewport={null}
+            scrollViewport={scrollViewport}
             headerRowRef={headerRef}
+            virtualization={virtConfig}
+            columnVirtualWindow={columnVirtualWindow}
+            scrollToColumn={scrollToColumn}
+            useTransformFreeVirtualRows={useTransformFreeVirtualRows}
             columnDragMotionById={noMotion}
             isColumnDragging={false}
           />
