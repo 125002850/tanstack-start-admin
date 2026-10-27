@@ -8,7 +8,6 @@ import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -73,6 +72,8 @@ type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
   id?: string;
   className?: string;
   contentClassName?: string;
+  /** 搜索框后、选项列表前的附加内容，可放置由调用方控制的选择操作。 */
+  header?: React.ReactNode;
   /** 弹层底部的附加操作。 */
   children?: React.ReactNode;
   renderTrigger?: (props: ChoiceComboboxTriggerProps) => React.ReactElement;
@@ -207,6 +208,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   id,
   className,
   contentClassName,
+  header,
   children,
   renderTrigger,
   'aria-describedby': ariaDescribedBy,
@@ -415,6 +417,20 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
               disabled={disabled}
             />
           )}
+          {header ? (
+            <div
+              data-slot='choice-combobox-header'
+              role='group'
+              aria-label='选择操作'
+              className='border-b p-2'
+              onKeyDown={(event) => {
+                // 嵌入控件自行处理按键，保留浮层的 Escape 与 Tab 行为。
+                if (event.key !== 'Escape' && event.key !== 'Tab') event.stopPropagation();
+              }}
+            >
+              {header}
+            </div>
+          ) : null}
           <CommandList
             ref={listRef}
             aria-multiselectable={selectionMode === 'multiple' ? true : undefined}
@@ -424,7 +440,12 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
             onTouchMoveCapture={markUserScrollIntent}
             onWheelCapture={markUserScrollIntent}
           >
-            <CommandEmpty>{isError ? errorText : isLoading ? loadingText : emptyText}</CommandEmpty>
+            {filteredOptions.length === 0 ? (
+              // 清除操作也计入 cmdk 条目数，空态须依据真正的候选数量展示。
+              <div data-slot='command-empty' role='status' className='py-6 text-center text-sm'>
+                {isError ? errorText : isLoading ? loadingText : emptyText}
+              </div>
+            ) : null}
             {optionGroups.map(([group, groupOptions]) => (
               <CommandGroup key={group ?? 'ungrouped'} heading={group}>
                 {groupOptions.map((option) => {
@@ -472,7 +493,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                             !isSelected && '[&_svg]:invisible'
                           )}
                         >
-                          <Icons.check className='size-4 text-primary' />
+                          <Icons.check className='size-4 text-current' />
                         </span>
                       )}
                     </ChoiceOption>

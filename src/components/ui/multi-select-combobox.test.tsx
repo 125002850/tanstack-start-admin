@@ -127,7 +127,7 @@ describe('MultiSelectCombobox', () => {
     expect(screen.getByPlaceholderText('搜索角色')).toHaveValue('远程');
     expect(screen.queryByText('重复管理员')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '正在加载更多' })).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('正在加载更多');
+    expect(screen.getByText('正在加载更多')).toBeInTheDocument();
 
     await user.clear(screen.getByPlaceholderText('搜索角色'));
     await user.click(screen.getByText('管理员'));
