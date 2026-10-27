@@ -338,6 +338,7 @@ export function useDataTableRuntime<TData>(
     rowSelectionScopeKey: props.rowSelectionScopeKey,
     resolvedStorageMode,
     resolvedColumnOrderStorageMode,
+    columnOrderVersion: props.columnOrderVersion,
     resolvedSortingStorageMode,
     declaredColumnIds,
     normalizeColumnOrder,

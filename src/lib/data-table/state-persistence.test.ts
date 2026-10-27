@@ -172,6 +172,7 @@ describe('data-table-state-persistence', () => {
 
       expect(JSON.parse(localStorage.getItem(COLUMN_ORDER_STORAGE_KEY)!)).toEqual({
         version: 1,
+        layoutVersion: 0,
         order: ['name', 'id']
       });
     });
@@ -182,6 +183,7 @@ describe('data-table-state-persistence', () => {
       expect(localStorage.getItem(COLUMN_ORDER_STORAGE_KEY)).toBeNull();
       expect(JSON.parse(sessionStorage.getItem(COLUMN_ORDER_STORAGE_KEY)!)).toEqual({
         version: 1,
+        layoutVersion: 0,
         order: ['id']
       });
     });

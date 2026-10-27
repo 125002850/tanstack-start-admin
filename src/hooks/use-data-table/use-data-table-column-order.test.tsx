@@ -17,9 +17,10 @@ const columns: ColumnDef<TestRow>[] = [
   { accessorKey: 'name', header: 'Name' }
 ];
 
-function ColumnOrderInspector() {
+function ColumnOrderInspector({ columnOrderVersion }: { columnOrderVersion?: number }) {
   const { table } = useDataTable({
     tableId: TABLE_ID,
+    columnOrderVersion,
     data,
     columns,
     pageCount: 1,
@@ -93,6 +94,22 @@ describe('useDataTable column order persistence', () => {
       JSON.stringify(['name', 'id'])
     );
     expect(screen.getByTestId('has-custom-order').textContent).toBe('true');
+  });
+
+  it('提升布局版本后恢复声明列序，同时保留其他表格偏好', () => {
+    saveDataTableColumnOrder(TABLE_ID, ['name', 'id'], 'localStorage', 1);
+    localStorage.setItem(`data-table:${TABLE_ID}:sorting`, 'preserved-sorting');
+    localStorage.setItem(`data-table:${TABLE_ID}:column-sizing`, 'preserved-sizing');
+
+    render(<ColumnOrderInspector columnOrderVersion={2} />);
+
+    expect(screen.getByTestId('leaf-columns').textContent).toBe(JSON.stringify(['id', 'name']));
+    expect(screen.getByTestId('has-custom-order').textContent).toBe('false');
+    expect(localStorage.getItem(`data-table:${TABLE_ID}:sorting`)).toBe('preserved-sorting');
+    expect(localStorage.getItem(`data-table:${TABLE_ID}:column-sizing`)).toBe('preserved-sizing');
+
+    act(() => screen.getByRole('button', { name: 'reorder' }).click());
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).layoutVersion).toBe(2);
   });
 
   it('persists table.setColumnOrder and reset clears only the order cache', () => {

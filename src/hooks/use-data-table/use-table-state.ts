@@ -42,6 +42,7 @@ export function useTableState<TData>({
   rowSelectionScopeKey,
   resolvedStorageMode,
   resolvedColumnOrderStorageMode,
+  columnOrderVersion,
   resolvedSortingStorageMode,
   declaredColumnIds,
   normalizeColumnOrder,
@@ -55,6 +56,7 @@ export function useTableState<TData>({
   rowSelectionScopeKey: UseDataTableProps<TData>['rowSelectionScopeKey'];
   resolvedStorageMode: ColumnResizeStorageMode;
   resolvedColumnOrderStorageMode: ColumnOrderStorageMode;
+  columnOrderVersion: UseDataTableProps<TData>['columnOrderVersion'];
   resolvedSortingStorageMode: SortingStorageMode;
   /** 当前声明的列 ID（含工具列），用于把缓存顺序里缺失的新增列回填到声明位置。 */
   declaredColumnIds: Array<string>;
@@ -78,7 +80,7 @@ export function useTableState<TData>({
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(() => {
     // 列顺序优先恢复缓存；没有缓存时才使用 initialState。
     const cachedOrder = tableId
-      ? loadDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode)
+      ? loadDataTableColumnOrder(tableId, resolvedColumnOrderStorageMode, columnOrderVersion)
       : [];
     const initialOrder =
       cachedOrder.length > 0
@@ -116,9 +118,14 @@ export function useTableState<TData>({
         return;
       }
 
-      saveDataTableColumnOrder(tableId, nextColumnOrder, resolvedColumnOrderStorageMode);
+      saveDataTableColumnOrder(
+        tableId,
+        nextColumnOrder,
+        resolvedColumnOrderStorageMode,
+        columnOrderVersion
+      );
     },
-    [resolvedColumnOrderStorageMode, tableId]
+    [resolvedColumnOrderStorageMode, tableId, columnOrderVersion]
   );
 
   const onColumnOrderChange = React.useCallback(

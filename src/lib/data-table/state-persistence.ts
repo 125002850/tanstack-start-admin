@@ -37,6 +37,7 @@ interface ColumnSizingCache {
 
 interface ColumnOrderCache {
   version: number;
+  layoutVersion: number;
   order: ColumnOrderState;
 }
 
@@ -296,10 +297,12 @@ export function moveDataTableColumnOrder(
 /** 读取列顺序缓存；版本不匹配时返回空数组。 */
 export function loadDataTableColumnOrder(
   tableId: string,
-  mode: DataTableStateStorageMode
+  mode: DataTableStateStorageMode,
+  layoutVersion = 0
 ): ColumnOrderState {
   const cache = readJsonCache(tableId, 'column-order', mode);
   if (!cache || cache.version !== CACHE_VERSION) return [];
+  if ((cache.layoutVersion ?? 0) !== layoutVersion) return [];
 
   return sanitizeColumnOrder(cache.order);
 }
@@ -308,12 +311,17 @@ export function loadDataTableColumnOrder(
 export function saveDataTableColumnOrder(
   tableId: string,
   order: ColumnOrderState,
-  mode: DataTableStateStorageMode
+  mode: DataTableStateStorageMode,
+  layoutVersion = 0
 ): void {
   writeJsonCache(
     tableId,
     'column-order',
-    { version: CACHE_VERSION, order: sanitizeColumnOrder(order) } satisfies ColumnOrderCache,
+    {
+      version: CACHE_VERSION,
+      layoutVersion,
+      order: sanitizeColumnOrder(order)
+    } satisfies ColumnOrderCache,
     mode
   );
 }
