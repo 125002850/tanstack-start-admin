@@ -93,10 +93,7 @@ export function useWorkspaceTags() {
       if (!requestedTab || isDashboardHomeHref(requestedTab.href)) return;
 
       const ok = await checkCloseGuard(id, 'close-current');
-      if (!ok) {
-        toast.warning('当前页面有未保存的更改，无法关闭标签');
-        return;
-      }
+      if (!ok) return;
       await dismissWorkspaceTabOverlays([id]);
 
       const currentState = useWorkspaceTabStore.getState();
