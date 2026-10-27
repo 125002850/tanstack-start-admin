@@ -13,6 +13,11 @@ export interface DataTableFilterOption {
   icon?: FC<SVGProps<SVGSVGElement>>;
 }
 
+/** 显式开启查询 NULL 的选项，默认文案为“空值”。 */
+export interface DataTableEmptyFilterOption {
+  label?: string;
+}
+
 export interface DataTableRemoteFilterPage {
   items: DataTableFilterOption[];
   total?: number;
@@ -160,6 +165,8 @@ export interface DataTableColumnFilterOptions<TData = unknown, TValue = unknown>
   filter?: false | DataTableColumnFilterVariant;
   filterPlaceholder?: string;
   filterOptions?: DataTableFilterOptions;
+  /** 须确认后端支持字段的 text.IS_NULL；关联字段可声明 dsl.emptyFilterCondition。 */
+  filterEmptyOption?: DataTableEmptyFilterOption;
   /** 远程 select / multiSelect 筛选的数据源；Toolbar 负责统一渲染。 */
   filterRemoteOptions?: DataTableRemoteFilterOptions;
   filterMin?: number | Date;
@@ -182,6 +189,7 @@ export interface DataTableColumnDslQueryOptions<TData, TValue> {
     sortField?: string;
     filterOperator?: DataTableDslOperator;
     serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
+    emptyFilterCondition?: DataTableDslCondition;
     /** 将复合业务筛选转换为完整条件节点；返回 undefined 表示清空。 */
     buildFilterCondition?: (value: unknown) => DataTableDslCondition | undefined;
   };

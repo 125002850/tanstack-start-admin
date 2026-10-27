@@ -186,6 +186,7 @@ function DataTableToolbarFilter<TData>({
                 multiple={multiple}
                 title={columnLabel}
                 remoteOptions={columnMeta.remoteFilter}
+                emptyOption={columnMeta.emptyOption}
                 tableId={tableId}
               />
             );
@@ -196,6 +197,7 @@ function DataTableToolbarFilter<TData>({
                 column={column}
                 title={columnLabel}
                 options={filterOptions}
+                emptyOption={columnMeta.emptyOption}
                 multiple={multiple}
                 labels={labels?.facetedFilter}
               />
@@ -209,6 +211,7 @@ function DataTableToolbarFilter<TData>({
                   column={column}
                   title={columnLabel}
                   options={filterOptions.options}
+                  emptyOption={columnMeta.emptyOption}
                   selectionMode={filterOptions.selectionMode}
                   labels={labels?.facetedFilter}
                 />
@@ -220,6 +223,7 @@ function DataTableToolbarFilter<TData>({
                 column={column}
                 title={columnLabel}
                 options={filterOptions.options}
+                emptyOption={columnMeta.emptyOption}
                 multiple={false}
                 labels={labels?.facetedFilter}
               />
@@ -231,6 +235,7 @@ function DataTableToolbarFilter<TData>({
               column={column}
               title={columnLabel}
               options={[]}
+              emptyOption={columnMeta.emptyOption}
               multiple={multiple}
               labels={labels?.facetedFilter}
             />

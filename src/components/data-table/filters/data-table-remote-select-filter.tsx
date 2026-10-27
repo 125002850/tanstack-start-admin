@@ -4,10 +4,12 @@ import * as React from 'react';
 
 import { DataTableFilterTrigger } from '@/components/data-table/filters/data-table-filter-trigger';
 import type {
+  DataTableEmptyFilterOption,
   DataTableFilterOption,
   DataTableRemoteFilterOptions,
   DataTableRemoteFilterPage
 } from '@/components/data-table/filters/types';
+import { prependDataTableEmptyFilterOption } from './model';
 import { MultipleChoiceCombobox, SingleChoiceCombobox } from '@/components/ui/choice-combobox';
 import { useRemoteComboboxState } from '@/hooks/use-remote-combobox-state';
 
@@ -22,6 +24,7 @@ interface DataTableRemoteSelectFilterProps<TData, TValue> {
   multiple?: boolean;
   title: string;
   remoteOptions: DataTableRemoteFilterOptions;
+  emptyOption?: DataTableEmptyFilterOption;
   tableId: string;
 }
 
@@ -42,6 +45,7 @@ export function DataTableRemoteSelectFilter<TData, TValue>({
   multiple = false,
   title,
   remoteOptions,
+  emptyOption,
   tableId
 }: DataTableRemoteSelectFilterProps<TData, TValue>) {
   const [open, setOpen] = React.useState(false);
@@ -99,8 +103,8 @@ export function DataTableRemoteSelectFilter<TData, TValue>({
       );
     }
     for (const option of remoteState.items) optionByValue.set(option.value, option);
-    return [...optionByValue.values()];
-  }, [knownSelectedOptions, remoteState.items, selectedValues]);
+    return prependDataTableEmptyFilterOption([...optionByValue.values()], emptyOption);
+  }, [emptyOption, knownSelectedOptions, remoteState.items, selectedValues]);
   const activeOptions = React.useMemo(
     () => selectedValues.flatMap((value) => options.find((option) => option.value === value) ?? []),
     [options, selectedValues]

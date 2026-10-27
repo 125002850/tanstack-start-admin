@@ -1,4 +1,4 @@
-import { endOfDay, format, startOfDay } from 'date-fns';
+import { addDays, format, startOfDay } from 'date-fns';
 import type { QueryKey, UseQueryOptions } from '@tanstack/react-query';
 import type {
   ColumnDef,
@@ -8,6 +8,7 @@ import type {
 } from '@tanstack/react-table';
 
 import type { DataTableDslOperator, FilterVariant } from '@/types/data-table';
+import { DATA_TABLE_EMPTY_FILTER_VALUE } from '@/lib/data-table/empty-filter';
 
 /**
  * DataTable 服务端 DSL 请求构建器。
@@ -173,7 +174,7 @@ type ResolvedColumn<TData> = {
 };
 
 export interface DataTableDslQuickCondition {
-  /** 自定义快捷筛选的可序列化 UI 值，恢复后须与条件重新核对。 */
+  /** 复合快捷筛选的可序列化 UI 值，恢复后须与条件重新核对。 */
   filterValue?: unknown;
   columnId: string;
   condition: DataTableDslCondition;
@@ -317,8 +318,20 @@ function toStartOfDay(date: Date): string {
   return formatDateTimeWithOffset(startOfDay(date));
 }
 
-function toEndOfDay(date: Date): string {
-  return formatDateTimeWithOffset(endOfDay(date));
+function toNextDayStart(date: Date): string {
+  return toStartOfDay(addDays(date, 1));
+}
+
+function buildDayRange(field: string, from: Date, to: Date): DataTableDslComposeCondition {
+  // 次日零点使用开区间，保留结束日最后一秒内的小数精度。
+  return {
+    nodeType: 'compose',
+    logic: 'AND',
+    children: [
+      { nodeType: 'dateTime', field, op: 'GTE', value: toStartOfDay(from) },
+      { nodeType: 'dateTime', field, op: 'LT', value: toNextDayStart(to) }
+    ]
+  };
 }
 
 function getDefaultOperatorForVariant(variant: SupportedFilterVariant): DataTableDslOperator {
@@ -404,6 +417,30 @@ function buildFilterCondition<TData>(
   const variant = meta?.variant;
   if (!isDataTableDslFilterVariantSupported(variant)) {
     return undefined;
+  }
+
+  if (meta?.emptyOption && (variant === 'select' || variant === 'multiSelect')) {
+    const values = Array.isArray(filter.value) ? filter.value : [filter.value];
+    if (values.includes(DATA_TABLE_EMPTY_FILTER_VALUE)) {
+      if (meta.query?.filterNodeType === 'enum') {
+        throw new Error(
+          'filterEmptyOption requires text.IS_NULL; enum nodes only support EQ / IN.'
+        );
+      }
+      const ordinaryValues = values.filter((value) => value !== DATA_TABLE_EMPTY_FILTER_VALUE);
+      // 在 serializeFilter / 自定义 builder 之前移除 UI 保留值，保持普通值的原始类型。
+      const ordinaryCondition = ordinaryValues.length
+        ? buildFilterCondition({ ...filter, value: ordinaryValues }, resolvedColumns)
+        : undefined;
+      const emptyCondition: DataTableDslCondition = meta.query?.emptyFilterCondition ?? {
+        nodeType: 'text',
+        field: meta.query?.filterField ?? resolvedColumn.id,
+        op: 'IS_NULL'
+      };
+      return ordinaryCondition
+        ? { nodeType: 'compose', logic: 'OR', children: [ordinaryCondition, emptyCondition] }
+        : emptyCondition;
+    }
   }
 
   if (meta?.query?.buildFilterCondition) {
@@ -516,14 +553,7 @@ function buildDateFilterCondition(
       return undefined;
     }
 
-    return {
-      // 单日期按整天 BETWEEN 查询，避免只命中具体毫秒时间点。
-      nodeType: 'dateTime',
-      field,
-      op: 'BETWEEN',
-      start: toStartOfDay(date),
-      end: toEndOfDay(date)
-    };
+    return buildDayRange(field, date, date);
   }
 
   if (variant === 'dateRange') {
@@ -536,14 +566,7 @@ function buildDateFilterCondition(
     }
 
     if (from && to) {
-      return {
-        // 双端日期范围包含 from 当天开始到 to 当天结束。
-        nodeType: 'dateTime',
-        field,
-        op: 'BETWEEN',
-        start: toStartOfDay(from),
-        end: toEndOfDay(to)
-      };
+      return buildDayRange(field, from, to);
     }
 
     if (from) {
@@ -557,11 +580,11 @@ function buildDateFilterCondition(
     }
 
     return {
-      // 只有结束日期时，转换为小于等于当天结束。
+      // 只有结束日期时，也包含当天全部小数秒。
       nodeType: 'dateTime',
       field,
-      op: 'LTE',
-      value: toEndOfDay(to!)
+      op: 'LT',
+      value: toNextDayStart(to!)
     };
   }
 
@@ -576,12 +599,16 @@ export function buildDataTableDslQuickConditions<TData>(
   const resolvedColumns = resolveColumns(columns);
   return columnFilters.flatMap((filter) => {
     const condition = buildFilterCondition(filter, resolvedColumns);
+    const meta = resolvedColumns.get(filter.id)?.column.meta;
     return condition
       ? [
           {
             columnId: filter.id,
             condition,
-            ...(resolvedColumns.get(filter.id)?.column.meta?.query?.buildFilterCondition
+            ...(meta?.query?.buildFilterCondition ||
+            meta?.emptyOption ||
+            meta?.variant === 'date' ||
+            meta?.variant === 'dateRange'
               ? { filterValue: filter.value }
               : {})
           }
@@ -606,7 +633,7 @@ export function restoreDataTableColumnFilters<TData>(
     if (!isDataTableDslFilterVariantSupported(variant)) return undefined;
     const expectedField = meta?.query?.filterField ?? item.columnId;
     const condition = item.condition;
-    if ('filterValue' in item && meta?.query?.buildFilterCondition) {
+    if ('filterValue' in item) {
       const rebuilt = buildFilterCondition(
         { id: item.columnId, value: item.filterValue },
         resolvedColumns
@@ -639,18 +666,34 @@ export function restoreDataTableColumnFilters<TData>(
       case 'dateTime': {
         value =
           condition.op === 'BETWEEN'
-            ? [
-                parseBackendDateTimeTimestamp(condition.start),
-                parseBackendDateTimeTimestamp(condition.end)
-              ]
-            : parseBackendDateTimeTimestamp(condition.value);
+            ? variant === 'date'
+              ? parseBackendDateTimeTimestamp(condition.start)
+              : [
+                  parseBackendDateTimeTimestamp(condition.start),
+                  parseBackendDateTimeTimestamp(condition.end)
+                ]
+            : variant === 'dateRange' && condition.op === 'LTE'
+              ? [undefined, parseBackendDateTimeTimestamp(condition.value)]
+              : parseBackendDateTimeTimestamp(condition.value);
         break;
       }
     }
 
     if (value === undefined) return undefined;
     const rebuilt = buildFilterCondition({ id: item.columnId, value }, resolvedColumns);
-    if (canonicalCondition(rebuilt) !== canonicalCondition(condition)) return undefined;
+    if (!rebuilt) return undefined;
+    // 旧方案使用当天 23:59:59 作为闭区间结束，恢复为同一日期后采用修正后的半开区间。
+    const legacyDateRange =
+      condition.nodeType === 'dateTime' &&
+      (variant === 'date' || variant === 'dateRange') &&
+      ((condition.op === 'BETWEEN' &&
+        condition.start?.endsWith(' 00:00:00') &&
+        condition.end?.endsWith(' 23:59:59')) ||
+        (variant === 'dateRange' &&
+          condition.op === 'LTE' &&
+          condition.value?.endsWith(' 23:59:59')));
+    if (canonicalCondition(rebuilt) !== canonicalCondition(condition) && !legacyDateRange)
+      return undefined;
     restored.push({ id: item.columnId, value });
   }
 

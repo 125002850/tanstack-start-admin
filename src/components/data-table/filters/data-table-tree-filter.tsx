@@ -8,7 +8,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Tree, type TreeItem, type TreeSelection } from '@/components/ui/tree';
-import type { DataTableTreeSelectionMode, TreeOption } from './types';
+import type { DataTableEmptyFilterOption, DataTableTreeSelectionMode, TreeOption } from './types';
+import { prependDataTableEmptyFilterOption } from './model';
 
 import type { DataTableFacetedFilterLabels } from './data-table-faceted-filter';
 
@@ -16,6 +17,7 @@ interface DataTableTreeFilterProps<TData, TValue> {
   column: Column<TData, TValue>;
   title?: string;
   options: readonly TreeOption[];
+  emptyOption?: DataTableEmptyFilterOption;
   /** cascade 会联动父子节点；independent 表示各节点独立选择。 */
   selectionMode?: DataTableTreeSelectionMode;
   labels?: DataTableFacetedFilterLabels;
@@ -52,6 +54,7 @@ export function DataTableTreeFilter<TData, TValue>({
   column,
   title,
   options,
+  emptyOption,
   selectionMode = 'cascade',
   labels
 }: DataTableTreeFilterProps<TData, TValue>) {
@@ -66,7 +69,14 @@ export function DataTableTreeFilter<TData, TValue>({
     [columnFilterValue]
   );
   const selectedValueSet = React.useMemo(() => new Set(selectedValues), [selectedValues]);
-  const treeItems = React.useMemo(() => dataTableOptionsToTreeItems(options), [options]);
+  const displayOptions = React.useMemo(
+    () => prependDataTableEmptyFilterOption(options, emptyOption),
+    [options, emptyOption]
+  );
+  const treeItems = React.useMemo(() => {
+    const items = dataTableOptionsToTreeItems(options);
+    return emptyOption ? [{ ...displayOptions[0], children: [] }, ...items] : items;
+  }, [options, emptyOption, displayOptions]);
   const handleValuesChange = React.useCallback(
     (values: string[]) => column.setFilterValue(values.length > 0 ? values : undefined),
     [column]
