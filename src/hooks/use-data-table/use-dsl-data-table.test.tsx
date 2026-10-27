@@ -67,6 +67,61 @@ describe('useDslDataTable', () => {
     localStorage.setItem('app-data-table-per-page:dictionary-types', '10');
   });
 
+  it.each([undefined, 2000])(
+    'starts with one request using the saved page size %s or the default',
+    async (savedPageSize) => {
+      localStorage.removeItem('app-data-table-per-page:dictionary-types');
+      if (savedPageSize !== undefined) {
+        localStorage.setItem('app-data-table-per-page:dictionary-types', String(savedPageSize));
+      }
+
+      const fetchPage = vi
+        .fn<
+          (request: DataTableDslPageRequestBase) => Promise<PaginatedResponse<DictionaryTypeRow>>
+        >()
+        .mockResolvedValue({ list: [], total: 5000 });
+      const queryFactory: QueryOptionsFactory<DictionaryTypeRow> = (request) => ({
+        queryKey: ['dictionary-types', request],
+        queryFn: () => fetchPage(request)
+      });
+
+      const { result } = renderHook(
+        () =>
+          useDslDataTable({
+            tableId: 'dictionary-types',
+            columns,
+            queryOptions: queryFactory
+          }),
+        { wrapper: createWrapper() }
+      );
+
+      await waitFor(() => {
+        expect(result.current.queryState.isFetching).toBe(false);
+      });
+
+      const expectedPageSize = savedPageSize ?? 50;
+      expect(fetchPage).toHaveBeenCalledTimes(1);
+      expect(fetchPage).toHaveBeenCalledWith(
+        expect.objectContaining({ pageNo: 1, pageSize: expectedPageSize })
+      );
+      expect(result.current.table.getState().pagination.pageSize).toBe(expectedPageSize);
+
+      act(() => {
+        result.current.table.setPageSize(200);
+      });
+
+      await waitFor(() => {
+        expect(result.current.queryState.isFetching).toBe(false);
+      });
+
+      expect(fetchPage).toHaveBeenCalledTimes(2);
+      expect(fetchPage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ pageNo: 1, pageSize: 200 })
+      );
+      expect(localStorage.getItem('app-data-table-per-page:dictionary-types')).toBe('200');
+    }
+  );
+
   it('builds request objects from table state and exposes narrowed queryState with default list/total mapping', async () => {
     const requests: Array<Record<string, unknown>> = [];
     const queryFactory = vi.fn((request) => {
