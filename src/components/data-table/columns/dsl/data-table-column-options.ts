@@ -112,6 +112,15 @@ function resolveFilterMeta<TData, TValue>(
     return {};
   }
 
+  if (options.filterEmptyOption) {
+    if (filter !== 'select' && filter !== 'multiSelect' && filter !== 'remoteSelect') {
+      throw new Error('filterEmptyOption requires a select, multiSelect or remoteSelect filter.');
+    }
+    if ((options.dsl?.filterNodeType ?? options.meta?.query?.filterNodeType) === 'enum') {
+      throw new Error('filterEmptyOption requires text.IS_NULL; enum nodes only support EQ / IN.');
+    }
+  }
+
   const range =
     // 目前数值范围筛选只接受 number，Date 范围留给 date/dateRange 自己处理。
     typeof filterMin === 'number' && typeof filterMax === 'number'
@@ -122,6 +131,7 @@ function resolveFilterMeta<TData, TValue>(
     variant: FILTER_VARIANT_META[filter],
     placeholder: options.filterPlaceholder ?? inferFilterPlaceholder(filter, title),
     options: options.filterOptions,
+    emptyOption: options.filterEmptyOption,
     remoteFilter:
       filter === 'remoteSelect' || filter === 'multiSelect'
         ? options.filterRemoteOptions
@@ -184,6 +194,7 @@ function hasQueryOptions<TData, TValue>(options: DataTableColumnOptions<TData, T
     options.dsl?.filterOperator ||
     options.dsl?.filterNodeType ||
     options.dsl?.serializeFilter ||
+    options.dsl?.emptyFilterCondition ||
     options.dsl?.buildFilterCondition ||
     options.meta?.query
   );
@@ -204,6 +215,8 @@ function resolveQueryMeta<TData, TValue>(
     filterField: options.dsl?.filterField ?? options.meta?.query?.filterField,
     sortField: options.dsl?.sortField ?? options.meta?.query?.sortField,
     serializeFilter: options.dsl?.serializeFilter ?? options.meta?.query?.serializeFilter,
+    emptyFilterCondition:
+      options.dsl?.emptyFilterCondition ?? options.meta?.query?.emptyFilterCondition,
     buildFilterCondition:
       options.dsl?.buildFilterCondition ?? options.meta?.query?.buildFilterCondition
   };
@@ -221,6 +234,7 @@ function stripDslManagedMeta<TData, TValue>(
   delete nextMeta.variant;
   delete nextMeta.placeholder;
   delete nextMeta.options;
+  delete nextMeta.emptyOption;
   delete nextMeta.remoteFilter;
   delete nextMeta.range;
   delete nextMeta.unit;

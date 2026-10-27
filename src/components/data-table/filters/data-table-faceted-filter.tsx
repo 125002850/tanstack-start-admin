@@ -1,4 +1,5 @@
-import type { Option } from './types';
+import type { DataTableEmptyFilterOption, Option } from './types';
+import { prependDataTableEmptyFilterOption } from './model';
 import type { Column } from '@tanstack/react-table';
 import * as React from 'react';
 import {
@@ -12,7 +13,7 @@ import { DataTableFilterTrigger } from './data-table-filter-trigger';
  * 枚举/多选筛选控件。
  *
  * column filter value 统一保存为字符串数组：单选也使用 `[value]`，这样 toolbar、DSL
- * 序列化和 Badge 摘要可以共用同一种数据形态。
+ * 序列化和 Badge 摘要可以共用同一种数据形态。树形多选由 DataTableTreeFilter 负责。
  */
 export interface DataTableFacetedFilterLabels {
   clearFilterAriaLabel?: (title?: string) => string;
@@ -26,6 +27,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
   title?: string;
   options: readonly Option[];
+  emptyOption?: DataTableEmptyFilterOption;
   multiple?: boolean;
   /** 非 column 筛选器通过 value/onValueChange 管理查询范围。 */
   value?: readonly string[];
@@ -37,7 +39,8 @@ interface DataTableFacetedFilterProps<TData, TValue> {
 export function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
-  options,
+  options: providedOptions,
+  emptyOption,
   multiple,
   value,
   onValueChange,
@@ -45,6 +48,10 @@ export function DataTableFacetedFilter<TData, TValue>({
   labels
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const [open, setOpen] = React.useState(false);
+  const options = React.useMemo(
+    () => prependDataTableEmptyFilterOption(providedOptions, emptyOption),
+    [providedOptions, emptyOption]
+  );
 
   const columnFilterValue = value ?? column?.getFilterValue();
   const setFilterValue = React.useCallback(

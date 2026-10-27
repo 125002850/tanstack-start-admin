@@ -362,68 +362,56 @@ describe('use-dsl-data-table.dsl', () => {
     expect(request.condition).toBeUndefined();
   });
 
-  it('serializes date ranges with explicit timezone offsets and partial bounds', () => {
-    const selectedDate = new Date(2026, 5, 12);
-    const fromDate = new Date(2026, 5, 10);
-    const toDate = new Date(2026, 5, 14);
-
-    const singleDateRequest = buildDataTableDslRequest({
-      columns: [
-        {
-          accessorKey: 'createTime',
-          header: '创建时间',
-          enableColumnFilter: true,
-          meta: { variant: 'date', label: '创建时间' }
-        }
-      ],
-      pagination: { pageIndex: 0, pageSize: 10 },
-      sorting: [],
-      columnFilters: [{ id: 'createTime', value: selectedDate.getTime() }]
-    });
-
-    const fromOnlyRequest = buildDataTableDslRequest({
-      columns,
-      pagination: { pageIndex: 0, pageSize: 10 },
-      sorting: [],
-      columnFilters: [{ id: 'createTime', value: [fromDate.getTime(), undefined] }]
-    });
-
-    const rangeRequest = buildDataTableDslRequest({
-      columns,
-      pagination: { pageIndex: 0, pageSize: 10 },
-      sorting: [],
-      columnFilters: [{ id: 'createTime', value: [fromDate.getTime(), toDate.getTime()] }]
-    });
-
-    const singleNode = (
-      singleDateRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>
-    ).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
-    const fromOnlyNode = (
-      fromOnlyRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>
-    ).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
-    const rangeNode = (
-      rangeRequest.condition as Extract<DataTableDslCondition, { nodeType: 'compose' }>
-    ).children[0] as Extract<DataTableDslCondition, { nodeType: 'dateTime' }>;
-
-    expect(singleNode.nodeType).toBe('dateTime');
-    expect(singleNode.op).toBe('BETWEEN');
-    expect(singleNode.start).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-    expect(singleNode.end).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
-
-    expect(singleNode.start).toBe('2026-06-12 00:00:00');
-    expect(singleNode.end).toBe('2026-06-12 23:59:59');
-
-    expect(fromOnlyNode).toMatchObject({
-      nodeType: 'dateTime',
-      field: 'createTime',
-      op: 'GTE'
-    });
-    expect(rangeNode).toMatchObject({
-      nodeType: 'dateTime',
-      field: 'createTime',
-      op: 'BETWEEN'
-    });
-  });
+  it.each([
+    {
+      variant: 'date' as const,
+      value: new Date(2026, 5, 12, 12).getTime(),
+      start: '2026-06-12 00:00:00',
+      end: '2026-06-13 00:00:00'
+    },
+    {
+      variant: 'dateRange' as const,
+      value: [new Date(2026, 5, 10).getTime(), new Date(2026, 5, 14).getTime()],
+      start: '2026-06-10 00:00:00',
+      end: '2026-06-15 00:00:00'
+    },
+    {
+      variant: 'dateRange' as const,
+      value: [new Date(2026, 5, 10).getTime(), undefined],
+      start: '2026-06-10 00:00:00'
+    },
+    {
+      variant: 'dateRange' as const,
+      value: [undefined, new Date(2026, 11, 31).getTime()],
+      end: '2027-01-01 00:00:00'
+    },
+    {
+      variant: 'date' as const,
+      value: new Date(2028, 1, 29).getTime(),
+      start: '2028-02-29 00:00:00',
+      end: '2028-03-01 00:00:00'
+    }
+  ])(
+    'includes the whole selected day using exclusive next-midnight bounds: $variant $value',
+    ({ variant, value, start, end }) => {
+      const request = buildDataTableDslRequest({
+        columns: [{ accessorKey: 'createTime', enableColumnFilter: true, meta: { variant } }],
+        pagination: { pageIndex: 0, pageSize: 10 },
+        sorting: [],
+        columnFilters: [{ id: 'createTime', value }]
+      });
+      const bounds = [
+        ...(start ? [{ nodeType: 'dateTime', field: 'createTime', op: 'GTE', value: start }] : []),
+        ...(end ? [{ nodeType: 'dateTime', field: 'createTime', op: 'LT', value: end }] : [])
+      ];
+      expect(request.condition).toEqual({
+        nodeType: 'compose',
+        logic: 'AND',
+        children:
+          bounds.length === 2 ? [{ nodeType: 'compose', logic: 'AND', children: bounds }] : bounds
+      });
+    }
+  );
 
   it('merges baseCondition with table filters under an AND compose node', () => {
     const baseCondition: DataTableDslCondition = {

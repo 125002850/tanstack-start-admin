@@ -18,6 +18,7 @@ import type {
 import type {
   DataTableDslFilterNodeType,
   DataTableDslOperator,
+  DataTableEmptyFilterOption,
   DataTableFilterOptions,
   DataTableRemoteFilterOptions,
   DataTableLocalFilteringRuntime,
@@ -39,10 +40,12 @@ declare module '@tanstack/react-table' {
       filterField?: string;
       sortField?: string;
       serializeFilter?: (value: unknown, column: Column<TData, TValue>) => unknown;
+      emptyFilterCondition?: DataTableDslCondition;
       /** 将复合业务筛选转换为完整条件节点；返回 undefined 表示清空。 */
       buildFilterCondition?: (value: unknown) => DataTableDslCondition | undefined;
     };
     options?: DataTableFilterOptions;
+    emptyOption?: DataTableEmptyFilterOption;
     remoteFilter?: DataTableRemoteFilterOptions;
     editableCell?: DataTableEditableColumnMeta<TData>;
     editableChoice?: DataTableEditableChoiceColumnMeta<TData>;
