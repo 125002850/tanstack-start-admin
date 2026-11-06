@@ -2,7 +2,7 @@ import { DictionaryScope } from '@/components/dictionary/dictionary-scope';
 import { useDict } from '@/hooks/use-dict';
 import * as React from 'react';
 import type { ApiClientError } from '@oig/react-query-generator/core';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
@@ -37,6 +37,9 @@ import {
   ScheduleJobRspDTOStatus
 } from '@/lib/api/clients/service';
 
+import { ScheduleExecutionSummary } from './schedule-execution-summary';
+import { executionPollInterval } from '../lib/execution';
+
 import { ScheduleJobFormSheet } from './schedule-job-form-sheet';
 import { ScheduleJobOperationLogSheet } from './schedule-job-operation-log-sheet';
 import { ScheduleJobExecutionLogSheet } from './schedule-job-execution-log-sheet';
@@ -55,7 +58,10 @@ function getStatusBadgeVariant(status?: string): React.ComponentProps<typeof Bad
 
 const columnDsl = createDataTableColumnDsl<ScheduleJobRecord>();
 
-function getColumns(status: ReturnType<typeof useDict>): Array<ColumnDef<ScheduleJobRecord>> {
+function getColumns(
+  status: ReturnType<typeof useDict>,
+  onViewExecution: (job: ScheduleJobRecord) => void
+): Array<ColumnDef<ScheduleJobRecord>> {
   return [
     columnDsl.field('jobName', '任务名称', {
       size: 200,
@@ -89,6 +95,19 @@ function getColumns(status: ReturnType<typeof useDict>): Array<ColumnDef<Schedul
       format: (value) => status.getLabel(value ?? ''),
       variant: (value) => getStatusBadgeVariant(value)
     }),
+    columnDsl.custom({
+      id: 'latestExecution',
+      title: '最近执行',
+      size: 250,
+      enableSorting: false,
+      enableColumnFilter: false,
+      cell: ({ row }) => (
+        <ScheduleExecutionSummary
+          execution={row.original.latestExecution}
+          onView={() => onViewExecution(row.original)}
+        />
+      )
+    }),
     columnDsl.field('remark', '备注', {
       size: 'lg',
       cellClassName: 'max-w-[200px]'
@@ -105,6 +124,7 @@ export default function ScheduleCenterManagementPage() {
   );
 }
 function ScheduleCenterContent() {
+  const queryClient = useQueryClient();
   const status = useDict('ENABLE_STATUS');
   const [formOpen, setFormOpen] = React.useState(false);
   const [editingRecord, setEditingRecord] = React.useState<ScheduleJobRecord | null>(null);
@@ -180,7 +200,14 @@ function ScheduleCenterContent() {
     [disableMutation, enableMutation]
   );
 
-  const columns = React.useMemo(() => getColumns(status), [status]);
+  const handleViewExecution = React.useCallback((job: ScheduleJobRecord) => {
+    setExecLogJob(job);
+    setExecLogOpen(true);
+  }, []);
+  const columns = React.useMemo(
+    () => getColumns(status, handleViewExecution),
+    [status, handleViewExecution]
+  );
 
   const deleteMutationOpts = systemScheduleJobDeleteMutationOptions();
   const deleteMutation = useMutation<
@@ -209,6 +236,10 @@ function ScheduleCenterContent() {
     ...triggerMutationOpts,
     onSuccess: (...args) => {
       toast.success('已触发执行');
+      void queryClient.invalidateQueries({
+        queryKey: ['service', 'schedule-job', 'execution-logs']
+      });
+      void queryClient.invalidateQueries({ queryKey: ['service', 'schedule-job'] });
       return triggerMutationOpts.onSuccess?.(...args);
     },
     onError: (error) =>
@@ -311,7 +342,15 @@ function ScheduleCenterContent() {
     tableId: TABLE_ID,
     sceneCode: 'system.schedule.job.page',
     columns,
-    queryOptions: systemScheduleJobPageQueryOptions,
+    queryOptions: (request) => ({
+      ...systemScheduleJobPageQueryOptions(request),
+      refetchInterval: (query) =>
+        executionPollInterval(
+          query.state.data?.list?.map((job) => job.latestExecution),
+          triggerMutation.isSuccess ? triggerMutation.submittedAt : 0
+        ),
+      refetchIntervalInBackground: false
+    }),
     showSelectColumn: false,
     rowActions,
     refreshBehavior: {
@@ -383,6 +422,7 @@ function ScheduleCenterContent() {
         <ScheduleJobExecutionLogSheet
           job={execLogJob}
           open={execLogOpen}
+          triggeredAt={triggerMutation.isSuccess ? triggerMutation.submittedAt : 0}
           onOpenChange={(open) => {
             setExecLogOpen(open);
             if (!open) setExecLogJob(null);

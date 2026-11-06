@@ -1459,6 +1459,68 @@
           }
         }
       },
+      "ScheduleJobExecutionLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "记录ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobId": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobCode": {
+            "type": "string",
+            "description": "任务编码",
+            "example": "maintenanceJob"
+          },
+          "jobName": {
+            "type": "string",
+            "description": "任务名称",
+            "example": "示例维护任务"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "开始时间",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "结束时间",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "执行状态：running-执行中，success-成功，failed-失败",
+            "example": "success",
+            "enum": [
+              "running",
+              "success",
+              "failed"
+            ]
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "错误信息"
+          },
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "durationMillis": {
+            "type": "integer",
+            "description": "执行耗时（毫秒），运行中为截至本次查询的时长",
+            "format": "int64"
+          }
+        },
+        "description": "定时任务执行记录响应"
+      },
       "ScheduleJobRspDTO": {
         "type": "object",
         "properties": {
@@ -1545,6 +1607,9 @@
             "type": "string",
             "description": "任务分组",
             "example": "平台维护"
+          },
+          "latestExecution": {
+            "$ref": "#/components/schemas/ScheduleJobExecutionLogRspDTO"
           }
         },
         "description": "定时任务响应"
@@ -1868,9 +1933,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -2188,58 +2254,6 @@
             }
           }
         }
-      },
-      "ScheduleJobExecutionLogRspDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "记录ID",
-            "format": "int64",
-            "example": 1
-          },
-          "jobId": {
-            "type": "integer",
-            "description": "任务ID",
-            "format": "int64",
-            "example": 1
-          },
-          "jobCode": {
-            "type": "string",
-            "description": "任务编码",
-            "example": "maintenanceJob"
-          },
-          "jobName": {
-            "type": "string",
-            "description": "任务名称",
-            "example": "示例维护任务"
-          },
-          "startTime": {
-            "type": "string",
-            "description": "开始时间",
-            "format": "date-time"
-          },
-          "endTime": {
-            "type": "string",
-            "description": "结束时间",
-            "format": "date-time"
-          },
-          "status": {
-            "type": "string",
-            "description": "执行状态：success-成功，failed-失败",
-            "example": "success"
-          },
-          "errorMessage": {
-            "type": "string",
-            "description": "错误信息"
-          },
-          "createTime": {
-            "type": "string",
-            "description": "创建时间",
-            "format": "date-time"
-          }
-        },
-        "description": "定时任务执行记录响应"
       },
       "ScheduleJobCreateReqDTO": {
         "required": [
@@ -2875,9 +2889,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -3565,9 +3580,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -4298,9 +4314,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -5043,9 +5060,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
