@@ -1,0 +1,247 @@
+.routing-canvas-container {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.routing-canvas-container[data-expanded='true'] {
+  height: 100%;
+  min-height: 0;
+}
+
+.routing-canvas-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  height: clamp(30rem, 62vh, 42rem);
+  min-height: 30rem;
+  overflow: hidden;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.routing-canvas-shell[data-expanded='true'] {
+  height: 100%;
+  min-height: 0;
+}
+
+.routing-canvas {
+  min-width: 0;
+  min-height: 0;
+}
+
+.routing-canvas .react-flow__pane {
+  cursor: grab;
+}
+
+.routing-canvas .react-flow__pane.dragging {
+  cursor: grabbing;
+}
+
+.routing-canvas .react-flow__edge-path {
+  stroke: color-mix(in oklab, var(--primary) 24%, var(--border));
+  stroke-width: 1.5;
+  transition:
+    stroke 140ms ease,
+    stroke-width 140ms ease;
+}
+
+.routing-canvas .routing-canvas-edge-active .react-flow__edge-path {
+  stroke: var(--primary);
+  stroke-width: 2.25;
+}
+
+.routing-canvas .routing-canvas-handle {
+  width: 0.5rem;
+  height: 0.5rem;
+  pointer-events: none;
+  background: var(--background);
+  border: 2px solid color-mix(in oklab, var(--primary) 55%, var(--border));
+}
+
+.routing-canvas-start-node,
+.routing-canvas-node {
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--foreground) 8%, transparent);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.routing-canvas-start-node {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
+  border-radius: var(--radius-md);
+}
+
+.routing-canvas-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+}
+
+.routing-canvas-start-node[data-active='true'],
+.routing-canvas-node[data-active='true'] {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--primary) 13%, transparent),
+    0 10px 28px color-mix(in oklab, var(--foreground) 10%, transparent);
+}
+
+.routing-canvas-node[data-invalid='true'] {
+  border-color: var(--destructive);
+}
+
+.routing-canvas-group-node {
+  min-height: 4.5rem;
+  background: color-mix(in oklab, var(--primary) 5%, var(--card));
+}
+
+.routing-canvas-condition-node {
+  min-height: 11.875rem;
+  border-color: color-mix(in oklab, var(--primary) 18%, var(--border));
+}
+
+.routing-canvas-group-header,
+.routing-canvas-condition-header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.routing-canvas-node-drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.routing-canvas .react-flow__node.dragging .routing-canvas-node-drag-handle {
+  cursor: grabbing;
+}
+
+.routing-canvas-node-add {
+  position: absolute;
+  right: 50%;
+  bottom: -1rem;
+  transform: translateX(50%);
+  background: var(--background);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--foreground) 12%, transparent);
+}
+
+/* 极夜主题依靠纯黑白建立层级。逻辑节点使用清晰边界和实体控件，
+   避免 card / muted / input 三组相邻灰阶挤在一起。 */
+[data-theme='vercel'] .routing-canvas-group-node {
+  --routing-canvas-group-control-border: color-mix(in oklab, var(--primary) 42%, var(--border));
+
+  background: var(--card);
+  border-color: var(--routing-canvas-group-control-border);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--foreground) 12%, transparent),
+    var(--shadow-md);
+}
+
+[data-theme='vercel'] .routing-canvas-group-node[data-active='true'] {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--primary) 18%, transparent),
+    var(--shadow-lg);
+}
+
+[data-theme='vercel'] .routing-canvas-group-node[data-invalid='true'] {
+  border-color: var(--destructive);
+}
+
+[data-theme='vercel'] .routing-canvas-group-header > span {
+  color: var(--foreground);
+}
+
+[data-theme='vercel'] .routing-canvas-group-header [data-slot='button'] {
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--routing-canvas-group-control-border);
+}
+
+[data-theme='vercel'] .routing-canvas-group-header [data-slot='button']:hover {
+  color: var(--accent-foreground);
+  background: var(--accent);
+}
+
+[data-theme='vercel'] .routing-canvas-group-node [data-slot='toggle-group'] {
+  gap: 0.25rem;
+  padding: 0.1875rem;
+  background: var(--background);
+  border: 1px solid var(--routing-canvas-group-control-border);
+}
+
+[data-theme='vercel'] .routing-canvas-group-node [data-slot='toggle-group-item'] {
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+[data-theme='vercel']
+  .routing-canvas-group-node
+  [data-slot='toggle-group-item'][data-state='off']:hover {
+  color: var(--accent-foreground);
+  background: var(--accent);
+  border-color: var(--routing-canvas-group-control-border);
+}
+
+[data-theme='vercel'] .routing-canvas-group-node [data-slot='toggle-group-item'][data-state='on'] {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+[data-theme='vercel'] .routing-canvas-group-node .routing-canvas-node-add:not(:disabled) {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--primary) 16%, transparent),
+    var(--shadow-md);
+}
+
+[data-theme='vercel'] .routing-canvas-group-node .routing-canvas-node-add:not(:disabled):hover {
+  background: color-mix(in oklab, var(--primary) 88%, var(--background));
+}
+
+[data-theme='vercel']
+  .routing-canvas-group-node
+  .routing-canvas-node-add:not(:disabled):focus-visible {
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent),
+    var(--shadow-md);
+}
+
+.routing-canvas-controls {
+  margin: 0;
+}
+
+@container (max-width: 900px) {
+  .routing-canvas-shell {
+    height: 34rem;
+  }
+}

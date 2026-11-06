@@ -44,6 +44,7 @@
 - 数据表格，支持 DSL 查询、服务端分页、类型安全的选择列编辑与跨页草稿、本地列值筛选、列拖拽与持久化、虚拟滚动、单元格复制和区域选择
 - 类型安全的文件路由，以及由 route metadata 派生的侧边栏、KBar、breadcrumb 与 workspace 行为
 - 工作区页签，支持拖拽排序、LRU 淘汰、页面注册表、保活与浮层清理
+- 共享基础组件：画布缩放与全屏、条件树与字段目录条件画布、时长输入；接入方式见[共享 UI 能力](.agents/skills/oig-tanstack-admin/references/shared-ui-capabilities.md)
 - Shadcn UI 组件体系、10+ 主题与明暗模式
 - 表单示例、Kanban 看板、聊天、通知中心、字典管理与导出中心
 - 静态构建产物，可部署到任意静态文件服务器

@@ -25,6 +25,7 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { useFormErrorNavigation } from '@/hooks/use-form-error-navigation';
 import { useWorkspaceDirtyGuard } from '@/features/workspace-tabs/hooks/use-workspace-dirty-guard';
 import { WorkspaceDirtyGuardDialog } from '@/features/workspace-tabs/components/workspace-dirty-guard-dialog';
+import { SharedFoundationExamples } from './shared-foundation-examples';
 
 const choices = [
   { value: 'A', label: '候选 A' },
@@ -155,6 +156,7 @@ function ExamplePage() {
         className='h-72 w-full max-w-3xl'
         virtualization={{ mode: 'on', columnVirtualizationMode: 'on' }}
       />
+      <SharedFoundationExamples />
     </main>
   );
 }

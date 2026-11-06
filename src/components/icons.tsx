@@ -1,4 +1,11 @@
 import {
+  IconMaximize,
+  IconZoomOut,
+  IconArrowBackUp,
+  IconArrowForwardUp,
+  IconArrowsMinimize,
+  IconArrowsMaximize,
+  IconGitBranch,
   IconAdjustmentsHorizontal,
   IconAlertCircle,
   IconAlertTriangle,
@@ -106,6 +113,14 @@ import {
 } from '@tabler/icons-react';
 
 export const Icons = {
+  branch: IconGitBranch,
+  maximize: IconArrowsMaximize,
+  minimize: IconArrowsMinimize,
+  redo: IconArrowForwardUp,
+  undo: IconArrowBackUp,
+  zoomOut: IconZoomOut,
+  zoomToFit: IconMaximize,
+
   zoomIn: IconZoomIn,
   // General
   alertCircle: IconAlertCircle,
