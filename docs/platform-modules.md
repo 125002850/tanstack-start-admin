@@ -91,3 +91,10 @@
 - `corepack pnpm build --outDir /tmp/template-table-main-build` 通过；本次修改文件格式检查及 `git diff --check` 通过。
 - 隔离 Chromium、Mock API 的 `data-table-regression` 和 `data-table-tree` 浏览器回归：共 6 项，5 通过、1 失败。失败项为刷新禁用提示 hover 后读到“新增字典项”，已在本分支同步前的生产构建中复现相同断言。
 - 全仓格式检查仍有 3 个原有文件问题，已确认这些文件与同步前 HEAD 一致：`docs/ssr-docker-nginx-deployment.md`、`openapi/specs/openapi.json`、`src/features/workspace-tabs/components/workspace-overlay-contract-page.tsx`。
+
+## 2026-11-06 基础设施回灌
+
+- 工作日历支持继承时段的新年份首次保存，未保存版本切换显示可聚焦的禁用原因；试算当前草稿、生效或历史版本，并校验其 ID 与锁版本。未保存修改必须先保存。
+- 调度列表显示最近执行状态、耗时与开始时间，执行记录复用查询缓存；页面可见时 15 秒刷新，运行中或手动触发后短期 3 秒刷新。进程异常结束可能留下 running，页面提示核查服务。
+- API 来自 `java-admin-starter` 契约测试导出的 OpenAPI；先部署新增调度迁移与后端接口，再部署配套页面。
+- 共享能力补齐虚拟表格渲染优化、静态路由优先匹配、保留实例的页签地址替换、异步导出自动下载、刷新按钮和禁用提示。

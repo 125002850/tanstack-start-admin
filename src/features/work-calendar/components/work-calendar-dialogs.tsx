@@ -153,21 +153,23 @@ export function ImportJsonDialog({
   );
 }
 
-interface DraftEvaluationDialogProps {
+interface VersionEvaluationDialogProps {
   open: boolean;
   pending: boolean;
   year: number;
+  versionNo?: number;
   onOpenChange: (open: boolean) => void;
   onEvaluate: (localDateTime: string) => Promise<TimeClassificationRspDTO>;
 }
 
-export function DraftEvaluationDialog({
+export function VersionEvaluationDialog({
   open,
   pending,
   year,
+  versionNo,
   onOpenChange,
   onEvaluate
-}: DraftEvaluationDialogProps) {
+}: VersionEvaluationDialogProps) {
   const [value, setValue] = React.useState(`${year}-01-01T10:00`);
   const [result, setResult] = React.useState<TimeClassificationRspDTO | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -183,15 +185,15 @@ export function DraftEvaluationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>试算已保存草稿</DialogTitle>
+          <DialogTitle>试算</DialogTitle>
           <DialogDescription>
-            输入 Asia/Shanghai 本地时间。结果只代表已保存草稿，不是当前生效规则。
+            使用当前查看的 {year} 年 v{versionNo ?? '—'} 版本，输入 Asia/Shanghai 本地时间进行试算。
           </DialogDescription>
         </DialogHeader>
         <div className='space-y-4'>
           <Input
             type='datetime-local'
-            aria-label='草稿试算时间'
+            aria-label='试算时间'
             min={`${year}-01-01T00:00`}
             max={`${year}-12-31T23:59`}
             value={value}
@@ -211,11 +213,12 @@ export function DraftEvaluationDialog({
             onClick={async () => {
               try {
                 setError(null);
+                setResult(null);
                 setResult(await onEvaluate(toBackendDateTime(value)));
               } catch (error) {
                 setError(
                   normalizeApiError(error, {
-                    fallbackMessage: '试算失败，请确认草稿仍为最新版本。'
+                    fallbackMessage: '试算失败，请重新加载当前版本后重试。'
                   }).message
                 );
               }

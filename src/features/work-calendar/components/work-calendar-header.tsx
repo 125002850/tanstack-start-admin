@@ -2,6 +2,7 @@ import { useDict } from '@/hooks/use-dict';
 import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DisabledTooltip } from '@/components/ui/disabled-tooltip';
 import { type WorkCalendarYearDetailRspDTO } from '@/lib/api/clients/service';
 import { WORK_CALENDAR_TIME_ZONE } from '../model/work-calendar-model';
 import {
@@ -85,14 +86,19 @@ export function Header({
       </div>
 
       <div className='flex flex-wrap items-center gap-2'>
-        <WorkCalendarVersionList
-          year={year}
-          selectedVersion={selectedVersion}
-          activeVersionId={detail.activeVersion?.versionId}
-          disabled={dirty || saving || preparing}
-          onSelect={onVersionChange}
-        />
-        {dirty && <span className='text-sm text-muted-foreground'>保存草稿后可切换版本</span>}
+        <DisabledTooltip disabled={dirty} reason='保存草稿后可切换版本'>
+          <WorkCalendarVersionList
+            year={year}
+            selectedVersion={selectedVersion}
+            activeVersionId={detail.activeVersion?.versionId}
+            disabled={dirty || saving || preparing}
+            onSelect={onVersionChange}
+          />
+        </DisabledTooltip>
+        <Button type='button' variant='outline' onClick={onEvaluate}>
+          <Icons.clock className='size-4' />
+          试算
+        </Button>
         {!draftView && (
           <Button type='button' variant='outline' onClick={() => onViewModeChange('draft')}>
             {detail.draftVersion ? '编辑草稿' : '新建草稿'}
@@ -100,15 +106,11 @@ export function Header({
         )}
         {draftView && (
           <>
-            <Button type='button' variant='outline' onClick={onEvaluate}>
-              <Icons.clock className='size-4' />
-              草稿试算
-            </Button>
             <Button type='button' variant='outline' onClick={onImport}>
               <Icons.upload className='size-4' />
               导入 JSON
             </Button>
-            {dirty && (
+            {(dirty || !detail.draftVersion) && (
               <Button type='button' variant='outline' isLoading={saving} onClick={onSave}>
                 <Icons.save className='size-4' />
                 保存草稿

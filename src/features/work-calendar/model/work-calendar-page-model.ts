@@ -10,6 +10,17 @@ export const WORK_CALENDAR_CLASSIFICATION_BASIS = {
 
 export type WorkCalendarViewMode = 'draft' | 'active' | 'history';
 
+export function getSelectedWorkCalendarVersion(
+  detail: WorkCalendarYearDetailRspDTO,
+  viewMode: WorkCalendarViewMode
+) {
+  return viewMode === 'history'
+    ? detail.selectedVersion
+    : viewMode === WorkCalendarYearDetailReqDTOView.draft
+      ? detail.draftVersion
+      : detail.activeVersion;
+}
+
 export function toSaveRequest(value: WorkCalendarDraftFormValue) {
   return {
     year: value.year,

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppForm } from '@/components/ui/tanstack-form';
 import {
-  evaluateWorkCalendarDraftMutationOptions,
+  evaluateWorkCalendarVersionMutationOptions,
   fetchWorkCalendarVersionDetailQueryKey,
   fetchWorkCalendarVersionDetailQueryOptions,
   listWorkCalendarVersionsQueryKey,
@@ -31,7 +31,7 @@ import { toast } from 'sonner';
 import { DateOverrideSheet } from './components/date-override-sheet';
 import { StandardPeriodsEditor } from './components/standard-periods-editor';
 import {
-  DraftEvaluationDialog,
+  VersionEvaluationDialog,
   ImportJsonDialog,
   PublicationDialog,
   WorkCalendarDirtyDialog
@@ -50,6 +50,7 @@ import {
 } from './model/work-calendar-model';
 import { type WorkCalendarViewMode } from './model/work-calendar-page-model';
 import {
+  getSelectedWorkCalendarVersion,
   requireResponse,
   resolveWorkCalendarViewMode,
   toOperationError,
@@ -208,7 +209,7 @@ function WorkCalendarEditor({
 
   const saveMutation = useMutation(saveWorkCalendarDraftMutationOptions());
   const importMutation = useMutation(importWorkCalendarDraftMutationOptions());
-  const evaluateMutation = useMutation(evaluateWorkCalendarDraftMutationOptions());
+  const evaluateMutation = useMutation(evaluateWorkCalendarVersionMutationOptions());
   const prepareMutation = useMutation(prepareWorkCalendarPublicationMutationOptions());
   const publishMutation = useMutation(publishWorkCalendarDraftMutationOptions());
 
@@ -232,6 +233,7 @@ function WorkCalendarEditor({
   const values = useStore(form.store, (state) => state.values);
   const dirty = useStore(form.store, (state) => state.isDirty);
   const readOnly = viewMode !== WorkCalendarYearDetailReqDTOView.draft;
+  const selectedVersion = getSelectedWorkCalendarVersion(detail, viewMode);
   const dirtyGuard = useWorkCalendarDirtyGuard(dirty);
 
   React.useEffect(() => {
@@ -289,7 +291,7 @@ function WorkCalendarEditor({
     toast.success(successMessage);
   }
 
-  function requireSavedDraft(action: '导入' | '试算' | '发布') {
+  function requireSavedDraft(action: '导入' | '发布') {
     if (!values.draftVersionId || values.expectedLockVersion === undefined) {
       toast.warning(`首次配置需先添加标准工作时段并保存草稿，再进行${action}。`);
       return false;
@@ -370,16 +372,16 @@ function WorkCalendarEditor({
   }
 
   async function handleEvaluate(localDateTime: string): Promise<TimeClassificationRspDTO> {
-    if (!values.draftVersionId || values.expectedLockVersion === undefined) {
-      throw new Error('Draft missing');
+    if (!selectedVersion?.versionId || selectedVersion.lockVersion === undefined) {
+      throw new Error('Calendar version missing');
     }
     return requireResponse(
       await evaluateMutation.mutateAsync({
-        draftVersionId: values.draftVersionId,
-        expectedLockVersion: values.expectedLockVersion,
+        versionId: selectedVersion.versionId,
+        expectedLockVersion: selectedVersion.lockVersion,
         localDateTime
       }),
-      '草稿试算响应缺少数据'
+      '版本试算响应缺少数据'
     );
   }
 
@@ -407,10 +409,12 @@ function WorkCalendarEditor({
           onOpenChange={setImportOpen}
           onImport={handleImport}
         />
-        <DraftEvaluationDialog
+        <VersionEvaluationDialog
+          key={`${selectedVersion?.versionId}-${selectedVersion?.lockVersion}`}
           open={evaluationOpen}
           pending={evaluateMutation.isPending}
           year={year}
+          versionNo={selectedVersion?.versionNo}
           onOpenChange={setEvaluationOpen}
           onEvaluate={handleEvaluate}
         />
@@ -481,7 +485,17 @@ function WorkCalendarEditor({
             void form.handleSubmit();
           }}
           onImport={() => requireSavedDraft('导入') && setImportOpen(true)}
-          onEvaluate={() => requireSavedDraft('试算') && setEvaluationOpen(true)}
+          onEvaluate={() => {
+            if (!selectedVersion?.versionId || selectedVersion.lockVersion === undefined) {
+              toast.warning('当前没有已保存的版本，请先保存草稿后再试算。');
+              return;
+            }
+            if (dirty) {
+              toast.warning('试算只使用当前版本已保存的规则，请先保存当前修改。');
+              return;
+            }
+            setEvaluationOpen(true);
+          }}
           onPublish={() => void handlePreparePublication()}
         />
 

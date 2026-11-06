@@ -135,6 +135,37 @@
         }
       }
     },
+    "/api/system/work-calendar/version/evaluate": {
+      "post": {
+        "tags": [
+          "工作日历"
+        ],
+        "summary": "试算指定工作日历版本",
+        "operationId": "evaluateWorkCalendarVersion",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateWorkCalendarVersionReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RTimeClassificationRspDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/system/work-calendar/version/detail": {
       "post": {
         "tags": [
@@ -3111,6 +3142,151 @@
           }
         }
       },
+      "EvaluateWorkCalendarVersionReqDTO": {
+        "required": [
+          "expectedLockVersion",
+          "localDateTime",
+          "versionId"
+        ],
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "minimum": 1,
+            "type": "integer",
+            "description": "当前查看的工作日历版本 ID",
+            "format": "int64",
+            "example": 1
+          },
+          "expectedLockVersion": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "当前查看版本的乐观锁版本号",
+            "format": "int32",
+            "example": 0
+          },
+          "localDateTime": {
+            "type": "string",
+            "description": "版本所属年度内的 Asia/Shanghai 本地时间",
+            "format": "date-time"
+          }
+        },
+        "description": "指定工作日历版本试算请求，支持草稿、生效及历史发布版本"
+      },
+      "RTimeClassificationRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TimeClassificationRspDTO"
+          }
+        }
+      },
+      "TimeClassificationRspDTO": {
+        "type": "object",
+        "properties": {
+          "inputLocalDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "zoneId": {
+            "type": "string",
+            "description": "固定时区",
+            "enum": [
+              "Asia/Shanghai"
+            ]
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "working_time",
+              "workday_break",
+              "weekend",
+              "public_holiday",
+              "other_non_working_day"
+            ],
+            "x-dict-type": "WORK_CALENDAR_TIME_CLASSIFICATION"
+          },
+          "working": {
+            "type": "boolean"
+          },
+          "effectiveDayKind": {
+            "type": "string",
+            "enum": [
+              "regular_workday",
+              "adjusted_workday",
+              "weekend",
+              "public_holiday",
+              "other_non_working_day"
+            ],
+            "x-dict-type": "WORK_CALENDAR_EFFECTIVE_DAY_KIND"
+          },
+          "traits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "weekend",
+                "public_holiday",
+                "adjusted_workday",
+                "other_non_working_day"
+              ],
+              "x-dict-type": "WORK_CALENDAR_DAY_TRAIT"
+            }
+          },
+          "dateName": {
+            "type": "string"
+          },
+          "effectivePeriods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+            }
+          },
+          "matchedPeriod": {
+            "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
+          },
+          "authoritative": {
+            "type": "boolean"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "published_snapshot",
+              "weekly_fallback",
+              "saved_draft"
+            ],
+            "x-dict-type": "WORK_CALENDAR_CLASSIFICATION_BASIS"
+          },
+          "holidayStatus": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "candidate",
+              "unknown"
+            ],
+            "x-dict-type": "WORK_CALENDAR_HOLIDAY_STATUS"
+          },
+          "calendarYear": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "calendarVersionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "calendarVersionNo": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "工作日历时间判定结果"
+      },
       "WorkCalendarVersionDetailReqDTO": {
         "required": [
           "versionId",
@@ -3431,121 +3607,6 @@
         },
         "description": "已保存工作日历草稿试算请求"
       },
-      "RTimeClassificationRspDTO": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "msg": {
-            "type": "string"
-          },
-          "data": {
-            "$ref": "#/components/schemas/TimeClassificationRspDTO"
-          }
-        }
-      },
-      "TimeClassificationRspDTO": {
-        "type": "object",
-        "properties": {
-          "inputLocalDateTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "zoneId": {
-            "type": "string",
-            "description": "固定时区",
-            "enum": [
-              "Asia/Shanghai"
-            ]
-          },
-          "classification": {
-            "type": "string",
-            "enum": [
-              "working_time",
-              "workday_break",
-              "weekend",
-              "public_holiday",
-              "other_non_working_day"
-            ],
-            "x-dict-type": "WORK_CALENDAR_TIME_CLASSIFICATION"
-          },
-          "working": {
-            "type": "boolean"
-          },
-          "effectiveDayKind": {
-            "type": "string",
-            "enum": [
-              "regular_workday",
-              "adjusted_workday",
-              "weekend",
-              "public_holiday",
-              "other_non_working_day"
-            ],
-            "x-dict-type": "WORK_CALENDAR_EFFECTIVE_DAY_KIND"
-          },
-          "traits": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "weekend",
-                "public_holiday",
-                "adjusted_workday",
-                "other_non_working_day"
-              ],
-              "x-dict-type": "WORK_CALENDAR_DAY_TRAIT"
-            }
-          },
-          "dateName": {
-            "type": "string"
-          },
-          "effectivePeriods": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
-            }
-          },
-          "matchedPeriod": {
-            "$ref": "#/components/schemas/WorkCalendarPeriodRspDTO"
-          },
-          "authoritative": {
-            "type": "boolean"
-          },
-          "basis": {
-            "type": "string",
-            "enum": [
-              "published_snapshot",
-              "weekly_fallback",
-              "saved_draft"
-            ],
-            "x-dict-type": "WORK_CALENDAR_CLASSIFICATION_BASIS"
-          },
-          "holidayStatus": {
-            "type": "string",
-            "enum": [
-              "confirmed",
-              "candidate",
-              "unknown"
-            ],
-            "x-dict-type": "WORK_CALENDAR_HOLIDAY_STATUS"
-          },
-          "calendarYear": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "calendarVersionId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "calendarVersionNo": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "description": "工作日历时间判定结果"
-      },
       "ClassifyWorkCalendarTimeReqDTO": {
         "required": [
           "localDateTime"
@@ -3642,6 +3703,68 @@
           }
         }
       },
+      "ScheduleJobExecutionLogRspDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "记录ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobId": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          },
+          "jobCode": {
+            "type": "string",
+            "description": "任务编码",
+            "example": "maintenanceJob"
+          },
+          "jobName": {
+            "type": "string",
+            "description": "任务名称",
+            "example": "示例维护任务"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "开始时间",
+            "format": "date-time"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "结束时间",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "description": "执行状态：running-执行中，success-成功，failed-失败",
+            "example": "success",
+            "enum": [
+              "running",
+              "success",
+              "failed"
+            ]
+          },
+          "errorMessage": {
+            "type": "string",
+            "description": "错误信息"
+          },
+          "createTime": {
+            "type": "string",
+            "description": "创建时间",
+            "format": "date-time"
+          },
+          "durationMillis": {
+            "type": "integer",
+            "description": "执行耗时（毫秒），运行中为截至本次查询的时长",
+            "format": "int64"
+          }
+        },
+        "description": "定时任务执行记录响应"
+      },
       "ScheduleJobRspDTO": {
         "type": "object",
         "properties": {
@@ -3728,6 +3851,9 @@
             "type": "string",
             "description": "任务分组",
             "example": "平台维护"
+          },
+          "latestExecution": {
+            "$ref": "#/components/schemas/ScheduleJobExecutionLogRspDTO"
           }
         },
         "description": "定时任务响应"
@@ -4051,9 +4177,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -4371,58 +4498,6 @@
             }
           }
         }
-      },
-      "ScheduleJobExecutionLogRspDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "记录ID",
-            "format": "int64",
-            "example": 1
-          },
-          "jobId": {
-            "type": "integer",
-            "description": "任务ID",
-            "format": "int64",
-            "example": 1
-          },
-          "jobCode": {
-            "type": "string",
-            "description": "任务编码",
-            "example": "maintenanceJob"
-          },
-          "jobName": {
-            "type": "string",
-            "description": "任务名称",
-            "example": "示例维护任务"
-          },
-          "startTime": {
-            "type": "string",
-            "description": "开始时间",
-            "format": "date-time"
-          },
-          "endTime": {
-            "type": "string",
-            "description": "结束时间",
-            "format": "date-time"
-          },
-          "status": {
-            "type": "string",
-            "description": "执行状态：success-成功，failed-失败",
-            "example": "success"
-          },
-          "errorMessage": {
-            "type": "string",
-            "description": "错误信息"
-          },
-          "createTime": {
-            "type": "string",
-            "description": "创建时间",
-            "format": "date-time"
-          }
-        },
-        "description": "定时任务执行记录响应"
       },
       "ScheduleJobCreateReqDTO": {
         "required": [
@@ -5058,9 +5133,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -5748,9 +5824,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -6481,9 +6558,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -7136,9 +7214,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -7838,9 +7917,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -8277,9 +8357,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -8934,9 +9015,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },
@@ -9151,9 +9233,10 @@
             "example": 1
           },
           "pageSize": {
+            "maximum": 2000,
             "minimum": 1,
             "type": "integer",
-            "description": "每页条数",
+            "description": "每页条数，最大2000",
             "format": "int64",
             "example": 20
           },

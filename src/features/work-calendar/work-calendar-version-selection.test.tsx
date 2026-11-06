@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { toast } from 'sonner';
 import type {
   WorkCalendarYearDetailReqDTO,
   WorkCalendarVersionDetailReqDTO,
@@ -9,7 +10,14 @@ import type {
 } from '@/lib/api/clients/service';
 import WorkCalendarPage from './work-calendar-page';
 
-const api = vi.hoisted(() => ({ year: vi.fn(), version: vi.fn(), save: vi.fn(), list: vi.fn() }));
+const api = vi.hoisted(() => ({
+  year: vi.fn(),
+  version: vi.fn(),
+  save: vi.fn(),
+  importDraft: vi.fn(),
+  list: vi.fn(),
+  evaluate: vi.fn()
+}));
 vi.mock('@/lib/api/clients/service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api/clients/service')>();
   return {
@@ -26,7 +34,9 @@ vi.mock('@/lib/api/clients/service', async (importOriginal) => {
       ...actual.listWorkCalendarVersionsQueryOptions(request),
       queryFn: () => api.list(request)
     }),
-    saveWorkCalendarDraftMutationOptions: () => ({ mutationFn: api.save })
+    saveWorkCalendarDraftMutationOptions: () => ({ mutationFn: api.save }),
+    importWorkCalendarDraftMutationOptions: () => ({ mutationFn: api.importDraft }),
+    evaluateWorkCalendarVersionMutationOptions: () => ({ mutationFn: api.evaluate })
   };
 });
 vi.mock('./hooks/use-work-calendar-dirty-guard', () => ({
@@ -40,6 +50,7 @@ vi.mock('./hooks/use-work-calendar-dirty-guard', () => ({
 const active = {
   versionId: 2,
   versionNo: 2,
+  lockVersion: 4,
   status: 'published'
 } as const;
 const draft = {
@@ -51,6 +62,7 @@ const draft = {
 const historical = {
   versionId: 1,
   versionNo: 1,
+  lockVersion: 2,
   status: 'published'
 } as const;
 function detail(
@@ -67,26 +79,163 @@ function detail(
     resolvedDays: []
   };
 }
-function renderPage() {
+function renderPage(year = 2026) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity }, mutations: { retry: false } }
   });
   return render(
     <QueryClientProvider client={client}>
-      <WorkCalendarPage year={2026} onYearChange={vi.fn()} />
+      <WorkCalendarPage year={year} onYearChange={vi.fn()} />
     </QueryClientProvider>
   );
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(toast, 'warning');
   Element.prototype.scrollIntoView ??= vi.fn();
   api.year.mockImplementation(async (request: WorkCalendarYearDetailReqDTO) =>
     request.view === 'active' ? detail('09:00', active) : detail('10:00')
   );
   api.version.mockResolvedValue(detail('08:00', historical));
   api.list.mockResolvedValue([draft, active, historical]);
+  api.evaluate.mockResolvedValue({
+    working: true,
+    classification: 'working_time'
+  });
 });
 afterEach(cleanup);
+
+it.each(['inherited', 'empty'] as const)(
+  'saves a new year with %s standard periods before importing JSON',
+  async (configuration) => {
+    const user = userEvent.setup();
+    const standardPeriods = [{ start: '09:00', end: '12:00' }];
+    const initial: WorkCalendarYearDetailRspDTO = {
+      year: 2027,
+      viewBasis: 'weekly_fallback',
+      standardPeriods: configuration === 'inherited' ? standardPeriods : [],
+      dateOverrides: [],
+      resolvedDays: []
+    };
+    const saved: WorkCalendarYearDetailRspDTO = {
+      ...initial,
+      viewBasis: 'saved_draft',
+      draftVersion: { ...draft, versionNo: 1 },
+      selectedVersion: { ...draft, versionNo: 1 },
+      standardPeriods
+    };
+    api.year.mockResolvedValue(initial);
+    api.save.mockResolvedValue(saved);
+    api.importDraft.mockResolvedValue(saved);
+    renderPage(2027);
+    await screen.findByText('首次配置');
+
+    const saveButton = screen.getByRole('button', { name: '保存草稿' });
+    await user.click(screen.getByRole('button', { name: '导入 JSON' }));
+    expect(toast.warning).toHaveBeenCalledWith(
+      '首次配置需先添加标准工作时段并保存草稿，再进行导入。'
+    );
+    expect(screen.queryByRole('dialog', { name: '覆盖导入特殊日期' })).not.toBeInTheDocument();
+
+    if (configuration === 'empty') {
+      await user.click(saveButton);
+      expect(screen.getByText('草稿尚未保存：至少配置一个标准工作时段')).toBeInTheDocument();
+      expect(api.save).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: '添加时段' }));
+    }
+    await user.click(saveButton);
+    await screen.findByText('草稿 v1');
+    expect(api.save).toHaveBeenCalledTimes(1);
+    expect(api.save.mock.calls[0][0]).toEqual({
+      year: 2027,
+      draftVersionId: undefined,
+      expectedLockVersion: undefined,
+      standardPeriods,
+      dateOverrides: []
+    });
+    expect(screen.queryByRole('button', { name: '保存草稿' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '导入 JSON' }));
+    await screen.findByRole('dialog', { name: '覆盖导入特殊日期' });
+    const file = new File(
+      [JSON.stringify({ schemaVersion: 1, year: 2027, dateOverrides: [] })],
+      'work-calendar-2027.json',
+      { type: 'application/json' }
+    );
+    await user.upload(screen.getByLabelText('选择工作日历 JSON 文件'), file);
+    await user.click(screen.getByRole('button', { name: '确认覆盖特殊日期' }));
+    await waitFor(() => expect(api.importDraft).toHaveBeenCalledTimes(1));
+    expect(api.importDraft.mock.calls[0][0]).toEqual({
+      params: { year: 2027, draftVersionId: draft.versionId, expectedLockVersion: 0 },
+      body: { file }
+    });
+  }
+);
+
+it.each([
+  ['生效', active],
+  ['草稿', draft],
+  ['历史', historical]
+] as const)(
+  'evaluates the selected %s version with its own ID and lock version',
+  async (mode, version) => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('生效 v2');
+    if (mode === '草稿') {
+      await user.click(screen.getByRole('button', { name: '编辑草稿' }));
+    } else if (mode === '历史') {
+      await user.click(screen.getByRole('button', { name: '历史版本' }));
+      await user.click(await screen.findByRole('option', { name: 'v1 历史发布' }));
+    }
+    await screen.findByText(`${mode} v${version.versionNo}`);
+    await user.click(screen.getByRole('button', { name: '试算' }));
+    expect(await screen.findByRole('dialog', { name: '试算' })).toHaveTextContent(
+      `使用当前查看的 2026 年 v${version.versionNo} 版本`
+    );
+    fireEvent.change(screen.getByLabelText('试算时间'), { target: { value: '2026-01-05T09:30' } });
+    await user.click(screen.getByRole('button', { name: '开始试算' }));
+
+    await screen.findByText('处于工作时间');
+    expect(api.evaluate).toHaveBeenCalledTimes(1);
+    expect(api.evaluate.mock.calls[0][0]).toEqual({
+      versionId: version.versionId,
+      expectedLockVersion: version.lockVersion,
+      localDateTime: '2026-01-05 09:30:00'
+    });
+    expect(api.save).not.toHaveBeenCalled();
+  }
+);
+
+it('requires saving unsaved draft changes before evaluating the selected version', async () => {
+  const user = userEvent.setup();
+  renderPage();
+  await user.click(await screen.findByRole('button', { name: '编辑草稿' }));
+  await screen.findByText('草稿 v3');
+  fireEvent.change(screen.getByLabelText('第 1 个标准时段开始时间'), {
+    target: { value: '11:00' }
+  });
+  await user.click(screen.getByRole('button', { name: '试算' }));
+
+  expect(toast.warning).toHaveBeenCalledWith('试算只使用当前版本已保存的规则，请先保存当前修改。');
+  expect(screen.queryByRole('dialog', { name: '试算' })).not.toBeInTheDocument();
+  expect(api.evaluate).not.toHaveBeenCalled();
+});
+
+it('keeps the evaluation entry visible and explains when no saved version exists', async () => {
+  const user = userEvent.setup();
+  api.year.mockResolvedValue({
+    ...detail('10:00'),
+    activeVersion: undefined,
+    draftVersion: undefined,
+    selectedVersion: undefined
+  });
+  renderPage();
+  await user.click(await screen.findByRole('button', { name: '试算' }));
+
+  expect(toast.warning).toHaveBeenCalledWith('当前没有已保存的版本，请先保存草稿后再试算。');
+  expect(api.evaluate).not.toHaveBeenCalled();
+});
 
 it('searches by publisher and preserves the version status and publication details', async () => {
   const user = userEvent.setup();
@@ -242,5 +391,6 @@ vi.mock('@/hooks/use-dict', () => ({
 }));
 
 vi.mock('@/components/dictionary/dictionary-scope', () => ({
-  DictionaryScope: ({ children }: { children: React.ReactNode }) => children
+  DictionaryScope: ({ children }: { children: React.ReactNode }) => children,
+  DictText: ({ value }: { value: string }) => value
 }));

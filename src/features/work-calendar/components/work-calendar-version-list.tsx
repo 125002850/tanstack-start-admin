@@ -89,6 +89,7 @@ export function WorkCalendarVersionList({
 
   return (
     <SingleChoiceCombobox
+      disabled={disabled}
       options={options}
       value={selectedVersionId ?? null}
       open={open}

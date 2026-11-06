@@ -94,7 +94,7 @@ describe('work calendar version view', () => {
     const rendered = renderHeader({ dirty: false, viewMode: 'draft' });
 
     expect(screen.queryByRole('button', { name: /保存草稿/u })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '草稿试算' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '试算' })).toBeInTheDocument();
 
     rendered.rerender(
       <Header
@@ -171,17 +171,13 @@ describe('work calendar version view', () => {
   });
 
   it('blocks version selection while a draft has unsaved changes', async () => {
-    const user = userEvent.setup();
     renderHeader({ dirty: true, viewMode: 'draft' });
-    await user.click(screen.getByRole('button', { name: '历史版本' }));
-    expect(await screen.findByRole('option', { name: 'v1 历史发布' })).toHaveAttribute(
-      'aria-disabled',
-      'true'
-    );
-    expect(screen.getByRole('option', { name: 'v2 生效' })).toHaveAttribute(
-      'aria-disabled',
-      'true'
-    );
+    const trigger = screen.getByRole('button', { name: '历史版本' });
+    expect(trigger).toBeDisabled();
+    const reason = screen.getByRole('group', { name: '保存草稿后可切换版本' });
+    reason.focus();
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('保存草稿后可切换版本');
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 
   it('searches versions, selects with the keyboard and resets search after closing', async () => {
