@@ -386,3 +386,58 @@ html[data-theme-mode-transition='true']::view-transition-new(root) {
 @theme inline {
   --color-switch-background: var(--switch-background);
 }
+
+:root {
+  --scroll-area-scrollbar-size: 16px;
+}
+
+/* 命中盒铺满轨道，仅伪元素变粗，保留 Radix Thumb 的定位与拖拽几何。 */
+[data-slot='scroll-area-thumb']::before {
+  --scroll-area-thumb-size: 7px;
+
+  content: '';
+  position: absolute;
+  border-radius: inherit;
+  background-color: var(--border);
+  pointer-events: none;
+  transition-property: inline-size, block-size, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+  transition-delay: 200ms;
+}
+
+[data-slot='scroll-area-scrollbar'][data-orientation='vertical']
+  > [data-slot='scroll-area-thumb']::before {
+  inset-block: 0;
+  inset-inline-end: 1px;
+  inline-size: var(--scroll-area-thumb-size);
+}
+
+[data-slot='scroll-area-scrollbar'][data-orientation='horizontal']
+  > [data-slot='scroll-area-thumb']::before {
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--scroll-area-thumb-size);
+}
+
+[data-slot='scroll-area-scrollbar']:active > [data-slot='scroll-area-thumb']::before {
+  --scroll-area-thumb-size: 9px;
+
+  background-color: color-mix(in oklab, var(--border) 80%, var(--muted-foreground) 20%);
+  transition-delay: 0ms;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-slot='scroll-area-scrollbar']:hover > [data-slot='scroll-area-thumb']::before {
+    --scroll-area-thumb-size: 9px;
+
+    background-color: color-mix(in oklab, var(--border) 80%, var(--muted-foreground) 20%);
+    transition-delay: 0ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='scroll-area-thumb']::before {
+    transition: none;
+  }
+}
