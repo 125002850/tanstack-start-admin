@@ -534,7 +534,7 @@ describe('DataTable column alignment', () => {
 
     const scrollbarStyle = verticalScrollbar.getAttribute('style') ?? '';
     expect(scrollbarStyle).toContain('top: 40px');
-    expect(scrollbarStyle).toContain('bottom: 10px');
+    expect(scrollbarStyle).toContain('bottom: var(--scroll-area-scrollbar-size)');
   });
 
   it('anchors the horizontal scrollbar to both viewport edges without pinned columns', () => {

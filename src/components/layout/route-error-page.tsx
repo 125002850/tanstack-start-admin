@@ -28,7 +28,7 @@ export function RouteErrorPage({ error, reset }: ErrorComponentProps) {
   if (expired || unauthorized) return null;
   if (loginRequired) {
     return (
-      <main className='flex min-h-screen items-center justify-center p-6'>
+      <main className='flex min-h-svh w-full min-w-0 flex-1 items-center justify-center self-start p-6 in-[[data-slot=sidebar-inset]]:min-h-full'>
         <section className='flex w-full max-w-xl flex-col gap-4'>
           <Alert>
             <Icons.info className='size-4' aria-hidden='true' />
