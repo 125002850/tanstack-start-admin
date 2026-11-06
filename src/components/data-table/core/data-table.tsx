@@ -57,7 +57,6 @@ import { DataTableCellSelectionSummarySlot } from '../selection/data-table-cell-
  */
 const DATA_TABLE_SKELETON_MAX_COLUMN_COUNT = 10;
 const DATA_TABLE_SKELETON_MAX_FILTER_COUNT = 8;
-const DATA_TABLE_SCROLLBAR_SIZE_PX = 10;
 
 /** 控制加载骨架的可选参数；列数和筛选数未传时会从 table 当前状态推导。 */
 export type DataTableLoadingSkeletonConfig = Omit<
@@ -429,7 +428,7 @@ export function DataTable<TData>({
           className: 'h-auto',
           style: {
             top: pinnedHeaderHeight ? `${pinnedHeaderHeight}px` : 0,
-            bottom: DATA_TABLE_SCROLLBAR_SIZE_PX,
+            bottom: 'var(--scroll-area-scrollbar-size)',
             zIndex: DATA_TABLE_SCROLLBAR_Z_INDEX
           }
         }}
