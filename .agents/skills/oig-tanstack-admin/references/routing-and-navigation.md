@@ -128,3 +128,7 @@ export const Route = createFileRoute('/_app/system-management/dictionaries')({
 ## 功能可用性开关
 
 路由可通过 `defineRouteMeta({ ..., feature: { key: 'example', enabled } })` 声明功能开关。关闭时隐藏导航并在 `beforeLoad` 拒绝直达 URL，使用统一 403 页面；开启时仍执行原有 `menuKey` 权限检查。`key` 由应用定义，模板不带入业务系统的功能枚举或环境开关。不要在路由上覆盖生成的 `beforeLoad` 而绕过守卫。
+
+## 页签地址替换
+
+新建页保存后使用 `useWorkspaceTabStore.getState().replaceTab(oldId, { id, href, title })` 迁移当前页签。保留 `instanceKey`、组件状态、页面描述、生命周期及保活状态；不存在的来源、首页或已存在的目标返回 `false`，调用方据此处理导航。更新浏览器地址仍由 Router 执行。路由匹配按路径层级降序，同层级静态路径优先于参数路径，避免 `/new` 被 `/$id` 捕获。

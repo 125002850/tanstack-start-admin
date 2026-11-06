@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
+import { DisabledTooltip } from '@/components/ui/disabled-tooltip';
 import {
   Dialog,
   DialogContent,
@@ -177,22 +178,25 @@ export function DataTableExportDialog({
           </Field>
         </FieldGroup>
         <FieldError>{error}</FieldError>
-        {!onPackageExport ? (
-          <p className='text-sm text-muted-foreground'>{packageUnavailableText}</p>
-        ) : null}
 
         <DialogFooter>
           <Button variant='outline' disabled={isSubmitting} onClick={() => onOpenChange(false)}>
             {labels?.cancelText ?? '取消'}
           </Button>
-          <Button
-            variant='outline'
+          <DisabledTooltip
             disabled={!onPackageExport || isSubmitting}
-            isLoading={packageSubmitting}
-            onClick={handlePackageExport}
+            reason={!onPackageExport ? packageUnavailableText : undefined}
           >
-            {labels?.packageText ?? '打包导出'}
-          </Button>
+            <Button
+              className='w-full'
+              variant='outline'
+              disabled={!onPackageExport || isSubmitting}
+              isLoading={packageSubmitting}
+              onClick={handlePackageExport}
+            >
+              {labels?.packageText ?? '打包导出'}
+            </Button>
+          </DisabledTooltip>
           <Button
             disabled={Boolean(error) || !onConfirmRange || isSubmitting}
             isLoading={rangeSubmitting}

@@ -78,6 +78,50 @@ describe('WorkspaceViewport', () => {
   // ─── V2 page descriptor rendering (new system) ───
 
   describe('V2 page descriptors', () => {
+    it('新建页签替换为正式地址时保留组件状态，重新新建使用独立实例', () => {
+      function Editor() {
+        const [name, setName] = React.useState('未保存');
+        return (
+          <input
+            aria-label='流程名称'
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        );
+      }
+      const store = useWorkspaceTabStore.getState();
+      store.openOrActivate({ id: '/new', href: '/new', title: '新建', keepAlive: true });
+      store.registerPageDescriptor(
+        '/new',
+        makePageDescriptor({ tabId: '/new', render: () => <Editor /> })
+      );
+      render(<WorkspaceViewport />);
+      const editor = screen.getByRole('textbox', { name: '流程名称' });
+      fireEvent.change(editor, { target: { value: '已保存的流程' } });
+      act(() => {
+        store.replaceTab('/new', { id: '/wf-1', href: '/wf-1', title: '流程设计' });
+        store.registerPageDescriptor(
+          '/wf-1',
+          makePageDescriptor({ tabId: '/wf-1', render: () => <Editor /> })
+        );
+      });
+      expect(screen.getByRole('textbox', { name: '流程名称' })).toBe(editor);
+      expect(editor).toHaveValue('已保存的流程');
+      act(() => {
+        store.openOrActivate({ id: '/new', href: '/new', title: '新建', keepAlive: true });
+        store.registerPageDescriptor(
+          '/new',
+          makePageDescriptor({ tabId: '/new', render: () => <Editor /> })
+        );
+      });
+      expect(screen.getByRole('textbox', { name: '流程名称' })).toHaveValue('未保存');
+      act(() => {
+        store.openOrActivate({ id: '/wf-1', href: '/wf-1', title: '流程设计' });
+      });
+      expect(screen.getByRole('textbox', { name: '流程名称' })).toBe(editor);
+      expect(editor).toHaveValue('已保存的流程');
+    });
+
     it('renders the active tab visibly (not via Activity hidden)', () => {
       const desc = makePageDescriptor({
         tabId: '/active',

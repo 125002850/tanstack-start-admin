@@ -16,6 +16,7 @@ import { dismissWorkspacePageOverlays, resetWorkspacePageOverlays } from './page
 const HOME_ID = resolveDashboardHomeHref();
 const HOME_TITLE = '仪表盘';
 let openOrActivateSequence = 0;
+let pageInstanceSequence = 0;
 
 interface WorkspaceTabState {
   tabs: Record<WorkspaceTabId, WorkspaceTab>;
@@ -25,6 +26,10 @@ interface WorkspaceTabState {
   lifecycleSnapshots: Record<WorkspaceTabId, WorkspacePageLifecycle>;
 
   openOrActivate: (tab: WorkspaceTabOpenInput) => void;
+  replaceTab: (
+    id: WorkspaceTabId,
+    tab: Pick<WorkspaceTabOpenInput, 'id' | 'href' | 'title'>
+  ) => boolean;
   close: (id: WorkspaceTabId) => void;
   closeOther: (id: WorkspaceTabId) => void;
   closeAll: () => void;
@@ -93,6 +98,7 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
             title: tab.title,
             closable: tab.closable ?? true,
             keepAlive: tab.keepAlive ?? false,
+            instanceKey: `workspace-page-${++pageInstanceSequence}`,
             lastVisitedAt: Date.now()
           };
           nextTabs = { ...state.tabs, [tab.id]: nextTab };
@@ -172,6 +178,49 @@ export const useWorkspaceTabStore = create<WorkspaceTabState>()((set, get) => ({
     }
 
     commit();
+  },
+
+  replaceTab: (id, tab) => {
+    const state = get();
+    const existing = state.tabs[id];
+    if (!existing || isHomeId(id) || state.tabs[tab.id]) return false;
+
+    // 先注册目标 descriptor，迁移前后都能找到页面，避免画布被中途卸载。
+    const registry = useWorkspacePageRegistryStore.getState();
+    const descriptor = registry.descriptors[id];
+    if (descriptor) {
+      registry.registerDescriptor(tab.id, {
+        ...descriptor,
+        tabId: tab.id,
+        initialTitle: tab.title
+      });
+    }
+
+    openOrActivateSequence += 1;
+    set((current) => {
+      const { [id]: _removedTab, ...tabs } = current.tabs;
+      const { [id]: lifecycle, ...lifecycleSnapshots } = current.lifecycleSnapshots;
+      const disabledKeepAliveIds = new Set(current.disabledKeepAliveIds);
+      if (disabledKeepAliveIds.delete(id)) disabledKeepAliveIds.add(tab.id);
+      return {
+        tabs: {
+          ...tabs,
+          [tab.id]: {
+            ...existing,
+            ...tab,
+            instanceKey: existing.instanceKey ?? id
+          }
+        },
+        activeId: current.activeId === id ? tab.id : current.activeId,
+        openedOrder: current.openedOrder.map((openedId) => (openedId === id ? tab.id : openedId)),
+        lifecycleSnapshots: lifecycle
+          ? { ...lifecycleSnapshots, [tab.id]: { ...lifecycle, title: tab.title } }
+          : lifecycleSnapshots,
+        disabledKeepAliveIds
+      };
+    });
+    registry.unregisterDescriptor(id);
+    return true;
   },
 
   remountPage: (id) => {

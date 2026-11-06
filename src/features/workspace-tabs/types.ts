@@ -11,6 +11,8 @@ export interface WorkspaceTab {
   lastVisitedAt: number;
   /** 仅刷新页面实例时递增，普通 tab 切换保持不变。 */
   renderVersion?: number;
+  /** 页面实例标识，替换页签地址时保持不变。 */
+  instanceKey?: string;
 }
 
 export interface WorkspaceTabSnapshot {

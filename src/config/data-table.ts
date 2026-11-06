@@ -48,7 +48,7 @@ export function resolveDataTableColumnSize(size: DataTableColumnSize | undefined
 /** 行/列虚拟化的共享默认值，调用方可通过 DataTable virtualization prop 局部覆盖。 */
 export const DATA_TABLE_VIRTUAL_PRESET = {
   estimateRowHeight: DATA_TABLE_ROW_HEIGHT_PX,
-  overscan: 8,
+  overscan: 16,
   rowCountThreshold: 100,
   columnCountThreshold: 20,
   columnOverscan: 3
