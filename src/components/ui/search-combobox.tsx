@@ -9,6 +9,7 @@ import {
   ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
   ComboboxTrigger,
   ComboboxValue
@@ -57,6 +58,7 @@ type SearchComboboxProps<TItem> = {
   itemToStringValue: (item?: TItem | null) => string;
   isItemEqualToValue: (item?: TItem | null, value?: TItem | null) => boolean;
   getItemKey: (item: TItem, index: number) => React.Key;
+  getItemGroup?: (item: TItem) => string | undefined;
   getItemAriaLabel?: (item: TItem, index: number) => string;
   isItemDisabled?: (item: TItem, index: number) => boolean;
   renderItem: (item: TItem, index: number) => React.ReactNode;
@@ -94,19 +96,31 @@ export function SearchCombobox<TItem>({
   itemToStringValue,
   isItemEqualToValue,
   getItemKey,
+  getItemGroup,
   getItemAriaLabel,
   isItemDisabled,
   renderItem,
   onKeyDown
 }: SearchComboboxProps<TItem>) {
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const { container, getContainer, setTriggerNode, triggerRef } =
+  const { getContainer, setTriggerNode, triggerRef } =
     useOverlayPortalContainer<HTMLButtonElement>();
   const closeOverlay = React.useCallback(() => onOpenChange(false), [onOpenChange]);
   useOverlayLifecycle(open, closeOverlay);
   const selectedLabel = itemToStringLabel(value);
   const showClear = allowClear && !!selectedLabel && !disabled;
-  const portalContainer = open ? (container ?? getContainer()) : container;
+  const itemGroups = React.useMemo(() => {
+    const groups = new Map<string | undefined, { item: TItem; index: number }[]>();
+    items.forEach((item, index) => {
+      const label = getItemGroup?.(item);
+      const group = groups.get(label) ?? [];
+      group.push({ item, index });
+      groups.set(label, group);
+    });
+    return [...groups];
+  }, [items, getItemGroup]);
+  // Fullscreen moves an existing trigger between overlay hosts without remounting it.
+  const portalContainer = getContainer();
   const handleClear = React.useCallback(
     (event: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>) => {
       event.preventDefault();
@@ -220,19 +234,22 @@ export function SearchCombobox<TItem>({
         </div>
         <ComboboxEmpty>{isError ? errorText : isLoading ? loadingText : emptyText}</ComboboxEmpty>
         <ComboboxList onScroll={handleListScroll}>
-          <ComboboxGroup>
-            {items.map((item, index) => (
-              <ComboboxItem
-                key={getItemKey(item, index)}
-                value={item}
-                index={index}
-                disabled={isItemDisabled?.(item, index)}
-                aria-label={getItemAriaLabel?.(item, index) ?? itemToStringLabel(item)}
-              >
-                {renderItem(item, index)}
-              </ComboboxItem>
-            ))}
-          </ComboboxGroup>
+          {itemGroups.map(([label, group]) => (
+            <ComboboxGroup key={label ?? 'ungrouped'}>
+              {label === undefined ? null : <ComboboxLabel>{label}</ComboboxLabel>}
+              {group.map(({ item, index }) => (
+                <ComboboxItem
+                  key={getItemKey(item, index)}
+                  value={item}
+                  index={index}
+                  disabled={isItemDisabled?.(item, index)}
+                  aria-label={getItemAriaLabel?.(item, index) ?? itemToStringLabel(item)}
+                >
+                  {renderItem(item, index)}
+                </ComboboxItem>
+              ))}
+            </ComboboxGroup>
+          ))}
         </ComboboxList>
         {isError && items.length > 0 ? (
           <div role='alert' className='border-t px-3 py-2 text-sm text-destructive'>

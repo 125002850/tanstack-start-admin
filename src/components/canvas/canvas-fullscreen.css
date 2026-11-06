@@ -1,0 +1,53 @@
+.canvas-fullscreen-content {
+  min-width: 0;
+  height: 100%;
+}
+
+.canvas-fullscreen-content[data-expanded='true'] {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.canvas-fullscreen-content[data-transitioning='true'] {
+  view-transition-name: canvas-hero;
+}
+
+html[data-canvas-view-transition='true']::view-transition-old(root),
+html[data-canvas-view-transition='true']::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(canvas-hero) {
+  overflow: clip;
+  border-radius: var(--radius-lg);
+  animation: none;
+}
+
+::view-transition-old(canvas-hero),
+::view-transition-new(canvas-hero) {
+  height: 100%;
+  mix-blend-mode: normal;
+  animation: none;
+}
+
+::view-transition-old(canvas-hero) {
+  opacity: 0;
+}
+::view-transition-new(canvas-hero) {
+  animation: canvas-hero-fade-in 160ms ease-out;
+}
+@keyframes canvas-hero-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(canvas-hero),
+  ::view-transition-old(canvas-hero),
+  ::view-transition-new(canvas-hero) {
+    animation: none;
+  }
+}

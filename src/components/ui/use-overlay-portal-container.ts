@@ -7,7 +7,6 @@ export function useOverlayPortalContainer<TElement extends HTMLElement>(
   selector = DEFAULT_OVERLAY_CONTAINER_SELECTOR
 ) {
   const triggerRef = React.useRef<TElement | null>(null);
-  const containerRef = React.useRef<HTMLElement | undefined>(undefined);
   const [container, setContainer] = React.useState<HTMLElement | undefined>(undefined);
 
   const resolveContainer = React.useCallback(
@@ -19,21 +18,14 @@ export function useOverlayPortalContainer<TElement extends HTMLElement>(
     (node: TElement | null) => {
       triggerRef.current = node;
       const nextContainer = node?.closest<HTMLElement>(selector) ?? undefined;
-      containerRef.current = nextContainer;
       setContainer(nextContainer);
     },
     [selector]
   );
 
-  const getContainer = React.useCallback(() => {
-    const nextContainer = containerRef.current ?? resolveContainer();
-    containerRef.current = nextContainer;
-    return nextContainer;
-  }, [resolveContainer]);
-
   return {
     container,
-    getContainer,
+    getContainer: resolveContainer,
     setTriggerNode,
     triggerRef
   };

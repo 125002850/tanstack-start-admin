@@ -65,6 +65,8 @@
 
 - **工作区页签系统**，支持多页签打开、拖拽排序、LRU 淘汰、页面注册表、统一 WorkspacePageRoute 入口和浮层清理
 
+- **共享基础组件**，包含画布缩放与全屏、条件树与字段目录条件画布、时长输入；接入方式见[共享 UI 能力](.agents/skills/oig-tanstack-admin/references/shared-ui-capabilities.md)
+
 - **系统管理导航**，提供系统管理和基础设置入口，并支持基于 IAM 菜单树 `menuKey` 的可选菜单权限过滤
 
 - **命令面板**（Cmd+K），用于快速导航
