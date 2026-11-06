@@ -3,7 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
 import { EmptyBody } from '@/components/data-table/core/body/empty';
-import { StandardBody } from '@/components/data-table/core/body/standard';
+import { BodyRows } from '@/components/data-table/core/body/rows';
 import type {
   DataTableBodyCellServices,
   DataTableBodyProps
@@ -12,13 +12,9 @@ import {
   shouldIgnoreRowExpandTarget,
   useRowInteraction
 } from '@/components/data-table/core/body/use-row-interaction';
-import { VirtualBody } from '@/components/data-table/core/body/virtual';
 import { DataTableStatus } from '@/components/data-table/feedback/data-table-status';
 import { useDataTableCellSelection } from '@/components/data-table/selection/use-data-table-cell-selection';
 import { DataTableCellSelectionSummary } from '@/components/data-table/selection/data-table-cell-selection-summary';
-import { VirtualBodyBoundary } from '@/components/data-table/virtualization/boundary';
-import { useRowVirtualizer } from '@/components/data-table/virtualization/use-row-virtualizer';
-import { useDataTableTreeFocus } from '@/components/data-table/tree/use-data-table-tree-focus';
 
 function PopulatedBody<TData>({
   table,
@@ -39,10 +35,6 @@ function PopulatedBody<TData>({
   getExpandRowKey
 }: Omit<DataTableBodyProps<TData>, 'emptyMessage' | 'status'> & { rows: Row<TData>[] }) {
   const treeEnabled = Boolean(table.options.meta?.dataTableTree);
-  const ensureTreeColumnVisible = useCallback(() => {
-    const treeColumnId = table.options.meta?.dataTableTree?.columnId;
-    if (treeColumnId) scrollToColumn?.(treeColumnId);
-  }, [scrollToColumn, table]);
   const {
     consumeSelectionClick,
     getCellFillHandleProps,
@@ -111,55 +103,22 @@ function PopulatedBody<TData>({
       renderCellServerError
     ]
   );
-  const state = table.getState();
-  const localFilters = table.options.meta?.dataTableLocalFiltering?.filters;
-  const resetKey = `${state.pagination.pageIndex}-${state.pagination.pageSize}-${JSON.stringify(state.sorting)}-${JSON.stringify(state.columnFilters)}-${JSON.stringify(localFilters ?? [])}`;
-  const { handleRuntimeError, shouldVirtualize, virtualizer } = useRowVirtualizer({
-    rows,
-    resetKey,
-    virtualization,
-    scrollViewport
-  });
-  useDataTableTreeFocus({
-    enabled: treeEnabled,
-    rows,
-    scrollViewport,
-    virtualizer,
-    shouldVirtualize,
-    columnVirtualWindow,
-    ensureTreeColumnVisible
-  });
-  const standardBody = (
-    <StandardBody
-      table={table}
-      rows={rows}
-      enableZebraStriping={enableZebraStriping}
-      columnVirtualWindow={columnVirtualWindow}
-      cellServices={cellServices}
-      rowInteraction={rowInteraction}
-    />
-  );
-
-  const body = shouldVirtualize ? (
-    <VirtualBodyBoundary fallback={standardBody} onError={handleRuntimeError}>
-      <VirtualBody
-        rows={rows}
-        enableZebraStriping={enableZebraStriping}
-        columnVirtualWindow={columnVirtualWindow}
-        useTransformFreeRows={useTransformFreeVirtualRows}
-        headerRowRef={headerRowRef}
-        virtualizer={virtualizer}
-        cellServices={cellServices}
-        rowInteraction={rowInteraction}
-      />
-    </VirtualBodyBoundary>
-  ) : (
-    standardBody
-  );
 
   return (
     <>
-      {body}
+      <BodyRows
+        table={table}
+        rows={rows}
+        enableZebraStriping={enableZebraStriping}
+        virtualization={virtualization}
+        columnVirtualWindow={columnVirtualWindow}
+        scrollToColumn={scrollToColumn}
+        useTransformFreeVirtualRows={useTransformFreeVirtualRows}
+        scrollViewport={scrollViewport}
+        headerRowRef={headerRowRef}
+        cellServices={cellServices}
+        rowInteraction={rowInteraction}
+      />
       {selectionSummaryContainer
         ? createPortal(
             <DataTableCellSelectionSummary model={selectionModel} />,

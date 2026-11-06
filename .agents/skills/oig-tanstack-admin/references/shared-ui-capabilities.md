@@ -119,3 +119,9 @@ columnDsl.field('categoryCode', '分类', {
 `DefaultErrorPage` 在独立页面保持视口最小高度，在 `SidebarInset` 内使用后台可用高度。共用 ScrollArea 的拖拽热区为 16px，视觉滑块为 7px，悬停或拖拽时增至 9px；DataTable 通过同一个 CSS 变量避让滚动条交汇区域。样式、ScrollArea 和表格尺寸必须一起维护。
 
 共享浏览器回归同时覆盖时长输入、条件编辑、画布全屏及浮层焦点、横纵滚动条透明热区拖拽、边缘行操作和错误页高度。
+
+## 刷新与禁用原因
+
+`RefreshButton` 接收返回 Promise 的 `onRefresh`，等待全部请求结束并保持至少 400ms 反馈，期间阻止重复点击。多个并行请求时调用方返回 `Promise.allSettled(...)`；错误沿用现有 Query/Mutation 出口。组件遵守减少动画偏好并提供 `aria-busy`。
+
+`DisabledTooltip` 使用 `disabled`、`reason` 和一个子控件；子控件仍需设置真实 `disabled`。外层在需要解释原因时可键盘聚焦，Tooltip 挂载到当前浮层，隐藏页面或关闭浮层会清理提示。

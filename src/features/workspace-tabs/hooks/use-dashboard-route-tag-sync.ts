@@ -92,7 +92,11 @@ function getCompiledRouteMatchers(routesByPath: Record<string, unknown>): Compil
     });
   }
 
-  matchers.sort((a, b) => b.segmentCount - a.segmentCount);
+  matchers.sort(
+    (a, b) =>
+      b.segmentCount - a.segmentCount ||
+      Number(a.pattern.includes('$')) - Number(b.pattern.includes('$'))
+  );
   routeMatcherCache.set(routesByPath, matchers);
   return matchers;
 }

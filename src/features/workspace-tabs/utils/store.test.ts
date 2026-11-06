@@ -156,6 +156,67 @@ describe('workspace-tags store', () => {
     });
   });
 
+  describe('replaceTab', () => {
+    it('替换地址时迁移页面、生命周期与原有顺序，保留页面实例标识', () => {
+      const store = useWorkspaceTabStore.getState();
+      openTab({ id: '/before' });
+      const descriptor = openRegisteredPage('/new', { renderKey: '/new' }, { keepAlive: true });
+      openTab({ id: '/after' });
+      const closeGuard = vi.fn(() => false);
+      store.updateLifecycle('/new', { dirty: true, closeGuard });
+      store.disableKeepAlive('/new');
+      const instanceKey = useWorkspaceTabStore.getState().tabs['/new'].instanceKey;
+
+      expect(store.replaceTab('/new', { id: '/wf-1', href: '/wf-1', title: '流程设计' })).toBe(
+        true
+      );
+
+      const state = useWorkspaceTabStore.getState();
+      expect(state.tabs['/new']).toBeUndefined();
+      expect(state.tabs['/wf-1']).toMatchObject({
+        id: '/wf-1',
+        href: '/wf-1',
+        title: '流程设计',
+        keepAlive: true,
+        instanceKey
+      });
+      expect(state.activeId).toBe('/after');
+      expect(state.openedOrder).toEqual(['/before', '/wf-1', '/after']);
+      expect(state.lifecycleSnapshots['/new']).toBeUndefined();
+      expect(state.lifecycleSnapshots['/wf-1']).toEqual({
+        title: '流程设计',
+        dirty: true,
+        closeGuard
+      });
+      expect(state.disabledKeepAliveIds).toEqual(new Set(['/wf-1']));
+      expect(getDescriptors()['/new']).toBeUndefined();
+      expect(getDescriptors()['/wf-1']).toMatchObject({
+        tabId: '/wf-1',
+        render: descriptor.render,
+        renderKey: '/new'
+      });
+
+      openTab({ id: '/new' });
+      expect(useWorkspaceTabStore.getState().tabs['/new'].instanceKey).not.toBe(instanceKey);
+    });
+
+    it('替换当前页签后保持激活，目标已存在或来源不存在时不覆盖页面', () => {
+      const store = useWorkspaceTabStore.getState();
+      openRegisteredPage('/new');
+      expect(store.replaceTab('/new', { id: '/wf-1', href: '/wf-1', title: '流程设计' })).toBe(
+        true
+      );
+      expect(useWorkspaceTabStore.getState().activeId).toBe('/wf-1');
+      openRegisteredPage('/new');
+      const before = useWorkspaceTabStore.getState();
+      expect(store.replaceTab('/new', { id: '/wf-1', href: '/wf-1', title: '覆盖' })).toBe(false);
+      expect(store.replaceTab('/missing', { id: '/wf-2', href: '/wf-2', title: '缺失' })).toBe(
+        false
+      );
+      expect(useWorkspaceTabStore.getState()).toBe(before);
+    });
+  });
+
   describe('close', () => {
     it('removes the tab', () => {
       const tab = makeTab();

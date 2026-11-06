@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
+import { DATA_TABLE_VIRTUAL_PRESET } from '@/config';
 import { DataTable } from '@/components/data-table/core/data-table';
 import { createDataTableColumnDsl } from '@/components/data-table/columns/data-table-column-factory';
 import {
@@ -513,7 +514,7 @@ export function DataTableEditableChoiceContractPage({
           table={table}
           virtualization={{
             mode: 'on',
-            overscan: 8
+            overscan: DATA_TABLE_VIRTUAL_PRESET.overscan
           }}
           onRefresh={refreshProps?.onRefresh}
           isRefreshing={refreshProps?.isRefreshing}

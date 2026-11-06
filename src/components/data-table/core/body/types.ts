@@ -48,3 +48,32 @@ export type DataTableBodyRowInteraction<TData> = {
   isExpanded: (row: Row<TData>) => boolean;
   shouldIgnoreTarget: (target: EventTarget | null, currentTarget: HTMLElement) => boolean;
 };
+
+export type DataTableBodyRowsProps<TData> = Pick<
+  DataTableBodyProps<TData>,
+  | 'table'
+  | 'enableZebraStriping'
+  | 'virtualization'
+  | 'columnVirtualWindow'
+  | 'scrollToColumn'
+  | 'useTransformFreeVirtualRows'
+  | 'scrollViewport'
+  | 'headerRowRef'
+> & {
+  rows: Row<TData>[];
+  cellServices: DataTableBodyCellServices<TData>;
+  rowInteraction: DataTableBodyRowInteraction<TData>;
+};
+
+export type DataTableVirtualBodyRowProps<TData> = {
+  row: Row<TData>;
+  index: number;
+  start: number;
+  size: number;
+  enableZebraStriping: boolean;
+  useTransformFreeRows: boolean;
+  columnVirtualWindow?: DataTableColumnVirtualWindow<TData>;
+  getHeaderWidth: (columnId: string) => number | undefined;
+  cellServices: DataTableBodyCellServices<TData>;
+  rowInteraction: DataTableBodyRowInteraction<TData>;
+};

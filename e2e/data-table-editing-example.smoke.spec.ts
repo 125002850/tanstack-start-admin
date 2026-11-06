@@ -466,3 +466,79 @@ test('@workspace-v2 edits all supported editor variants through virtual row unmo
   });
   await expect(cell(page, 'executeAt')).toContainText('2026-08-01 12:10:00');
 });
+
+test('@workspace-v2 covers the viewport during rapid vertical scrolling and still edits cells', async ({
+  page
+}) => {
+  const viewport = page
+    .getByTestId('data-table-editing-example')
+    .locator('[data-slot="scroll-area-viewport"]');
+  const result = await viewport.evaluate(async (element) => {
+    const gaps: Array<{ scrollTop: number; uncovered: number }> = [];
+    let samples = 0;
+    let maxRendered = 0;
+    let maxScrollTop = 0;
+    // 每帧推进 480px，并连续反向，采样滚动中的视口覆盖情况。
+    const offsets = [
+      ...Array.from({ length: 24 }, (_, index) => (index + 1) * 480),
+      ...Array.from({ length: 24 }, (_, index) => (23 - index) * 480)
+    ];
+    for (const top of offsets) {
+      element.scrollTop = top;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const body = element.querySelector('tbody[data-virtual-enabled="true"]')!;
+      const viewportRect = element.getBoundingClientRect();
+      const headerBottom = element.querySelector('thead')!.getBoundingClientRect().bottom;
+      const contentBottom = Math.min(viewportRect.bottom, body.getBoundingClientRect().bottom);
+      let coveredTo = Math.max(viewportRect.top, headerBottom);
+      let uncovered = 0;
+      const rowRects = Array.from(body.querySelectorAll('tr[data-index]'))
+        .map((row) => row.getBoundingClientRect())
+        .sort((left, right) => left.top - right.top);
+      for (const rect of rowRects) {
+        if (rect.bottom <= coveredTo || rect.top >= contentBottom) continue;
+        uncovered += Math.max(0, rect.top - coveredTo);
+        coveredTo = Math.max(coveredTo, rect.bottom);
+      }
+      uncovered += Math.max(0, contentBottom - coveredTo);
+      if (uncovered > 1) gaps.push({ scrollTop: element.scrollTop, uncovered });
+      samples += 1;
+      maxRendered = Math.max(maxRendered, rowRects.length);
+      maxScrollTop = Math.max(maxScrollTop, element.scrollTop);
+    }
+    return { gaps, samples, maxRendered, maxScrollTop };
+  });
+
+  expect(result.samples).toBe(48);
+  expect(result.maxScrollTop).toBeGreaterThan(10_000);
+  expect(result.maxRendered).toBeGreaterThan(0);
+  expect(result.maxRendered).toBeLessThan(100);
+  expect(result.gaps).toEqual([]);
+
+  const phoneCell = page.locator('td[data-cell-column-id="phone"]').first();
+  await phoneCell.dblclick();
+  const editor = phoneCell.locator('input');
+  await editor.fill('13900000000');
+  await editor.press('Enter');
+  await expect(phoneCell).toContainText('13900000000');
+});
+
+test('@workspace-v2 retains an active editor when fast scrolling keeps its row mounted', async ({
+  page
+}) => {
+  const phoneCell = page.locator('td[data-cell-column-id="phone"]').first();
+  await phoneCell.dblclick();
+  const editor = phoneCell.locator('input');
+  await editor.fill('13900000000');
+
+  const viewport = page
+    .getByTestId('data-table-editing-example')
+    .locator('[data-slot="scroll-area-viewport"]');
+  await viewport.hover();
+  await page.mouse.wheel(0, 480);
+  await expect.poll(() => viewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect(editor).toBeFocused();
+  await expect(editor).toHaveValue('13900000000');
+  await editor.press('Enter');
+  await expect(phoneCell).toContainText('13900000000');
+});

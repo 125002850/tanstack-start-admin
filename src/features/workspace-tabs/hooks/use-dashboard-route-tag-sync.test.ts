@@ -107,6 +107,30 @@ function resetStore() {
 }
 
 describe('findDeepestRouteMatch', () => {
+  it.each([false, true])(
+    'prefers a static create route over the sibling detail parameter (static registered first: %s)',
+    (staticFirst) => {
+      const entries = [
+        [
+          '/task-center/scenes/$sceneId',
+          { options: { staticData: { label: '待办场景详情', workspace: { keepAlive: true } } } }
+        ],
+        [
+          '/task-center/scenes/new',
+          { options: { staticData: { label: '新增待办场景', workspace: { keepAlive: false } } } }
+        ]
+      ];
+      const routes = Object.fromEntries(staticFirst ? entries.toReversed() : entries);
+      expect(findDeepestRouteMatch('/task-center/scenes/new', routes)).toMatchObject({
+        pattern: '/task-center/scenes/new',
+        staticData: { label: '新增待办场景', workspace: { keepAlive: false } }
+      });
+      expect(findDeepestRouteMatch('/task-center/scenes/12', routes)?.pattern).toBe(
+        '/task-center/scenes/$sceneId'
+      );
+    }
+  );
+
   it('matches a static route', () => {
     const match = findDeepestRouteMatch('/items', mockRoutesByPath);
     expect(match).toBeDefined();

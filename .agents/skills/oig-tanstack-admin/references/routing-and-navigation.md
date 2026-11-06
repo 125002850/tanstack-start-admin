@@ -117,3 +117,7 @@ export const Route = createFileRoute('/users')({
 - 路由通过 `feature: { key, enabled }` 声明功能开关；关闭后隐藏导航，`/_app` 的 `ensureDashboardRouteAccess()` 拒绝直达。开启后继续执行原有 IAM 菜单及权限检查。
 - 无可见子项且 `linkable: false` 的导航容器被过滤；可跳转的叶子页面保留。
 - 页签关闭按钮仅在当前页签进入 Tab 顺序；确认操作使用同步执行锁防止重复提交。
+
+## 页签地址替换
+
+新建页保存后使用 `useWorkspaceTabStore.getState().replaceTab(oldId, { id, href, title })` 迁移当前页签。保留 `instanceKey`、组件状态、页面描述、生命周期及保活状态；不存在的来源、首页或已存在的目标返回 `false`，调用方据此处理导航。更新浏览器地址仍由 Router 执行。路由匹配按路径层级降序，同层级静态路径优先于参数路径，避免 `/new` 被 `/$id` 捕获。
