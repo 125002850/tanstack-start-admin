@@ -1,4 +1,10 @@
 import { Suspense, useState } from 'react';
+import { InlineEdit } from '@/components/ui/inline-edit';
+import { JsonOutputPreview } from '@/components/json/json-output-preview';
+import {
+  EmployeePickerDialog,
+  type EmployeePickerOption
+} from '@/components/employee-picker/employee-picker-dialog';
 import { DurationInput } from '@/components/duration-input';
 import { ConditionTreeEditor } from '@/components/condition-editor/components/condition-tree-editor';
 import { ConditionCanvasEditor } from '@/components/condition-editor/components/condition-canvas-editor';
@@ -200,9 +206,43 @@ function ScrollbarExample() {
   );
 }
 
+function BackportExamples() {
+  const [name, setName] = useState('示例名称');
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<EmployeePickerOption[]>([]);
+  return (
+    <section aria-label='回灌组件示例' className='max-w-4xl space-y-4'>
+      <InlineEdit value={name} label='示例名称' onValueChange={setName} />
+      <Button onClick={() => setOpen(true)}>打开员工选择器</Button>
+      <output aria-label='已确认员工'>
+        {value.map((employee) => employee.employeeName).join('、')}
+      </output>
+      <EmployeePickerDialog
+        open={open}
+        onOpenChange={setOpen}
+        value={value}
+        onConfirm={setValue}
+        departments={[{ value: 'engineering', label: '研发部' }]}
+        employees={[
+          { employeeId: 1, employeeNo: 'A001', employeeName: '张一' },
+          { employeeId: 2, employeeNo: 'A002', employeeName: '李二' }
+        ]}
+        renderSelectedEmployee={(employee) => (
+          <span className='text-xs'>附加配置 {employee.employeeNo}</span>
+        )}
+      />
+      <JsonOutputPreview
+        source='{"id":9007199254740993,"amount":1.000000000000000001}'
+        ariaLabel='精确 JSON 示例'
+      />
+    </section>
+  );
+}
+
 export function SharedFoundationExamples() {
   return (
     <>
+      <BackportExamples />
       <DurationExample />
       <ConditionsExample view='tree' />
       <ConditionsExample view='canvas' />

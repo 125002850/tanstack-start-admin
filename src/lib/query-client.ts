@@ -6,7 +6,6 @@ import {
   TimeoutError,
   setQueryClient as setCoreQueryClient
 } from '@oig/react-query-generator/core';
-import { toast } from 'sonner';
 
 import {
   HTTP_STATUS_BAD_GATEWAY,
@@ -19,7 +18,8 @@ import {
   HTTP_STATUS_TOO_MANY_REQUESTS
 } from './http-status';
 
-import { isApiRequestAbort, normalizeApiError } from './api/error-normalizer';
+import { isApiRequestAbort } from './api/error-normalizer';
+import { showApiError } from './api/error-notification';
 
 export const SILENT_QUERY_META = { suppressGlobalErrorToast: true } as const;
 
@@ -128,18 +128,13 @@ function getQueryRetryDelay(attemptIndex: number, error: unknown): number {
   );
 }
 
-function showErrorToast(error: unknown) {
-  if (isApiRequestAbort(error)) return;
-  toast.error(normalizeApiError(error).message);
-}
-
 /** 接住表单提交异常；Mutation 的全局或局部 onError 已负责对应提示。 */
-export function handleFormSubmitError(error: unknown) {
+export function handleFormSubmitError(error: unknown, onUnhandledError = showApiError) {
   const handledByMutation = queryClient
     ?.getMutationCache()
     .getAll()
     .some((mutation) => mutation.state.status === 'error' && mutation.state.error === error);
-  if (!handledByMutation) showErrorToast(error);
+  if (!handledByMutation) onUnhandledError(error);
 }
 
 export function getQueryClient() {
@@ -162,13 +157,13 @@ export function getQueryClient() {
       queryCache: new QueryCache({
         onError: (error, query) => {
           if (query.meta?.suppressGlobalErrorToast === true) return;
-          showErrorToast(error);
+          showApiError(error);
         }
       }),
       mutationCache: new MutationCache({
         onError: (error, _variables, _context, mutation) => {
           if (mutation.options.onError) return;
-          showErrorToast(error);
+          showApiError(error);
         }
       })
     });

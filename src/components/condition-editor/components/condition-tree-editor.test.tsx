@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { fireEvent, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -12,8 +12,8 @@ import {
   type GroupCondition,
   type PredicateCondition
 } from '../model/condition-model';
-import { ConditionTreeEditor } from './condition-tree-editor';
 import { ConditionReferenceSetsProvider } from './condition-reference-sets';
+import { ConditionTreeEditor } from './condition-tree-editor';
 
 afterEach(cleanup);
 const catalog: readonly ConditionField[] = [
@@ -67,7 +67,7 @@ function Editor({
   if (condition.type === 'ALWAYS') throw new Error('条件树编辑不得生成固定命中');
   return (
     <ConditionReferenceSetsProvider
-      items={[{ code: 'REGION_CODES', label: '地区编码', fieldType: 'STRING' }]}
+      items={[{ code: 'PORT_LARGE_CODE', label: '大口岸编码', fieldType: 'STRING' }]}
     >
       <ConditionTreeEditor
         condition={condition}
@@ -85,6 +85,57 @@ function Editor({
 }
 
 describe('通用条件树双输入编辑器', () => {
+  it.each([
+    ['ANY_MATCH', '存在匹配项'],
+    ['ALL_MATCH', '全部匹配'],
+    ['NONE_MATCH', '无匹配项']
+  ] as const)('%s 展开同一元素子树，编辑时保留子树并移除普通右值', async (operator, label) => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(<Editor initial={amount} onChange={changed} />);
+    const operatorTrigger = screen.getByRole('button', { name: '条件操作符' });
+    await user.click(operatorTrigger);
+    await user.click(screen.getByRole('menuitem', { name: '集合' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: label }));
+    await waitFor(() => expect(operatorTrigger).toHaveFocus());
+    expect(changed.mock.lastCall?.[0]).toMatchObject({
+      type: 'CONDITION',
+      operator,
+      predicate: { type: 'GROUP', logic: 'AND', children: [{ leftValue: '{{ $element }}' }] }
+    });
+    expect(changed.mock.lastCall?.[0]).not.toHaveProperty('rightValue');
+    const left = screen.getAllByRole('textbox', { name: '条件左值' });
+    await user.clear(left[0]!);
+    await user.paste('{{ $json.obj.list }}');
+    await user.clear(left[1]!);
+    await user.paste('{{ $element.type }}');
+    await user.type(screen.getByRole('textbox', { name: '条件右值' }), '头款');
+    expect(changed.mock.lastCall?.[0]).toMatchObject({
+      leftValue: '{{ $json.obj.list }}',
+      predicate: { children: [{ leftValue: '{{ $element.type }}', rightValue: '头款' }] }
+    });
+    expect(getConditionMetrics(changed.mock.lastCall?.[0])).toEqual({ nodeCount: 3, maxDepth: 3 });
+    expect(screen.queryByRole('button', { name: '删除条件' })).not.toBeInTheDocument();
+    const elementGroup = screen.getByRole('group', { name: '条件组 AND' });
+    await user.click(within(elementGroup).getByRole('button', { name: '添加条件' }));
+    const removals = within(elementGroup).getAllByRole('button', { name: '删除条件' });
+    expect(removals).toHaveLength(2);
+    await user.click(removals[1]!);
+    expect(
+      within(elementGroup).queryByRole('button', { name: '删除条件' })
+    ).not.toBeInTheDocument();
+    expect(changed.mock.lastCall?.[0].predicate.children).toHaveLength(1);
+    const predicate = changed.mock.lastCall?.[0].predicate;
+    await user.click(operatorTrigger);
+    await user.click(screen.getByRole('menuitem', { name: '集合' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', {
+        name: operator === 'ALL_MATCH' ? '无匹配项' : '全部匹配'
+      })
+    );
+    expect(changed.mock.lastCall?.[0].predicate).toEqual(predicate);
+    expect(changed.mock.lastCall?.[0]).not.toHaveProperty('rightValue');
+  });
   it('已有目录条件在左右输入框回显，打开时不改写配置', () => {
     const changed = vi.fn();
     render(<Editor onChange={changed} />);
@@ -138,16 +189,41 @@ describe('通用条件树双输入编辑器', () => {
       })
     );
     expect(within(nested).getByRole('tab', { name: '任一', selected: true })).toBeVisible();
+    expect(within(nested).queryByRole('button', { name: '删除条件' })).not.toBeInTheDocument();
     await user.click(within(nested).getByRole('button', { name: '删除条件组' }));
     expect(changed).toHaveBeenLastCalledWith(root());
+    expect(screen.queryByRole('button', { name: '删除条件' })).not.toBeInTheDocument();
   });
 
-  it('删除最后一条条件保留空组，重新添加不产生固定命中', async () => {
+  it.each([
+    ['根条件组', root()],
+    ['单条根条件', amount]
+  ] as const)('%s 保留唯一条件，添加后可删除多余条件', async (_, initial) => {
     const user = userEvent.setup();
     const changed = vi.fn();
-    render(<Editor onChange={changed} />);
-    await user.click(screen.getByRole('button', { name: '删除条件' }));
-    expect(changed).toHaveBeenLastCalledWith(root([]));
+    render(<Editor initial={initial} onChange={changed} />);
+    expect(screen.queryByRole('button', { name: '删除条件' })).not.toBeInTheDocument();
+    expect(changed).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '添加条件' }));
+    const removals = screen.getAllByRole('button', { name: '删除条件' });
+    expect(removals).toHaveLength(2);
+    await user.click(removals[1]!);
+    expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({ children: [amount] }));
+    expect(screen.queryByRole('button', { name: '删除条件' })).not.toBeInTheDocument();
+  });
+
+  it('父组仅有一个子组时隐藏删除子组操作', () => {
+    const changed = vi.fn();
+    render(<Editor initial={root([{ ...root(), clientId: 'nested' }])} onChange={changed} />);
+    expect(screen.queryByRole('button', { name: '删除条件组' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '删除条件' })).not.toBeInTheDocument();
+    expect(changed).not.toHaveBeenCalled();
+  });
+
+  it('已有空条件组仍可添加条件进行修复', async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(<Editor initial={root([])} onChange={changed} />);
     expect(screen.getByRole('alert')).toHaveTextContent('条件组需包含 1 至 32 个直接子条件。');
     await user.click(screen.getByRole('button', { name: '添加条件' }));
     expect(changed).toHaveBeenLastCalledWith(
@@ -157,18 +233,26 @@ describe('通用条件树双输入编辑器', () => {
     );
   });
 
-  it('操作符独立于字段目录，存在性判断移除右值', async () => {
+  it.each([
+    ['EXISTS', '存在'],
+    ['NOT_EXISTS', '不存在'],
+    ['IS_EMPTY', '为空'],
+    ['IS_NOT_EMPTY', '不为空']
+  ] as const)('通用操作符 %s 选择后移除右值', async (operator, label) => {
     const user = userEvent.setup();
     const changed = vi.fn();
     render(<Editor initial={amount} onChange={changed} />);
-    await user.click(screen.getByRole('combobox', { name: '条件操作符' }));
-    await user.click(await screen.findByRole('option', { name: '存在' }));
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
+    await user.click(screen.getByRole('menuitem', { name: '通用' }));
+    const generalGroup = await screen.findByRole('menu', { name: '通用' });
+    expect(within(generalGroup).getByRole('menuitemradio', { name: '不存在' })).toBeVisible();
+    fireEvent.click(within(generalGroup).getByRole('menuitemradio', { name: label }));
     expect(changed).toHaveBeenLastCalledWith({
       clientId: 'amount',
       type: 'CONDITION',
       field: '',
       leftValue: '{{ $json.amount }}',
-      operator: 'EXISTS'
+      operator
     });
     expect(screen.queryByRole('textbox', { name: '条件右值' })).not.toBeInTheDocument();
   });
@@ -177,25 +261,25 @@ describe('通用条件树双输入编辑器', () => {
     const user = userEvent.setup();
     const changed = vi.fn();
     render(<Editor initial={amount} onChange={changed} />);
-    expect(screen.getByRole('combobox', { name: '条件操作符' })).toHaveTextContent('大于');
-    await user.click(screen.getByRole('combobox', { name: '条件操作符' }));
-    expect(await screen.findAllByRole('option', { name: '大于' })).toHaveLength(1);
-    const textGroup = screen.getByRole('group', { name: '文本' });
-    const numberGroup = screen.getByRole('group', { name: '数字' });
-    expect(within(textGroup).getByRole('option', { name: '等于' })).toBeVisible();
-    expect(within(textGroup).getByRole('option', { name: '属于' })).toBeVisible();
-    expect(within(numberGroup).getByRole('option', { name: '数字等于' })).toBeVisible();
-    expect(within(numberGroup).getByRole('option', { name: '数字属于' })).toBeVisible();
-    expect(
-      within(screen.getByRole('group', { name: '日期' })).getByRole('option', { name: '早于' })
-    ).toBeVisible();
-    expect(screen.queryByRole('option', { name: '数字大于' })).not.toBeInTheDocument();
-    expect(screen.getByRole('option', { name: '早于' })).toBeVisible();
-    expect(screen.getByRole('option', { name: '数字等于' })).toBeVisible();
-    await user.click(screen.getByRole('option', { name: '小于' }));
+    expect(screen.getByRole('button', { name: '条件操作符' })).toHaveTextContent('大于');
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
+    expect(screen.queryByRole('menuitemradio')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: '文本' }));
+    const textGroup = await screen.findByRole('menu', { name: '文本' });
+    expect(within(textGroup).getByRole('menuitemradio', { name: '等于' })).toBeVisible();
+    expect(within(textGroup).getByRole('menuitemradio', { name: '属于' })).toBeVisible();
+    await user.click(screen.getByRole('menuitem', { name: '数字' }));
+    const numberGroup = await screen.findByRole('menu', { name: '数字' });
+    expect(within(numberGroup).getByRole('menuitemradio', { name: '数字等于' })).toBeVisible();
+    expect(within(numberGroup).getByRole('menuitemradio', { name: '数字属于' })).toBeVisible();
+    expect(within(numberGroup).getAllByRole('menuitemradio', { name: '大于' })).toHaveLength(1);
+    expect(screen.queryByRole('menuitemradio', { name: '数字大于' })).not.toBeInTheDocument();
+    fireEvent.click(within(numberGroup).getByRole('menuitemradio', { name: '小于' }));
     expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({ operator: 'NUM_LT' }));
-    await user.click(screen.getByRole('combobox', { name: '条件操作符' }));
-    await user.click(await screen.findByRole('option', { name: '晚于' }));
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
+    await user.click(screen.getByRole('menuitem', { name: '日期' }));
+    expect(await screen.findByRole('menuitemradio', { name: '早于' })).toBeVisible();
+    fireEvent.click(screen.getByRole('menuitemradio', { name: '晚于' }));
     expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({ operator: 'GT' }));
     expect(screen.getByRole('alert')).toHaveTextContent('日期比较');
     const right = screen.getByRole('textbox', { name: '条件右值' });
@@ -208,13 +292,13 @@ describe('通用条件树双输入编辑器', () => {
     const user = userEvent.setup();
     const changed = vi.fn();
     render(<Editor initial={amount} onChange={changed} />);
-    await user.click(screen.getByRole('combobox', { name: '条件操作符' }));
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
     const search = await screen.findByPlaceholderText('搜索操作符');
     await user.type(search, '数字');
     expect(screen.getByRole('group', { name: '数字' })).toBeVisible();
     expect(screen.queryByRole('group', { name: '文本' })).not.toBeInTheDocument();
     expect(screen.queryByRole('group', { name: '日期' })).not.toBeInTheDocument();
-    expect(screen.getByRole('option', { name: '大于' })).toBeVisible();
+    expect(screen.getByRole('menuitemradio', { name: '大于' })).toBeVisible();
     await user.clear(search);
     await user.type(search, '不存在的操作符');
     expect(screen.getByText('没有匹配的选项')).toBeVisible();
@@ -261,13 +345,59 @@ describe('通用条件树双输入编辑器', () => {
     await user.clear(input);
     await user.type(input, '100.05');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('combobox', { name: '条件操作符' }));
-    await user.click(await screen.findByRole('option', { name: '介于' }));
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
+    await user.click(screen.getByRole('menuitem', { name: '数字' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '介于' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '条件操作符' })).toHaveFocus());
     expect(screen.getByRole('alert')).toHaveTextContent('JSON 数组');
     await user.clear(input);
     await user.paste('["100.00", "200.00"]');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  it.each([
+    ['文本', 'EQ', 'IN', '属于', '等于'],
+    ['文本', 'EQ', 'NOT_IN', '不属于', '等于'],
+    ['数字', 'NUM_EQ', 'NUM_IN', '数字属于', '数字等于'],
+    ['数字', 'NUM_EQ', 'NUM_NOT_IN', '数字不属于', '数字等于']
+  ] as const)(
+    '%s：%s 与 %s 切换保留首项右值',
+    async (group, scalar, collection, collectionLabel, scalarLabel) => {
+      const user = userEvent.setup();
+      const changed = vi.fn();
+      render(
+        <Editor
+          initial={{
+            clientId: 'switch-value',
+            type: 'CONDITION',
+            field: '',
+            operator: scalar,
+            leftValue: '{{ $json.value }}',
+            rightValue: '001'
+          }}
+          onChange={changed}
+        />
+      );
+      const selectOperator = async (label: string) => {
+        await user.click(screen.getByRole('button', { name: '条件操作符' }));
+        await user.click(screen.getByRole('menuitem', { name: group }));
+        fireEvent.click(await screen.findByRole('menuitemradio', { name: label }));
+      };
+      await selectOperator(collectionLabel);
+      expect(changed.mock.lastCall?.[0]).toMatchObject({
+        operator: collection,
+        rightValue: '["001"]'
+      });
+      await user.click(screen.getByRole('button', { name: '条件右值' }));
+      expect(screen.getByRole('textbox', { name: '集合值 1' })).toHaveValue('001');
+      expect(screen.queryByText('集合格式不完整，可重新逐项填写。')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '添加一项' }));
+      await user.type(screen.getByRole('textbox', { name: '集合值 2' }), '002');
+      await selectOperator(scalarLabel);
+      expect(changed.mock.lastCall?.[0]).toMatchObject({ operator: scalar, rightValue: '001' });
+      expect(screen.getByRole('textbox', { name: '条件右值' })).toHaveValue('001');
+    }
+  );
 
   it('集合逐项编辑和原文同步，保留前导零、精确数值及变量引用', async () => {
     const user = userEvent.setup();
@@ -314,7 +444,7 @@ describe('通用条件树双输入编辑器', () => {
   });
 
   it.each([
-    ['{{ $json.codes }}', '正在引用动态数组，可从字段目录替换数组变量。'],
+    ['{{ $json.codes }}', '正在引用流程数组，可从字段库替换数组变量。'],
     ['["unfinished', '集合格式不完整，可重新逐项填写。'],
     ['[]', '直接填写，或拖入变量。']
   ])('打开集合 %s 不覆盖原值', async (rightValue, message) => {
@@ -376,7 +506,7 @@ describe('通用条件树双输入编辑器', () => {
     await user.click(screen.getByRole('tab', { name: '引用集合' }));
     expect(screen.queryByRole('textbox', { name: '条件右值' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('combobox', { name: '引用集合' }));
-    expect(await screen.findByRole('option', { name: '地区编码' })).toBeVisible();
+    expect(await screen.findByRole('option', { name: '大口岸编码' })).toBeVisible();
     expect(screen.getByRole('combobox', { name: '引用集合' })).toHaveAttribute(
       'aria-expanded',
       'true'
@@ -384,9 +514,9 @@ describe('通用条件树双输入编辑器', () => {
     await user.keyboard('{Escape}');
     expect(screen.getByRole('dialog', { name: '集合值' })).toBeVisible();
     await user.click(screen.getByRole('combobox', { name: '引用集合' }));
-    await user.click(await screen.findByRole('option', { name: '地区编码' }));
+    await user.click(await screen.findByRole('option', { name: '大口岸编码' }));
     expect(screen.getByRole('dialog', { name: '集合值' })).toBeVisible();
-    expect(screen.getByRole('button', { name: '条件右值' })).toHaveTextContent('地区编码');
+    expect(screen.getByRole('button', { name: '条件右值' })).toHaveTextContent('大口岸编码');
     const left = screen.getByRole('textbox', { name: '条件左值' });
     await user.clear(left);
     await user.paste('{{ $json.port }}');
@@ -396,7 +526,7 @@ describe('通用条件树双输入编辑器', () => {
       field: '',
       operator: 'NOT_IN',
       leftValue: '{{ $json.port }}',
-      setRef: 'REGION_CODES'
+      setRef: 'PORT_LARGE_CODE'
     });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '条件右值' }));
@@ -426,7 +556,7 @@ describe('通用条件树双输入编辑器', () => {
     await user.click(screen.getByRole('button', { name: '条件右值' }));
     expect(screen.getByRole('textbox', { name: '集合值 1' })).toHaveValue('1');
     expect(screen.queryByRole('tab', { name: '引用集合' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('combobox', { name: '条件操作符' }));
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
     expect(screen.queryByRole('textbox', { name: '集合值 1' })).not.toBeInTheDocument();
     expect(await screen.findByPlaceholderText('搜索操作符')).toBeVisible();
     expect(changed).not.toHaveBeenCalled();
@@ -472,13 +602,14 @@ describe('通用条件树双输入编辑器', () => {
           field: '',
           operator: 'IN',
           leftValue: '{{ $json.port }}',
-          setRef: 'REGION_CODES'
+          setRef: 'PORT_LARGE_CODE'
         }}
         onChange={changed}
       />
     );
-    await user.click(screen.getByRole('combobox', { name: '条件操作符' }));
-    await user.click(await screen.findByRole('option', { name: '等于' }));
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
+    await user.click(screen.getByRole('menuitem', { name: '文本' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '等于' }));
     expect(changed).toHaveBeenLastCalledWith({
       clientId: 'in',
       type: 'CONDITION',
@@ -490,16 +621,39 @@ describe('通用条件树双输入编辑器', () => {
     expect(screen.getByRole('textbox', { name: '条件右值' })).toHaveValue('');
   });
 
-  it('五层边界仍可编辑已有条件，限制继续添加组', () => {
-    let nested = root();
-    for (let index = 0; index < 3; index++)
-      nested = { ...root([nested]), clientId: `depth-${index}` };
-    render(<Editor initial={nested} onChange={vi.fn()} />);
-    const inner = within(screen.getAllByRole('group', { name: '条件组 AND' }).at(-1)!);
-    expect(inner.getByRole('button', { name: '添加条件组' })).toBeDisabled();
-    expect(inner.getByText('条件树最大深度为 5 层。')).toBeVisible();
-    expect(inner.getByRole('textbox', { name: '条件右值' })).toBeEnabled();
-  });
+  it.each(['GROUP', 'ANY_MATCH', 'ALL_MATCH', 'NONE_MATCH'] as const)(
+    '五层边界隐藏超限的添加条件组按钮，仍可编辑条件（根节点 %s）',
+    (type) => {
+      let nested = root();
+      for (let index = 0; index < 2; index++)
+        nested = { ...root([nested]), clientId: `depth-${index}` };
+      render(
+        <Editor
+          initial={
+            type === 'GROUP'
+              ? { ...root([nested]), clientId: 'outer' }
+              : {
+                  ...amount,
+                  clientId: 'any-match',
+                  field: '',
+                  leftValue: '{{ $json.items }}',
+                  operator: type,
+                  predicate: nested
+                }
+          }
+          onChange={vi.fn()}
+        />
+      );
+      const inner = within(screen.getAllByRole('group', { name: '条件组 AND' }).at(-1)!);
+      expect(inner.queryByRole('button', { name: '添加条件组' })).not.toBeInTheDocument();
+      expect(inner.getByRole('button', { name: '添加条件' })).toBeEnabled();
+      expect(inner.getByText('条件树最大深度为 5 层。')).toBeVisible();
+      expect(inner.getByRole('textbox', { name: '条件右值' })).toBeEnabled();
+      const addGroups = screen.getAllByRole('button', { name: '添加条件组' });
+      expect(addGroups).toHaveLength(type === 'GROUP' ? 3 : 2);
+      for (const button of addGroups) expect(button).toBeEnabled();
+    }
+  );
 
   it('限制直接子条件数和总节点数，展示限制原因', () => {
     const many = Array.from({ length: 32 }, (_, index) => ({

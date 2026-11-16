@@ -412,8 +412,8 @@ describe('WorkspaceViewport', () => {
 
       render(React.createElement(WorkspaceViewport));
 
-      expect(screen.getByText('页面模块加载失败')).toBeInTheDocument();
-      expect(screen.getByText(/页面依赖或当前构建产物可能不一致/)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: '运行时错误' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '刷新页面' })).toBeInTheDocument();
       expect(screen.getByText(moduleError.message)).toBeInTheDocument();
       expect(screen.queryByText(/API 客户端与页面代码不匹配/)).not.toBeInTheDocument();
       consoleSpy.mockRestore();

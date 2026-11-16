@@ -19,7 +19,10 @@ type ErrorAction = {
 };
 
 interface DefaultErrorPageProps {
-  code: DefaultErrorCode;
+  code?: DefaultErrorCode;
+  /** 自定义插画优先于 code；传 null 隐藏默认插画。 */
+  illustration?: React.ReactNode;
+  layout?: 'page' | 'contained';
   title: string;
   description: string;
   alertTitle: string;
@@ -288,6 +291,8 @@ function ErrorActionButton({ action }: { action: ErrorAction }) {
 
 export function DefaultErrorPage({
   code,
+  illustration,
+  layout = 'page',
   title,
   description,
   alertTitle,
@@ -295,22 +300,32 @@ export function DefaultErrorPage({
   action,
   className
 }: DefaultErrorPageProps) {
-  const style = ERROR_STYLE[code];
+  const style = ERROR_STYLE[code ?? '404'];
+  const illustrationContent =
+    illustration !== undefined ? illustration : code ? <ErrorIllustration code={code} /> : null;
 
   return (
     <main
       className={cn(
-        'bg-background text-foreground relative isolate flex min-h-svh w-full min-w-0 flex-1 items-center justify-center self-start overflow-hidden px-4 py-10 sm:px-6 in-[[data-slot=sidebar-inset]]:min-h-full',
+        'bg-background text-foreground relative isolate flex w-full min-w-0 flex-1 flex-col items-center px-4 py-10 sm:px-6',
+        layout === 'contained'
+          ? 'min-h-0 self-stretch overflow-x-hidden overflow-y-auto'
+          : 'min-h-svh self-start overflow-hidden in-[[data-slot=sidebar-inset]]:min-h-full',
         'before:absolute before:inset-0 before:-z-10 before:bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] before:bg-[size:56px_56px] before:opacity-25',
         'after:bg-border after:absolute after:inset-x-0 after:top-0 after:-z-10 after:h-px',
         className
       )}
     >
-      <section className='flex w-full max-w-4xl flex-col items-center gap-5 text-center'>
-        <p className='sr-only'>HTTP 错误代码：{code}</p>
-        <div className='relative flex w-full flex-col items-center'>
-          <ErrorIllustration code={code} />
-        </div>
+      <section className='my-auto flex w-full max-w-4xl shrink-0 flex-col items-center gap-5 text-center'>
+        {code && <p className='sr-only'>HTTP 错误代码：{code}</p>}
+        {illustrationContent ? (
+          <div
+            data-slot='error-illustration'
+            className='relative flex w-full flex-col items-center'
+          >
+            {illustrationContent}
+          </div>
+        ) : null}
 
         <div className='flex flex-col items-center gap-2'>
           <h1 className='text-3xl font-semibold sm:text-4xl'>{title}</h1>

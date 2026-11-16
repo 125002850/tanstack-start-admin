@@ -55,6 +55,7 @@ export type RoutingCanvasConditionData = RoutingCanvasCommonData & {
   readonly kind: 'CONDITION';
   readonly catalog: readonly ConditionField[];
   readonly condition: PredicateCondition;
+  readonly collectionMatchDisabled?: boolean;
   readonly addDisabledReason?: string;
   readonly onAddCondition: () => void;
   readonly onChange: (condition: PredicateCondition, coalesceKey?: string) => void;

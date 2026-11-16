@@ -17,6 +17,9 @@
  * Chrome 111 native colors were measured on 2026-10-23:
  * - css total / largest css: 249,489 bytes -> 299,387
  * - app css gzip: 36,617 bytes -> 43,941
+ * Read-only JSON preview was measured on 2026-11-16:
+ * - js total: 3,161,589 bytes -> 3,793,907
+ * - CodeMirror is lazy loaded; initial JS and per-asset limits stay unchanged.
  * Affected budgets use 120% of baseline; all other limits stay unchanged.
  *
  * Override with environment variables:
@@ -34,7 +37,7 @@ import { gzipSync } from 'node:zlib';
 
 const DEFAULT_BUDGETS = {
   totalBytes: 11_123_967,
-  jsBytes: 2_778_252,
+  jsBytes: 3_793_907,
   cssBytes: 299_387,
   imageBytes: 7_939_810,
   maxJsBytes: 579_854,

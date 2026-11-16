@@ -19,27 +19,25 @@ describe('DefaultErrorPage', () => {
     localStorage.clear();
   });
 
-  it('renders a 404 state for an explicitly selected monochrome theme', () => {
-    renderWithTheme(
+  it('renders a 404 state from the default botanical illustration family', () => {
+    render(
       <DefaultErrorPage
         code='404'
         title='页面不存在'
         description='访问的页面不存在或已被移动。'
         alertTitle='路由未匹配'
         alertDescription='请检查地址是否正确。'
-      />,
-      'vercel'
+      />
     );
 
     expect(screen.getByRole('heading', { name: '页面不存在' })).toBeInTheDocument();
-    expect(screen.getByRole('main')).toHaveClass('w-full');
     expect(screen.getByTestId('default-error-illustration')).toHaveAttribute(
       'data-error-illustration',
       '404'
     );
     expect(screen.getByTestId('default-error-illustration')).toHaveAttribute(
       'data-error-illustration-family',
-      'monochrome'
+      'botanical'
     );
     expect(screen.getByText('HTTP 错误代码：404')).toHaveClass('sr-only');
     expect(screen.getByText('路由未匹配')).toBeInTheDocument();
@@ -178,5 +176,70 @@ describe('DefaultErrorPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /重试/ }));
 
     expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  it('renders a business state with an action without HTTP codes or error illustrations', () => {
+    const onReturn = vi.fn();
+    renderWithTheme(
+      <DefaultErrorPage
+        layout='contained'
+        title='当前版本不可编辑'
+        description='仅草稿版本支持编辑。'
+        alertTitle='编辑受限'
+        alertDescription='请从场景列表创建或选择草稿后继续编辑。'
+        action={{ label: '返回列表', onClick: onReturn }}
+      />,
+      'astro-vista'
+    );
+
+    expect(screen.getByRole('heading', { name: '当前版本不可编辑' })).toBeVisible();
+    expect(screen.getByRole('alert')).toHaveTextContent('编辑受限');
+    expect(screen.queryByText(/HTTP/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('default-error-illustration')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('main').querySelector('[data-slot="error-illustration"]')
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '返回列表' }));
+    expect(onReturn).toHaveBeenCalledOnce();
+  });
+
+  it.each([undefined, '403'] as const)(
+    'prioritizes a custom illustration over HTTP code %s',
+    (code) => {
+      render(
+        <DefaultErrorPage
+          code={code}
+          illustration={<svg role='img' aria-label='自定义插画' />}
+          title='访问受限'
+          description='当前页面暂不可用。'
+          alertTitle='访问提示'
+          alertDescription='请返回列表。'
+        />
+      );
+
+      expect(screen.getByRole('img', { name: '自定义插画' })).toBeInTheDocument();
+      expect(screen.queryByTestId('default-error-illustration')).not.toBeInTheDocument();
+      if (code) expect(screen.getByText(`HTTP 错误代码：${code}`)).toHaveClass('sr-only');
+    }
+  );
+
+  it('allows explicitly hiding the code illustration with null', () => {
+    render(
+      <DefaultErrorPage
+        code='403'
+        illustration={null}
+        title='无权限访问'
+        description='当前账号暂未开通本系统的权限。'
+        alertTitle='访问受限'
+        alertDescription='请联系管理员。'
+      />
+    );
+
+    expect(screen.getByText('HTTP 错误代码：403')).toHaveClass('sr-only');
+    expect(screen.queryByTestId('default-error-illustration')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('main').querySelector('[data-slot="error-illustration"]')
+    ).not.toBeInTheDocument();
   });
 });

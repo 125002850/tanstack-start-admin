@@ -1,3 +1,4 @@
+import { ScheduleJobRequestLogs } from './schedule-job-request-logs';
 import { useQuery } from '@tanstack/react-query';
 import { RefreshButton } from '@/components/refresh-button';
 import { Button } from '@/components/ui/button';
@@ -56,7 +57,7 @@ export function ScheduleJobExecutionLogSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className='flex w-full max-w-xl flex-col sm:max-w-xl'>
+      <SheetContent className='flex w-full max-w-xl flex-col sm:max-w-3xl'>
         <SheetHeader>
           <SheetTitle>执行记录</SheetTitle>
           <SheetDescription>
@@ -95,7 +96,7 @@ export function ScheduleJobExecutionLogSheet({
               <div className='absolute bottom-0 left-[11px] top-2 w-px bg-border' />
               <div className='flex flex-col gap-6'>
                 {logs.map((log) => (
-                  <ExecutionLogItem key={log.id} log={log} />
+                  <ExecutionLogItem key={log.id} log={log} jobId={job.id} />
                 ))}
               </div>
             </div>
@@ -106,7 +107,7 @@ export function ScheduleJobExecutionLogSheet({
   );
 }
 
-function ExecutionLogItem({ log }: { log: ScheduleJobExecutionLogRspDTO }) {
+function ExecutionLogItem({ log, jobId }: { log: ScheduleJobExecutionLogRspDTO; jobId?: number }) {
   return (
     <div className='relative'>
       <div className='absolute -left-[25px] top-1.5 size-[9px] rounded-full border-2 border-border bg-background' />
@@ -129,6 +130,9 @@ function ExecutionLogItem({ log }: { log: ScheduleJobExecutionLogRspDTO }) {
           <span className='text-muted-foreground'>执行时长</span>
           <span>{executionDuration(log)}</span>
         </div>
+        {jobId != null && log.id != null ? (
+          <ScheduleJobRequestLogs jobId={jobId} executionId={log.id} />
+        ) : null}
         {log.status === 'failed' && log.errorMessage ? (
           <div className='mt-2 rounded bg-destructive/10 px-3 py-2'>
             <p className='text-xs font-medium text-destructive'>错误信息</p>

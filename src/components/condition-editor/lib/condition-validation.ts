@@ -7,7 +7,9 @@ import {
 } from './condition-operands';
 import { CONDITION_LIMITS } from '../model/condition-limits';
 import {
+  isCollectionMatchOperator,
   getConditionField,
+  getConditionElementCatalog,
   getConditionFieldReferenceOptions,
   getConditionOperators,
   isDecimalConditionOperator,
@@ -70,6 +72,46 @@ export function validateCondition(
     return count;
   }
 
+  if (isCollectionMatchOperator(condition.operator)) {
+    const catalogMode = condition.leftValue === undefined;
+    if (
+      (!catalogMode && condition.field) ||
+      condition.rightValue !== undefined ||
+      condition.value !== undefined ||
+      condition.values !== undefined ||
+      condition.fieldRef !== undefined ||
+      condition.setRef !== undefined
+    )
+      issues.push({ path, message: '集合匹配仅接收左值和子条件组。' });
+    if (catalogMode) {
+      if (getConditionField(catalog, condition.field)?.type !== 'STRING_ARRAY')
+        issues.push({ path: `${path}.field`, message: '请选择可用目录中的集合字段。' });
+    } else if (
+      typeof condition.leftValue !== 'string' ||
+      condition.leftValue.length > 512 ||
+      !/^\{\{[\s\S]+\}\}$/u.test(condition.leftValue.trim())
+    )
+      issues.push({ path: `${path}.leftValue`, message: '请选择数组的整值引用。' });
+    if (condition.predicate?.type !== 'GROUP') {
+      issues.push({ path: `${path}.predicate`, message: '请配置集合元素的子条件组。' });
+      return 1;
+    }
+    const count =
+      1 +
+      validateCondition(
+        condition.predicate,
+        catalogMode ? getConditionElementCatalog(catalog) : catalog,
+        `${path}.predicate`,
+        depth + 1,
+        false,
+        issues
+      );
+    if (count > CONDITION_LIMITS.conditionNodes)
+      issues.push({ path, message: '单棵条件树最多支持 64 个节点。' });
+    return count;
+  }
+  if (condition.predicate !== undefined)
+    issues.push({ path: `${path}.predicate`, message: '只有集合匹配可以配置子条件。' });
   if (condition.leftValue !== undefined || condition.rightValue !== undefined) {
     validateInputOperands(condition, path, issues);
     return 1;

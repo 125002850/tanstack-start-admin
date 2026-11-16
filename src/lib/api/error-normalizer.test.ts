@@ -31,6 +31,27 @@ describe('api error normalizer', () => {
     });
   });
 
+  it('preserves long workflow validation details from the generated client', () => {
+    const code = 3010004;
+    const message =
+      '工作流图结构不合法，共 8 项错误：逐订单处理风险工厂 → 国内未付已发·退回/转港（无需订舱） → 请填写条件左值（config.subprocess.graph.nodes[21].config.conditionTree.children[0].leftValue）；逐订单处理风险工厂 → 国内未付已发·退回/转港（需订舱） → 请填写条件左值（config.subprocess.graph.nodes[24].config.conditionTree.children[0].leftValue）；逐订单处理风险工厂 → 国内未付已发·转卖 → 请填写条件左值（config.subprocess.graph.nodes[25].config.conditionTree.children[0].leftValue）；其余 5 项错误待修正';
+
+    expect(message.length).toBeGreaterThan(256);
+    expect(
+      normalizeApiError(new BizError(message, REQUEST, code, { code, msg: message, data: null }))
+    ).toEqual({ code, message });
+    expect(normalizeBusinessError(code, message)).toEqual({ code, message });
+  });
+
+  it('truncates oversized business messages while preserving the error code', () => {
+    const code = 3003999;
+    const message = 'x'.repeat(4097);
+    const expected = { code, message: `${'x'.repeat(4095)}…` };
+
+    expect(normalizeApiError({ causeBody: { code, msg: message } })).toEqual(expected);
+    expect(normalizeBusinessError(code, message)).toEqual(expected);
+  });
+
   it('keeps a business 404 distinct from an HTTP 404', () => {
     expect(
       normalizeApiError(
@@ -129,10 +150,6 @@ describe('api error normalizer', () => {
   it.each([
     { caseName: 'missing message', error: { causeBody: { code: 3003999 } } },
     { caseName: 'blank message', error: { causeBody: { code: 3003999, msg: '   ' } } },
-    {
-      caseName: 'oversized message',
-      error: { causeBody: { code: 3003999, msg: 'x'.repeat(257) } }
-    },
     { caseName: 'missing business code', error: { causeBody: { msg: '缺少业务码' } } }
   ])(
     'uses the caller fallback when public business information is unavailable: $caseName',

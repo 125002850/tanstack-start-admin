@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { createInputCondition, getConditionOperands } from './condition-operands';
+import {
+  convertConditionRightValue,
+  createInputCondition,
+  getConditionOperands
+} from './condition-operands';
 import { validateConditionTree } from './condition-validation';
 import type { PredicateCondition } from '../model/condition-model';
 
@@ -15,6 +19,29 @@ const fields = [
   { path: 'payload.b', label: '阈值', source: 'PAYLOAD', type: 'STRING', expression: '$json.b' }
 ] as const;
 describe('条件输入原文与兼容转换', () => {
+  it.each([
+    ['EQ', 'IN', '1', '["1"]'],
+    ['EQ', 'NOT_IN', '001', '["001"]'],
+    ['NUM_EQ', 'NUM_IN', '100.000000000000000001', '["100.000000000000000001"]'],
+    ['NUM_EQ', 'NUM_NOT_IN', '9007199254740993', '["9007199254740993"]'],
+    ['EQ', 'IN', '"true"', '["true"]'],
+    ['EQ', 'IN', 'false', '[false]'],
+    ['EQ', 'IN', '{{ $json.expected }}', '["{{ $json.expected }}"]'],
+    ['IN', 'EQ', '["001","002"]', '001'],
+    ['NOT_IN', 'NE', '["true","false"]', '"true"'],
+    ['IN', 'EQ', '["[1,2]","other"]', '"[1,2]"'],
+    ['IN', 'EQ', '["{{ $json.expected }}","other"]', '{{ $json.expected }}'],
+    ['NUM_IN', 'NUM_EQ', '[100.000000000000000001,2]', '100.000000000000000001'],
+    ['NUM_NOT_IN', 'NUM_NE', '[9007199254740993,2]', '9007199254740993'],
+    ['IN', 'EQ', '[]', ''],
+    ['IN', 'NOT_IN', '["001", "002"]', '["001", "002"]'],
+    ['NUM_IN', 'NUM_NOT_IN', '[1, 2]', '[1, 2]'],
+    ['IN', 'EQ', '["unfinished', '["unfinished'],
+    ['IN', 'EQ', '{{ $json.values }}', '{{ $json.values }}']
+  ] as const)('%s 切换为 %s 时保留右值语义：%s', (previous, next, source, expected) => {
+    expect(convertConditionRightValue(source, previous, next)).toBe(expected);
+  });
+
   it('回显旧字段引用、集合与布尔值', () => {
     expect(
       getConditionOperands({ ...legacy, value: undefined, fieldRef: 'payload.b' }, fields)

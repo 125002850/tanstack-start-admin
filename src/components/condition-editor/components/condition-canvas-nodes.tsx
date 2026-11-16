@@ -6,17 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-import { CONDITION_INPUT_OPERATOR_LABELS } from '../lib/condition-operands';
 import {
+  isCollectionMatchOperator,
   createPredicateCondition,
   getConditionField,
   getConditionOperators,
-  getConditionOperatorGroup,
-  isConditionFieldSelectable,
   type ConditionOperator
 } from '../model/condition-model';
 import { RoutingCanvasConditionValueEditor } from './condition-value-editor';
 import { ConditionSearchSelect } from './condition-search-select';
+import { ConditionOperatorSelect } from './condition-operator-select';
 import type {
   RoutingCanvasConditionData,
   RoutingCanvasGroupData,
@@ -126,7 +125,15 @@ function RoutingCanvasConditionNode({
   data
 }: NodeProps<Node<RoutingCanvasConditionData, 'condition'>>) {
   const field = getConditionField(data.catalog, data.condition.field);
-  const operators = field === undefined ? [] : getConditionOperators(field);
+  const operators =
+    field === undefined
+      ? []
+      : getConditionOperators(field).filter(
+          (operator) =>
+            !isCollectionMatchOperator(operator) ||
+            isCollectionMatchOperator(data.condition.operator) ||
+            !data.collectionMatchDisabled
+        );
   const changeField = (fieldPath: string) => {
     const nextField = getConditionField(data.catalog, fieldPath);
     if (nextField === undefined) return;
@@ -134,7 +141,12 @@ function RoutingCanvasConditionNode({
   };
   const changeOperator = (operator: ConditionOperator) => {
     if (field === undefined) return;
-    data.onChange(createPredicateCondition(field, data.condition.clientId, operator));
+    const next = createPredicateCondition(field, data.condition.clientId, operator);
+    data.onChange(
+      isCollectionMatchOperator(operator) && data.condition.predicate
+        ? { ...next, predicate: data.condition.predicate }
+        : next
+    );
   };
 
   return (
@@ -183,11 +195,7 @@ function RoutingCanvasConditionNode({
             <ConditionSearchSelect
               disabled={data.disabled}
               onValueChange={changeField}
-              options={data.catalog.filter(isConditionFieldSelectable).map((option) => ({
-                value: option.path,
-                label: option.label,
-                description: option.description
-              }))}
+              options={data.catalog}
               overlayId={`field:${data.condition.clientId}`}
               placeholder='选择字段'
               searchPlaceholder='搜索字段名称、路径或说明'
@@ -197,18 +205,12 @@ function RoutingCanvasConditionNode({
           </Field>
           <Field>
             <FieldLabel className='sr-only'>条件操作符</FieldLabel>
-            <ConditionSearchSelect
+            <ConditionOperatorSelect
               disabled={data.disabled || field === undefined}
+              fieldType={field?.type}
               onValueChange={changeOperator}
-              options={operators.map((operator) => ({
-                value: operator,
-                label: CONDITION_INPUT_OPERATOR_LABELS[operator],
-                group: getConditionOperatorGroup(operator, field?.type)
-              }))}
+              operators={operators}
               overlayId={`operator:${data.condition.clientId}`}
-              placeholder='选择操作符'
-              searchPlaceholder='搜索操作符'
-              triggerLabel='条件操作符'
               value={data.condition.operator}
             />
           </Field>
@@ -220,6 +222,15 @@ function RoutingCanvasConditionNode({
           field={field}
           onChange={data.onChange}
         />
+        {isCollectionMatchOperator(data.condition.operator) ? (
+          <p className='text-muted-foreground text-xs'>
+            {data.condition.operator === 'ALL_MATCH'
+              ? '每一集合项均满足下方条件组时命中。'
+              : data.condition.operator === 'NONE_MATCH'
+                ? '没有集合项满足下方条件组时命中。'
+                : '同一集合项满足下方条件组时命中。'}
+          </p>
+        ) : null}
       </FieldGroup>
       {data.error === undefined ? null : <FieldError>{data.error}</FieldError>}
       <RoutingCanvasAddChildButton

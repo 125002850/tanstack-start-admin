@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 
 interface AlertModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   loading: boolean;
   title?: string;
   description?: string;
   cancelText?: string;
   confirmText?: string;
+  children?: ReactNode;
 }
 
 export function AlertModal({
@@ -21,7 +22,8 @@ export function AlertModal({
   title = 'Are you sure?',
   description = 'This action cannot be undone.',
   cancelText = 'Cancel',
-  confirmText = 'Continue'
+  confirmText = 'Continue',
+  children
 }: AlertModalProps) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -35,7 +37,8 @@ export function AlertModal({
 
   return (
     <Modal title={title} description={description} isOpen={isOpen} onClose={onClose}>
-      <div className='flex w-full items-center justify-end space-x-2 pt-6'>
+      {children}
+      <div className='flex w-full items-center justify-end gap-2 pt-6'>
         <Button disabled={loading} variant='outline' onClick={onClose}>
           {cancelText}
         </Button>

@@ -229,11 +229,7 @@ function RoutingCanvasFieldReferenceEditor({
         aria-describedby={validation?.['aria-describedby']}
         disabled={disabled || options.length === 0}
         onValueChange={(fieldRef) => onChange({ ...condition, fieldRef })}
-        options={options.map((option) => ({
-          value: option.path,
-          label: option.label,
-          description: option.description
-        }))}
+        options={options}
         overlayId={`field-ref:${condition.clientId}`}
         placeholder='选择对比字段'
         searchPlaceholder='搜索字段名称、路径或说明'

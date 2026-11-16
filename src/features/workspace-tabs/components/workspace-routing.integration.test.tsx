@@ -1521,23 +1521,38 @@ describe('Workspace Routing Integration', () => {
       expect(getState().tabs['/system-management/dictionaries']).toBeDefined();
     });
 
-    it('guard timeout is treated as rejection', async () => {
+    it('waits for a delayed close decision instead of silently timing out', async () => {
       vi.useFakeTimers();
       setupTab('/system-management/dictionaries', 'Dictionaries');
+      let resolveGuard!: (allow: boolean) => void;
       getState().updateLifecycle('/system-management/dictionaries', {
-        closeGuard: () => new Promise(() => {}), // never resolves
+        closeGuard: () =>
+          new Promise<boolean>((resolve) => {
+            resolveGuard = resolve;
+          }),
         dirty: true
       });
 
       const actionsRef = React.createRef<ReturnType<typeof useWorkspaceTags>>();
       render(React.createElement(CloseGuardTester, { actionsRef }));
 
-      const closePromise = act(() => actionsRef.current!.close('/system-management/dictionaries'));
-      vi.advanceTimersByTime(2000); // past 1500ms timeout
-      await closePromise;
+      try {
+        const closePromise = actionsRef.current!.close('/system-management/dictionaries');
+        await vi.advanceTimersByTimeAsync(2000);
 
-      expect(getState().tabs['/system-management/dictionaries']).toBeDefined();
-      vi.useRealTimers();
+        expect(getState().tabs['/system-management/dictionaries']).toBeDefined();
+        expect(mockNavigate).not.toHaveBeenCalled();
+
+        await act(async () => {
+          resolveGuard(true);
+          await closePromise;
+        });
+
+        expect(getState().tabs['/system-management/dictionaries']).toBeUndefined();
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/overview' });
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('no guard set allows immediate close', async () => {

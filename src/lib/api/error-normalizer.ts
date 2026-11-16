@@ -40,7 +40,7 @@ const STABLE_ERROR_MESSAGES: Record<ApiStableErrorCode, string> = {
   RESPONSE_CONTRACT_MISMATCH: '接口返回的数据与契约不符，请检查接口响应。'
 };
 
-const MAX_PUBLIC_BUSINESS_ERROR_MESSAGE_LENGTH = 256;
+const MAX_PUBLIC_BUSINESS_ERROR_MESSAGE_LENGTH = 4096;
 const MAX_BUSINESS_ERROR_CODE_LENGTH = 64;
 const PUBLIC_URL_PATTERN = /\bhttps?:\/\/[^\s<>"'，。；！？]+/giu;
 const REDACTED_PUBLIC_URL_LABEL = '[链接已隐藏]';
@@ -209,9 +209,11 @@ function readPublicMessage(value: unknown): string | null {
   if (typeof value !== 'string') return null;
 
   const message = value.trim().replace(PUBLIC_URL_PATTERN, REDACTED_PUBLIC_URL_LABEL);
-  return message.length > 0 && message.length <= MAX_PUBLIC_BUSINESS_ERROR_MESSAGE_LENGTH
-    ? message
-    : null;
+  if (message.length === 0) return null;
+
+  return message.length > MAX_PUBLIC_BUSINESS_ERROR_MESSAGE_LENGTH
+    ? `${message.slice(0, MAX_PUBLIC_BUSINESS_ERROR_MESSAGE_LENGTH - 1)}…`
+    : message;
 }
 
 function createRequestFailedInfo(fallbackMessage: string | undefined): ApiErrorInfo {

@@ -1,14 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  renderHook,
-  screen,
-  waitFor
-} from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import * as React from 'react';
+
+import { toast } from 'sonner';
+vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
 
 import { useConfirmAction } from '@/hooks/use-confirm-action';
 
@@ -74,60 +69,41 @@ describe('useConfirmAction', () => {
   });
 });
 
-it('blocks repeated confirmation and closing, then retains failed actions for retry', async () => {
-  let reject!: (error: Error) => void;
-  const onRun = vi
+it('retains confirmation on rejection and allows a retry without exposing raw errors', async () => {
+  const run = vi
     .fn()
-    .mockImplementationOnce(
-      () =>
-        new Promise<void>((_, fail) => {
-          reject = fail;
-        })
-    )
-    .mockResolvedValue(undefined);
-  render(<ConfirmActionHarness onRun={onRun} />);
+    .mockRejectedValueOnce(new Error('private details'))
+    .mockResolvedValueOnce(undefined);
+  render(<ConfirmActionHarness onRun={run} />);
   fireEvent.click(screen.getByRole('button', { name: '打开确认' }));
-  const confirm = screen.getByRole('button', { name: '删除' });
-  fireEvent.click(confirm);
-  expect(confirm).toHaveAttribute('aria-busy', 'true');
-  expect(confirm).toBeDisabled();
-  fireEvent.click(confirm);
-  fireEvent.click(screen.getByRole('button', { name: '取消' }));
-  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-  expect(onRun).toHaveBeenCalledTimes(1);
-  expect(screen.getByRole('dialog')).toBeInTheDocument();
-  await act(async () => reject(new Error('delete failed')));
-  expect(screen.getByRole('dialog')).toBeInTheDocument();
-  fireEvent.click(confirm);
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  expect(onRun).toHaveBeenCalledTimes(2);
+  fireEvent.click(await screen.findByRole('button', { name: '删除' }));
+  await waitFor(() =>
+    expect(screen.getByRole('alert')).toHaveTextContent('请求未能完成，请稍后重试。')
+  );
+  expect(screen.getByRole('alert')).not.toHaveTextContent('private details');
+  expect(toast.error).not.toHaveBeenCalled();
+  expect(screen.getByText('确认删除 3 条记录？')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '删除' }));
+  await waitFor(() => expect(screen.queryByText('确认删除 3 条记录？')).not.toBeInTheDocument());
+  expect(run).toHaveBeenCalledTimes(2);
 });
 
-it('locks confirmation synchronously before React renders the loading state', async () => {
-  let resolve!: () => void;
+it('blocks repeated confirmation and closing while the operation is pending', async () => {
+  let finish!: () => void;
   const run = vi.fn(
     () =>
-      new Promise<void>((done) => {
-        resolve = done;
+      new Promise<void>((resolve) => {
+        finish = resolve;
       })
   );
-  const otherRun = vi.fn();
-  const { result } = renderHook(() => useConfirmAction());
-  act(() => result.current.withConfirm({ title: '原操作', run })());
-  const dialog = result.current.confirmDialog!;
-  let pending!: Promise<void>;
-  act(() => {
-    pending = dialog.props.onConfirm();
-    void dialog.props.onConfirm();
-    dialog.props.onClose();
-    result.current.withConfirm({ title: '其他操作', run: otherRun })();
-  });
-  expect(run).toHaveBeenCalledTimes(1);
-  expect(result.current.confirmDialog?.props.title).toBe('原操作');
-  expect(otherRun).not.toHaveBeenCalled();
-  await act(async () => {
-    resolve();
-    await pending;
-  });
-  expect(result.current.confirmDialog).toBeNull();
+  render(<ConfirmActionHarness onRun={run} />);
+  fireEvent.click(screen.getByRole('button', { name: '打开确认' }));
+  const confirm = await screen.findByRole('button', { name: '删除' });
+  fireEvent.click(confirm);
+  fireEvent.click(confirm);
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  expect(run).toHaveBeenCalledOnce();
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  finish();
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 });

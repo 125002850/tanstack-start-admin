@@ -1,4 +1,5 @@
 import {
+  IconCopy,
   IconMaximize,
   IconZoomOut,
   IconArrowBackUp,
@@ -115,6 +116,7 @@ import {
 } from '@tabler/icons-react';
 
 export const Icons = {
+  copy: IconCopy,
   branch: IconGitBranch,
   maximize: IconArrowsMaximize,
   minimize: IconArrowsMinimize,

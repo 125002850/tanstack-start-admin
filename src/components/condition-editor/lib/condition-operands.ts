@@ -1,4 +1,4 @@
-import { findJsonArrayItemValueRanges, parseJsonString } from './condition-json-source';
+import { findJsonArrayItemValueRanges, parseJsonString } from '@/lib/json-source';
 import {
   CONDITION_OPERATOR_LABELS,
   getConditionField,
@@ -9,6 +9,9 @@ import {
 } from '../model/condition-model';
 
 export const CONDITION_INPUT_OPERATORS = [
+  'ANY_MATCH',
+  'ALL_MATCH',
+  'NONE_MATCH',
   'EQ',
   'NE',
   'CONTAINS',
@@ -30,7 +33,9 @@ export const CONDITION_INPUT_OPERATORS = [
   'LE',
   'BETWEEN',
   'EXISTS',
-  'NOT_EXISTS'
+  'NOT_EXISTS',
+  'IS_EMPTY',
+  'IS_NOT_EMPTY'
 ] as const satisfies readonly ConditionOperator[];
 
 export const CONDITION_INPUT_OPERATOR_LABELS = {
@@ -119,6 +124,35 @@ export function parseConditionLiteral(source: string): unknown {
   return text.startsWith('[') || text.startsWith('"') || text === 'true' || text === 'false'
     ? JSON.parse(text)
     : source;
+}
+
+export function convertConditionRightValue(
+  source: string,
+  previousOperator: ConditionOperator,
+  nextOperator: ConditionOperator
+): string {
+  const wasCollection = conditionOperatorUsesCollection(previousOperator);
+  if (!wasCollection && ['IN', 'NOT_IN', 'NUM_IN', 'NUM_NOT_IN'].includes(nextOperator)) {
+    try {
+      const value = parseConditionLiteral(source);
+      return Array.isArray(value) ? source : JSON.stringify([value]);
+    } catch {
+      return source;
+    }
+  }
+  if (
+    !wasCollection ||
+    conditionOperatorUsesCollection(nextOperator) ||
+    routingOperatorUsesNoValue(nextOperator)
+  )
+    return source;
+  const items = readConditionCollection(source);
+  if (!items) return source;
+  const first = items[0];
+  if (first === undefined) return '';
+  const value = parseJsonString(first);
+  if (value === undefined || value.includes('{{') || value.includes('}}')) return value ?? first;
+  return formatConditionLiteral(value);
 }
 
 /** 校验数组但始终从原文取值，避免编辑其他项时重写精确数值。 */
