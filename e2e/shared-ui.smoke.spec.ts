@@ -276,6 +276,55 @@ test('滚动条旁操作按钮右边缘可点击，工作区错误页不额外�
   expect(bounds.errorHeight).toBeLessThanOrEqual(bounds.available + 1);
 });
 
+for (const mobile of [false, true]) {
+  test(`高级筛选可搜索单选保留提交语义和嵌套焦点 ${mobile ? 'mobile' : 'desktop'}`, async ({
+    page
+  }) => {
+    await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 });
+    const example = page.getByRole('region', { name: '高级筛选选择示例' });
+    const result = example.getByLabel('高级筛选提交结果');
+    await example.getByRole('button', { name: '高级搜索 1' }).click();
+    const popup = page.getByTestId('data-table-advanced-search-popover');
+    const field = popup.getByRole('button', { name: '查询字段' });
+    await field.click();
+    await page.getByPlaceholder('搜索字段名称或标识').fill('deliveryChannel');
+    await expect(page.getByRole('option', { name: '状态', exact: true })).toHaveCount(0);
+    await page.getByRole('option', { name: '发送渠道', exact: true }).click();
+    await expect(field).toBeFocused();
+    await expect(field).toBeInViewport();
+    const value = popup.getByRole('button', { name: '发送渠道条件值' });
+    await expect(value).toHaveText(/选择发送渠道/);
+    await expect(result).toContainText('"value":"enable"');
+    await value.click();
+    await page.getByPlaceholder('搜索发送渠道').fill('mail');
+    await page.getByRole('option', { name: '邮件', exact: true }).click();
+    await expect(value).toBeFocused();
+    await value.click();
+    await expect(page.getByPlaceholder('搜索发送渠道')).toHaveValue('');
+    await page.keyboard.press('Escape');
+    await expect(popup).toBeVisible();
+    await expect(value).toBeFocused();
+    await popup.getByRole('button', { name: '应用', exact: true }).click();
+    await expect(result).toContainText('"field":"deliveryChannel","op":"EQ","value":"email"');
+
+    await example.getByRole('button', { name: '高级搜索 1' }).click();
+    await popup.getByRole('button', { name: '查询字段' }).click();
+    await page.getByPlaceholder('搜索字段名称或标识').fill('状态');
+    await page.getByRole('option', { name: '状态', exact: true }).click();
+    await popup.getByRole('combobox', { name: '比较方式' }).click();
+    await page.getByRole('option', { name: '不属于', exact: true }).click();
+    await popup.getByRole('button', { name: '状态多选值' }).click();
+    const search = page.getByPlaceholder('搜索状态');
+    await search.fill('启');
+    await page.getByRole('option', { name: '启用', exact: true }).click();
+    await search.fill('停');
+    await page.getByRole('option', { name: '停用', exact: true }).click();
+    await page.keyboard.press('Escape');
+    await popup.getByRole('button', { name: '应用', exact: true }).click();
+    await expect(result).toContainText('"op":"NOT_IN","values":["enable","disable"]');
+  });
+}
+
 test('回灌组件支持原位编辑、员工扩展内容和精确 JSON 预览', async ({ page }) => {
   await page.getByRole('button', { name: '修改示例名称' }).click();
   await page.getByRole('textbox', { name: '示例名称', exact: true }).fill('更新名称');
