@@ -9,6 +9,7 @@ import {
   createFormField
 } from '@/components/ui/form-context';
 import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 
 interface TextFieldProps extends Omit<
   React.ComponentProps<'input'>,
@@ -17,6 +18,7 @@ interface TextFieldProps extends Omit<
   label: string;
   description?: string;
   required?: boolean;
+  endAdornment?: React.ReactNode;
   type?: 'text' | 'email' | 'password' | 'tel' | 'url' | 'number' | 'date' | 'time';
 }
 
@@ -26,6 +28,7 @@ export function TextField({
   required,
   type = 'text',
   className,
+  endAdornment,
   ...inputProps
 }: TextFieldProps) {
   const field = useFieldContext();
@@ -56,12 +59,22 @@ export function TextField({
             }}
             aria-describedby={field.formMessageId}
             aria-invalid={field.isInvalid}
-            className={className}
+            className={cn(
+              endAdornment && 'pr-11',
+              endAdornment && isValidating && 'pr-16',
+              className
+            )}
             {...inputProps}
           />
-          {isValidating && (
-            <div className='absolute top-1/2 right-3 -translate-y-1/2'>
-              <Spinner className='h-4 w-4' />
+          {(isValidating || endAdornment) && (
+            <div
+              className={cn(
+                'absolute top-1/2 flex -translate-y-1/2 items-center gap-1',
+                endAdornment ? 'right-1' : 'right-3'
+              )}
+            >
+              {isValidating && <Spinner className='h-4 w-4' />}
+              {endAdornment}
             </div>
           )}
         </div>
