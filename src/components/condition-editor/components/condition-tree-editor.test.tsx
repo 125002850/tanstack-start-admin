@@ -13,7 +13,7 @@ import {
   type PredicateCondition
 } from '../model/condition-model';
 import { ConditionReferenceSetsProvider } from './condition-reference-sets';
-import { ConditionTreeEditor } from './condition-tree-editor';
+import { ConditionTreeEditor, type ConditionTreeEditorProps } from './condition-tree-editor';
 
 afterEach(cleanup);
 const catalog: readonly ConditionField[] = [
@@ -56,11 +56,13 @@ function Editor({
   initial = root(),
   disabled = false,
   fields = catalog,
+  renderOperand,
   onChange
 }: {
   initial?: Exclude<ConditionNode, { type: 'ALWAYS' }>;
   disabled?: boolean;
   fields?: readonly ConditionField[];
+  renderOperand?: ConditionTreeEditorProps['renderOperand'];
   onChange: (condition: ConditionNode) => void;
 }) {
   const [condition, setCondition] = useState<ConditionNode>(initial);
@@ -73,6 +75,7 @@ function Editor({
         condition={condition}
         catalog={fields}
         disabled={disabled}
+        renderOperand={renderOperand}
         issuePathPrefix='rule.condition'
         issues={validateConditionTree(condition, fields, 'rule.condition')}
         onChange={(next) => {
@@ -104,12 +107,12 @@ describe('通用条件树双输入编辑器', () => {
       predicate: { type: 'GROUP', logic: 'AND', children: [{ leftValue: '{{ $element }}' }] }
     });
     expect(changed.mock.lastCall?.[0]).not.toHaveProperty('rightValue');
-    const left = screen.getAllByRole('textbox', { name: '条件左值' });
+    const left = screen.getAllByRole('textbox', { name: '待比较值' });
     await user.clear(left[0]!);
     await user.paste('{{ $json.obj.list }}');
     await user.clear(left[1]!);
     await user.paste('{{ $element.type }}');
-    await user.type(screen.getByRole('textbox', { name: '条件右值' }), '头款');
+    await user.type(screen.getByRole('textbox', { name: '比较值' }), '头款');
     expect(changed.mock.lastCall?.[0]).toMatchObject({
       leftValue: '{{ $json.obj.list }}',
       predicate: { children: [{ leftValue: '{{ $element.type }}', rightValue: '头款' }] }
@@ -139,8 +142,8 @@ describe('通用条件树双输入编辑器', () => {
   it('已有目录条件在左右输入框回显，打开时不改写配置', () => {
     const changed = vi.fn();
     render(<Editor onChange={changed} />);
-    expect(screen.getByRole('textbox', { name: '条件左值' })).toHaveValue('{{ $json.amount }}');
-    expect(screen.getByRole('textbox', { name: '条件右值' })).toHaveValue('100.05');
+    expect(screen.getByRole('textbox', { name: '待比较值' })).toHaveValue('{{ $json.amount }}');
+    expect(screen.getByRole('textbox', { name: '比较值' })).toHaveValue('100.05');
     expect(screen.getByRole('tab', { name: '全部', selected: true })).toBeVisible();
     expect(screen.queryByRole('combobox', { name: '条件字段' })).not.toBeInTheDocument();
     expect(changed).not.toHaveBeenCalled();
@@ -150,9 +153,9 @@ describe('通用条件树双输入编辑器', () => {
     const user = userEvent.setup();
     const changed = vi.fn();
     render(<Editor initial={amount} onChange={changed} />);
-    await user.clear(screen.getByRole('textbox', { name: '条件左值' }));
+    await user.clear(screen.getByRole('textbox', { name: '待比较值' }));
     await user.paste('{{ $json.total }}');
-    await user.clear(screen.getByRole('textbox', { name: '条件右值' }));
+    await user.clear(screen.getByRole('textbox', { name: '比较值' }));
     await user.paste("{{ $('查询订单').first().json.limit }}");
     expect(changed).toHaveBeenLastCalledWith({
       clientId: 'amount',
@@ -170,9 +173,9 @@ describe('通用条件树双输入编辑器', () => {
     render(<Editor onChange={changed} />);
     await user.click(screen.getByRole('button', { name: '添加条件组' }));
     const nested = screen.getAllByRole('group', { name: '条件组 AND' }).at(-1)!;
-    expect(within(nested).getByRole('textbox', { name: '条件左值' })).toHaveFocus();
+    expect(within(nested).getByRole('textbox', { name: '待比较值' })).toHaveFocus();
     await user.click(within(nested).getByRole('tab', { name: '任一' }));
-    await user.type(within(nested).getByRole('textbox', { name: '条件右值' }), '200.10');
+    await user.type(within(nested).getByRole('textbox', { name: '比较值' }), '200.10');
     expect(changed).toHaveBeenLastCalledWith(
       expect.objectContaining({
         logic: 'AND',
@@ -254,7 +257,7 @@ describe('通用条件树双输入编辑器', () => {
       leftValue: '{{ $json.amount }}',
       operator
     });
-    expect(screen.queryByRole('textbox', { name: '条件右值' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '比较值' })).not.toBeInTheDocument();
   });
 
   it('大小比较只有一套数值选项，日期使用早于和晚于', async () => {
@@ -282,7 +285,7 @@ describe('通用条件树双输入编辑器', () => {
     fireEvent.click(screen.getByRole('menuitemradio', { name: '晚于' }));
     expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({ operator: 'GT' }));
     expect(screen.getByRole('alert')).toHaveTextContent('日期比较');
-    const right = screen.getByRole('textbox', { name: '条件右值' });
+    const right = screen.getByRole('textbox', { name: '比较值' });
     await user.clear(right);
     await user.type(right, '2026-11-04 08:00:00');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -315,8 +318,8 @@ describe('通用条件树双输入编辑器', () => {
     const changed = vi.fn();
     render(<Editor initial={root([])} fields={[]} onChange={changed} />);
     await user.click(screen.getByRole('button', { name: '添加条件' }));
-    await user.type(screen.getByRole('textbox', { name: '条件左值' }), 'approved');
-    await user.type(screen.getByRole('textbox', { name: '条件右值' }), 'approved');
+    await user.type(screen.getByRole('textbox', { name: '待比较值' }), 'approved');
+    await user.type(screen.getByRole('textbox', { name: '比较值' }), 'approved');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(changed).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -325,7 +328,7 @@ describe('通用条件树双输入编辑器', () => {
     );
   });
 
-  it('错误关联到右值，修正后清除；集合使用 JSON 数组输入', async () => {
+  it('错误关联到右值，切换介于后分别填写上下限', async () => {
     const user = userEvent.setup();
     render(
       <Editor
@@ -339,7 +342,7 @@ describe('通用条件树双输入编辑器', () => {
         onChange={vi.fn()}
       />
     );
-    const input = screen.getByRole('textbox', { name: '条件右值' });
+    const input = screen.getByRole('textbox', { name: '比较值' });
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(input).toHaveAttribute('aria-describedby', screen.getByRole('alert').id);
     await user.clear(input);
@@ -348,11 +351,177 @@ describe('通用条件树双输入编辑器', () => {
     await user.click(screen.getByRole('button', { name: '条件操作符' }));
     await user.click(screen.getByRole('menuitem', { name: '数字' }));
     fireEvent.click(await screen.findByRole('menuitemradio', { name: '介于' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: '条件操作符' })).toHaveFocus());
-    expect(screen.getByRole('alert')).toHaveTextContent('JSON 数组');
-    await user.clear(input);
-    await user.paste('["100.00", "200.00"]');
+    expect(screen.getByRole('textbox', { name: '下限' })).toHaveValue('100.05');
+    const upper = screen.getByRole('textbox', { name: '上限' });
+    expect(upper).toHaveAttribute('aria-invalid', 'true');
+    expect(upper).toHaveAccessibleDescription('请输入上限。');
+    await user.type(upper, '200.00');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('介于回显不改写原文，修改下限保留上限的精确数字', async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(
+      <Editor
+        initial={{
+          clientId: 'range',
+          type: 'CONDITION',
+          field: '',
+          operator: 'NUM_BETWEEN',
+          leftValue: '{{ $json.amount }}',
+          rightValue: '["001",100.000000000000000001]'
+        }}
+        onChange={changed}
+      />
+    );
+    expect(screen.getByRole('textbox', { name: '待比较值' })).toHaveValue('{{ $json.amount }}');
+    const lower = screen.getByRole('textbox', { name: '下限' });
+    expect(lower).toHaveValue('001');
+    expect(screen.getByRole('textbox', { name: '上限' })).toHaveValue('100.000000000000000001');
+    expect(changed).not.toHaveBeenCalled();
+    await user.clear(lower);
+    await user.paste('{{ $json.minimum }}');
+    expect(changed).toHaveBeenLastCalledWith(
+      expect.objectContaining({ rightValue: '["{{ $json.minimum }}",100.000000000000000001]' })
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('日期介于分别定位边界错误，支持日期和动态表达式', async () => {
+    const user = userEvent.setup();
+    render(
+      <Editor
+        initial={{
+          clientId: 'range',
+          type: 'CONDITION',
+          field: '',
+          operator: 'BETWEEN',
+          leftValue: '{{ $json.date }}',
+          rightValue: '["2026-02-30", ""]'
+        }}
+        onChange={vi.fn()}
+      />
+    );
+    const lower = screen.getByRole('textbox', { name: '下限' });
+    const upper = screen.getByRole('textbox', { name: '上限' });
+    expect(lower).toHaveAccessibleDescription(expect.stringContaining('日期比较'));
+    expect(upper).toHaveAccessibleDescription('请输入上限。');
+    await user.clear(lower);
+    await user.type(lower, '2026-11-04');
+    expect(lower).toHaveAttribute('aria-invalid', 'false');
+    expect(upper).toHaveAttribute('aria-invalid', 'true');
+    await user.click(screen.getByRole('combobox', { name: '为上限插入表达式' }));
+    await user.click(await screen.findByRole('option', { name: /金额/ }));
+    expect(upper).toHaveValue('{{ $json.amount }}');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('旧目录区间回显并定位空边界，编辑后仍保存兼容格式', async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(
+      <Editor
+        initial={{ ...amount, operator: 'NUM_BETWEEN', value: undefined, values: ['100', ''] }}
+        onChange={changed}
+      />
+    );
+    expect(screen.getByRole('textbox', { name: '下限' })).toHaveValue('100');
+    const upper = screen.getByRole('textbox', { name: '上限' });
+    expect(upper).toHaveAccessibleDescription('请输入上限。');
+    expect(changed).not.toHaveBeenCalled();
+    await user.type(upper, '200');
+    expect(changed).toHaveBeenLastCalledWith({
+      clientId: 'amount',
+      type: 'CONDITION',
+      field: '',
+      operator: 'NUM_BETWEEN',
+      leftValue: '{{ $json.amount }}',
+      rightValue: '["100","200"]'
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('整体区间表达式保留原文，支持切换回分别填写', async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(
+      <Editor
+        initial={{
+          clientId: 'range',
+          type: 'CONDITION',
+          field: '',
+          operator: 'NUM_BETWEEN',
+          leftValue: '100',
+          rightValue: '{{ $json.range }}'
+        }}
+        onChange={changed}
+      />
+    );
+    expect(screen.getByRole('textbox', { name: '区间表达式' })).toHaveValue('{{ $json.range }}');
+    expect(changed).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '分别填写上下限' }));
+    expect(screen.getByRole('textbox', { name: '下限' })).toHaveValue('');
+    expect(screen.getByRole('textbox', { name: '上限' })).toHaveValue('');
+    await user.type(screen.getByRole('textbox', { name: '下限' }), '10');
+    await user.type(screen.getByRole('textbox', { name: '上限' }), '20');
+    await user.click(screen.getByRole('button', { name: '使用区间表达式' }));
+    expect(screen.getByRole('textbox', { name: '区间表达式' })).toHaveValue('["10","20"]');
+  });
+
+  it('上下限复用自定义表达式输入接口，切换普通比较使用下限', async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    const renderOperand = vi.fn<NonNullable<ConditionTreeEditorProps['renderOperand']>>((props) => (
+      <input
+        id={props.id}
+        ref={(input) => props.inputRef?.(input)}
+        aria-label={props.label}
+        aria-invalid={props.invalid}
+        aria-describedby={props.describedBy}
+        disabled={props.disabled}
+        value={props.value}
+        onChange={(event) => props.onChange(event.target.value)}
+      />
+    ));
+    render(
+      <Editor
+        initial={{
+          clientId: 'range',
+          type: 'CONDITION',
+          field: '',
+          operator: 'NUM_BETWEEN',
+          leftValue: '100',
+          rightValue: '["001","{{ $json.maximum }}"]'
+        }}
+        renderOperand={renderOperand}
+        onChange={changed}
+      />
+    );
+    expect(renderOperand).toHaveBeenCalledWith(
+      expect.objectContaining({ side: 'right', collectionIndex: 0, label: '下限', value: '001' })
+    );
+    expect(renderOperand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        side: 'right',
+        collectionIndex: 1,
+        label: '上限',
+        value: '{{ $json.maximum }}'
+      })
+    );
+    await user.clear(screen.getByRole('textbox', { name: '上限' }));
+    await user.paste('{{ $json.other }}');
+    expect(changed).toHaveBeenLastCalledWith(
+      expect.objectContaining({ rightValue: '["001","{{ $json.other }}"]' })
+    );
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
+    await user.click(screen.getByRole('menuitem', { name: '数字' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '小于' }));
+    expect(changed).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operator: 'NUM_LT', rightValue: '001' })
+    );
+    expect(screen.getByRole('textbox', { name: '比较值' })).toHaveValue('001');
+    expect(screen.queryByRole('textbox', { name: '上限' })).not.toBeInTheDocument();
   });
 
   it.each([
@@ -388,16 +557,39 @@ describe('通用条件树双输入编辑器', () => {
         operator: collection,
         rightValue: '["001"]'
       });
-      await user.click(screen.getByRole('button', { name: '条件右值' }));
+      await user.click(screen.getByRole('button', { name: '比较值' }));
       expect(screen.getByRole('textbox', { name: '集合值 1' })).toHaveValue('001');
       expect(screen.queryByText('集合格式不完整，可重新逐项填写。')).not.toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: '添加一项' }));
       await user.type(screen.getByRole('textbox', { name: '集合值 2' }), '002');
       await selectOperator(scalarLabel);
       expect(changed.mock.lastCall?.[0]).toMatchObject({ operator: scalar, rightValue: '001' });
-      expect(screen.getByRole('textbox', { name: '条件右值' })).toHaveValue('001');
+      expect(screen.getByRole('textbox', { name: '比较值' })).toHaveValue('001');
     }
   );
+
+  it('区间切换为文本比较时保留带引号的固定字符串语义', async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(
+      <Editor
+        initial={{
+          clientId: 'range-literal',
+          type: 'CONDITION',
+          field: '',
+          operator: 'NUM_BETWEEN',
+          leftValue: '100',
+          rightValue: '["true","false"]'
+        }}
+        onChange={changed}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: '条件操作符' }));
+    await user.click(screen.getByRole('menuitem', { name: '文本' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: '等于' }));
+    expect(changed.mock.lastCall?.[0]).toMatchObject({ operator: 'EQ', rightValue: '"true"' });
+    expect(screen.getByRole('textbox', { name: '比较值' })).toHaveValue('"true"');
+  });
 
   it('集合逐项编辑和原文同步，保留前导零、精确数值及变量引用', async () => {
     const user = userEvent.setup();
@@ -417,8 +609,8 @@ describe('通用条件树双输入编辑器', () => {
     );
     expect(screen.queryByRole('tab', { name: '引用数据集合' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: '集合值 1' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: '条件右值' })).not.toBeInTheDocument();
-    const summary = screen.getByRole('button', { name: '条件右值' });
+    expect(screen.queryByRole('textbox', { name: '比较值' })).not.toBeInTheDocument();
+    const summary = screen.getByRole('button', { name: '比较值' });
     expect(summary).toHaveTextContent('["001",100.000000000000000001,"{{ $json.expected }}"]');
     expect(summary).toHaveAttribute(
       'title',
@@ -463,11 +655,11 @@ describe('通用条件树双输入编辑器', () => {
         onChange={changed}
       />
     );
-    expect(screen.getByRole('button', { name: '条件右值' })).toHaveTextContent(rightValue);
-    await user.click(screen.getByRole('button', { name: '条件右值' }));
+    expect(screen.getByRole('button', { name: '比较值' })).toHaveTextContent(rightValue);
+    await user.click(screen.getByRole('button', { name: '比较值' }));
     expect(screen.getByText(message)).toBeVisible();
     expect(changed).not.toHaveBeenCalled();
-    expect(screen.queryByRole('textbox', { name: '条件右值' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '比较值' })).not.toBeInTheDocument();
   });
 
   it('未配置的集合直接打开首项输入，逐项填写即可保存数组', async () => {
@@ -479,10 +671,10 @@ describe('通用条件树双输入编辑器', () => {
         onChange={changed}
       />
     );
-    await user.click(screen.getByRole('button', { name: '条件右值' }));
+    await user.click(screen.getByRole('button', { name: '比较值' }));
     await user.type(screen.getByRole('textbox', { name: '集合值 1' }), '001');
     expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({ rightValue: '["001"]' }));
-    expect(screen.getByRole('button', { name: '条件右值' })).toHaveTextContent('["001"]');
+    expect(screen.getByRole('button', { name: '比较值' })).toHaveTextContent('["001"]');
   });
 
   it('引用数据集合与输入数组互斥，修改左值保留引用且切换后可重新填写数组', async () => {
@@ -502,9 +694,9 @@ describe('通用条件树双输入编辑器', () => {
       />
     );
     expect(screen.queryByRole('button', { name: '集合选项' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '条件右值' }));
+    await user.click(screen.getByRole('button', { name: '比较值' }));
     await user.click(screen.getByRole('tab', { name: '引用集合' }));
-    expect(screen.queryByRole('textbox', { name: '条件右值' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '比较值' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('combobox', { name: '引用集合' }));
     expect(await screen.findByRole('option', { name: '大口岸编码' })).toBeVisible();
     expect(screen.getByRole('combobox', { name: '引用集合' })).toHaveAttribute(
@@ -516,8 +708,8 @@ describe('通用条件树双输入编辑器', () => {
     await user.click(screen.getByRole('combobox', { name: '引用集合' }));
     await user.click(await screen.findByRole('option', { name: '大口岸编码' }));
     expect(screen.getByRole('dialog', { name: '集合值' })).toBeVisible();
-    expect(screen.getByRole('button', { name: '条件右值' })).toHaveTextContent('大口岸编码');
-    const left = screen.getByRole('textbox', { name: '条件左值' });
+    expect(screen.getByRole('button', { name: '比较值' })).toHaveTextContent('大口岸编码');
+    const left = screen.getByRole('textbox', { name: '待比较值' });
     await user.clear(left);
     await user.paste('{{ $json.port }}');
     expect(changed).toHaveBeenLastCalledWith({
@@ -529,7 +721,7 @@ describe('通用条件树双输入编辑器', () => {
       setRef: 'PORT_LARGE_CODE'
     });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '条件右值' }));
+    await user.click(screen.getByRole('button', { name: '比较值' }));
     await user.click(screen.getByRole('tab', { name: '固定集合' }));
     expect(changed).toHaveBeenLastCalledWith({
       clientId: 'in',
@@ -541,7 +733,7 @@ describe('通用条件树双输入编辑器', () => {
     });
     expect(screen.getByRole('textbox', { name: '集合值 1' })).toHaveValue('');
     await user.keyboard('{Escape}');
-    expect(screen.getByRole('button', { name: '条件右值' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: '比较值' })).toHaveFocus();
   });
 
   it('集合浮层与操作符选择互斥，切换不会改写集合', async () => {
@@ -553,7 +745,7 @@ describe('通用条件树双输入编辑器', () => {
         onChange={changed}
       />
     );
-    await user.click(screen.getByRole('button', { name: '条件右值' }));
+    await user.click(screen.getByRole('button', { name: '比较值' }));
     expect(screen.getByRole('textbox', { name: '集合值 1' })).toHaveValue('1');
     expect(screen.queryByRole('tab', { name: '引用集合' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '条件操作符' }));
@@ -579,7 +771,7 @@ describe('通用条件树双输入编辑器', () => {
         />
       </div>
     );
-    const trigger = screen.getByRole('button', { name: '条件右值' });
+    const trigger = screen.getByRole('button', { name: '比较值' });
     await user.click(trigger);
     const popover = within(screen.getByRole('dialog', { name: '条件面板' })).getByRole('dialog', {
       name: '集合值'
@@ -618,7 +810,7 @@ describe('通用条件树双输入编辑器', () => {
       leftValue: '{{ $json.port }}',
       rightValue: ''
     });
-    expect(screen.getByRole('textbox', { name: '条件右值' })).toHaveValue('');
+    expect(screen.getByRole('textbox', { name: '比较值' })).toHaveValue('');
   });
 
   it.each(['GROUP', 'ANY_MATCH', 'ALL_MATCH', 'NONE_MATCH'] as const)(
@@ -648,7 +840,7 @@ describe('通用条件树双输入编辑器', () => {
       expect(inner.queryByRole('button', { name: '添加条件组' })).not.toBeInTheDocument();
       expect(inner.getByRole('button', { name: '添加条件' })).toBeEnabled();
       expect(inner.getByText('条件树最大深度为 5 层。')).toBeVisible();
-      expect(inner.getByRole('textbox', { name: '条件右值' })).toBeEnabled();
+      expect(inner.getByRole('textbox', { name: '比较值' })).toBeEnabled();
       const addGroups = screen.getAllByRole('button', { name: '添加条件组' });
       expect(addGroups).toHaveLength(type === 'GROUP' ? 3 : 2);
       for (const button of addGroups) expect(button).toBeEnabled();
@@ -705,6 +897,14 @@ describe('通用条件树双输入编辑器', () => {
         disabled
         initial={root([
           amount,
+          {
+            ...amount,
+            clientId: 'range',
+            operator: 'NUM_BETWEEN',
+            field: '',
+            leftValue: '1',
+            rightValue: '["0","2"]'
+          },
           { ...amount, clientId: 'collection', operator: 'NUM_IN', value: '["1","2"]' },
           { ...root([{ ...amount, clientId: 'nested-leaf' }]), clientId: 'nested', logic: 'OR' }
         ])}
@@ -714,8 +914,9 @@ describe('通用条件树双输入编辑器', () => {
     for (const input of screen.getAllByRole('textbox')) expect(input).toBeDisabled();
     for (const button of screen.getAllByRole('button')) expect(button).toBeDisabled();
     for (const tab of screen.getAllByRole('tab')) expect(tab).toBeDisabled();
-    expect(screen.getAllByRole('textbox', { name: '条件右值' })).toHaveLength(2);
-    expect(screen.getByRole('button', { name: '条件右值' })).toBeDisabled();
+    for (const combobox of screen.getAllByRole('combobox')) expect(combobox).toBeDisabled();
+    expect(screen.getAllByRole('textbox', { name: '比较值' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: '比较值' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: '集合选项' })).not.toBeInTheDocument();
     expect(changed).not.toHaveBeenCalled();
   });

@@ -119,6 +119,10 @@ export function conditionOperatorUsesCollection(operator: ConditionOperator) {
   ].includes(operator);
 }
 
+export function conditionOperatorUsesRange(operator: ConditionOperator): boolean {
+  return operator === 'BETWEEN' || operator === 'NUM_BETWEEN';
+}
+
 export function parseConditionLiteral(source: string): unknown {
   const text = source.trim();
   return text.startsWith('[') || text.startsWith('"') || text === 'true' || text === 'false'
@@ -132,6 +136,9 @@ export function convertConditionRightValue(
   nextOperator: ConditionOperator
 ): string {
   const wasCollection = conditionOperatorUsesCollection(previousOperator);
+  if (!wasCollection && conditionOperatorUsesRange(nextOperator)) {
+    return `[${JSON.stringify(parseJsonString(source) ?? source)},""]`;
+  }
   if (!wasCollection && ['IN', 'NOT_IN', 'NUM_IN', 'NUM_NOT_IN'].includes(nextOperator)) {
     try {
       const value = parseConditionLiteral(source);

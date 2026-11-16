@@ -97,16 +97,68 @@ test('时长输入保留原文，条件树编辑支持撤销与只读', async ({
   await expect(page.getByLabel('时长结果')).toContainText('"value":"001.25","unit":"hour"');
 
   const tree = page.getByRole('region', { name: '条件树编辑示例' });
-  await tree.getByRole('textbox', { name: '条件右值' }).fill('250.000001');
+  await tree.getByRole('textbox', { name: '比较值', exact: true }).fill('250.000001');
   await expect(tree.getByLabel('条件结果')).toContainText('"rightValue":"250.000001"');
   await tree.getByRole('button', { name: '撤销条件修改' }).click();
-  await expect(tree.getByRole('textbox', { name: '条件右值' })).toHaveValue('100');
+  await expect(tree.getByRole('textbox', { name: '比较值', exact: true })).toHaveValue('100');
   await tree.getByRole('button', { name: '重做条件修改' }).click();
-  await expect(tree.getByRole('textbox', { name: '条件右值' })).toHaveValue('250.000001');
+  await expect(tree.getByRole('textbox', { name: '比较值', exact: true })).toHaveValue(
+    '250.000001'
+  );
   await tree.getByRole('button', { name: '切换只读' }).click();
-  await expect(tree.getByRole('textbox', { name: '条件左值' })).toBeDisabled();
+  await expect(tree.getByRole('textbox', { name: '待比较值' })).toBeDisabled();
   await expect(tree.getByRole('button', { name: '添加条件', exact: true })).toBeDisabled();
 });
+
+for (const mobile of [false, true]) {
+  test(`介于分别编辑上下限，表达式选择和窄屏布局 ${mobile ? 'mobile' : 'desktop'}`, async ({
+    page
+  }) => {
+    await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 });
+    const tree = page.getByRole('region', { name: '条件树编辑示例' });
+    const left = tree.getByRole('textbox', { name: '待比较值' });
+    await expect(left).toHaveAttribute('placeholder', '输入值…');
+    const leftExpression = tree.getByRole('combobox', { name: '为待比较值插入表达式' });
+    expect((await leftExpression.locator('span').boundingBox())!.width).toBeGreaterThan(12);
+    await leftExpression.click();
+    await expect(page.getByRole('option', { name: /金额/ })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(leftExpression).toBeFocused();
+    await tree.getByRole('button', { name: '条件操作符' }).click();
+    await page.getByRole('menuitem', { name: '数字', exact: true }).click();
+    await page.getByRole('menuitemradio', { name: '介于', exact: true }).click();
+    const lower = tree.getByRole('textbox', { name: '下限', exact: true });
+    const upper = tree.getByRole('textbox', { name: '上限', exact: true });
+    await expect(lower).toHaveValue('100');
+    await expect(upper).toHaveAccessibleDescription('请输入上限。');
+    await lower.fill('001.000000000000000001');
+    await lower.focus();
+    await page.keyboard.press('Tab');
+    await expect(tree.getByRole('combobox', { name: '为下限插入表达式' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(upper).toBeFocused();
+    const upperExpression = tree.getByRole('combobox', { name: '为上限插入表达式' });
+    await upperExpression.click();
+    await page.getByRole('option', { name: /金额/ }).click();
+    await expect(upper).toHaveValue('{{ $json.amount }}');
+    await expect(tree.getByRole('alert')).toHaveCount(0);
+    await expect(tree.getByLabel('条件结果')).toContainText('001.000000000000000001');
+    const bounds = await tree.boundingBox();
+    for (const input of [left, lower, upper]) {
+      const box = (await input.boundingBox())!;
+      expect(box.width).toBeGreaterThan(40);
+      expect(box.x).toBeGreaterThanOrEqual(bounds!.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(bounds!.x + bounds!.width + 1);
+    }
+    await tree.scrollIntoViewIfNeeded();
+    await tree.screenshot({
+      path: `/tmp/oig-condition-range-${mobile ? 'mobile' : 'desktop'}.png`
+    });
+    await tree.getByRole('button', { name: '使用区间表达式' }).click();
+    await tree.getByRole('textbox', { name: '区间表达式' }).fill('{{ $json.range }}');
+    await expect(tree.getByRole('alert')).toHaveCount(0);
+  });
+}
 
 test('条件画布全屏保留节点与缩放，下拉 Escape 先关闭内层', async ({ page }) => {
   const canvas = page.getByRole('region', { name: '条件画布编辑示例' });
