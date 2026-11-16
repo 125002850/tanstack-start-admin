@@ -161,3 +161,7 @@ export function isDataTableVirtualizationEnabled(): boolean {
 - CSS 使用 Vite 内置的 Lightning CSS transformer，并显式配置 `css.lightningcss.targets`，保证 Tailwind 开发输出的嵌套规则也能在 Chrome 111 生效；仅设置 `build.cssTarget` 不能覆盖开发服务。
 - Chrome 111 仍需 `AbortSignal.any` 补丁。其他浏览器的现有构建 target 暂时保留，`toSorted` / `toReversed` 补丁继续保留。Firefox 114 低于 Tailwind v4 官方的 Firefox 128 基线，不能仅凭构建 target 声明兼容；其支持范围需单独评估。
 - 兼容回归使用 `e2e/browser-compatibility.smoke.spec.ts`，覆盖导航请求、全部主题的明暗模式、透明度、表格混色与固定列颜色；最低版本必须用真实 Chromium 111 验证，不能仅改 User-Agent。开发服务和生产构建都需要验证，并同时在当前稳定版 Chromium 回归。
+
+## 错误摘要与详情
+
+`lib/api/error-notification` 是全局通知出口。短公开错误直接提示；长文本或多行错误使用短摘要与“查看详情”，由根布局的 `ApiErrorDetailsDialog` 展示并复制。详情只保存归一化公开错误，最多 4096 字符，不持有原始请求、响应或未知异常；业务码摘要由具体 feature 决定。确认操作失败保留对话框和输入，Mutation 已处理的异常不重复提示。

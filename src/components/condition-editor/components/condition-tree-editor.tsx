@@ -9,23 +9,16 @@ import {
   DecisionTreeHeader,
   DecisionTreeItem
 } from '@/components/ui/decision-tree';
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldSet
-} from '@/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import {
   conditionFieldInput,
-  CONDITION_INPUT_OPERATOR_LABELS,
   CONDITION_INPUT_OPERATORS,
   conditionOperatorUsesCollection,
+  convertConditionRightValue,
   createInputCondition,
   getConditionOperands
 } from '../lib/condition-operands';
@@ -36,10 +29,11 @@ import {
   indexConditionTree,
   updateConditionNode
 } from '../lib/condition-tree';
+import { CONDITION_LIMITS } from '../model/condition-limits';
 import {
+  isCollectionMatchOperator,
   createConditionClientId,
   getConditionMetrics,
-  getConditionOperatorGroup,
   isConditionFieldSelectable,
   routingOperatorUsesNoValue,
   type ConditionField,
@@ -48,7 +42,7 @@ import {
   type GroupCondition,
   type PredicateCondition
 } from '../model/condition-model';
-import { ConditionSearchSelect } from './condition-search-select';
+import { ConditionOperatorSelect } from './condition-operator-select';
 import { ConditionCollectionEditor } from './condition-collection-editor';
 import { RoutingReferenceSetName } from './routing-reference-set-selector';
 import {
@@ -62,6 +56,7 @@ export interface ConditionOperandInputProps {
   readonly conditionId: string;
   readonly side: 'left' | 'right';
   readonly collectionIndex?: number;
+  readonly elementSources?: readonly string[];
   readonly id: string;
   readonly label: string;
   readonly value: string;
@@ -101,6 +96,7 @@ type TreeEditor = {
   readonly treeIndex: ReturnType<typeof indexConditionTree>;
   readonly focusOperand: (nodeId: string, input: HTMLElement | null) => void;
   readonly change: (node: ConditionNode, coalesceKey?: string) => void;
+  readonly canRemove: (nodeId: string) => boolean;
   readonly remove: (nodeId: string) => void;
   readonly add: (targetId: string, kind: 'CONDITION' | 'GROUP') => void;
 };
@@ -143,28 +139,25 @@ export function ConditionTreeEditor({
         coalesceKey === undefined ? undefined : `${next.clientId}:${coalesceKey}`
       );
     },
-    remove(nodeId) {
-      if (disabled) return;
+    canRemove(nodeId) {
       const parentId = treeIndex.get(nodeId)?.parentId;
-      if (parentId === undefined) return;
-      // 保留空组，避免删除最后一条条件后变成固定命中。
-      const next =
-        parentId === null
-          ? {
-              clientId: condition.clientId,
-              type: 'GROUP' as const,
-              logic: 'AND' as const,
-              children: []
-            }
-          : updateConditionNode(condition, parentId, (parent) =>
-              parent.type === 'GROUP'
-                ? {
-                    ...parent,
-                    children: parent.children.filter((child) => child.clientId !== nodeId)
-                  }
-                : parent
-            );
-      onChange(next);
+      const parent = parentId == null ? undefined : treeIndex.get(parentId)?.node;
+      return parent?.type === 'GROUP' && parent.children.length > 1;
+    },
+    remove(nodeId) {
+      if (disabled || !editor.canRemove(nodeId)) return;
+      const parentId = treeIndex.get(nodeId)?.parentId;
+      if (parentId == null) return;
+      onChange(
+        updateConditionNode(condition, parentId, (parent) =>
+          parent.type === 'GROUP'
+            ? {
+                ...parent,
+                children: parent.children.filter((child) => child.clientId !== nodeId)
+              }
+            : parent
+        )
+      );
     },
     add(targetId, kind) {
       if (
@@ -183,11 +176,12 @@ export function ConditionTreeEditor({
         while (treeIndex.has(id)) id = createConditionClientId('condition');
         return id;
       };
-      const field = selectableCatalog[0];
+      const elementScope = (treeIndex.get(targetId)?.elementSources.length ?? 0) > 0;
+      const field = elementScope ? undefined : selectableCatalog[0];
       const predicate = () =>
         createInputCondition(
           createId(),
-          conditionFieldInput(field),
+          elementScope ? '{{ $element }}' : conditionFieldInput(field),
           '',
           field?.type === 'NUMBER' ? 'NUM_EQ' : 'EQ'
         );
@@ -293,7 +287,11 @@ function ConditionTreeGroupNode({
   const error = editor.issues.find(
     (issue) => issue.path === path || issue.path === `${path}.children`
   )?.message;
-  const isRoot = editor.treeIndex.get(node.clientId)?.parentId === null;
+  const parentId = editor.treeIndex.get(node.clientId)?.parentId;
+  const parent = parentId ? editor.treeIndex.get(parentId)?.node : undefined;
+  const isRoot =
+    parentId === null ||
+    (parent?.type === 'CONDITION' && isCollectionMatchOperator(parent.operator));
   return (
     <DecisionTreeGroup aria-label={`条件组 ${node.logic}`}>
       <Tabs
@@ -305,6 +303,9 @@ function ConditionTreeGroupNode({
         }}
       >
         <DecisionTreeHeader>
+          {parent?.type === 'CONDITION' && isCollectionMatchOperator(parent.operator) ? (
+            <span className='text-muted-foreground text-xs'>同一项内</span>
+          ) : null}
           <TabsList
             aria-label='条件组逻辑'
             aria-describedby={error === undefined ? undefined : errorId}
@@ -363,7 +364,9 @@ function ConditionTreePredicate({
   const id = useId();
   const errorId = `${id}-error`;
   const errors = editor.issues.filter(
-    (issue) => issue.path === path || issue.path.startsWith(`${path}.`)
+    (issue) =>
+      (issue.path === path || issue.path.startsWith(`${path}.`)) &&
+      !issue.path.startsWith(`${path}.predicate.`)
   );
   const operands = getConditionOperands(node, editor.catalog);
   const fieldInvalid = errors.some(
@@ -380,6 +383,8 @@ function ConditionTreePredicate({
       issue.path !== `${path}.operator`
   );
   const usesValue = !routingOperatorUsesNoValue(node.operator);
+  const entry = editor.treeIndex.get(node.clientId);
+  const elementSources = entry?.elementSources;
   const supportsSet = node.operator === 'IN' || node.operator === 'NOT_IN';
   const membership = supportsSet || node.operator === 'NUM_IN' || node.operator === 'NUM_NOT_IN';
   const collectionOverlay = useRoutingCanvasOverlayOpen(`collection:${node.clientId}`);
@@ -391,6 +396,26 @@ function ConditionTreePredicate({
       node.setRef !== undefined ? '' : right,
       operator
     );
+    if (isCollectionMatchOperator(operator)) {
+      const uniqueId = () => {
+        let value = createConditionClientId('condition');
+        while (editor.treeIndex.has(value)) value = createConditionClientId('condition');
+        return value;
+      };
+      editor.change(
+        {
+          ...next,
+          predicate: node.predicate ?? {
+            clientId: uniqueId(),
+            type: 'GROUP',
+            logic: 'AND',
+            children: [createInputCondition(uniqueId(), '{{ $element }}')]
+          }
+        },
+        coalesceKey
+      );
+      return;
+    }
     if (node.setRef !== undefined && (operator === 'IN' || operator === 'NOT_IN')) {
       const { rightValue: _, ...base } = next;
       editor.change({ ...base, setRef: node.setRef }, coalesceKey);
@@ -404,6 +429,7 @@ function ConditionTreePredicate({
   const rightOperand: ConditionOperandInputProps = {
     conditionId: node.clientId,
     side: 'right',
+    elementSources,
     id: `${id}-right`,
     label: '条件右值',
     value: operands.right,
@@ -501,7 +527,11 @@ function ConditionTreePredicate({
     </InputGroup>
   );
   return (
-    <FieldSet aria-label={`条件 ${operands.left}`} className='gap-2'>
+    <Field
+      data-slot='condition-tree-predicate'
+      aria-label={`条件 ${operands.left}`}
+      className='gap-2'
+    >
       <div className='flex min-w-0 items-start gap-2'>
         <FieldGroup className='gap-2'>
           <div
@@ -509,7 +539,9 @@ function ConditionTreePredicate({
               'grid min-w-0 grid-cols-1 gap-2',
               usesValue
                 ? '@min-[20rem]/field-group:grid-cols-[6rem_minmax(0,1fr)] @min-[24rem]/field-group:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)]'
-                : '@min-[20rem]/field-group:grid-cols-[minmax(0,1fr)_6rem]'
+                : isCollectionMatchOperator(node.operator)
+                  ? '@min-[20rem]/field-group:grid-cols-[minmax(0,1fr)_9rem]'
+                  : '@min-[20rem]/field-group:grid-cols-[minmax(0,1fr)_6rem]'
             )}
           >
             <Field
@@ -526,6 +558,7 @@ function ConditionTreePredicate({
                 editor.renderOperand({
                   conditionId: node.clientId,
                   side: 'left',
+                  elementSources,
                   id: `${id}-left`,
                   label: '条件左值',
                   value: operands.left,
@@ -533,7 +566,9 @@ function ConditionTreePredicate({
                   invalid: fieldInvalid,
                   describedBy: fieldInvalid ? errorId : undefined,
                   inputRef: (input) => editor.focusOperand(node.clientId, input),
-                  placeholder: '固定值或 {{ $json.amount }}',
+                  placeholder: elementSources?.length
+                    ? '{{ $element.field }}'
+                    : '固定值或 {{ $json.amount }}',
                   onChange: (value) => change(value, operands.right, 'leftValue')
                 })
               ) : (
@@ -551,22 +586,25 @@ function ConditionTreePredicate({
             </Field>
             <Field data-invalid={operatorInvalid}>
               <FieldLabel className='sr-only'>条件操作符</FieldLabel>
-              <ConditionSearchSelect
+              <ConditionOperatorSelect
                 aria-invalid={operatorInvalid}
                 aria-describedby={operatorInvalid ? errorId : undefined}
                 disabled={editor.disabled}
                 onValueChange={(operator) => {
-                  change(operands.left, operands.right, undefined, operator);
+                  change(
+                    operands.left,
+                    convertConditionRightValue(operands.right, node.operator, operator),
+                    undefined,
+                    operator
+                  );
                 }}
-                options={CONDITION_INPUT_OPERATORS.map((operator) => ({
-                  value: operator,
-                  label: CONDITION_INPUT_OPERATOR_LABELS[operator],
-                  group: getConditionOperatorGroup(operator)
-                }))}
+                operators={CONDITION_INPUT_OPERATORS.filter(
+                  (operator) =>
+                    !isCollectionMatchOperator(operator) ||
+                    isCollectionMatchOperator(node.operator) ||
+                    (editor.metrics.nodeCount + 2 <= 64 && (entry?.depth ?? 1) + 2 <= 5)
+                )}
                 overlayId={`operator:${node.clientId}`}
-                placeholder={CONDITION_INPUT_OPERATOR_LABELS[node.operator]}
-                searchPlaceholder='搜索操作符'
-                triggerLabel='条件操作符'
                 value={node.operator}
               />
             </Field>
@@ -615,7 +653,18 @@ function ConditionTreePredicate({
         </FieldGroup>
         <ConditionTreeRemove editor={editor} node={node} />
       </div>
-    </FieldSet>
+      {isCollectionMatchOperator(node.operator) && node.predicate ? (
+        <DecisionTreeChildren>
+          <DecisionTreeItem>
+            <ConditionTreeGroupNode
+              editor={editor}
+              node={node.predicate}
+              path={`${path}.predicate`}
+            />
+          </DecisionTreeItem>
+        </DecisionTreeChildren>
+      ) : null}
+    </Field>
   );
 }
 
@@ -628,6 +677,13 @@ function ConditionTreeActions({
   readonly targetId: string;
   readonly kind: 'CONDITION' | 'GROUP';
 }) {
+  const target = editor.treeIndex.get(targetId);
+  const groupDepth =
+    target?.parentId === null && target.node.type !== 'GROUP'
+      ? Math.max(editor.metrics.maxDepth + 1, 3)
+      : (target?.depth ?? 1) + 2;
+  if (kind === 'GROUP' && groupDepth > CONDITION_LIMITS.conditionDepth) return null;
+
   const reason = (kind: 'CONDITION' | 'GROUP') =>
     getConditionAddDisabledReason({
       disabled: editor.disabled,
@@ -671,6 +727,7 @@ function ConditionTreeRemove({
   readonly editor: TreeEditor;
   readonly node: ConditionNode;
 }) {
+  if (!editor.canRemove(node.clientId)) return null;
   const label = node.type === 'GROUP' ? '删除条件组' : '删除条件';
   return (
     <Button

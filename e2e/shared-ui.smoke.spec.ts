@@ -133,12 +133,15 @@ test('条件画布全屏保留节点与缩放，下拉 Escape 先关闭内层', 
     '123.4500'
   );
   await expect(fullscreen.getByLabel('当前缩放比例')).toHaveText(zoom!);
-  await fullscreen.getByRole('combobox', { name: '条件字段', exact: true }).click();
-  await expect(page.getByRole('option', { name: '地区', exact: true })).toBeVisible();
+  await fullscreen.getByRole('button', { name: '条件字段', exact: true }).click();
+  await page.getByRole('menuitem', { name: '业务数据', exact: true }).click();
+  await expect(page.getByRole('menuitemradio', { name: /^地区 / })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(fullscreen).toBeVisible();
-  await expect(page.getByRole('option', { name: '地区', exact: true })).not.toBeVisible();
+  await expect(page.getByRole('menuitemradio', { name: /^地区 / })).not.toBeVisible();
   await page.screenshot({ path: '/tmp/oig-shared-foundation-canvas.png' });
+  await page.keyboard.press('Escape');
+  await expect(fullscreen).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(fullscreen).not.toBeVisible();
   await expect(canvas.getByRole('button', { name: '放大编辑画布' })).toBeFocused();
@@ -219,4 +222,25 @@ test('滚动条旁操作按钮右边缘可点击，工作区错误页不额外�
     };
   });
   expect(bounds.errorHeight).toBeLessThanOrEqual(bounds.available + 1);
+});
+
+test('回灌组件支持原位编辑、员工扩展内容和精确 JSON 预览', async ({ page }) => {
+  await page.getByRole('button', { name: '修改示例名称' }).click();
+  await page.getByRole('textbox', { name: '示例名称', exact: true }).fill('更新名称');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: '修改示例名称' })).toHaveText('更新名称');
+  const opener = page.getByRole('button', { name: '打开员工选择器' });
+  await opener.click();
+  await page.getByRole('checkbox', { name: '选择张一' }).check();
+  await expect(page.getByText('附加配置 A001')).toBeVisible();
+  await page.getByRole('button', { name: '确认选择' }).click();
+  await expect(page.getByLabel('已确认员工')).toHaveText('张一');
+  await expect(opener).toBeFocused();
+  await expect(page.getByRole('textbox', { name: '精确 JSON 示例' })).toContainText(
+    '9007199254740993'
+  );
+  await page.screenshot({
+    path: '/tmp/oig-template-backport-20261116/shared-components.png',
+    fullPage: true
+  });
 });

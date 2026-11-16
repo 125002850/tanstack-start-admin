@@ -11,8 +11,6 @@ import {
 } from '../utils/page-overlays';
 import { useWorkspaceTabStore } from '../utils/store';
 
-const CLOSE_GUARD_TIMEOUT_MS = 1500;
-
 async function dismissWorkspaceTabOverlays(tabIds: WorkspaceTabId[]) {
   for (const tabId of tabIds) {
     const dismissResult = dismissWorkspacePageOverlays(tabId);
@@ -29,12 +27,7 @@ async function checkCloseGuard(
   const lifecycle = useWorkspaceTabStore.getState().lifecycleSnapshots[tabId];
   if (!lifecycle?.closeGuard) return true;
   try {
-    const result = await Promise.race([
-      lifecycle.closeGuard({ tabId, reason }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('closeGuard timeout')), CLOSE_GUARD_TIMEOUT_MS)
-      )
-    ]);
+    const result = await lifecycle.closeGuard({ tabId, reason });
     return result !== false;
   } catch {
     return false;
@@ -98,7 +91,7 @@ export function useWorkspaceTags() {
 
       const currentState = useWorkspaceTabStore.getState();
       if (currentState.tabs[id] !== requestedTab) return;
-      currentState.close(id);
+      flushSync(() => currentState.close(id));
       const nextActive = useWorkspaceTabStore.getState().activeId;
       if (nextActive) {
         const nextTab = useWorkspaceTabStore.getState().tabs[nextActive];
@@ -127,7 +120,7 @@ export function useWorkspaceTags() {
       }
 
       await dismissWorkspaceTabOverlays(tabIdsToClose);
-      useWorkspaceTabStore.getState().closeOther(id);
+      flushSync(() => useWorkspaceTabStore.getState().closeOther(id));
       const tab = useWorkspaceTabStore.getState().tabs[id];
       if (tab) navigate(tab.href);
     },
@@ -151,7 +144,7 @@ export function useWorkspaceTags() {
     }
 
     await dismissWorkspaceTabOverlays(tabIdsToClose);
-    useWorkspaceTabStore.getState().closeAll();
+    flushSync(() => useWorkspaceTabStore.getState().closeAll());
     navigate(resolveDashboardHomeHref());
   }, [navigate]);
 

@@ -1,4 +1,5 @@
 import {
+  isCollectionMatchOperator,
   createAlwaysCondition,
   getConditionMetrics,
   type ConditionNode,
@@ -11,6 +12,7 @@ export interface ConditionTreeEntry {
   readonly parentId: string | null;
   readonly depth: number;
   readonly path: readonly number[];
+  readonly elementSources: readonly string[];
 }
 
 export function indexConditionTree(
@@ -22,16 +24,26 @@ export function indexConditionTree(
     node: ConditionNode,
     parentId: string | null,
     depth: number,
-    path: readonly number[]
+    path: readonly number[],
+    elementSources: readonly string[]
   ): void => {
-    index.set(node.clientId, { node, parentId, depth, path });
+    index.set(node.clientId, { node, parentId, depth, path, elementSources });
+    if (node.type === 'CONDITION' && isCollectionMatchOperator(node.operator) && node.predicate) {
+      visit(
+        node.predicate,
+        node.clientId,
+        depth + 1,
+        [...path, 0],
+        [...elementSources, node.leftValue ?? node.field]
+      );
+    }
     if (node.type !== 'GROUP') return;
     node.children.forEach((child, childIndex) => {
-      visit(child, node.clientId, depth + 1, [...path, childIndex]);
+      visit(child, node.clientId, depth + 1, [...path, childIndex], elementSources);
     });
   };
 
-  visit(condition, null, 1, []);
+  visit(condition, null, 1, [], []);
   return index;
 }
 
@@ -72,6 +84,16 @@ export function updateConditionNode(
   update: (node: ConditionNode) => ConditionNode
 ): ConditionNode {
   if (condition.clientId === nodeId) return update(condition);
+  if (
+    condition.type === 'CONDITION' &&
+    isCollectionMatchOperator(condition.operator) &&
+    condition.predicate
+  ) {
+    const predicate = updateConditionNode(condition.predicate, nodeId, update);
+    return predicate === condition.predicate || predicate.type !== 'GROUP'
+      ? condition
+      : { ...condition, predicate };
+  }
   if (condition.type !== 'GROUP') return condition;
 
   let changed = false;
@@ -111,6 +133,17 @@ export function removeConditionNode(condition: ConditionNode, nodeId: string): C
 
 function removeRoutingNode(condition: ConditionNode, nodeId: string): ConditionNode | null {
   if (condition.clientId === nodeId) return null;
+  if (
+    condition.type === 'CONDITION' &&
+    isCollectionMatchOperator(condition.operator) &&
+    condition.predicate
+  ) {
+    const predicate = removeRoutingNode(condition.predicate, nodeId);
+    return {
+      ...condition,
+      predicate: predicate?.type === 'GROUP' ? predicate : { ...condition.predicate, children: [] }
+    };
+  }
   if (condition.type !== 'GROUP') return condition;
 
   let changed = false;
@@ -130,6 +163,12 @@ function removeRoutingNode(condition: ConditionNode, nodeId: string): ConditionN
 }
 
 export function getConditionTopologySignature(condition: ConditionNode): string {
+  if (
+    condition.type === 'CONDITION' &&
+    isCollectionMatchOperator(condition.operator) &&
+    condition.predicate
+  )
+    return `COLLECTION_MATCH:${condition.clientId}[${getConditionTopologySignature(condition.predicate)}]`;
   if (condition.type !== 'GROUP') return `${condition.type}:${condition.clientId}`;
   return `GROUP:${condition.clientId}[${condition.children
     .map(getConditionTopologySignature)

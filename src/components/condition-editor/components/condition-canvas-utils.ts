@@ -30,6 +30,7 @@ export function areRoutingCanvasNodeDataEqual(
     return (
       current.catalog === next.catalog &&
       current.condition === next.condition &&
+      current.collectionMatchDisabled === next.collectionMatchDisabled &&
       current.addDisabledReason === next.addDisabledReason
     );
   }
@@ -82,7 +83,7 @@ export function findRoutingCanvasNodeError(
   pathPrefix: string,
   node: ConditionCanvasLayoutNode
 ): string | undefined {
-  const nodePath = `${pathPrefix}${node.path.map((index) => `.children.${index}`).join('')}`;
+  const nodePath = `${pathPrefix}${node.path.map((index) => (index === 'predicate' ? '.predicate' : `.children.${index}`)).join('')}`;
   if (node.kind === 'GROUP') {
     return issues.find((issue) => issue.path === nodePath || issue.path === `${nodePath}.children`)
       ?.message;

@@ -2,6 +2,8 @@ import * as React from 'react';
 import { handleFormSubmitError } from '@/lib/query-client';
 
 import { AlertModal } from '@/components/modal/alert-modal';
+import { ApiErrorAlert } from '@/components/api-error-alert';
+import { getApiErrorPresentation, type ApiErrorPresentation } from '@/lib/api/error-notification';
 
 type ConfirmTextResolver<TArgs extends unknown[]> = string | ((...args: TArgs) => string);
 
@@ -35,12 +37,14 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
     null
   );
   const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<ApiErrorPresentation | null>(null);
   const runningRef = React.useRef(false);
 
   const withConfirm = React.useCallback(
     (options: ConfirmActionOptions<TArgs>) =>
       (...args: TArgs) => {
         if (runningRef.current) return;
+        setError(null);
         setPendingAction({ args, options });
       },
     []
@@ -48,6 +52,7 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
 
   const handleClose = React.useCallback(() => {
     if (runningRef.current) return;
+    setError(null);
     setPendingAction(null);
   }, []);
 
@@ -55,13 +60,14 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
     if (!pendingAction || runningRef.current) return;
 
     runningRef.current = true;
+    setError(null);
 
     setIsLoading(true);
     try {
       await pendingAction.options.run(...pendingAction.args);
       setPendingAction(null);
     } catch (error) {
-      handleFormSubmitError(error);
+      handleFormSubmitError(error, (cause) => setError(getApiErrorPresentation(cause)));
     } finally {
       runningRef.current = false;
       setIsLoading(false);
@@ -90,7 +96,9 @@ export function useConfirmAction<TArgs extends unknown[] = []>() {
         '继续'
       )}
       cancelText={resolveConfirmText(pendingAction.options.cancelText, pendingAction.args, '取消')}
-    />
+    >
+      {error ? <ApiErrorAlert error={error} /> : null}
+    </AlertModal>
   ) : null;
 
   return { withConfirm, confirmDialog };

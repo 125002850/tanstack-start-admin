@@ -125,3 +125,12 @@ columnDsl.field('categoryCode', '分类', {
 `RefreshButton` 接收返回 Promise 的 `onRefresh`，等待全部请求结束并保持至少 400ms 反馈，期间阻止重复点击。多个并行请求时调用方返回 `Promise.allSettled(...)`；错误沿用现有 Query/Mutation 出口。组件遵守减少动画偏好并提供 `aria-busy`。
 
 `DisabledTooltip` 使用 `disabled`、`reason` 和一个子控件；子控件仍需设置真实 `disabled`。外层在需要解释原因时可键盘聚焦，Tooltip 挂载到当前浮层，隐藏页面或关闭浮层会清理提示。
+
+## 2026-11-16 组件增量
+
+- `components/ui/inline-edit` 提供受控原位编辑、校验、Enter 保存、Escape 取消和输入法兼容，不承担远程保存。
+- `components/employee-picker/employee-picker-dialog` 提供部门、候选、已选三列，按员工 ID 去重并保留跨页选择；`renderSelectedEmployee` 和 `footer` 由调用方注入。数据通过 `departments/employees` 提供，`onQueryChange` 负责通知部门和搜索变化，加载/错误/重试/翻页由 feature 接入自身 IAM 或 SSO generated client。共享组件不依赖 MDM。
+- `components/json/json-output-preview` 提供只读 JSON 行号、折叠、可见区域渲染和完整复制，原始数字不经 parse/stringify 重建；CodeMirror 由消费方按需加载。
+- 条件编辑器增加操作符二级菜单、判空和 ANY/ALL/NONE 集合匹配；元素子条件计入深度及节点上限。编辑器仍只编辑原文，不解析或执行表达式。引用集合继续由 `ConditionReferenceSetsProvider` 注入。
+- 未保存页签关闭等待用户完成确认；关闭页面树后再导航，避免重复拦截。
+- 错误页支持 `layout='contained'`、可选错误码与自定义插画；workspace 运行错误共用该组件，生产环境隐藏内部异常。

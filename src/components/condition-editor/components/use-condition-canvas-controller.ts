@@ -5,6 +5,7 @@ import {
   createPredicateCondition,
   createConditionClientId,
   getConditionMetrics,
+  getConditionElementCatalog,
   isConditionFieldSelectable,
   CONDITION_OPERATOR_LABELS,
   type ConditionNode,
@@ -78,6 +79,7 @@ export function useConditionCanvasController({
     () => catalog.filter(isConditionFieldSelectable),
     [catalog]
   );
+  const elementCatalog = React.useMemo(() => getConditionElementCatalog(catalog), [catalog]);
   const conditionRef = React.useRef(condition);
   const catalogRef = React.useRef(catalog);
   const treeIndexRef = React.useRef(treeIndex);
@@ -131,7 +133,11 @@ export function useConditionCanvasController({
     (targetId: string) => {
       addToTarget(
         targetId,
-        createPredicateCondition(catalogRef.current.find(isConditionFieldSelectable) ?? '')
+        createPredicateCondition(
+          (treeIndexRef.current.get(targetId)?.elementSources.length ?? 0) > 0
+            ? getConditionElementCatalog(catalogRef.current)[0]!
+            : (catalogRef.current.find(isConditionFieldSelectable) ?? '')
+        )
       );
     },
     [addToTarget]
@@ -158,7 +164,11 @@ export function useConditionCanvasController({
         type: 'GROUP',
         logic,
         children: [
-          createPredicateCondition(catalogRef.current.find(isConditionFieldSelectable) ?? '')
+          createPredicateCondition(
+            (treeIndexRef.current.get(targetId)?.elementSources.length ?? 0) > 0
+              ? getConditionElementCatalog(catalogRef.current)[0]!
+              : (catalogRef.current.find(isConditionFieldSelectable) ?? '')
+          )
         ]
       });
     },
@@ -229,6 +239,7 @@ export function useConditionCanvasController({
         }
 
         const current = treeIndex.get(layoutNode.id)?.node;
+        const predicateRoot = layoutNode.path.at(-1) === 'predicate';
         if (layoutNode.kind === 'GROUP' && current?.type === 'GROUP') {
           const addDisabledReason = getRoutingCanvasAddDisabledReason({
             catalog: selectableCatalog,
@@ -255,11 +266,11 @@ export function useConditionCanvasController({
               condition: current,
               disabled,
               error: findRoutingCanvasNodeError(issues, issuePathPrefix, layoutNode),
-              root: layoutNode.parentId === ROUTING_CANVAS_START_NODE_ID,
+              root: predicateRoot || layoutNode.parentId === ROUTING_CANVAS_START_NODE_ID,
               onAddCondition: () => addCondition(layoutNode.id),
               onLogicChange: (logic) => changeGroupLogic(layoutNode.id, logic),
               onRemove:
-                layoutNode.parentId === ROUTING_CANVAS_START_NODE_ID
+                predicateRoot || layoutNode.parentId === ROUTING_CANVAS_START_NODE_ID
                   ? undefined
                   : () => requestNodeRemoval(layoutNode.id, 'GROUP'),
               onSelect: () => setSelectedNodeId(layoutNode.id)
@@ -299,7 +310,12 @@ export function useConditionCanvasController({
             kind: 'CONDITION',
             active,
             addDisabledReason,
-            catalog,
+            collectionMatchDisabled:
+              metrics.nodeCount + 2 > 64 || (treeIndex.get(layoutNode.id)?.depth ?? 1) + 2 > 5,
+            catalog:
+              (treeIndex.get(layoutNode.id)?.elementSources.length ?? 0) > 0
+                ? elementCatalog
+                : catalog,
             condition: current,
             disabled,
             error: findRoutingCanvasNodeError(issues, issuePathPrefix, layoutNode),
@@ -315,6 +331,7 @@ export function useConditionCanvasController({
       addCondition,
       addConditionNearNode,
       catalog,
+      elementCatalog,
       changeGroupLogic,
       changePredicate,
       condition,

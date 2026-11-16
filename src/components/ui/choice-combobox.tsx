@@ -49,7 +49,14 @@ export type ChoiceComboboxSearchMode = 'none' | 'local' | 'remote';
 
 export type ChoiceComboboxTriggerProps = Pick<
   React.ComponentProps<typeof Button>,
-  'ref' | 'id' | 'type' | 'disabled' | 'aria-describedby' | 'aria-invalid' | 'aria-label'
+  | 'ref'
+  | 'id'
+  | 'type'
+  | 'disabled'
+  | 'aria-describedby'
+  | 'aria-invalid'
+  | 'aria-required'
+  | 'aria-label'
 >;
 
 type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
@@ -79,6 +86,7 @@ type ChoiceComboboxBaseProps<TValue extends ChoiceComboboxValue> = {
   renderTrigger?: (props: ChoiceComboboxTriggerProps) => React.ReactElement;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
+  'aria-required'?: boolean;
   onOpenChange?: (open: boolean) => void;
   onInputValueChange?: (value: string) => void;
   onEscapeKeyDown?: React.ComponentProps<typeof PopoverContent>['onEscapeKeyDown'];
@@ -118,6 +126,7 @@ function ChoiceOption({
   label,
   labelContent,
   description,
+  selectionMode,
   keyboardNavigation,
   icon: OptionIcon,
   count,
@@ -128,6 +137,7 @@ function ChoiceOption({
   label: string;
   labelContent?: React.ReactNode;
   description?: string;
+  selectionMode: 'single' | 'multiple';
   keyboardNavigation: boolean;
   icon?: React.FC<React.SVGProps<SVGSVGElement>>;
   count?: number;
@@ -149,7 +159,12 @@ function ChoiceOption({
   const item = (
     <CommandItem value={value} {...props}>
       {children}
-      <span className='flex min-w-0 items-center gap-2'>
+      <span
+        className={cn(
+          'flex min-w-0 items-center gap-2',
+          selectionMode === 'single' && 'col-start-1 row-start-1'
+        )}
+      >
         {OptionIcon ? <OptionIcon className='size-4 shrink-0' /> : null}
         <span ref={labelRef} className='min-w-0 truncate'>
           {labelContent ?? label}
@@ -157,7 +172,13 @@ function ChoiceOption({
         {count ? <span className='ml-auto font-mono text-xs'>{count}</span> : null}
       </span>
       {description ? (
-        <span ref={descriptionRef} className='col-start-2 truncate text-xs text-muted-foreground'>
+        <span
+          ref={descriptionRef}
+          className={cn(
+            'truncate text-xs text-muted-foreground',
+            selectionMode === 'single' ? 'col-start-1' : 'col-start-2'
+          )}
+        >
           {description}
         </span>
       ) : null}
@@ -213,6 +234,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
   renderTrigger,
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
+  'aria-required': ariaRequired,
   onOpenChange,
   onInputValueChange,
   onEscapeKeyDown,
@@ -275,6 +297,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
     disabled,
     'aria-describedby': ariaDescribedBy,
     'aria-invalid': ariaInvalid,
+    'aria-required': ariaRequired,
     'aria-label': triggerLabel
   };
 
@@ -463,10 +486,16 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                       label={option.label}
                       labelContent={option.labelContent}
                       description={option.description}
+                      selectionMode={selectionMode}
                       icon={option.icon}
                       count={option.count}
                       keyboardNavigation={keyboardNavigation}
-                      className='grid grid-cols-[1rem_minmax(0,1fr)] gap-x-2 gap-y-0.5'
+                      className={cn(
+                        'grid gap-x-2 gap-y-0.5',
+                        selectionMode === 'single'
+                          ? 'grid-cols-[minmax(0,1fr)_1rem]'
+                          : 'grid-cols-[1rem_minmax(0,1fr)]'
+                      )}
                       key={getOptionKey(option.value)}
                       value={`${getOptionKey(option.value)} ${option.label}`}
                       disabled={isSelectionDisabled}
@@ -489,7 +518,7 @@ function ChoiceCombobox<TValue extends ChoiceComboboxValue>({
                         <span
                           aria-hidden='true'
                           className={cn(
-                            'flex size-4 items-center justify-center',
+                            'col-start-2 row-start-1 flex size-4 items-center justify-center',
                             !isSelected && '[&_svg]:invisible'
                           )}
                         >

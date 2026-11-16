@@ -125,7 +125,7 @@ export function ConditionCollectionEditor({
     </FieldGroup>
   ) : operand.value.includes('{{') && !operand.value.trim().startsWith('[') ? (
     <FieldGroup className='gap-2'>
-      <FieldDescription>正在引用动态数组，可从字段目录替换数组变量。</FieldDescription>
+      <FieldDescription>正在引用流程数组，可从字段库替换数组变量。</FieldDescription>
       <Button
         type='button'
         variant='ghost'

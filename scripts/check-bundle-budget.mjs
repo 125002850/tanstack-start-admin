@@ -15,6 +15,9 @@
  * Chrome 111 native colors: SSO baseline measured on 2026-10-23, plus 20%:
  * - css total / largest css: 243,076 bytes -> 291,692
  *
+ * JSON preview allocation (2026-11-16): shared main JS baseline 3,161,589
+ * bytes plus 20%; preserve SSO CSS and per-asset limits.
+ *
  * Override with environment variables:
  * BUNDLE_BUDGET_TOTAL_BYTES, BUNDLE_BUDGET_JS_BYTES, BUNDLE_BUDGET_CSS_BYTES,
  * BUNDLE_BUDGET_IMAGE_BYTES, BUNDLE_BUDGET_MAX_JS_BYTES,
@@ -28,7 +31,7 @@ import process from 'node:process';
 
 const DEFAULT_BUDGETS = {
   totalBytes: 11_123_967,
-  jsBytes: 2_778_252,
+  jsBytes: 3_793_907,
   cssBytes: 291_692,
   imageBytes: 7_939_810,
   maxJsBytes: 579_854,

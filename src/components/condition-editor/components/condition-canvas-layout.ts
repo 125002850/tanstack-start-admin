@@ -1,6 +1,6 @@
 import { graphlib, layout as layoutGraph } from '@dagrejs/dagre';
 
-import type { ConditionNode } from '../model/condition-model';
+import { isCollectionMatchOperator, type ConditionNode } from '../model/condition-model';
 
 export const ROUTING_CANVAS_START_NODE_ID = 'routing-canvas-start';
 
@@ -9,7 +9,7 @@ export interface ConditionCanvasProjectedNode {
   readonly kind: 'START' | 'GROUP' | 'CONDITION';
   readonly parentId: string | null;
   readonly depth: number;
-  readonly path: readonly number[];
+  readonly path: readonly (number | 'predicate')[];
 }
 
 export interface ConditionCanvasProjectedEdge {
@@ -51,7 +51,7 @@ export function projectConditionCanvas(condition: ConditionNode): ConditionCanva
     node: ConditionNode,
     parentId: string,
     depth: number,
-    path: readonly number[]
+    path: readonly (number | 'predicate')[]
   ): void => {
     nodes.push({
       id: node.clientId,
@@ -67,6 +67,9 @@ export function projectConditionCanvas(condition: ConditionNode): ConditionCanva
       target: node.clientId
     });
 
+    if (node.type === 'CONDITION' && isCollectionMatchOperator(node.operator) && node.predicate) {
+      visit(node.predicate, node.clientId, depth + 1, [...path, 'predicate']);
+    }
     if (node.type !== 'GROUP') return;
     node.children.forEach((child, childIndex) => {
       visit(child, node.clientId, depth + 1, [...path, childIndex]);

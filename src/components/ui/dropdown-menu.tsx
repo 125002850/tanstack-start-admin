@@ -21,10 +21,12 @@ function DropdownMenuTrigger({
 
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
+    container?: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>['container'];
+  }
+>(({ className, container, sideOffset = 4, ...props }, ref) => {
   return (
-    <DropdownMenuPrimitive.Portal>
+    <DropdownMenuPrimitive.Portal container={container}>
       <DropdownMenuPrimitive.Content
         ref={ref}
         data-slot='dropdown-menu-content'

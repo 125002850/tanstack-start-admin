@@ -5,6 +5,7 @@ export type ConditionFieldType =
   | 'DATE'
   | 'DATETIME'
   | 'DAY_OF_WEEK'
+  | 'STRING_ARRAY'
   | 'TIME';
 export type ConditionOperator =
   | 'EQ'
@@ -31,7 +32,12 @@ export type ConditionOperator =
   | 'IS_WORKDAY'
   | 'IS_NON_WORKDAY'
   | 'EXISTS'
-  | 'NOT_EXISTS';
+  | 'NOT_EXISTS'
+  | 'IS_EMPTY'
+  | 'IS_NOT_EMPTY'
+  | 'ANY_MATCH'
+  | 'ALL_MATCH'
+  | 'NONE_MATCH';
 
 export const CONDITION_OPERATOR_LABELS: Readonly<Record<ConditionOperator, string>> = {
   EQ: '等于',
@@ -58,7 +64,12 @@ export const CONDITION_OPERATOR_LABELS: Readonly<Record<ConditionOperator, strin
   IS_WORKDAY: '是工作日',
   IS_NON_WORKDAY: '是非工作日',
   EXISTS: '存在',
-  NOT_EXISTS: '不存在'
+  NOT_EXISTS: '不存在',
+  IS_EMPTY: '为空',
+  IS_NOT_EMPTY: '不为空',
+  ANY_MATCH: '存在匹配项',
+  ALL_MATCH: '全部匹配',
+  NONE_MATCH: '无匹配项'
 };
 
 export interface AlwaysCondition {
@@ -85,6 +96,8 @@ export interface PredicateCondition {
   readonly values?: readonly (string | boolean)[];
   readonly fieldRef?: string;
   readonly setRef?: string;
+  /** 集合操作符的元素条件；不与普通右值同时保存。 */
+  readonly predicate?: GroupCondition;
 }
 
 export type ConditionNode = AlwaysCondition | GroupCondition | PredicateCondition;
@@ -96,7 +109,7 @@ export interface ConditionField {
   readonly path: string;
   readonly selectable?: boolean;
   readonly type: ConditionFieldType;
-  readonly source: 'PAYLOAD' | 'CONTEXT' | 'SYSTEM' | 'LEGACY';
+  readonly source: 'PAYLOAD' | 'CONTEXT' | 'OPTIONS' | 'ELEMENT' | 'SYSTEM' | 'LEGACY';
 }
 
 export interface ConditionMetrics {
@@ -122,7 +135,9 @@ export const CONDITION_OPERATOR_OPTIONS = {
     'NUM_IN',
     'NUM_NOT_IN',
     'EXISTS',
-    'NOT_EXISTS'
+    'NOT_EXISTS',
+    'IS_EMPTY',
+    'IS_NOT_EMPTY'
   ],
   NUMBER: [
     'NUM_EQ',
@@ -141,9 +156,11 @@ export const CONDITION_OPERATOR_OPTIONS = {
     'IN',
     'NOT_IN',
     'EXISTS',
-    'NOT_EXISTS'
+    'NOT_EXISTS',
+    'IS_EMPTY',
+    'IS_NOT_EMPTY'
   ],
-  BOOLEAN: ['EQ', 'NE', 'EXISTS', 'NOT_EXISTS'],
+  BOOLEAN: ['EQ', 'NE', 'EXISTS', 'NOT_EXISTS', 'IS_EMPTY', 'IS_NOT_EMPTY'],
   DATE: [
     'DAY_OF_WEEK_IN',
     'IS_WORKDAY',
@@ -156,7 +173,9 @@ export const CONDITION_OPERATOR_OPTIONS = {
     'LE',
     'BETWEEN',
     'EXISTS',
-    'NOT_EXISTS'
+    'NOT_EXISTS',
+    'IS_EMPTY',
+    'IS_NOT_EMPTY'
   ],
   DATETIME: [
     'DAY_OF_WEEK_IN',
@@ -170,11 +189,26 @@ export const CONDITION_OPERATOR_OPTIONS = {
     'LE',
     'BETWEEN',
     'EXISTS',
-    'NOT_EXISTS'
+    'NOT_EXISTS',
+    'IS_EMPTY',
+    'IS_NOT_EMPTY'
   ],
   DAY_OF_WEEK: ['EQ', 'NE', 'IN', 'NOT_IN'],
+  STRING_ARRAY: [
+    'IS_NOT_EMPTY',
+    'IS_EMPTY',
+    'EXISTS',
+    'NOT_EXISTS',
+    'ANY_MATCH',
+    'ALL_MATCH',
+    'NONE_MATCH'
+  ],
   TIME: ['EQ', 'NE', 'GT', 'GE', 'LT', 'LE', 'BETWEEN']
 } as const satisfies Record<ConditionFieldType, readonly ConditionOperator[]>;
+
+export function isCollectionMatchOperator(operator: ConditionOperator): boolean {
+  return operator === 'ANY_MATCH' || operator === 'ALL_MATCH' || operator === 'NONE_MATCH';
+}
 
 export function getConditionOperators(field: ConditionField): readonly ConditionOperator[] {
   return CONDITION_OPERATOR_OPTIONS[field.type];
@@ -185,7 +219,8 @@ export function getConditionOperatorGroup(
   fieldType?: ConditionFieldType
 ): string | undefined {
   if (isDecimalConditionOperator(operator)) return '数字';
-  if (operator === 'EXISTS' || operator === 'NOT_EXISTS') return undefined;
+  if (isCollectionMatchOperator(operator)) return '集合';
+  if (['EXISTS', 'NOT_EXISTS', 'IS_EMPTY', 'IS_NOT_EMPTY'].includes(operator)) return '通用';
   if (fieldType === 'BOOLEAN') return '布尔';
   if (
     ['DATE', 'DATETIME', 'DAY_OF_WEEK', 'TIME'].includes(fieldType ?? '') ||
@@ -223,6 +258,9 @@ export function createPredicateCondition(
     field: typeof field === 'string' ? field : field.path,
     operator
   } as const;
+  if (isCollectionMatchOperator(operator)) {
+    return { ...base, predicate: createGroupCondition('$element') };
+  }
   if (routingOperatorUsesNoValue(operator)) return base;
   if (operator === 'BETWEEN' || operator === 'NUM_BETWEEN') {
     return { ...base, values: ['', ''] };
@@ -252,6 +290,21 @@ export function getConditionField(
   return catalog.find((field) => field.path === path);
 }
 
+export function getConditionElementCatalog(
+  catalog: readonly ConditionField[]
+): readonly ConditionField[] {
+  return [
+    {
+      path: '$element',
+      label: '$element',
+      description: '当前集合项',
+      type: 'STRING',
+      source: 'ELEMENT'
+    },
+    ...catalog.filter((field) => field.type !== 'STRING_ARRAY' && field.source !== 'ELEMENT')
+  ];
+}
+
 export function isConditionFieldSelectable(field: ConditionField): boolean {
   return field.selectable !== false;
 }
@@ -269,7 +322,9 @@ export function getConditionFieldReferenceOptions(
     (candidate) =>
       candidate.path !== field.path &&
       candidate.selectable !== false &&
-      (candidate.source === 'PAYLOAD' || candidate.source === 'CONTEXT') &&
+      (candidate.source === 'PAYLOAD' ||
+        candidate.source === 'CONTEXT' ||
+        candidate.source === 'ELEMENT') &&
       getEffectiveRoutingFieldType(candidate.type) === effectiveType
   );
 }
@@ -279,12 +334,20 @@ function getEffectiveRoutingFieldType(type: ConditionFieldType): string {
 }
 
 export function getConditionMetrics(condition: ConditionNode): ConditionMetrics {
-  if (condition.type !== 'GROUP') return { nodeCount: 1, maxDepth: 1 };
-  const childMetrics = condition.children.map(getConditionMetrics);
+  const childMetrics = getConditionChildren(condition).map(getConditionMetrics);
   return {
     nodeCount: 1 + childMetrics.reduce((total, metrics) => total + metrics.nodeCount, 0),
     maxDepth: 1 + Math.max(0, ...childMetrics.map((metrics) => metrics.maxDepth))
   };
+}
+
+export function getConditionChildren(condition: ConditionNode): readonly ConditionNode[] {
+  if (condition.type === 'GROUP') return condition.children;
+  return condition.type === 'CONDITION' &&
+    isCollectionMatchOperator(condition.operator) &&
+    condition.predicate
+    ? [condition.predicate]
+    : [];
 }
 
 export function isDecimalConditionOperator(operator: ConditionOperator): boolean {
@@ -312,6 +375,9 @@ export function routingOperatorUsesNoValue(operator: ConditionOperator): boolean
   return (
     operator === 'EXISTS' ||
     operator === 'NOT_EXISTS' ||
+    operator === 'IS_EMPTY' ||
+    operator === 'IS_NOT_EMPTY' ||
+    isCollectionMatchOperator(operator) ||
     operator === 'IS_WORKDAY' ||
     operator === 'IS_NON_WORKDAY'
   );
@@ -320,4 +386,8 @@ export function routingOperatorUsesNoValue(operator: ConditionOperator): boolean
 export interface ConditionIssue {
   readonly path: string;
   readonly message: string;
+}
+
+export function isCatalogConditionOperator(operator: ConditionOperator): boolean {
+  return Object.prototype.hasOwnProperty.call(CONDITION_OPERATOR_LABELS, operator);
 }
