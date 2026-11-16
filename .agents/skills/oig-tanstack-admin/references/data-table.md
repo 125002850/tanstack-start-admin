@@ -289,6 +289,7 @@ interface AuditFields {
 - 首次业务查询等待 metadata 和默认方案恢复完成，避免先请求未筛选列表；metadata 首次失败使用表格错误态和刷新入口重试。
 - 最终条件为 `baseCondition AND 快捷条件 AND 高级条件`。方案仅保存快捷/高级条件，不保存业务范围、分页和排序；重置不能清除 `baseCondition`。切换字典类型等业务上下文时范围仍由页面提供。
 - 高级搜索 UI 与类型在 `components/data-table/advanced-search`，纯条件算法在 `lib/data-table/advanced-search.ts`，缓存订阅与状态编排在 `hooks/use-data-table`。保留树表格、远程筛选、业务重置回调等原有能力。
+- 查询字段使用可搜索单选，支持字段名称与后端标识；有选项的 `EQ/NE` 条件使用可搜索单选并保留标量值，`IN/NOT_IN` 保留可搜索多选与完整数组。比较方式、AND/OR 和布尔值继续使用普通单选；搜索只过滤候选项，点击“应用”后才提交条件。
 - 退出 IAM 会话时清除各场景个人方案缓存，防止下次登录恢复上一用户的方案。没有 `sceneCode` 的原有列表保持原行为，IAM 兼容分页接口不自动启用高级搜索。
 
 最简接入（列标签、日期展示和选项继续复用列 DSL）：

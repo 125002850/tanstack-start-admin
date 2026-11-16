@@ -42,7 +42,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { MultipleChoiceCombobox } from '@/components/ui/choice-combobox';
+import { MultipleChoiceCombobox, SingleChoiceCombobox } from '@/components/ui/choice-combobox';
 import { Input } from '@/components/ui/input';
 import { useAppForm, useFormFields } from '@/components/ui/tanstack-form';
 import { z } from 'zod';
@@ -309,23 +309,20 @@ function ConditionValueEditor({
     (condition.op === 'EQ' || condition.op === 'NE')
   ) {
     return (
-      <Select
-        value={String(condition.value ?? '')}
-        onValueChange={(value) => onChange({ ...condition, value })}
-      >
-        <SelectTrigger size='sm' className='min-w-44'>
-          <SelectValue placeholder={`选择${field.label}`} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {field.options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+      <SingleChoiceCombobox
+        options={field.options}
+        value={condition.value == null || condition.value === '' ? null : String(condition.value)}
+        allowEmpty={false}
+        searchMode='local'
+        triggerLabel={`${field.label}条件值`}
+        placeholder={`选择${field.label}`}
+        searchPlaceholder={`搜索${field.label}`}
+        className='h-8 w-auto min-w-44 flex-1'
+        contentClassName='min-w-52'
+        onValueChange={(value) => {
+          if (value !== null) onChange({ ...condition, value });
+        }}
+      />
     );
   }
 
@@ -443,7 +440,7 @@ function ConditionNodeEditor({
         <div className={cn('flex flex-col gap-2', !root && 'border-l pl-2')}>
           {condition.children.map((child, index) => (
             <ConditionNodeEditor
-              key={`${index}-${child.nodeType}-${child.nodeType === 'compose' ? child.logic : child.field}`}
+              key={index}
               condition={child}
               fields={fields}
               depth={depth + 1}
@@ -476,26 +473,25 @@ function ConditionNodeEditor({
   if (!field) return null;
   return (
     <div className='bg-background flex flex-wrap items-center gap-2 rounded-md border p-1.5'>
-      <Select
+      <SingleChoiceCombobox
+        options={fields.map((item) => ({
+          value: item.columnId,
+          label: item.label,
+          keywords: [item.field]
+        }))}
         value={field.columnId}
+        allowEmpty={false}
+        searchMode='local'
+        triggerLabel='查询字段'
+        placeholder='选择查询字段'
+        searchPlaceholder='搜索字段名称或标识'
+        className='h-8 w-auto min-w-40'
+        contentClassName='min-w-52'
         onValueChange={(columnId) => {
           const nextField = fields.find((candidate) => candidate.columnId === columnId);
           if (nextField) onChange(createAdvancedCondition(nextField));
         }}
-      >
-        <SelectTrigger aria-label='查询字段' size='sm' className='min-w-40'>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {fields.map((item) => (
-              <SelectItem key={item.columnId} value={item.columnId}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+      />
       <Select
         value={condition.op}
         onValueChange={(op) => onChange(updateLeafOperator(condition, op as DataTableDslOperator))}

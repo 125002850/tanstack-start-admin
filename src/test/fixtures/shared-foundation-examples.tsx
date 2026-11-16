@@ -1,4 +1,8 @@
 import { Suspense, useState } from 'react';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { DataTableAdvancedSearch } from '@/components/data-table/advanced-search/data-table-advanced-search';
+import type { DataTableAdvancedSearchField } from '@/components/data-table/advanced-search/types';
+import type { DataTableDslCondition } from '@/hooks/use-data-table';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { JsonOutputPreview } from '@/components/json/json-output-preview';
 import {
@@ -239,11 +243,82 @@ function BackportExamples() {
   );
 }
 
+const advancedSearchFields: DataTableAdvancedSearchField[] = [
+  {
+    columnId: 'status',
+    field: 'status',
+    label: '状态',
+    conditionType: 'enum',
+    operators: ['EQ', 'NE', 'IN', 'NOT_IN'],
+    dateMode: 'dateTime',
+    options: [
+      { value: 'enable', label: '启用' },
+      { value: 'disable', label: '停用' }
+    ]
+  },
+  {
+    columnId: 'channel',
+    field: 'deliveryChannel',
+    label: '发送渠道',
+    conditionType: 'enum',
+    operators: ['EQ', 'NE', 'IN', 'NOT_IN'],
+    dateMode: 'dateTime',
+    options: [
+      { value: 'email', label: '邮件' },
+      { value: 'sms', label: '短信' }
+    ]
+  }
+];
+const previewNoop = () => {};
+const previewMutation = () => Promise.resolve();
+
+function AdvancedSearchExample() {
+  const [condition, setCondition] = useState<DataTableDslCondition | undefined>({
+    nodeType: 'enum',
+    field: 'status',
+    op: 'EQ',
+    value: 'enable'
+  });
+  const table = useReactTable({
+    data: [],
+    columns: [],
+    getCoreRowModel: getCoreRowModel(),
+    meta: {
+      dataTableAdvancedSearch: {
+        sceneCode: 'test.advanced-search',
+        fields: advancedSearchFields,
+        condition,
+        conditionCount: condition ? 1 : 0,
+        summary: '高级筛选示例',
+        applyCondition: setCondition,
+        clearAll: () => setCondition(undefined),
+        schemes: [],
+        dirty: false,
+        loadingSchemes: false,
+        mutatingScheme: false,
+        applyScheme: previewNoop,
+        saveAs: previewMutation,
+        overwriteSelected: previewMutation,
+        renameSelected: previewMutation,
+        deleteSelected: previewMutation,
+        setSelectedAsDefault: previewMutation
+      }
+    }
+  });
+  return (
+    <section aria-label='高级筛选选择示例' className='max-w-4xl space-y-2'>
+      <DataTableAdvancedSearch table={table} />
+      <output aria-label='高级筛选提交结果'>{JSON.stringify(condition)}</output>
+    </section>
+  );
+}
+
 export function SharedFoundationExamples() {
   return (
     <>
       <BackportExamples />
       <DurationExample />
+      <AdvancedSearchExample />
       <ConditionsExample view='tree' />
       <ConditionsExample view='canvas' />
       <ScrollbarExample />
