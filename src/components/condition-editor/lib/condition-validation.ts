@@ -2,6 +2,7 @@ import { isConditionDate, isConditionDateTime } from './condition-date-time';
 import {
   CONDITION_INPUT_OPERATORS,
   conditionOperatorUsesCollection,
+  conditionOperatorUsesRange,
   isDateConditionInputOperator,
   parseConditionLiteral
 } from './condition-operands';
@@ -141,6 +142,7 @@ function validateInputOperands(
   }
   const noValue = routingOperatorUsesNoValue(condition.operator);
   const collection = conditionOperatorUsesCollection(condition.operator);
+  const range = conditionOperatorUsesRange(condition.operator);
   const numeric = isDecimalConditionOperator(condition.operator);
   const temporal = isDateConditionInputOperator(condition.operator);
   if (condition.setRef !== undefined) {
@@ -162,10 +164,17 @@ function validateInputOperands(
     if (key === 'rightValue' && (noValue || condition.setRef !== undefined)) continue;
     const source = condition[key];
     const issuePath = `${path}.${key}`;
+    if (key === 'rightValue' && range && (typeof source !== 'string' || !source.trim())) {
+      issues.push(
+        { path: `${issuePath}.0`, message: '请输入下限。' },
+        { path: `${issuePath}.1`, message: '请输入上限。' }
+      );
+      continue;
+    }
     if (typeof source !== 'string' || (key === 'leftValue' && !source.trim())) {
       issues.push({
         path: issuePath,
-        message: key === 'leftValue' ? '请填写条件左值。' : '请填写条件右值。'
+        message: key === 'leftValue' ? '请输入待比较值。' : '请输入比较值。'
       });
       continue;
     }
@@ -184,9 +193,47 @@ function validateInputOperands(
         (!Array.isArray(literal) ||
           literal.length === 0 ||
           literal.length > CONDITION_LIMITS.collectionValues ||
-          (condition.operator.endsWith('BETWEEN') && literal.length !== 2))
+          (range && literal.length !== 2))
       ) {
-        throw new Error('集合填写 1 至 100 项的 JSON 数组，区间填写两个值。');
+        throw new Error(
+          range
+            ? '请填写下限和上限，或使用包含两个值的区间表达式。'
+            : '集合填写 1 至 100 项的 JSON 数组。'
+        );
+      }
+      if (expectsArray && range) {
+        values.forEach((item, index) => {
+          const valuePath = `${issuePath}.${index}`;
+          if (typeof item === 'string' && !item.trim()) {
+            issues.push({
+              path: valuePath,
+              message: index === 0 ? '请输入下限。' : '请输入上限。'
+            });
+          } else if (typeof item === 'string' && item.includes('{{')) {
+            // 动态边界保留原文，求值与类型检查由调用方负责。
+          } else if (!['string', 'boolean', 'number'].includes(typeof item)) {
+            issues.push({ path: valuePath, message: '条件值须为文本、数字或布尔值。' });
+          } else if (
+            numeric &&
+            (typeof item === 'boolean' ||
+              !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(String(item)))
+          ) {
+            issues.push({ path: valuePath, message: '数字常量必须使用有效的十进制字符串。' });
+          } else if (
+            temporal &&
+            !(
+              typeof item === 'string' &&
+              isConditionDate(item.slice(0, 10)) &&
+              (isConditionDate(item) || isConditionDateTime(item))
+            )
+          ) {
+            issues.push({
+              path: valuePath,
+              message: '日期比较须使用 yyyy-MM-dd、yyyy-MM-dd HH:mm:ss 或带时区的 ISO 日期时间。'
+            });
+          }
+        });
+        continue;
       }
       if (values.some((item) => !['string', 'boolean', 'number'].includes(typeof item)))
         throw new Error('条件值须为文本、数字或布尔值。');
@@ -299,9 +346,14 @@ function validateConditionPayload(
     ) {
       issues.push({ path: `${path}.values`, message: '请填写符合当前操作符数量要求的常量集合。' });
     }
-    values.forEach((value, index) =>
-      validateLiteral(value, field.type, condition.operator, `${path}.values.${index}`, issues)
-    );
+    values.forEach((value, index) => {
+      const valuePath = `${path}.values.${index}`;
+      if (expectedCount === 2 && typeof value === 'string' && !value.trim()) {
+        issues.push({ path: valuePath, message: index === 0 ? '请输入下限。' : '请输入上限。' });
+      } else {
+        validateLiteral(value, field.type, condition.operator, valuePath, issues);
+      }
+    });
     return;
   }
   if (condition.value === undefined) {

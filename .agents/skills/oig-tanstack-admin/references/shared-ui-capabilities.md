@@ -91,6 +91,8 @@ columnDsl.field('categoryCode', '分类', {
 通用能力位于 `src/components/condition-editor/`，不依赖生成 API、IAM/SSO 或具体业务 feature。调用方控制 `condition`、`catalog`、`issues` 和 `onChange`；纯模型、结构校验、树操作与撤销历史位于该目录的 `model/`、`lib/`。
 
 - `components/condition-tree-editor` 的 `ConditionTreeEditor` 编辑嵌套 AND/OR 条件，主要读写 `leftValue/rightValue` 双输入，支持文本、数字、日期、集合和动态表达式原文。`renderOperand` 可接入调用方自己的表达式输入；编辑器不解析或执行表达式。
+- 树形区间条件默认分别填写下限和上限，也可切换为整体区间表达式；仍将右值保存为 JSON 数组原文或表达式，不新增协议字段。错误分别关联到边界输入，编辑一项保留另一项的精确数值。
+- 默认左值和区间边界提供 `fx` 字段表达式选择。自定义 `renderOperand` 继续接收相同输入契约，区间边界通过 `collectionIndex` 的 `0/1` 区分；操作符切换统一使用 `convertConditionRightValue` 保留字面量与表达式语义。
 - `components/condition-canvas-editor` 的 `ConditionCanvasEditor` 按字段目录编辑 `field/value/values/fieldRef/setRef` 条件，并按需加载 React Flow 与 Dagre。两种入口保留各自输入模式，不自动转换业务协议；调用方选择与服务端契约匹配的入口，并在懒加载边界提供 `Suspense`。
 - `ConditionReferenceSetsProvider` 接收使用方已加载的 `{ code, label, fieldType }[]`，同时供树和画布的集合选择器使用。集合请求、缓存、加载与错误状态由使用方管理，不将业务集合 API 放进共享组件。
 - 集合编辑从 JSON 原文读取数值，修改其他项不得重写大整数、精确小数或带前导零的文本。切换操作符时清理不再适用的字段引用或集合引用。

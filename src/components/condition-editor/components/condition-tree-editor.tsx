@@ -10,7 +10,6 @@ import {
   DecisionTreeItem
 } from '@/components/ui/decision-tree';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupInput } from '@/components/ui/input-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -19,6 +18,7 @@ import {
   CONDITION_INPUT_OPERATORS,
   conditionOperatorUsesCollection,
   convertConditionRightValue,
+  conditionOperatorUsesRange,
   createInputCondition,
   getConditionOperands
 } from '../lib/condition-operands';
@@ -44,6 +44,8 @@ import {
 } from '../model/condition-model';
 import { ConditionOperatorSelect } from './condition-operator-select';
 import { ConditionCollectionEditor } from './condition-collection-editor';
+import { ConditionOperandInput } from './condition-operand-input';
+import { ConditionRangeEditor } from './condition-range-editor';
 import { RoutingReferenceSetName } from './routing-reference-set-selector';
 import {
   RoutingCanvasOverlayProvider,
@@ -362,29 +364,28 @@ function ConditionTreePredicate({
   readonly path: string;
 }) {
   const id = useId();
-  const errorId = `${id}-error`;
   const errors = editor.issues.filter(
     (issue) =>
       (issue.path === path || issue.path.startsWith(`${path}.`)) &&
       !issue.path.startsWith(`${path}.predicate.`)
   );
   const operands = getConditionOperands(node, editor.catalog);
-  const fieldInvalid = errors.some(
+  const fieldErrors = errors.filter(
+    (issue) => issue.path === `${path}.field` || issue.path === `${path}.leftValue`
+  );
+  const operatorErrors = errors.filter((issue) => issue.path === `${path}.operator`);
+  const valueErrors = errors.filter(
     (issue) =>
-      issue.path === path || issue.path === `${path}.field` || issue.path === `${path}.leftValue`
+      issue.path !== path && !fieldErrors.includes(issue) && !operatorErrors.includes(issue)
   );
-  const operatorInvalid = errors.some(
-    (issue) => issue.path === path || issue.path === `${path}.operator`
-  );
-  const valueInvalid = errors.some(
-    (issue) =>
-      issue.path !== `${path}.field` &&
-      issue.path !== `${path}.leftValue` &&
-      issue.path !== `${path}.operator`
-  );
+  const generalErrors = errors.filter((issue) => issue.path === path);
+  const fieldInvalid = fieldErrors.length > 0 || generalErrors.length > 0;
+  const operatorInvalid = operatorErrors.length > 0 || generalErrors.length > 0;
+  const valueInvalid = valueErrors.length > 0 || generalErrors.length > 0;
   const usesValue = !routingOperatorUsesNoValue(node.operator);
   const entry = editor.treeIndex.get(node.clientId);
   const elementSources = entry?.elementSources;
+  const range = conditionOperatorUsesRange(node.operator);
   const supportsSet = node.operator === 'IN' || node.operator === 'NOT_IN';
   const membership = supportsSet || node.operator === 'NUM_IN' || node.operator === 'NUM_NOT_IN';
   const collectionOverlay = useRoutingCanvasOverlayOpen(`collection:${node.clientId}`);
@@ -426,16 +427,30 @@ function ConditionTreePredicate({
     if (open && node.setRef === undefined && !operands.right.trim()) change(operands.left, '[""]');
     collectionOverlay.onOpenChange(open);
   };
+  const leftOperand: ConditionOperandInputProps = {
+    conditionId: node.clientId,
+    side: 'left',
+    elementSources,
+    id: `${id}-left`,
+    label: '待比较值',
+    value: operands.left,
+    disabled: editor.disabled,
+    invalid: fieldInvalid,
+    describedBy: fieldErrors.length ? `${id}-left-error` : undefined,
+    inputRef: (input) => editor.focusOperand(node.clientId, input),
+    placeholder: '输入值…',
+    onChange: (value) => change(value, operands.right, 'leftValue')
+  };
   const rightOperand: ConditionOperandInputProps = {
     conditionId: node.clientId,
     side: 'right',
     elementSources,
     id: `${id}-right`,
-    label: '条件右值',
+    label: '比较值',
     value: operands.right,
     disabled: editor.disabled,
     invalid: valueInvalid,
-    describedBy: valueInvalid ? errorId : undefined,
+    describedBy: valueErrors.length ? `${id}-right-error` : undefined,
     inputRef: membership
       ? (element) => {
           collectionTrigger.current = element;
@@ -516,7 +531,8 @@ function ConditionTreePredicate({
           <InputGroupInput
             id={`${id}-right`}
             aria-invalid={valueInvalid}
-            aria-describedby={valueInvalid ? errorId : undefined}
+            aria-label={rightOperand.label}
+            aria-describedby={rightOperand.describedBy}
             disabled={editor.disabled}
             onChange={(event) => change(operands.left, event.target.value, 'rightValue')}
             placeholder={rightOperand.placeholder}
@@ -537,58 +553,38 @@ function ConditionTreePredicate({
           <div
             className={cn(
               'grid min-w-0 grid-cols-1 gap-2',
-              usesValue
-                ? '@min-[20rem]/field-group:grid-cols-[6rem_minmax(0,1fr)] @min-[24rem]/field-group:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)]'
-                : isCollectionMatchOperator(node.operator)
-                  ? '@min-[20rem]/field-group:grid-cols-[minmax(0,1fr)_9rem]'
-                  : '@min-[20rem]/field-group:grid-cols-[minmax(0,1fr)_6rem]'
+              range
+                ? '@min-[20rem]/field-group:grid-cols-[6rem_minmax(0,1fr)] @min-[36rem]/field-group:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1.5fr)]'
+                : usesValue
+                  ? '@min-[20rem]/field-group:grid-cols-[6rem_minmax(0,1fr)] @min-[24rem]/field-group:grid-cols-[minmax(0,1fr)_6rem_minmax(0,1fr)]'
+                  : isCollectionMatchOperator(node.operator)
+                    ? '@min-[20rem]/field-group:grid-cols-[minmax(0,1fr)_9rem]'
+                    : '@min-[20rem]/field-group:grid-cols-[minmax(0,1fr)_6rem]'
             )}
           >
             <Field
               data-invalid={fieldInvalid}
               className={cn(
-                usesValue &&
-                  '@min-[20rem]/field-group:col-span-2 @min-[24rem]/field-group:col-span-1'
+                'gap-2',
+                usesValue && '@min-[20rem]/field-group:col-span-2',
+                range
+                  ? '@min-[36rem]/field-group:col-span-1'
+                  : '@min-[24rem]/field-group:col-span-1'
               )}
             >
-              <FieldLabel className='sr-only' htmlFor={`${id}-left`}>
-                条件左值
-              </FieldLabel>
+              <FieldLabel htmlFor={`${id}-left`}>待比较值</FieldLabel>
               {editor.renderOperand ? (
-                editor.renderOperand({
-                  conditionId: node.clientId,
-                  side: 'left',
-                  elementSources,
-                  id: `${id}-left`,
-                  label: '条件左值',
-                  value: operands.left,
-                  disabled: editor.disabled,
-                  invalid: fieldInvalid,
-                  describedBy: fieldInvalid ? errorId : undefined,
-                  inputRef: (input) => editor.focusOperand(node.clientId, input),
-                  placeholder: elementSources?.length
-                    ? '{{ $element.field }}'
-                    : '固定值或 {{ $json.amount }}',
-                  onChange: (value) => change(value, operands.right, 'leftValue')
-                })
+                editor.renderOperand(leftOperand)
               ) : (
-                <Input
-                  ref={(input) => editor.focusOperand(node.clientId, input)}
-                  id={`${id}-left`}
-                  aria-invalid={fieldInvalid}
-                  aria-describedby={fieldInvalid ? errorId : undefined}
-                  disabled={editor.disabled}
-                  onChange={(event) => change(event.target.value, operands.right, 'leftValue')}
-                  placeholder='固定值或 {{ $json.amount }}'
-                  value={operands.left}
-                />
+                <ConditionOperandInput catalog={editor.selectableCatalog} operand={leftOperand} />
               )}
+              <FieldError errors={fieldErrors} id={`${id}-left-error`} />
             </Field>
-            <Field data-invalid={operatorInvalid}>
-              <FieldLabel className='sr-only'>条件操作符</FieldLabel>
+            <Field className='gap-2' data-invalid={operatorInvalid}>
+              <FieldLabel>操作符</FieldLabel>
               <ConditionOperatorSelect
                 aria-invalid={operatorInvalid}
-                aria-describedby={operatorInvalid ? errorId : undefined}
+                aria-describedby={operatorErrors.length ? `${id}-operator-error` : undefined}
                 disabled={editor.disabled}
                 onValueChange={(operator) => {
                   change(
@@ -607,12 +603,19 @@ function ConditionTreePredicate({
                 overlayId={`operator:${node.clientId}`}
                 value={node.operator}
               />
+              <FieldError errors={operatorErrors} id={`${id}-operator-error`} />
             </Field>
-            {usesValue ? (
-              <Field data-invalid={valueInvalid}>
-                <FieldLabel className='sr-only' htmlFor={`${id}-right`}>
-                  条件右值
-                </FieldLabel>
+            {range ? (
+              <ConditionRangeEditor
+                operand={rightOperand}
+                catalog={editor.selectableCatalog}
+                renderOperand={editor.renderOperand}
+                issues={valueErrors}
+                path={path}
+              />
+            ) : usesValue ? (
+              <Field className='gap-2' data-invalid={valueInvalid}>
+                <FieldLabel htmlFor={`${id}-right`}>比较值</FieldLabel>
                 {membership ? (
                   <ConditionCollectionEditor
                     operand={rightOperand}
@@ -646,12 +649,15 @@ function ConditionTreePredicate({
                 ) : (
                   rightControl
                 )}
+                <FieldError errors={valueErrors} id={`${id}-right-error`} />
               </Field>
             ) : null}
           </div>
-          {errors.length > 0 ? <FieldError errors={errors} id={errorId} /> : null}
+          <FieldError errors={generalErrors} id={`${id}-error`} />
         </FieldGroup>
-        <ConditionTreeRemove editor={editor} node={node} />
+        <div className='pt-7'>
+          <ConditionTreeRemove editor={editor} node={node} />
+        </div>
       </div>
       {isCollectionMatchOperator(node.operator) && node.predicate ? (
         <DecisionTreeChildren>
