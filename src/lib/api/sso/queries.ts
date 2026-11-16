@@ -1,3 +1,4 @@
+import { env } from '@/config/env';
 import type { QueryClient } from '@tanstack/react-query';
 import { queryOptions } from '@tanstack/react-query';
 
@@ -100,7 +101,14 @@ export const getLoginInfoQueryOptions = () =>
       if (data.userCode) setLoginUserCode(data.userCode);
       return data;
     },
-    staleTime: LOGIN_INFO_STALE_TIME_MS
+    staleTime: LOGIN_INFO_STALE_TIME_MS,
+    ...(env.devSsoSessionEnabled
+      ? {
+          refetchInterval: 60_000,
+          refetchIntervalInBackground: true,
+          refetchOnWindowFocus: 'always' as const
+        }
+      : {})
   });
 
 export function ensureSsoLoginInfo(queryClient: QueryClient) {

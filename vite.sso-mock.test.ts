@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createDevMockSsoPlugin,
   createMockSsoLoginInfoResponse,
-  DEV_MOCK_SSO_MENU_KEYS,
+  collectAppRouteMenuKeys,
   getMockSsoLoginInfoPath,
   stripAppGateway
 } from './vite.sso-mock';
@@ -33,12 +33,12 @@ describe('development SSO mock', () => {
     }
 
     expect(response.data.userId).toMatch(/^\d+$/);
-    expect(new Set(DEV_MOCK_SSO_MENU_KEYS)).toEqual(routeMenuKeys);
+    expect(new Set(collectAppRouteMenuKeys())).toEqual(routeMenuKeys);
     expect(new Set(response.data.menuData.map((item) => item.code))).toEqual(routeMenuKeys);
     expect(response.data.menuData.every((item) => item.hiddenFlag === 'N')).toBe(true);
   });
 
-  it('only registers the middleware when DEV_MOCK_SSO is enabled', () => {
+  it('only registers the middleware when DEV_MOCK_SSO is enabled', async () => {
     const disabledUse = vi.fn();
     const enabledUse = vi.fn();
     const disabledPlugin = createDevMockSsoPlugin(false, '/admin-api');
@@ -50,8 +50,11 @@ describe('development SSO mock', () => {
     expect(configureEnabled).toBeTypeOf('function');
 
     if (typeof configureDisabled === 'function' && typeof configureEnabled === 'function') {
-      configureDisabled.call({} as never, { middlewares: { use: disabledUse } } as never);
-      configureEnabled.call({} as never, { middlewares: { use: enabledUse } } as never);
+      await configureDisabled.call({} as never, { middlewares: { use: disabledUse } } as never);
+      await configureEnabled.call(
+        {} as never,
+        { config: { root: process.cwd() }, middlewares: { use: enabledUse } } as never
+      );
     }
 
     expect(disabledUse).not.toHaveBeenCalled();

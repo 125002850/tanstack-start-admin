@@ -37,6 +37,7 @@
 
 ## 功能特性
 
+- 当前登录账号修改 SSO 密码，包含确认校验、请求中防重入和关闭后清理
 - 企业 SSO 登录、按服务隔离登录缓存、回跳会话恢复与会话失效确认退出
 - 基于 SSO `menuData.code` 的导航过滤和 route 访问控制
 - 后台布局骨架（侧边栏、顶部栏、内容区域）
@@ -245,6 +246,8 @@ pnpm dev
 - `OPENAPI_FETCH_URL`：可选的 OpenAPI 文档地址，仅供拉取命令使用
 - `APP_BASE_PATH`：非根路径部署时的公共路径
 - `VITE_APP_SSO_CLIENT_ID`、`VITE_APP_SSO_SERVICE_ID`、`VITE_APP_SSO_SERVICE_CODE`：共享 transport 注入的 SSO 服务头
+
+真实本地会话可配置 `DEV_SSO_SESSION_FILE=playwright/.auth/dev-sso-session.local.json` 并启用 `DEV_MOCK_SSO`。脚本通过 `PLAYWRIGHT_SSO_SESSION_ONLY=1` 使用 HTTP/RSA 登录协议生成会话；会话按应用校验、定期刷新，失败时关闭访问，不回退到 mock 用户。凭据和会话始终保存在 ignored 目录。详见 [SSO SOP](.agents/skills/oig-sso-skill/references/sop.md)。
 
 当前项目使用 TypeScript 7 执行 `pnpm typecheck`。依赖 TypeScript Compiler API 的工具暂时通过 `@typescript/typescript6` 兼容包运行；待相关工具完成 API 迁移后再移除。
 

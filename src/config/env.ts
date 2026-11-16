@@ -22,6 +22,8 @@ const dataTableVirtualization = getEnvBool(
 );
 
 export const env = {
+  /** 仅由开发服务器注入，启用真实本地会话校验。 */
+  devSsoSessionEnabled: getEnvBool('VITE_DEV_SSO_SESSION', false),
   /** 是否启用工作区页签（默认开启） */
   workspaceTabsEnabled: getEnvBool('VITE_ENABLE_WORKSPACE_TABS', true),
 

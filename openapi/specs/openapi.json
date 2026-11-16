@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost",
+      "url": "http://127.0.0.1:18082",
       "description": "Generated server url"
     }
   ],
@@ -46,6 +46,10 @@
     {
       "name": "文件存储",
       "description": "文件上传、删除、临时访问地址与直传凭证相关接口"
+    },
+    {
+      "name": "账号安全",
+      "description": "当前登录人的 SSO 账号安全操作"
     }
   ],
   "paths": {
@@ -106,6 +110,38 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/schedule/job/request-logs": {
+      "post": {
+        "tags": [
+          "定时任务"
+        ],
+        "summary": "查询执行请求报文",
+        "description": "仅读取最近一次执行的有界脱敏快照",
+        "operationId": "scheduleJobRequestLogs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleJobRequestLogsQueryReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RScheduleJobRequestLogsRspDTO"
                 }
               }
             }
@@ -960,6 +996,38 @@
         }
       }
     },
+    "/api/staff/password/change": {
+      "post": {
+        "tags": [
+          "账号安全"
+        ],
+        "summary": "修改当前登录人的密码",
+        "description": "只允许修改当前登录人的密码；密码强度与会话失效由 SSO 决定。3004008：旧密码错误；3004009：SSO 业务拒绝；3004011：配置缺失；3004012：配置无效；3004013：调用失败；3004014：调用超时；3004015：响应状态异常；3004016：响应格式错误；3004017：响应超过64 KiB；3004018：响应编码不支持。调用或响应异常不代表密码一定未修改，请先使用新密码登录确认，不要自动重试。",
+        "operationId": "changeCurrentStaffPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StaffPasswordChangeReqDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/staff/list-all": {
       "post": {
         "tags": [
@@ -1643,6 +1711,157 @@
             "type": "object"
           }
         }
+      },
+      "ScheduleJobRequestLogsQueryReqDTO": {
+        "required": [
+          "executionId",
+          "jobId"
+        ],
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "integer",
+            "description": "任务ID",
+            "format": "int64",
+            "example": 1
+          },
+          "executionId": {
+            "type": "integer",
+            "description": "执行记录ID",
+            "format": "int64",
+            "example": 12
+          }
+        },
+        "description": "定时任务请求报文查询；仅最近一次执行有快照"
+      },
+      "RScheduleJobRequestLogsRspDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ScheduleJobRequestLogsRspDTO"
+          }
+        }
+      },
+      "ScheduleJobRequestLogRspDTO": {
+        "required": [
+          "durationMillis",
+          "method",
+          "requestBody",
+          "requestParams",
+          "responseBody",
+          "sequence",
+          "startTime",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "description": "本次执行内的请求序号",
+            "format": "int32",
+            "example": 1
+          },
+          "startTime": {
+            "type": "string",
+            "description": "请求开始时间",
+            "format": "date-time"
+          },
+          "method": {
+            "type": "string",
+            "description": "请求方法",
+            "example": "POST"
+          },
+          "url": {
+            "type": "string",
+            "description": "脱敏请求地址",
+            "example": "https://example.com/query"
+          },
+          "requestParams": {
+            "type": "string",
+            "description": "脱敏请求参数"
+          },
+          "requestBody": {
+            "type": "string",
+            "description": "脱敏请求报文，超限或不支持的格式明确标记省略"
+          },
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP状态码；未收到响应时为空",
+            "format": "int32",
+            "example": 200
+          },
+          "responseBody": {
+            "type": "string",
+            "description": "脱敏返回报文，超限或不支持的格式明确标记省略"
+          },
+          "durationMillis": {
+            "type": "integer",
+            "description": "请求耗时，毫秒",
+            "format": "int64",
+            "example": 120
+          },
+          "errorType": {
+            "type": "string",
+            "description": "传输异常类型，不保存可能含敏感报文的原始异常消息"
+          }
+        },
+        "description": "单次实际出站请求及返回报文，不保存认证头"
+      },
+      "ScheduleJobRequestLogsRspDTO": {
+        "required": [
+          "available",
+          "completed",
+          "executionId",
+          "omittedRequests",
+          "requests",
+          "totalRequests"
+        ],
+        "type": "object",
+        "properties": {
+          "executionId": {
+            "type": "integer",
+            "description": "执行记录ID",
+            "format": "int64",
+            "example": 12
+          },
+          "available": {
+            "type": "boolean",
+            "description": "是否仍有本次快照；新执行开始后旧快照被覆盖",
+            "example": true
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "是否已结束报文采集",
+            "example": true
+          },
+          "totalRequests": {
+            "type": "integer",
+            "description": "实际请求总数",
+            "format": "int32",
+            "example": 3
+          },
+          "omittedRequests": {
+            "type": "integer",
+            "description": "因快照容量上限未保留的请求数量",
+            "format": "int32",
+            "example": 0
+          },
+          "requests": {
+            "type": "array",
+            "description": "按请求顺序展示；每个正文最多64KiB，整份快照最多1MiB、200条",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleJobRequestLogRspDTO"
+            }
+          }
+        },
+        "description": "定时任务最近一次执行的脱敏请求快照"
       },
       "ScheduleJobConditionNode": {
         "required": [
@@ -4632,6 +4851,35 @@
           }
         },
         "description": "全局字典项创建请求"
+      },
+      "StaffPasswordChangeReqDTO": {
+        "required": [
+          "newPassword",
+          "oldPassword",
+          "repeatPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "oldPassword": {
+            "type": "string",
+            "description": "当前密码",
+            "format": "password",
+            "writeOnly": true
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "新密码，强度要求由 SSO 校验",
+            "format": "password",
+            "writeOnly": true
+          },
+          "repeatPassword": {
+            "type": "string",
+            "description": "确认新密码",
+            "format": "password",
+            "writeOnly": true
+          }
+        },
+        "description": "当前登录人修改 SSO 密码；账号由可信网关身份确定"
       },
       "StaffListAllReqDTO": {
         "type": "object",

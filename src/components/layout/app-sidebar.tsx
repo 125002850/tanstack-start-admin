@@ -1,3 +1,4 @@
+import { ChangePasswordDialog } from '@/features/auth/components/change-password-dialog';
 import { buildBusinessCenterNav } from '@/lib/router/business-center-nav';
 import {
   AlertDialog,
@@ -275,6 +276,7 @@ export default function AppSidebar() {
   );
   const filteredGroups = useFilteredNavGroups(navGroups);
   const { data: loginUser, isLoading } = useQuery(getLoginInfoQueryOptions());
+  const [changePasswordOpen, setChangePasswordOpen] = React.useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
   const userMenuTriggerRef = React.useRef<HTMLButtonElement>(null);
 
@@ -376,7 +378,7 @@ export default function AppSidebar() {
                 align='end'
                 sideOffset={4}
                 onCloseAutoFocus={(event) => {
-                  if (logoutDialogOpen) event.preventDefault();
+                  if (logoutDialogOpen || changePasswordOpen) event.preventDefault();
                 }}
               >
                 <DropdownMenuGroup>
@@ -387,6 +389,10 @@ export default function AppSidebar() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
+                  <DropdownMenuItem onSelect={() => setChangePasswordOpen(true)}>
+                    <Icons.lock className='size-4' />
+                    修改密码
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => setLogoutDialogOpen(true)}>
                     <Icons.logout className='size-4' />
                     退出登录
@@ -394,6 +400,14 @@ export default function AppSidebar() {
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
+            <ChangePasswordDialog
+              open={changePasswordOpen}
+              onOpenChange={setChangePasswordOpen}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                userMenuTriggerRef.current?.focus();
+              }}
+            />
             <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
               <AlertDialogContent
                 onCloseAutoFocus={(event) => {

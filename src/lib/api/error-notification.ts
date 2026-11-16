@@ -25,7 +25,12 @@ export function getApiErrorPresentation(
   error: unknown,
   options: ApiErrorNormalizationOptions = {}
 ): ApiErrorPresentation | null {
-  if (isApiRequestAbort(error) || error instanceof LoginRequiredError || error instanceof SessionExpiredError) return null;
+  if (
+    isApiRequestAbort(error) ||
+    error instanceof LoginRequiredError ||
+    error instanceof SessionExpiredError
+  )
+    return null;
   const info = normalizeApiError(error, options);
   if (info.code === 'UNAUTHORIZED' && sessionExpiryStore.getState().expired) return null;
   if (info.message.length <= MAX_TOAST_MESSAGE_LENGTH && !/[\r\n]/u.test(info.message)) {

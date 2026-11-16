@@ -73,13 +73,23 @@ function normalizeBasePath(value: string | undefined) {
   return `${basePath.replace(/\/+$/, '')}/`;
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const appGateway = process.env.APP_GATEWAY ?? env.APP_GATEWAY ?? '';
   const proxyUrl = process.env.PROXY_URL ?? env.PROXY_URL;
   const devMockSso = (process.env.DEV_MOCK_SSO ?? env.DEV_MOCK_SSO) === 'true';
 
+  const devMockSsoUserCode =
+    process.env.DEV_MOCK_SSO_USER_CODE ?? env.DEV_MOCK_SSO_USER_CODE ?? 'DEV001';
+  const sessionFile =
+    command === 'serve'
+      ? (process.env.DEV_SSO_SESSION_FILE ?? env.DEV_SSO_SESSION_FILE)?.trim()
+      : undefined;
+
   return {
+    define: {
+      'import.meta.env.VITE_DEV_SSO_SESSION': JSON.stringify(sessionFile && devMockSso ? '1' : '0')
+    },
     base: normalizeBasePath(process.env.APP_BASE_PATH ?? env.APP_BASE_PATH),
     resolve: {
       tsconfigPaths: true
@@ -101,7 +111,20 @@ export default defineConfig(({ mode }) => {
       allowedHosts: ['louise-outlets-off-ambient.trycloudflare.com']
     },
     plugins: [
-      createDevMockSsoPlugin(devMockSso, appGateway),
+      createDevMockSsoPlugin(
+        devMockSso,
+        appGateway,
+        devMockSsoUserCode,
+        sessionFile
+          ? {
+              file: sessionFile,
+              clientId: process.env.VITE_APP_SSO_CLIENT_ID ?? env.VITE_APP_SSO_CLIENT_ID ?? '',
+              serviceId: process.env.VITE_APP_SSO_SERVICE_ID ?? env.VITE_APP_SSO_SERVICE_ID ?? '',
+              serviceCode:
+                process.env.VITE_APP_SSO_SERVICE_CODE ?? env.VITE_APP_SSO_SERVICE_CODE ?? ''
+            }
+          : undefined
+      ),
       tailwindcss(),
       tanstackRouter({ target: 'react' }),
       viteReact(),

@@ -1,3 +1,5 @@
+import { LoginRequiredError } from './sso/errors';
+import { SessionExpiredError, sessionExpiryStore } from './sso/session-expiry';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getApiErrorPresentation, showApiError, apiErrorDetailsStore } from './error-notification';
 
@@ -5,7 +7,19 @@ const { notify } = vi.hoisted(() => ({ notify: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { error: notify } }));
 
 describe('API error presentation', () => {
-  beforeEach(() => apiErrorDetailsStore.setState({ error: null }));
+  beforeEach(() => {
+    apiErrorDetailsStore.setState({ error: null });
+    sessionExpiryStore.setState({ expired: false, logoutUrl: null, redirecting: false });
+    notify.mockClear();
+  });
+
+  it('leaves login and expiry errors to the SSO dialog', () => {
+    expect(getApiErrorPresentation(new LoginRequiredError())).toBeNull();
+    expect(getApiErrorPresentation(new SessionExpiredError())).toBeNull();
+    sessionExpiryStore.setState({ expired: true });
+    showApiError({ status: 401 });
+    expect(notify).not.toHaveBeenCalled();
+  });
 
   it('keeps short public errors and suppresses aborted requests', () => {
     expect(

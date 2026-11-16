@@ -31,3 +31,7 @@ description: 本仓库 AI Playwright 测试 SSO 登录态 SOP。处理本地 loc
 ## 参考
 
 需要完整命令、变量和脚本行为时读取 `references/sop.md`。
+
+## 仅维护登录工具时
+
+修改脚本、开发会话和契约测试时，可使用模拟 SSO / 网关验证，不需要读取真实凭据。只有执行真实登录态准备时才应用上面的凭据询问流程。真实会话和 HTTP 登录使用方式见 `references/sop.md`。

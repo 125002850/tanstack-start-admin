@@ -47,8 +47,8 @@ bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh
 
 脚本行为：
 
-1. 复用已有 `http://localhost:3000` 服务；如果不存在则启动 `pnpm run dev -- --host 127.0.0.1 --port 3000 --strictPort`。
-2. 打开测试 SSO 入口 `https://caweb-auth-master.ksout.oigit.com/sso/logout?clientId=2064249343121747970`。
+1. 复用已有 `http://localhost:3000` 服务；如果不存在则启动 `pnpm run dev --host 127.0.0.1 --port 3000 --strictPort`。
+2. 从当前工作树环境配置读取 clientId，打开配置的 SSO 入口。
 3. 将 SSO 的异常跳转统一修正到 `https://caweb-auth-master.ksout.oigit.com/login/loginView`。
 4. 自动填账号密码登录。
 5. 将远端业务系统回跳地址改写为 `http://localhost:3000/...`。
@@ -74,9 +74,22 @@ bash .agents/skills/oig-sso-skill/scripts/run-ai-e2e.sh
 PLAYWRIGHT_SSO_APP_URL=http://localhost:3000/dashboard/overview bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh
 PLAYWRIGHT_AI_BASE_URL=http://localhost:3000 bash .agents/skills/oig-sso-skill/scripts/run-ai-e2e.sh
 PLAYWRIGHT_AI_GREP='@workspace-v2' bash .agents/skills/oig-sso-skill/scripts/run-ai-e2e.sh
-PLAYWRIGHT_SSO_ENTRY_URL=https://caweb-auth-master.ksout.oigit.com/login/loginView?clientId=2064249343121747970 bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh
+PLAYWRIGHT_SSO_ENTRY_URL=https://<SSO主机>/login/loginView?clientId=<当前应用ID> bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh
 ```
 
 ## 服务隔离存储
 
 录制脚本通过 `scripts/sso-storage-key.mjs` 从本工作树环境配置读取 serviceCode，写入 `sso:<serviceCode>:token`。停止使用旧公共 token key；调整 serviceCode 后必须重新录制登录态。测试、开发和生产构建必须使用对应环境的 serviceCode，禁止跨系统复用存储文件。
+
+## 真实本地会话与 HTTP 登录
+
+在本地 ignored 环境配置中启用 `DEV_MOCK_SSO=true`，指定 `DEV_SSO_SESSION_FILE=playwright/.auth/dev-sso-session.local.json`，并配置当前应用的 clientId、serviceId、serviceCode 和测试网关 `PROXY_URL`。这些值不从其他业务系统复制。
+
+```bash
+PLAYWRIGHT_SSO_SESSION_ONLY=1 bash .agents/skills/oig-sso-skill/scripts/auth-sso-local.sh
+pnpm dev
+```
+
+该模式通过 SSO 的 HTTPS 登录页和 RSA 公钥协议登录，再向配置的测试网关验证 token、用户和菜单，不需要浏览器。未设置 session-only 时保留浏览器录制流程。脚本不打印密码或 token；会话文件限制在 `playwright/.auth/`，以 0600 权限原子写入，并校验应用和并发版本。
+
+开发服务器只在 serve 且启用上述配置时读取会话。会话错误、过期或校验失败时关闭访问，绝不回退为静态 mock 用户；静态 mock 仅供显式未配置真实会话的开发模式。会话查询每分钟复核并在回到页面时刷新，生产构建关闭此能力。登录失败按凭据错误、锁定、验证码或权限错误分类，后几类不自动重复提交。

@@ -53,12 +53,17 @@ vi.mock('@/components/ui/sso-skeleton', () => ({
   SsoMenuSkeleton: () => React.createElement('div', { 'data-testid': 'sso-menu-skeleton' })
 }));
 
-vi.mock('../icons', () => ({
+vi.mock('../icons', async (importOriginal) => ({
   Icons: {
+    ...(await importOriginal<typeof import('../icons')>()).Icons,
     account: () => React.createElement('span', null, 'account-icon'),
     logo: () => React.createElement('span', null, 'logo-icon'),
     chevronsDown: () => React.createElement('span', null, 'chevron-icon'),
     notification: () => React.createElement('span', null, 'notification-icon'),
+    spinner: () => React.createElement('span', null, 'spinner-icon'),
+    lock: () => React.createElement('span', null, 'lock-icon'),
+    eye: () => React.createElement('span', null, 'eye-icon'),
+    eyeOff: () => React.createElement('span', null, 'eye-off-icon'),
     logout: () => React.createElement('span', null, 'logout-icon'),
     arrowRight: () => React.createElement('span', null, 'arrow-icon')
   }
@@ -138,6 +143,19 @@ describe('app-sidebar auth footer', () => {
 
     expect(screen.getByText('admin')).toBeDefined();
     expect(screen.getByText('-')).toBeDefined();
+  });
+
+  it('opens current SSO password change and restores focus after cancellation', async () => {
+    const user = userEvent.setup();
+    await renderSidebar(queryClient);
+    const trigger = screen.getByRole('button', { name: '用户菜单' });
+    await user.click(trigger);
+    await user.click(screen.getByRole('menuitem', { name: /修改密码/ }));
+    expect(screen.getByRole('dialog', { name: '修改密码' })).toBeVisible();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '取消' }));
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(mockLogout).not.toHaveBeenCalled();
   });
 
   it('only calls session.logout after confirming the logout dialog', async () => {

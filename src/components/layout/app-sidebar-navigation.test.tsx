@@ -198,13 +198,13 @@ describe('sidebar navigation', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 
-  it('keeps SSO notifications and logout without IAM account actions', async () => {
+  it('keeps SSO notifications, password change and logout', async () => {
     const user = userEvent.setup();
     renderSidebar();
     await user.click(screen.getByRole('button', { name: '用户菜单' }));
     expect(screen.getByRole('menuitem', { name: '退出登录' })).toBeVisible();
     expect(screen.queryByRole('menuitem', { name: '个人资料' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: '修改密码' })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: '修改密码' })).toBeVisible();
     await user.click(screen.getByRole('menuitem', { name: '通知' }));
     expect(navigate).toHaveBeenCalledWith({ to: '/notifications' });
   });
