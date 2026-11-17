@@ -3,6 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import './session';
 
+function jwt(exp: number) {
+  return `header.${Buffer.from(JSON.stringify({ exp })).toString('base64url')}.signature`;
+}
+
 function createMockLocation(token?: string, search?: string): Location {
   const parsedUrl = new URL('https://example.com/dashboard');
   const searchParams = new URLSearchParams(search);
@@ -278,6 +282,33 @@ describe('session', () => {
       const { getAuthHeader } = await import('./session');
 
       expect(getAuthHeader()).toBeNull();
+    });
+  });
+
+  describe('JWT expiration', () => {
+    it('记录 JWT 的毫秒有效期，并随 token 轮换、无 exp 的 token 和清理会话更新', async () => {
+      setupBrowserMocks();
+      const { setAuthHeader, getAuthExpiresAt, clearAuth } = await import('./session');
+      setAuthHeader('Bearer ' + jwt(1_800_000_000));
+      expect(getAuthExpiresAt()).toBe(1_800_000_000_000);
+      setAuthHeader(jwt(1_800_003_600));
+      expect(getAuthExpiresAt()).toBe(1_800_003_600_000);
+      setAuthHeader('opaque-token');
+      expect(getAuthExpiresAt()).toBeNull();
+      setAuthHeader(jwt(1_800_003_600));
+      clearAuth();
+      expect(getAuthExpiresAt()).toBeNull();
+    });
+
+    it('从已有 token 恢复 exp，并识别其他标签页替换或删除 token', async () => {
+      const store = setupBrowserMocks();
+      const { getAuthExpiresAt } = await import('./session');
+      store['sso:test-service:token'] = jwt(1_800_000_000);
+      expect(getAuthExpiresAt()).toBe(1_800_000_000_000);
+      store['sso:test-service:token'] = jwt(1_800_003_600);
+      expect(getAuthExpiresAt()).toBe(1_800_003_600_000);
+      delete store['sso:test-service:token'];
+      expect(getAuthExpiresAt()).toBeNull();
     });
   });
 

@@ -58,6 +58,8 @@ describe('login info query', () => {
   let originalFetch: typeof fetch;
 
   beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv('VITE_DEV_SSO_SESSION', '0');
     originalFetch = globalThis.fetch;
     mockRuntime.basePath = '/';
     vi.clearAllMocks();
@@ -65,6 +67,21 @@ describe('login info query', () => {
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    vi.unstubAllEnvs();
+  });
+
+  it('真实开发会话不定时轮询，只在窗口重新激活时主动校验', async () => {
+    vi.stubEnv('VITE_DEV_SSO_SESSION', '1');
+    const options = await importQueryOptions();
+    expect(options.refetchInterval).toBeUndefined();
+    expect(options.refetchIntervalInBackground).toBeUndefined();
+    expect(options.refetchOnWindowFocus).toBe('always');
+  });
+
+  it('普通登录模式不启用开发轮询', async () => {
+    const options = await importQueryOptions();
+    expect(options.refetchInterval).toBeUndefined();
+    expect(options.refetchIntervalInBackground).toBeUndefined();
   });
 
   it('writes logoutUrl to session on success', async () => {

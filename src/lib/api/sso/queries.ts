@@ -104,8 +104,6 @@ export const getLoginInfoQueryOptions = () =>
     staleTime: LOGIN_INFO_STALE_TIME_MS,
     ...(env.devSsoSessionEnabled
       ? {
-          refetchInterval: 60_000,
-          refetchIntervalInBackground: true,
           refetchOnWindowFocus: 'always' as const
         }
       : {})

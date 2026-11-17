@@ -5,6 +5,7 @@ import { sessionExpiryStore } from './session-expiry';
 
 const BEARER_PREFIX = 'bearer ';
 export const SSO_SESSION_INVALIDATED_KEY = 'sso:session-invalidated';
+let cachedAuthExpiry: { token: string; expiresAt: number | null } | null = null;
 
 function clearQuerySchemes() {
   if (!isBrowser()) return;
@@ -15,6 +16,7 @@ function clearQuerySchemes() {
 
 /** 清理登录凭据及个人方案缓存，保留共享元数据和各应用的登录返回参数。 */
 function clearAllAuth() {
+  cachedAuthExpiry = null;
   clearQuerySchemes();
   if (!isBrowser()) return;
   try {
@@ -159,6 +161,13 @@ function parseJwtClaims(rawToken: string): Record<string, unknown> | null {
   }
 }
 
+function rememberAuthExpiry(token: string, claims: Record<string, unknown> | null) {
+  const exp = claims?.exp;
+  const expiresAt = typeof exp === 'number' && Number.isSafeInteger(exp * 1000) ? exp * 1000 : null;
+  cachedAuthExpiry = { token, expiresAt };
+  return expiresAt;
+}
+
 export function getAuthHeader(): string | null {
   if (!isBrowser()) return null;
   try {
@@ -168,6 +177,17 @@ export function getAuthHeader(): string | null {
   }
 }
 
+/** JWT 的 exp 只用于本地续期调度，身份与权限仍由服务端校验。 */
+export function getAuthExpiresAt(): number | null {
+  const token = getAuthHeader();
+  if (!token) {
+    cachedAuthExpiry = null;
+    return null;
+  }
+  if (cachedAuthExpiry?.token === token) return cachedAuthExpiry.expiresAt;
+  return rememberAuthExpiry(token, parseJwtClaims(token));
+}
+
 export function setAuthHeader(value: string) {
   if (!isBrowser() || sessionExpiryStore.getState().expired) return;
   const normalized = normalizeToken(value);
@@ -175,6 +195,7 @@ export function setAuthHeader(value: string) {
   try {
     localStorage.setItem(ssoStorageKeys.token, normalized);
     const claims = parseJwtClaims(normalized);
+    rememberAuthExpiry(normalized, claims);
     if (typeof claims?.userCode === 'string' && claims.userCode.trim()) {
       setLoginUserCode(claims.userCode);
     }
@@ -182,6 +203,7 @@ export function setAuthHeader(value: string) {
 }
 
 export function clearAuth() {
+  cachedAuthExpiry = null;
   clearQuerySchemes();
   if (!isBrowser()) return;
   try {

@@ -5,6 +5,7 @@ import {
   NetworkError,
   TimeoutError
 } from '@oig/react-query-generator/core';
+import { SessionRefreshedError } from './sso/errors';
 
 export type ApiStableErrorCode =
   | 'UNAUTHORIZED'
@@ -55,6 +56,10 @@ export function normalizeApiError(
 ): ApiErrorInfo {
   if (isApiRequestAbort(error)) {
     return createStableErrorInfo('REQUEST_ABORTED');
+  }
+
+  if (error instanceof SessionRefreshedError) {
+    return { code: 'UNAUTHORIZED', message: error.message };
   }
 
   const contractMismatch = readContractMismatchInfo(error);

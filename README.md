@@ -247,7 +247,7 @@ pnpm dev
 - `APP_BASE_PATH`：非根路径部署时的公共路径
 - `VITE_APP_SSO_CLIENT_ID`、`VITE_APP_SSO_SERVICE_ID`、`VITE_APP_SSO_SERVICE_CODE`：共享 transport 注入的 SSO 服务头
 
-真实本地会话可配置 `DEV_SSO_SESSION_FILE=playwright/.auth/dev-sso-session.local.json` 并启用 `DEV_MOCK_SSO`。脚本通过 `PLAYWRIGHT_SSO_SESSION_ONLY=1` 使用 HTTP/RSA 登录协议生成会话；会话按应用校验、定期刷新，失败时关闭访问，不回退到 mock 用户。凭据和会话始终保存在 ignored 目录。详见 [SSO SOP](.agents/skills/oig-sso-skill/references/sop.md)。
+真实本地会话可配置 `DEV_SSO_SESSION_FILE=playwright/.auth/dev-sso-session.local.json` 并启用 `DEV_MOCK_SSO`。脚本通过 `PLAYWRIGHT_SSO_SESSION_ONLY=1` 使用 HTTP/RSA 登录协议生成会话；会话按应用校验，请求前根据 JWT `exp` 提前续期，不定时轮询；失效时关闭访问，不回退到 mock 用户。凭据和会话始终保存在 ignored 目录。详见 [SSO SOP](.agents/skills/oig-sso-skill/references/sop.md)。
 
 当前项目使用 TypeScript 7 执行 `pnpm typecheck`。依赖 TypeScript Compiler API 的工具暂时通过 `@typescript/typescript6` 兼容包运行；待相关工具完成 API 迁移后再移除。
 

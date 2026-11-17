@@ -36,6 +36,15 @@ export class LoginRequiredError extends Error {
   }
 }
 
+/** 开发会话已恢复；当前失败的业务操作由用户重试，避免重复提交。 */
+export class SessionRefreshedError extends Error {
+  readonly status = HTTP_STATUS_UNAUTHORIZED;
+  constructor() {
+    super('登录状态已更新，请重试本次操作。');
+    this.name = 'SessionRefreshedError';
+  }
+}
+
 /** 只识别明确的 401，不根据错误文案猜测登录状态。 */
 export function isUnauthorizedResponse(body: unknown): boolean {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
